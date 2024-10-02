@@ -27,7 +27,7 @@ pub struct AddBuilding<'info> {
     #[account(
         init,
         payer = caller,
-        space = 8 + 32 + name.len() + address.len() + 1 + 1, // 32 for owner, 1 for floors, 1 for bump
+        space = 8 + 32 + (4 + name.len()) + (4 + address.len()) + 1 + 1, // 32 for owner, 1 for floors, 1 for bump
         seeds = [b"building", name.as_bytes(), address.as_bytes()],
         bump
     )]

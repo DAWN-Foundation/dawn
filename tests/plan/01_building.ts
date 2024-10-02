@@ -38,7 +38,7 @@ describe('plan::building', () => {
 
     const building = await program.account.building.fetch(buildingPda)
 
-    assert.equal(building.owner, mock.buildingOwner.publicKey)
+    assert.ok(building.owner.equals(mock.buildingOwner.publicKey))
     assert.equal(building.name, name)
     assert.equal(building.address, address)
     assert.equal(building.floors, floors)
