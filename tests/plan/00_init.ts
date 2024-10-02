@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, BN } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
 import { setup, Mock } from './utils'
@@ -63,5 +63,34 @@ describe('plan::initialize', () => {
     assert.ok(config.dawnMint.equals(mock.dawnMint))
     assert.ok(config.andrenaUsdcAccount.equals(mock.andrenaUsdcAccount))
     assert.ok(config.andrenaDawnAccount.equals(mock.andrenaDawnAccount))
+  })
+
+  it('cannot be reinitialized', async () => {
+    try {
+      await program.methods
+        .initialize(
+          mock.dawnFee,
+          mock.andrenaFee,
+          mock.andrenaDawnSplit,
+          mock.boDawnSplit,
+          mock.boEscrowSplit,
+        )
+        .accounts({
+          caller: wallet.payer.publicKey,
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          andrenaUsdcAccount: mock.andrenaUsdcAccount,
+          andrenaDawnAccount: mock.andrenaDawnAccount,
+        })
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof SendTransactionError)
+      const err: SendTransactionError = error
+      assert.strictEqual(
+        err.transactionError.message,
+        'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
+      )
+    }
   })
 })
