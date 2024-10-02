@@ -26,4 +26,13 @@ pub mod plan {
             bo_escrow_split,
         )
     }
+
+    pub fn add_building(
+        ctx: Context<AddBuilding>,
+        name: String,
+        address: String,
+        floors: u8,
+    ) -> Result<()> {
+        PlanApp::add_building(ctx, name, address, floors)
+    }
 }
