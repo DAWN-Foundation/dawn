@@ -90,6 +90,9 @@ impl PlanApp {
         // make caller the authority
         config.authority = ctx.accounts.caller.key();
 
+        // bump seed
+        config.bump = ctx.bumps.config;
+
         // fees
         config.dawn_fee = dawn_fee;
         config.andrena_fee = andrena_fee;

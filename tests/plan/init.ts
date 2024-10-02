@@ -66,10 +66,20 @@ describe('plan::initialize', () => {
 
     const config = await program.account.config.fetch(configPda)
 
+    // authority
+    assert.ok(config.authority.equals(wallet.payer.publicKey))
+    assert.ok(config.bump == configBump)
+    // fees
     assert.ok(config.dawnFee.eq(dawnFee))
     assert.ok(config.andrenaFee.eq(andrenaFee))
+    // splits
     assert.ok(config.andrenaDawnSplit.eq(andrenaDawnSplit))
     assert.ok(config.boDawnSplit.eq(boDawnSplit))
     assert.ok(config.boEscrowSplit.eq(boEscrowSplit))
+    // accounts
+    assert.ok(config.usdcMint.equals(usdcMint))
+    assert.ok(config.dawnMint.equals(dawnMint))
+    assert.ok(config.andrenaUsdcAccount.equals(andrenaUsdcAccount))
+    assert.ok(config.andrenaDawnAccount.equals(andrenaDawnAccount))
   })
 })
