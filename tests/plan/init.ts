@@ -63,5 +63,13 @@ describe('plan::initialize', () => {
       })
       .rpc()
     assert.ok(tx.length > 0)
+
+    const config = await program.account.config.fetch(configPda)
+
+    assert.ok(config.dawnFee.eq(dawnFee))
+    assert.ok(config.andrenaFee.eq(andrenaFee))
+    assert.ok(config.andrenaDawnSplit.eq(andrenaDawnSplit))
+    assert.ok(config.boDawnSplit.eq(boDawnSplit))
+    assert.ok(config.boEscrowSplit.eq(boEscrowSplit))
   })
 })
