@@ -9,7 +9,21 @@ use instructions::*;
 pub mod plan {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        PlanApp::initialize(ctx)
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        dawn_fee: u64,
+        andrena_fee: u64,
+        andrena_dawn_split: u64,
+        bo_dawn_split: u64,
+        bo_escrow_split: u64,
+    ) -> Result<()> {
+        PlanApp::initialize(
+            ctx,
+            dawn_fee,
+            andrena_fee,
+            andrena_dawn_split,
+            bo_dawn_split,
+            bo_escrow_split,
+        )
     }
 }
