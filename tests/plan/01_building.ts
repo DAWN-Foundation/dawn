@@ -28,10 +28,7 @@ describe('plan::building', () => {
 
     const tx = await program.methods
       .addBuilding(name, address, floors)
-      .accounts({
-        caller: mock.buildingOwner.publicKey,
-        building: buildingPda,
-      })
+      .accounts({ caller: mock.buildingOwner.publicKey })
       .signers([mock.buildingOwner])
       .rpc()
     assert.ok(tx.length > 0)
