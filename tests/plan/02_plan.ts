@@ -7,6 +7,38 @@ import { PublicKey } from '@solana/web3.js'
 import { Plan } from '../../target/types/plan'
 import { getEvent, mock } from './utils'
 
+// Helper function to get the PDA for a plan given plan parameters
+function getPlanPda(
+  program: Program<Plan>,
+  building: string,
+  price: BN,
+  duration: number,
+  speed: number,
+  capacity: BN,
+  sla_id: BN,
+): [PublicKey, number] {
+  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
+  durationBuffer.writeUInt16LE(duration)
+
+  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
+  speedBuffer.writeUInt32LE(speed)
+
+  const [planPda, planBump] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('plan'),
+      Buffer.from(building),
+      Buffer.from(price.toArray('le', 8)),
+      durationBuffer,
+      speedBuffer,
+      Buffer.from(capacity.toArray('le', 8)),
+      Buffer.from(sla_id.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
+  return [planPda, planBump]
+}
+
 describe('plan::plan', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
@@ -96,23 +128,14 @@ describe('plan::plan', () => {
     const capacity = new BN(1000)
     const sla_id = new BN(1)
 
-    const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-    durationBuffer.writeUInt16LE(duration)
-
-    const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-    speedBuffer.writeUInt32LE(speed)
-
-    const [planPda, planBump] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('plan'),
-        Buffer.from(building.address),
-        Buffer.from(price.toArray('le', 8)),
-        durationBuffer,
-        speedBuffer,
-        Buffer.from(capacity.toArray('le', 8)),
-        Buffer.from(sla_id.toArray('le', 8)),
-      ],
-      program.programId,
+    const [planPda, planBump] = getPlanPda(
+      program,
+      building.address,
+      price,
+      duration,
+      speed,
+      capacity,
+      sla_id,
     )
 
     const tx = await program.methods
