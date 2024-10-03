@@ -31,9 +31,9 @@ describe('plan::initialize', () => {
       .initialize(
         mock.dawnFee,
         mock.andrenaFee,
-        mock.andrenaDawnSplit,
-        mock.boDawnSplit,
-        mock.boEscrowSplit,
+        mock.andrenaDawnRatio,
+        mock.boDawnRatio,
+        mock.boEscrowRatio,
       )
       .accounts({
         caller: wallet.payer.publicKey,
@@ -54,10 +54,10 @@ describe('plan::initialize', () => {
     // fees
     assert.ok(config.dawnFee.eq(mock.dawnFee))
     assert.ok(config.andrenaFee.eq(mock.andrenaFee))
-    // splits
-    assert.ok(config.andrenaDawnSplit.eq(mock.andrenaDawnSplit))
-    assert.ok(config.boDawnSplit.eq(mock.boDawnSplit))
-    assert.ok(config.boEscrowSplit.eq(mock.boEscrowSplit))
+    // ratio
+    assert.ok(config.andrenaDawnRatio.eq(mock.andrenaDawnRatio))
+    assert.ok(config.boDawnRatio.eq(mock.boDawnRatio))
+    assert.ok(config.boEscrowRatio.eq(mock.boEscrowRatio))
     // accounts
     assert.ok(config.usdcMint.equals(mock.usdcMint))
     assert.ok(config.dawnMint.equals(mock.dawnMint))
@@ -71,9 +71,9 @@ describe('plan::initialize', () => {
         .initialize(
           mock.dawnFee,
           mock.andrenaFee,
-          mock.andrenaDawnSplit,
-          mock.boDawnSplit,
-          mock.boEscrowSplit,
+          mock.andrenaDawnRatio,
+          mock.boDawnRatio,
+          mock.boEscrowRatio,
         )
         .accounts({
           caller: wallet.payer.publicKey,

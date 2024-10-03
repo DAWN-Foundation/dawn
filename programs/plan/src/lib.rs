@@ -19,17 +19,17 @@ pub mod plan {
         ctx: Context<Initialize>,
         dawn_fee: u64,
         andrena_fee: u64,
-        andrena_dawn_split: u64,
-        bo_dawn_split: u64,
-        bo_escrow_split: u64,
+        andrena_dawn_ratio: u64,
+        bo_dawn_ratio: u64,
+        bo_escrow_ratio: u64,
     ) -> Result<()> {
         PlanApp::initialize(
             ctx,
             dawn_fee,
             andrena_fee,
-            andrena_dawn_split,
-            bo_dawn_split,
-            bo_escrow_split,
+            andrena_dawn_ratio,
+            bo_dawn_ratio,
+            bo_escrow_ratio,
         )
     }
 

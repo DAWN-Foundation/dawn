@@ -86,9 +86,9 @@ export interface Mock {
   // config
   dawnFee: BN
   andrenaFee: BN
-  andrenaDawnSplit: BN
-  boDawnSplit: BN
-  boEscrowSplit: BN
+  andrenaDawnRatio: BN
+  boDawnRatio: BN
+  boEscrowRatio: BN
 }
 
 // Helper to setup the environment for tests and set the mock
@@ -161,9 +161,9 @@ export async function setup(
 
   const dawnFee = new BN(200) // 2% fee (dawn_fee)
   const andrenaFee = new BN(500) // 5% fee (andrena_fee)
-  const andrenaDawnSplit = new BN(9000) // 90% fee (andrena_dawn_split)
-  const boDawnSplit = new BN(8000) // 80% fee (bo_dawn_split)
-  const boEscrowSplit = new BN(2000) // 20% fee (bo_escrow_split)
+  const andrenaDawnRatio = new BN(9000) // 90% fee (andrena_dawn_ratio)
+  const boDawnRatio = new BN(8000) // 80% fee (bo_dawn_ratio)
+  const boEscrowRatio = new BN(2000) // 20% fee (bo_escrow_ratio)
 
   mock = {
     andrena,
@@ -177,8 +177,8 @@ export async function setup(
     // config
     dawnFee,
     andrenaFee,
-    andrenaDawnSplit,
-    boDawnSplit,
-    boEscrowSplit,
+    andrenaDawnRatio,
+    boDawnRatio,
+    boEscrowRatio,
   }
 }
