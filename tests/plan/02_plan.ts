@@ -32,13 +32,54 @@ describe('plan::plan', () => {
     program.programId,
   )
 
-  // it('cannot add plan with zero price', async () => {
-  //   assert.exists(mock)
-  // })
+  it('cannot add plan with zero price', async () => {
+    assert.exists(mock)
 
-  // it('cannot be added for a building not owned by the caller', async () => {
-  //   assert.exists(mock)
-  // })
+    const price = new BN(0)
+
+    try {
+      await program.methods
+        .addPlan(price)
+        .accounts({
+          caller: mock.buildingOwner.publicKey,
+          building: buildingPda,
+        })
+        .signers([mock.buildingOwner])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof AnchorError)
+      const err: AnchorError = error
+      assert.strictEqual(err.error.errorMessage, 'Plan price is zero')
+      assert.strictEqual(err.error.errorCode.number, 6006)
+    }
+  })
+
+  it('cannot be added for a building not owned by the caller', async () => {
+    assert.exists(mock)
+
+    const price = new BN(5)
+
+    try {
+      await program.methods
+        .addPlan(price)
+        .accounts({
+          caller: wallet.publicKey,
+          building: buildingPda,
+        })
+        .signers([wallet.payer])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof AnchorError)
+      const err: AnchorError = error
+      assert.strictEqual(
+        err.error.errorMessage,
+        'A raw constraint was violated',
+      )
+      assert.strictEqual(err.error.errorCode.number, 2003)
+    }
+  })
 
   it('adds the plan', async () => {
     assert.exists(mock)
