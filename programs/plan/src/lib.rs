@@ -7,9 +7,9 @@ mod error;
 mod events;
 mod instructions;
 
-use instructions::*;
 use error::*;
 use events::*;
+use instructions::*;
 
 #[program]
 pub mod plan {
@@ -41,5 +41,8 @@ pub mod plan {
     ) -> Result<()> {
         PlanApp::add_building(ctx, name, address, floors)
     }
-}
 
+    pub fn add_plan(ctx: Context<AddPlan>, price: u64) -> Result<()> {
+        PlanApp::add_plan(ctx, price)
+    }
+}
