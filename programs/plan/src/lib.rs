@@ -2,8 +2,14 @@ use anchor_lang::prelude::*;
 
 declare_id!("79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq");
 
+mod constants;
+mod error;
+mod events;
 mod instructions;
+
 use instructions::*;
+use error::*;
+use events::*;
 
 #[program]
 pub mod plan {
@@ -26,4 +32,14 @@ pub mod plan {
             bo_escrow_split,
         )
     }
+
+    pub fn add_building(
+        ctx: Context<AddBuilding>,
+        name: String,
+        address: String,
+        floors: u8,
+    ) -> Result<()> {
+        PlanApp::add_building(ctx, name, address, floors)
+    }
 }
+
