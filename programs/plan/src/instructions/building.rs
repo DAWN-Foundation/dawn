@@ -4,7 +4,7 @@ use std::cmp::min;
 use super::PlanApp;
 use crate::{
     constants::{MAX_BUILDING_ADDRESS_LEN, MAX_BUILDING_NAME_LEN},
-    PlanError,
+    BuildingAdded, PlanError,
 };
 
 #[account]
@@ -81,6 +81,13 @@ impl PlanApp {
         building.address = address.trim().to_owned();
         building.floors = floors;
         building.bump = ctx.bumps.building;
+
+        emit!(BuildingAdded {
+            owner: building.owner,
+            name: building.name.clone(),
+            address: building.address.clone(),
+            floors: building.floors,
+        });
 
         Ok(())
     }

@@ -10,7 +10,7 @@ import {
 } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { mock } from './utils'
+import { getEvent, mock } from './utils'
 
 const MAX_BUILDING_NAME_LENGTH = 32
 const MAX_BUILDING_ADDRESS_LENGTH = 64
@@ -265,6 +265,13 @@ describe('plan::building', () => {
     assert.equal(building.address, address)
     assert.equal(building.floors, floors)
     assert.equal(building.bump, buildingBump)
+
+    // make sure event was emitted
+    const event = await getEvent(program, tx, 'buildingAdded')
+    assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
+    assert.equal(event.name, name)
+    assert.equal(event.address, address)
+    assert.equal(event.floors, floors)
   })
 
   // given previous case created this building

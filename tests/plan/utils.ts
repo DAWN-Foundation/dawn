@@ -1,6 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
-import { Keypair, PublicKey } from '@solana/web3.js'
+import {
+  Keypair,
+  ParsedTransactionWithMeta,
+  PublicKey,
+  VersionedTransactionResponse,
+} from '@solana/web3.js'
 import {
   TOKEN_PROGRAM_ID,
   createMint,
@@ -9,26 +14,64 @@ import {
   getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
+import { Plan } from '../../target/types/plan'
 
 export let mock: Mock
 
+// Helper to confirm a transaction
+async function confirmTx(
+  connection: anchor.web3.Connection,
+  tx: string,
+): Promise<VersionedTransactionResponse> {
+  const lastBlock = await connection.getLatestBlockhash()
+
+  await connection.confirmTransaction(
+    {
+      signature: tx,
+      blockhash: lastBlock.blockhash,
+      lastValidBlockHeight: lastBlock.lastValidBlockHeight,
+    },
+    'confirmed',
+  )
+
+  const confirmedTx = await connection.getTransaction(tx, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  })
+
+  return confirmedTx
+}
+
+// Helper to fund an account with SOL
 export async function fund(
   connection: anchor.web3.Connection,
   account: PublicKey,
   amount: number,
 ) {
   const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
+  await confirmTx(connection, signature)
+}
 
-  await connection.confirmTransaction(
-    {
-      signature,
-      blockhash: (await connection.getLatestBlockhash()).blockhash,
-      lastValidBlockHeight: (
-        await connection.getLatestBlockhash()
-      ).lastValidBlockHeight,
-    },
-    'confirmed',
+// Helper to get the event from the transaction
+export async function getEvent(
+  program: anchor.Program<Plan>,
+  tx: string,
+  name: string,
+) {
+  const confirmedTx = await confirmTx(program.provider.connection, tx)
+
+  const [log] = confirmedTx.meta.logMessages.filter((msg) =>
+    msg.startsWith('Program data: '),
   )
+
+  const logEncoded = log.split('Program data: ')[1]
+  const event = program.coder.events.decode(logEncoded)
+
+  if (event.name !== name) {
+    throw new Error(`Event name mismatch: ${event.name} !== ${name}`)
+  }
+
+  return event.data
 }
 
 export interface Mock {
