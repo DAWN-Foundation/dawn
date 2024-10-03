@@ -101,7 +101,7 @@ impl PlanApp {
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;
-        plan.capacity = capacity;
+        plan.capacity = capacity; // 0 for unlimited
         plan.sla_id = sla_id;
         plan.bump = ctx.bumps.plan;
 
@@ -109,6 +109,10 @@ impl PlanApp {
             owner: plan.owner,
             building: plan.building,
             price: plan.price,
+            duration: plan.duration,
+            speed: plan.speed,
+            capacity: plan.capacity,
+            sla_id: plan.sla_id,
         });
 
         Ok(())
