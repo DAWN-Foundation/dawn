@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { setup, Mock } from './utils'
+import { setup, mock } from './utils'
 
 describe('plan::initialize', () => {
   const provider = anchor.AnchorProvider.env()
@@ -20,13 +20,13 @@ describe('plan::initialize', () => {
     program.programId,
   )
 
-  let mock: Mock
-
   before(async () => {
-    mock = await setup(provider.connection, wallet)
+    await setup(provider.connection, wallet)
   })
 
   it('initializes the program', async () => {
+    assert.exists(mock)
+
     const tx = await program.methods
       .initialize(
         mock.dawnFee,

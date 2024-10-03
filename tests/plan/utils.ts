@@ -96,7 +96,7 @@ export interface Mock {
 export async function setup(
   connection: anchor.web3.Connection,
   wallet: NodeWallet,
-): Promise<Mock> {
+) {
   // Create Andrena KeyPair
   const andrena = Keypair.generate()
   await fund(connection, andrena.publicKey, 1000)
@@ -181,6 +181,4 @@ export async function setup(
     boDawnSplit,
     boEscrowSplit,
   }
-
-  return mock
 }
