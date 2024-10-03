@@ -31,10 +31,14 @@ describe('plan::plan', () => {
     assert.exists(mock)
 
     const price = new BN(0)
+    const duration = 30
+    const speed = 1_000
+    const capacity = new BN(1000)
+    const sla_id = new BN(1)
 
     try {
       await program.methods
-        .addPlan(price)
+        .addPlan(price, duration, speed, capacity, sla_id)
         .accounts({
           caller: mock.buildingOwner.publicKey,
           building: buildingPda,
@@ -54,10 +58,14 @@ describe('plan::plan', () => {
     assert.exists(mock)
 
     const price = new BN(5)
+    const duration = 30
+    const speed = 1_000
+    const capacity = new BN(1000)
+    const sla_id = new BN(1)
 
     try {
       await program.methods
-        .addPlan(price)
+        .addPlan(price, duration, speed, capacity, sla_id)
         .accounts({
           caller: wallet.publicKey,
           building: buildingPda,
@@ -83,18 +91,32 @@ describe('plan::plan', () => {
     assert.ok(building.owner.equals(mock.buildingOwner.publicKey))
 
     const price = new BN(5)
+    const duration = 30
+    const speed = 1_000
+    const capacity = new BN(1000)
+    const sla_id = new BN(1)
+
+    const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
+    durationBuffer.writeUInt16LE(duration)
+
+    const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
+    speedBuffer.writeUInt32LE(speed)
 
     const [planPda, planBump] = PublicKey.findProgramAddressSync(
       [
         Buffer.from('plan'),
         Buffer.from(building.address),
         Buffer.from(price.toArray('le', 8)),
+        durationBuffer,
+        speedBuffer,
+        Buffer.from(capacity.toArray('le', 8)),
+        Buffer.from(sla_id.toArray('le', 8)),
       ],
       program.programId,
     )
 
     const tx = await program.methods
-      .addPlan(price)
+      .addPlan(price, duration, speed, capacity, sla_id)
       .accounts({
         caller: mock.buildingOwner.publicKey,
         building: buildingPda,

@@ -42,7 +42,14 @@ pub mod plan {
         PlanApp::add_building(ctx, name, address, floors)
     }
 
-    pub fn add_plan(ctx: Context<AddPlan>, price: u64) -> Result<()> {
-        PlanApp::add_plan(ctx, price)
+    pub fn add_plan(
+        ctx: Context<AddPlan>,
+        price: u64,
+        duration: u16,
+        speed: u32,
+        capacity: u64,
+        sla_id: u64,
+    ) -> Result<()> {
+        PlanApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
     }
 }
