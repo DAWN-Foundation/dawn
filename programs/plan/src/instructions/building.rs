@@ -1,6 +1,11 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use std::cmp::min;
 
 use super::PlanApp;
+use crate::{
+    constants::{MAX_BUILDING_ADDRESS_LEN, MAX_BUILDING_NAME_LEN},
+    PlanError,
+};
 
 #[account]
 pub struct Building {
@@ -17,7 +22,7 @@ pub struct Building {
 }
 
 #[derive(Accounts)]
-#[instruction(name: String, address: String)]
+#[instruction(name: String, address: String, floors: u8)]
 pub struct AddBuilding<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -26,8 +31,13 @@ pub struct AddBuilding<'info> {
     #[account(
         init,
         payer = caller,
-        space = 8 + 32 + (4 + name.len()) + (4 + address.len()) + 1 + 1, // 32 for owner, 1 for floors, 1 for bump
-        seeds = [b"building", name.as_bytes(), address.as_bytes()],
+        space = 8 + 32 + (4 + MAX_BUILDING_NAME_LEN) + (4 + MAX_BUILDING_ADDRESS_LEN) + 1 + 1, // 32 for owner, 1 for floors, 1 for bump
+        seeds = [
+            b"building",
+            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
+            &address.trim().as_bytes()[..min(address.trim().len(), MAX_SEED_LEN)],
+            &[floors],
+        ],
         bump
     )]
     pub building: Account<'info, Building>,
@@ -44,9 +54,31 @@ impl PlanApp {
     ) -> Result<()> {
         let building = &mut ctx.accounts.building;
 
+        // Make sure the name and address are not empty
+        if name.trim().is_empty() {
+            return err!(PlanError::EmptyBuildingName);
+        }
+        if address.trim().is_empty() {
+            return err!(PlanError::EmptyBuildingAddress);
+        }
+
+        // Make sure the name and address are not exceeding the max length
+        if name.len() > MAX_BUILDING_NAME_LEN {
+            msg!("name.len() = {}", name.len());
+            return err!(PlanError::BuildingNameTooLong);
+        }
+        if address.len() > MAX_BUILDING_ADDRESS_LEN {
+            return err!(PlanError::BuildingAddressTooLong);
+        }
+
+        // Make sure the floors are between 1 and 255 (ensured by u8 type)
+        if floors == 0 {
+            return err!(PlanError::InvalidFloors);
+        }
+
         building.owner = ctx.accounts.caller.key();
-        building.name = name;
-        building.address = address;
+        building.name = name.trim().to_owned();
+        building.address = address.trim().to_owned();
         building.floors = floors;
         building.bump = ctx.bumps.building;
 

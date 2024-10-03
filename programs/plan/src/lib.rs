@@ -2,8 +2,14 @@ use anchor_lang::prelude::*;
 
 declare_id!("79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq");
 
+mod constants;
+mod error;
+mod events;
 mod instructions;
+
 use instructions::*;
+use error::*;
+use events::*;
 
 #[program]
 pub mod plan {
@@ -36,3 +42,4 @@ pub mod plan {
         PlanApp::add_building(ctx, name, address, floors)
     }
 }
+
