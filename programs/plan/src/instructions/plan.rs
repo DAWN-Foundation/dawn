@@ -1,7 +1,4 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::pubkey::{MAX_SEEDS, MAX_SEED_LEN},
-};
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use super::{Building, PlanApp};

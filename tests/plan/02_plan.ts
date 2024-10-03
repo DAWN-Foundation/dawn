@@ -126,7 +126,7 @@ describe('plan::plan', () => {
     const duration = 30
     const speed = 1_000
     const capacity = new BN(1000)
-    const sla_id = new BN(1)
+    const slaId = new BN(1)
 
     const [planPda, planBump] = getPlanPda(
       program,
@@ -135,11 +135,11 @@ describe('plan::plan', () => {
       duration,
       speed,
       capacity,
-      sla_id,
+      slaId,
     )
 
     const tx = await program.methods
-      .addPlan(price, duration, speed, capacity, sla_id)
+      .addPlan(price, duration, speed, capacity, slaId)
       .accounts({
         caller: mock.buildingOwner.publicKey,
         building: buildingPda,
@@ -153,6 +153,10 @@ describe('plan::plan', () => {
     assert.ok(plan.owner.equals(mock.buildingOwner.publicKey))
     assert.ok(plan.building.equals(buildingPda))
     assert.ok(plan.price.eq(price))
+    assert.equal(plan.duration, duration)
+    assert.equal(plan.speed, speed)
+    assert.ok(plan.capacity.eq(capacity))
+    assert.ok(plan.slaId.eq(slaId))
     assert.equal(plan.bump, planBump)
 
     // make sure event was emitted
