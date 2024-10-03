@@ -1,9 +1,8 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError } from '@coral-xyz/anchor'
+import { Program, AnchorError } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import {
-  Keypair,
   MAX_SEED_LENGTH,
   PublicKey,
   SendTransactionError,

@@ -2,12 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, BN, AnchorError } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import {
-  Keypair,
-  MAX_SEED_LENGTH,
-  PublicKey,
-  SendTransactionError,
-} from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
 import { getEvent, mock } from './utils'

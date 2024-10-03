@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN } from '@coral-xyz/anchor'
+import { Program } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
