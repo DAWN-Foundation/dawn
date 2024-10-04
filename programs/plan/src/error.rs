@@ -5,6 +5,9 @@ pub enum PlanError {
     #[msg("Arithmetic operation overflowed")]
     Overflow,
 
+    #[msg("Arithmetic operation underflowed")]
+    Underflow,
+
     #[msg("Building name is empty")]
     EmptyBuildingName,
 

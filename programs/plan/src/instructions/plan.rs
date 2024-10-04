@@ -11,7 +11,7 @@ pub struct Plan {
     pub owner: Pubkey,
     /// Associated building
     pub building: Pubkey,
-    /// The plan price
+    /// The plan price per `duration` days (in USDC with 6 decimals)
     pub price: u64,
     /// The plan duration in days
     pub duration: u16,
@@ -26,8 +26,15 @@ pub struct Plan {
     pub bump: u8,
 }
 
-/// 8 (id) + 32 (owner) + 32 (building) + 8 (price) + 2 (duration) + 4 (speed) + 8 (capacity) + 8 (sla_id) + 1 (bump)
-const PLAN_SIZE: usize = 8 + 32 + 32 + 8 + 2 + 4 + 8 + 8 + 1;
+const PLAN_SIZE: usize = 8 // id
+    + 32 // owner
+    + 32 // building
+    + 8 // price
+    + 2 // duration
+    + 4 // speed
+    + 8 // capacity
+    + 8 // sla_id
+    + 1; // bump
 
 #[derive(Accounts)]
 #[instruction(price: u64, duration: u16, speed: u32, capacity: u64, sla_id: u64)]
@@ -56,7 +63,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            &building.key().to_bytes()[..],
+            building.key().as_ref(),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
@@ -78,7 +85,6 @@ pub struct RemovePlan<'info> {
     #[account(
         mut,
         constraint = building.owner == caller.key(),
-        close = caller,
         seeds = [
             b"building",
             &building.name.as_bytes()[..min(building.name.len(), MAX_SEED_LEN)],
@@ -96,7 +102,7 @@ pub struct RemovePlan<'info> {
         close = caller,
         seeds = [
             b"plan",
-            &building.key().to_bytes()[..],
+            building.key().as_ref(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -120,19 +126,13 @@ impl PlanApp {
         let plan = &mut ctx.accounts.plan;
 
         // Make sure the plan price is not zero
-        if price == 0 {
-            return err!(PlanError::ZeroPlanPrice);
-        }
+        require!(price > 0, PlanError::ZeroPlanPrice);
 
         // Make sure the plan duration is not zero
-        if duration == 0 {
-            return err!(PlanError::ZeroPlanDuration);
-        }
+        require!(duration > 0, PlanError::ZeroPlanDuration);
 
         // Make sure the plan speed is not zero
-        if speed == 0 {
-            return err!(PlanError::ZeroPlanSpeed);
-        }
+        require!(speed > 0, PlanError::ZeroPlanSpeed);
 
         plan.owner = ctx.accounts.caller.key();
         plan.building = ctx.accounts.building.key();

@@ -56,4 +56,8 @@ pub mod plan {
     pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
         PlanApp::remove_plan(ctx)
     }
+
+    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+        PlanApp::subscribe(ctx)
+    }
 }

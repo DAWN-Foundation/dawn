@@ -24,3 +24,8 @@ pub struct PlanRemoved {
     pub plan: Pubkey,
     pub building: Pubkey,
 }
+
+#[event]
+pub struct Subscribed {
+    pub subscriber: Pubkey,
+}
