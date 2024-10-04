@@ -176,16 +176,6 @@ export async function setup(
       tester.publicKey,
     )
 
-  // Mint 1'000 USDC to Tester account
-  await mintTo(
-    connection,
-    tester, // Payer for tx
-    usdcMint, // Mint account
-    testerUsdcAccount, // Destination
-    wallet.payer, // Authority
-    1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
-  )
-
   const dawnFee = new BN(200) // 2% fee (dawn_fee)
   const andrenaFee = new BN(500) // 5% fee (andrena_fee)
   const andrenaDawnRatio = new BN(9000) // 90% fee (andrena_dawn_ratio)

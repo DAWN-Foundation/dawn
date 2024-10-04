@@ -8,7 +8,11 @@ import { Plan } from '../../target/types/plan'
 import { confirmTx, getEvent, mock } from './utils'
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
 import { BUILDING_SIZE } from './01_building'
-import { getAccount } from '@solana/spl-token'
+import {
+  getAccount,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from '@solana/spl-token'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -132,8 +136,8 @@ describe('plan::subscription', () => {
           plan: planPda,
           andrenaUsdcAccount: mock.andrenaUsdcAccount,
           dawnUsdcAccount: mock.dawnUsdcAccount,
-          userUsdcAccount: mock.testerUsdcAccount,
           boUsdcAccount: mock.boUsdcAccount,
+          userUsdcAccount: mock.testerUsdcAccount,
         })
         .signers([mock.tester])
         .rpc()
@@ -148,7 +152,40 @@ describe('plan::subscription', () => {
     }
   })
 
+  it('cannot subscribe if does not have enough USDC', async () => {
+    try {
+      await program.methods
+        .subscribe()
+        .accounts({
+          caller: mock.tester.publicKey,
+          config: configPda,
+          plan: planPda,
+          andrenaUsdcAccount: mock.andrenaUsdcAccount,
+          dawnUsdcAccount: mock.dawnUsdcAccount,
+          boUsdcAccount: mock.boUsdcAccount,
+          userUsdcAccount: mock.testerUsdcAccount,
+        })
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof AnchorError)
+      const err: AnchorError = error
+      assert.strictEqual(err.error.errorMessage, 'Insufficient funds')
+    }
+  })
+
   it('subscribes to the plan', async () => {
+    // Mint 1'000 USDC to Tester account
+    await mintTo(
+      provider.connection,
+      mock.tester, // Payer for tx
+      mock.usdcMint, // Mint account
+      mock.testerUsdcAccount, // Destination
+      wallet.payer, // Authority
+      1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
+    )
+
     const testerUsdcBalanceBefore = new BN(
       (
         await getAccount(provider.connection, mock.testerUsdcAccount)
@@ -189,8 +226,8 @@ describe('plan::subscription', () => {
         subscription: subscriptionPda,
         andrenaUsdcAccount: mock.andrenaUsdcAccount,
         dawnUsdcAccount: mock.dawnUsdcAccount,
-        userUsdcAccount: mock.testerUsdcAccount,
         boUsdcAccount: mock.boUsdcAccount,
+        userUsdcAccount: mock.testerUsdcAccount,
       })
       .signers([mock.tester])
       .rpc()
@@ -245,5 +282,93 @@ describe('plan::subscription', () => {
     )
     const dawnFee = mock.dawnFee.mul(plan.price).div(BPS_DENOMINATOR)
     assert.ok(dawnUsdcBalanceAfter.eq(dawnUsdcBalanceBefore.add(dawnFee)))
+
+    // make sure the BO USDC account was credited
+    const boUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.boUsdcAccount)
+      ).amount.toString(),
+    )
+    const remainder = plan.price.sub(andrenaFee).sub(dawnFee)
+    assert.ok(boUsdcBalanceAfter.eq(boUsdcBalanceBefore.add(remainder)))
+  })
+
+  it('cannot subscribe to the same plan twice', async () => {
+    try {
+      await program.methods
+        .subscribe()
+        .accounts({
+          caller: mock.tester.publicKey,
+          config: configPda,
+          plan: planPda,
+          andrenaUsdcAccount: mock.andrenaUsdcAccount,
+          dawnUsdcAccount: mock.dawnUsdcAccount,
+          boUsdcAccount: mock.boUsdcAccount,
+          userUsdcAccount: mock.testerUsdcAccount,
+        })
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof SendTransactionError)
+      const err: SendTransactionError = error
+      assert.strictEqual(
+        err.transactionError.message,
+        'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
+      )
+    }
+  })
+
+  it('can be subscribed to by another user', async () => {
+    // create USDC account for wallet
+    const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mock.usdcMint,
+      wallet.publicKey,
+    )
+
+    // Mint 1'000 USDC to Wallet account
+    await mintTo(
+      provider.connection,
+      wallet.payer, // Payer for tx
+      mock.usdcMint, // Mint account
+      walletUsdcAccount.address, // Destination
+      wallet.payer, // Authority
+      1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
+    )
+
+    const [subscriptionPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('subscription'),
+        Buffer.from(planPda.toBytes()),
+        Buffer.from(wallet.publicKey.toBytes()),
+      ],
+      program.programId,
+    )
+
+    const tx = await program.methods
+      .subscribe()
+      .accounts({
+        caller: wallet.publicKey,
+        config: configPda,
+        plan: planPda,
+        subscription: subscriptionPda,
+        andrenaUsdcAccount: mock.andrenaUsdcAccount,
+        dawnUsdcAccount: mock.dawnUsdcAccount,
+        boUsdcAccount: mock.boUsdcAccount,
+        userUsdcAccount: walletUsdcAccount.address,
+      })
+      .signers([])
+      .rpc()
+
+    assert.ok(tx.length > 0)
+
+    // make sure event was emitted
+    const event = await getEvent(program, tx, 'subscribed')
+    assert.ok(event.subscription.equals(subscriptionPda))
+    assert.ok(event.subscriber.equals(wallet.publicKey))
+    assert.ok(event.plan.equals(planPda))
+    assert.ok(event.expiration > 0)
   })
 })
