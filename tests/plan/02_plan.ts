@@ -39,6 +39,38 @@ function getPlanPda(
   return [planPda, planBump]
 }
 
+async function getPlansForBuilding(
+  program: Program<Plan>, // Anchor program
+  building: PublicKey, // Public key of the building
+): Promise<any[]> {
+  // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
+  const BUILDING_OFFSET = 8 + 32
+
+  // Fetch all plan accounts and filter by building key
+  const plans = await program.provider.connection.getProgramAccounts(
+    program.programId,
+    {
+      // Filtering accounts by the `building` public key stored in the Plan account
+      filters: [
+        {
+          memcmp: {
+            offset: BUILDING_OFFSET, // Offset where the building public key is stored
+            bytes: building.toBase58(), // The building public key to filter by
+          },
+        },
+      ],
+    },
+  )
+
+  // Decode and return the accounts
+  return plans.map((accountInfo) => {
+    return program.account.plan.coder.accounts.decode(
+      'plan',
+      accountInfo.account.data,
+    )
+  })
+}
+
 describe('plan::plan', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
@@ -261,6 +293,17 @@ describe('plan::plan', () => {
     assert.ok(plan.capacity.eq(capacity))
     assert.ok(plan.slaId.eq(slaId))
     assert.equal(plan.bump, planBump)
+
+    // make sure can fetch the plan by building
+    const [buildingPlan] = await getPlansForBuilding(program, buildingPda)
+    assert.ok(buildingPlan.owner.equals(mock.buildingOwner.publicKey))
+    assert.ok(buildingPlan.building.equals(buildingPda))
+    assert.ok(buildingPlan.price.eq(price))
+    assert.equal(buildingPlan.duration, duration)
+    assert.equal(buildingPlan.speed, speed)
+    assert.ok(buildingPlan.capacity.eq(capacity))
+    assert.ok(buildingPlan.slaId.eq(slaId))
+    assert.equal(buildingPlan.bump, planBump)
 
     // make sure event was emitted
     const event = await getEvent(program, tx, 'planAdded')
