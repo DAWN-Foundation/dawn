@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use super::{Building, PlanApp};
-use crate::{PlanAdded, PlanError};
+use crate::{PlanAdded, PlanError, PlanRemoved};
 
 /// The plan account, representing a subscription plan tied to a building
 #[account]
@@ -20,7 +20,7 @@ pub struct Plan {
     /// The plan provided data capacity in MB (megabytes)
     /// per `duration` days, 0 for unlimited
     pub capacity: u64,
-    /// The Service Level Agreement identifier
+    /// TODO >> The Service Level Agreement identifier
     pub sla_id: u64,
     /// Plan PDA bump seed
     pub bump: u8,
@@ -56,7 +56,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            building.address.as_bytes(),
+            &building.key().to_bytes()[..],
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
@@ -68,6 +68,44 @@ pub struct AddPlan<'info> {
     pub plan: Account<'info, Plan>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RemovePlan<'info> {
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = building.owner == caller.key(),
+        close = caller,
+        seeds = [
+            b"building",
+            &building.name.as_bytes()[..min(building.name.len(), MAX_SEED_LEN)],
+            &building.address.as_bytes()[..min(building.address.len(), MAX_SEED_LEN)],
+            &[building.floors],
+        ],
+        bump = building.bump
+    )]
+    pub building: Account<'info, Building>,
+
+    /// The plan account
+    #[account(
+        mut,
+        constraint = plan.owner == caller.key(),
+        close = caller,
+        seeds = [
+            b"plan",
+            &building.key().to_bytes()[..],
+            &plan.price.to_le_bytes(),
+            &plan.duration.to_le_bytes(),
+            &plan.speed.to_le_bytes(),
+            &plan.capacity.to_le_bytes(),
+            &plan.sla_id.to_le_bytes(),
+        ],
+        bump = plan.bump
+    )]
+    pub plan: Account<'info, Plan>,
 }
 
 impl PlanApp {
@@ -113,6 +151,15 @@ impl PlanApp {
             speed: plan.speed,
             capacity: plan.capacity,
             sla_id: plan.sla_id,
+        });
+
+        Ok(())
+    }
+
+    pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+        emit!(PlanRemoved {
+            plan: ctx.accounts.plan.key(),
+            building: ctx.accounts.building.key(),
         });
 
         Ok(())

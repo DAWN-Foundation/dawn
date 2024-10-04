@@ -52,4 +52,8 @@ pub mod plan {
     ) -> Result<()> {
         PlanApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
     }
+
+    pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+        PlanApp::remove_plan(ctx)
+    }
 }

@@ -24,9 +24,11 @@ describe('plan::initialize', () => {
     await setup(provider.connection, wallet)
   })
 
-  it('initializes the program', async () => {
+  it('mock setup', () => {
     assert.exists(mock)
+  })
 
+  it('initializes the program', async () => {
     const tx = await program.methods
       .initialize(
         mock.dawnFee,

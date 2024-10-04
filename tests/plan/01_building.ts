@@ -21,9 +21,11 @@ describe('plan::building', () => {
   const program = anchor.workspace.Plan as Program<Plan>
   const wallet = provider.wallet as NodeWallet
 
-  it('cannot add building with an empty name', async () => {
+  it('mock setup', () => {
     assert.exists(mock)
+  })
 
+  it('cannot add building with an empty name', async () => {
     const name = '  '
     const address = '123 Main St'
     const floors = 5
@@ -57,8 +59,6 @@ describe('plan::building', () => {
   })
 
   it('cannot add building with an empty address', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = '  '
     const floors = 5
@@ -92,8 +92,6 @@ describe('plan::building', () => {
   })
 
   it('cannot add building with name exceeding MAX_BUILDING_NAME_LENGTH', async () => {
-    assert.exists(mock)
-
     const name = 'a'.repeat(MAX_BUILDING_NAME_LENGTH + 1)
     const address = '123 Main St'
     const floors = 5
@@ -127,8 +125,6 @@ describe('plan::building', () => {
   })
 
   it('cannot add building with address exceeding MAX_BUILDING_ADDRESS_LENGTH', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = 'a'.repeat(MAX_BUILDING_ADDRESS_LENGTH + 1)
     const floors = 5
@@ -162,8 +158,6 @@ describe('plan::building', () => {
   })
 
   it('cannot add building with floors less than 1', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = '123 Main St'
     const floors = 0
@@ -197,8 +191,6 @@ describe('plan::building', () => {
   })
 
   it('cannot add building with floors more than 255', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = '123 Main St'
     const floors = 255 + 1
@@ -234,8 +226,6 @@ describe('plan::building', () => {
   })
 
   it('adds the building', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = '123 Main St'
     const floors = 5
@@ -275,8 +265,6 @@ describe('plan::building', () => {
 
   // given previous case created this building
   it('cannot add the building with the same name and address', async () => {
-    assert.exists(mock)
-
     const name = 'Building 1'
     const address = '123 Main St'
     const floors = 5

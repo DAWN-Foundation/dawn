@@ -18,3 +18,9 @@ pub struct PlanAdded {
     pub capacity: u64,
     pub sla_id: u64,
 }
+
+#[event]
+pub struct PlanRemoved {
+    pub plan: Pubkey,
+    pub building: Pubkey,
+}
