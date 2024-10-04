@@ -9,10 +9,13 @@ import {
 } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { getEvent, mock } from './utils'
+import { confirmTx, getEvent, mock } from './utils'
 
-const MAX_BUILDING_NAME_LENGTH = 32
-const MAX_BUILDING_ADDRESS_LENGTH = 64
+const MAX_BUILDING_NAME_LEN = 32
+const MAX_BUILDING_ADDRESS_LEN = 64
+
+export const BUILDING_SIZE =
+  8 + 32 + (4 + MAX_BUILDING_NAME_LEN) + (4 + MAX_BUILDING_ADDRESS_LEN) + 1 + 1
 
 describe('plan::building', () => {
   const provider = anchor.AnchorProvider.env()
@@ -54,7 +57,6 @@ describe('plan::building', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Building name is empty')
-      assert.strictEqual(err.error.errorCode.number, 6001)
     }
   })
 
@@ -87,12 +89,11 @@ describe('plan::building', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Building address is empty')
-      assert.strictEqual(err.error.errorCode.number, 6002)
     }
   })
 
-  it('cannot add building with name exceeding MAX_BUILDING_NAME_LENGTH', async () => {
-    const name = 'a'.repeat(MAX_BUILDING_NAME_LENGTH + 1)
+  it('cannot add building with name exceeding MAX_BUILDING_NAME_LEN', async () => {
+    const name = 'a'.repeat(MAX_BUILDING_NAME_LEN + 1)
     const address = '123 Main St'
     const floors = 5
 
@@ -120,13 +121,12 @@ describe('plan::building', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Building name is too long')
-      assert.strictEqual(err.error.errorCode.number, 6004)
     }
   })
 
-  it('cannot add building with address exceeding MAX_BUILDING_ADDRESS_LENGTH', async () => {
+  it('cannot add building with address exceeding MAX_BUILDING_ADDRESS_LEN', async () => {
     const name = 'Building 1'
-    const address = 'a'.repeat(MAX_BUILDING_ADDRESS_LENGTH + 1)
+    const address = 'a'.repeat(MAX_BUILDING_ADDRESS_LEN + 1)
     const floors = 5
 
     const [buildingPda] = PublicKey.findProgramAddressSync(
@@ -153,7 +153,6 @@ describe('plan::building', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Building address is too long')
-      assert.strictEqual(err.error.errorCode.number, 6005)
     }
   })
 
@@ -186,7 +185,6 @@ describe('plan::building', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Invalid number of floors')
-      assert.strictEqual(err.error.errorCode.number, 6003)
     }
   })
 

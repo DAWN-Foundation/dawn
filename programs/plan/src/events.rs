@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[event]
 pub struct BuildingAdded {
+    pub building: Pubkey,
     pub owner: Pubkey,
     pub name: String,
     pub address: String,
@@ -10,6 +11,7 @@ pub struct BuildingAdded {
 
 #[event]
 pub struct PlanAdded {
+    pub plan: Pubkey,
     pub owner: Pubkey,
     pub building: Pubkey,
     pub price: u64,
@@ -23,4 +25,12 @@ pub struct PlanAdded {
 pub struct PlanRemoved {
     pub plan: Pubkey,
     pub building: Pubkey,
+}
+
+#[event]
+pub struct Subscribed {
+    pub subscription: Pubkey,
+    pub subscriber: Pubkey,
+    pub plan: Pubkey,
+    pub expiration: i64,
 }

@@ -21,6 +21,13 @@ pub struct Building {
     pub bump: u8,
 }
 
+pub const BUILDING_SIZE: usize = 8 // id
+    + 32 // owner
+    + (4 + MAX_BUILDING_NAME_LEN) // name
+    + (4 + MAX_BUILDING_ADDRESS_LEN) // address
+    + 1 // floors
+    + 1; // bump
+
 #[derive(Accounts)]
 #[instruction(name: String, address: String, floors: u8)]
 pub struct AddBuilding<'info> {
@@ -31,7 +38,7 @@ pub struct AddBuilding<'info> {
     #[account(
         init,
         payer = caller,
-        space = 8 + 32 + (4 + MAX_BUILDING_NAME_LEN) + (4 + MAX_BUILDING_ADDRESS_LEN) + 1 + 1, // 32 for owner, 1 for floors, 1 for bump
+        space = BUILDING_SIZE,
         seeds = [
             b"building",
             &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
@@ -83,6 +90,7 @@ impl PlanApp {
         building.bump = ctx.bumps.building;
 
         emit!(BuildingAdded {
+            building: building.key(),
             owner: building.owner,
             name: building.name.clone(),
             address: building.address.clone(),

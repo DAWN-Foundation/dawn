@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
+import { BN, Program } from '@coral-xyz/anchor'
 import {
   Keypair,
   ParsedTransactionWithMeta,
@@ -19,7 +19,7 @@ import { Plan } from '../../target/types/plan'
 export let mock: Mock
 
 // Helper to confirm a transaction
-async function confirmTx(
+export async function confirmTx(
   connection: anchor.web3.Connection,
   tx: string,
 ): Promise<VersionedTransactionResponse> {
@@ -78,10 +78,14 @@ export interface Mock {
   andrena: Keypair
   buildingOwner: Keypair
   tester: Keypair
+  // mints
   usdcMint: PublicKey
   dawnMint: PublicKey
+  // token accounts
   andrenaUsdcAccount: PublicKey
   andrenaDawnAccount: PublicKey
+  dawnUsdcAccount: PublicKey
+  boUsdcAccount: PublicKey
   testerUsdcAccount: PublicKey
   // config
   dawnFee: BN
@@ -100,6 +104,13 @@ export async function setup(
   // Create Andrena KeyPair
   const andrena = Keypair.generate()
   await fund(connection, andrena.publicKey, 1000)
+
+  // Create DAWN Foundation KeyPair
+  const dawn = Keypair.generate()
+  await fund(connection, dawn.publicKey, 1000)
+
+  console.log('Andrena:', andrena.publicKey.toBase58())
+  console.log('DAWN:', dawn.publicKey.toBase58())
 
   // Create Building Owner KeyPair
   const buildingOwner = Keypair.generate()
@@ -127,18 +138,34 @@ export async function setup(
   )
 
   // Create USDC account for Andrena
-  const andrenaUsdcAccount = await createAccount(
-    connection,
-    andrena,
-    usdcMint,
-    TOKEN_PROGRAM_ID,
-  )
+  const { address: andrenaUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      andrena,
+      usdcMint,
+      andrena.publicKey,
+    )
   // Create DAWN account for Andrena
-  const andrenaDawnAccount = await createAccount(
+  const { address: andrenaDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      andrena,
+      dawnMint,
+      andrena.publicKey,
+    )
+  // Create USDC account for DAWN Foundation
+  const { address: dawnUsdcAccount } = await getOrCreateAssociatedTokenAccount(
     connection,
-    andrena,
-    dawnMint,
-    TOKEN_PROGRAM_ID,
+    dawn,
+    usdcMint,
+    dawn.publicKey,
+  )
+  // Create USDC account for Tester
+  const { address: boUsdcAccount } = await getOrCreateAssociatedTokenAccount(
+    connection,
+    buildingOwner,
+    usdcMint,
+    buildingOwner.publicKey,
   )
   // Create USDC account for Tester
   const { address: testerUsdcAccount } =
@@ -146,18 +173,8 @@ export async function setup(
       connection,
       tester,
       usdcMint,
-      TOKEN_PROGRAM_ID,
+      tester.publicKey,
     )
-
-  // Mint 1'000 USDC to Tester account
-  await mintTo(
-    connection,
-    tester, // Payer for tx
-    usdcMint, // Mint account
-    testerUsdcAccount, // Destination
-    wallet.payer, // Authority
-    1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
-  )
 
   const dawnFee = new BN(200) // 2% fee (dawn_fee)
   const andrenaFee = new BN(500) // 5% fee (andrena_fee)
@@ -173,6 +190,8 @@ export async function setup(
     dawnMint,
     andrenaUsdcAccount,
     andrenaDawnAccount,
+    dawnUsdcAccount,
+    boUsdcAccount,
     testerUsdcAccount,
     // config
     dawnFee,
@@ -181,4 +200,68 @@ export async function setup(
     boDawnRatio,
     boEscrowRatio,
   }
+}
+
+// Helper function to get the PDA for a plan given plan parameters
+export function getPlanPda(
+  program: Program<Plan>,
+  building: PublicKey,
+  price: BN,
+  duration: number,
+  speed: number,
+  capacity: BN,
+  slaId: BN,
+): [PublicKey, number] {
+  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
+  durationBuffer.writeUInt16LE(duration)
+
+  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
+  speedBuffer.writeUInt32LE(speed)
+
+  const [planPda, planBump] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('plan'),
+      Buffer.from(building.toBytes()),
+      Buffer.from(price.toArray('le', 8)),
+      durationBuffer,
+      speedBuffer,
+      Buffer.from(capacity.toArray('le', 8)),
+      Buffer.from(slaId.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
+  return [planPda, planBump]
+}
+
+export async function getPlansForBuilding(
+  program: Program<Plan>, // Anchor program
+  building: PublicKey, // Public key of the building
+): Promise<any[]> {
+  // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
+  const BUILDING_OFFSET = 8 + 32
+
+  // Fetch all plan accounts and filter by building key
+  const plans = await program.provider.connection.getProgramAccounts(
+    program.programId,
+    {
+      // Filtering accounts by the `building` public key stored in the Plan account
+      filters: [
+        {
+          memcmp: {
+            offset: BUILDING_OFFSET, // Offset where the building public key is stored
+            bytes: building.toBase58(), // The building public key to filter by
+          },
+        },
+      ],
+    },
+  )
+
+  // Decode and return the accounts
+  return plans.map((accountInfo) => {
+    return program.account.plan.coder.accounts.decode(
+      'plan',
+      accountInfo.account.data,
+    )
+  })
 }

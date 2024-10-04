@@ -35,7 +35,23 @@ pub struct Config {
     pub andrena_usdc_account: Pubkey,
     /// The Andrena DAWN token account
     pub andrena_dawn_account: Pubkey,
+    /// The DAWN Foundation USDC token account
+    pub dawn_usdc_account: Pubkey,
 }
+
+pub const CONFIG_SIZE: usize = 8 // id
+    + 32 // authority 
+    + 8 // dawn_fee
+    + 8 // andrena_fee
+    + 8 // andrena_dawn_ratio
+    + 8 // bo_dawn_ratio
+    + 8 // bo_escrow_ratio
+    + 32 // usdc_mint
+    + 32 // dawn_mint
+    + 32 // andrena_usdc_account
+    + 32 // andrena_dawn_account
+    + 32 // dawn_usdc_account
+    + 1; // bump
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -46,25 +62,28 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = caller,
-        space = 8 + (8 * 5) + (32 * 5) + 1,
+        space = CONFIG_SIZE,
         seeds = [b"config"],
         bump
     )]
     pub config: Account<'info, Config>,
 
     /// The USDC mint account
-    #[account(mut)]
+    #[account()]
     pub usdc_mint: Account<'info, Mint>,
     /// The DAWN mint account
-    #[account(mut)]
+    #[account()]
     pub dawn_mint: Account<'info, Mint>,
 
     /// The Andrena USDC token account
-    #[account(mut)]
+    #[account()]
     pub andrena_usdc_account: Account<'info, TokenAccount>,
     /// The Andrena DAWN token account
-    #[account(mut)]
+    #[account()]
     pub andrena_dawn_account: Account<'info, TokenAccount>,
+    /// The DAWN Foundation USDC token account
+    #[account()]
+    pub dawn_usdc_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -109,6 +128,7 @@ impl PlanApp {
         // token accounts
         config.andrena_usdc_account = ctx.accounts.andrena_usdc_account.key();
         config.andrena_dawn_account = ctx.accounts.andrena_dawn_account.key();
+        config.dawn_usdc_account = ctx.accounts.dawn_usdc_account.key();
 
         Ok(())
     }

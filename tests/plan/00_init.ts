@@ -43,12 +43,15 @@ describe('plan::initialize', () => {
         dawnMint: mock.dawnMint,
         andrenaUsdcAccount: mock.andrenaUsdcAccount,
         andrenaDawnAccount: mock.andrenaDawnAccount,
+        dawnUsdcAccount: mock.dawnUsdcAccount,
       })
       .rpc()
 
     assert.ok(tx.length > 0)
 
     const config = await program.account.config.fetch(configPda)
+
+    // console.log(config)
 
     // authority
     assert.ok(config.authority.equals(wallet.payer.publicKey))
@@ -65,6 +68,7 @@ describe('plan::initialize', () => {
     assert.ok(config.dawnMint.equals(mock.dawnMint))
     assert.ok(config.andrenaUsdcAccount.equals(mock.andrenaUsdcAccount))
     assert.ok(config.andrenaDawnAccount.equals(mock.andrenaDawnAccount))
+    assert.ok(config.dawnUsdcAccount.equals(mock.dawnUsdcAccount))
   })
 
   it('cannot be reinitialized', async () => {
@@ -83,6 +87,7 @@ describe('plan::initialize', () => {
           dawnMint: mock.dawnMint,
           andrenaUsdcAccount: mock.andrenaUsdcAccount,
           andrenaDawnAccount: mock.andrenaDawnAccount,
+          dawnUsdcAccount: mock.dawnUsdcAccount,
         })
         .rpc()
       assert.ok(false)

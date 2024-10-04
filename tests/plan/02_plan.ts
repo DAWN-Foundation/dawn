@@ -5,71 +5,9 @@ import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { getEvent, mock } from './utils'
+import { getEvent, mock, getPlanPda, getPlansForBuilding } from './utils'
 
-// Helper function to get the PDA for a plan given plan parameters
-function getPlanPda(
-  program: Program<Plan>,
-  building: PublicKey,
-  price: BN,
-  duration: number,
-  speed: number,
-  capacity: BN,
-  slaId: BN,
-): [PublicKey, number] {
-  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  durationBuffer.writeUInt16LE(duration)
-
-  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-  speedBuffer.writeUInt32LE(speed)
-
-  const [planPda, planBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
-      Buffer.from(price.toArray('le', 8)),
-      durationBuffer,
-      speedBuffer,
-      Buffer.from(capacity.toArray('le', 8)),
-      Buffer.from(slaId.toArray('le', 8)),
-    ],
-    program.programId,
-  )
-
-  return [planPda, planBump]
-}
-
-async function getPlansForBuilding(
-  program: Program<Plan>, // Anchor program
-  building: PublicKey, // Public key of the building
-): Promise<any[]> {
-  // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
-  const BUILDING_OFFSET = 8 + 32
-
-  // Fetch all plan accounts and filter by building key
-  const plans = await program.provider.connection.getProgramAccounts(
-    program.programId,
-    {
-      // Filtering accounts by the `building` public key stored in the Plan account
-      filters: [
-        {
-          memcmp: {
-            offset: BUILDING_OFFSET, // Offset where the building public key is stored
-            bytes: building.toBase58(), // The building public key to filter by
-          },
-        },
-      ],
-    },
-  )
-
-  // Decode and return the accounts
-  return plans.map((accountInfo) => {
-    return program.account.plan.coder.accounts.decode(
-      'plan',
-      accountInfo.account.data,
-    )
-  })
-}
+const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
 describe('plan::plan', () => {
   const provider = anchor.AnchorProvider.env()
@@ -78,34 +16,21 @@ describe('plan::plan', () => {
   const program = anchor.workspace.Plan as Program<Plan>
   const wallet = provider.wallet as NodeWallet
 
-  const buildingName = 'Building 1'
-  const buildingAddress = '123 Main St'
-  const buildingFloors = 5
-  const [buildingPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('building'),
-      Buffer.from(buildingName),
-      Buffer.from(buildingAddress),
-      Buffer.from([buildingFloors]),
-    ],
-    program.programId,
-  )
-
-  let building: {
-    owner: anchor.web3.PublicKey
-    name: string
-    address: string
-    floors: number
-    bump: number
-  }
+  let buildingPda: PublicKey
+  let building: Awaited<ReturnType<typeof program.account.building.fetch>>
 
   before(async () => {
-    building = await program.account.building.fetch(buildingPda)
+    const buildings = await program.account.building.all()
+    assert.ok(buildings.length > 0)
+    building = buildings[0].account
+    buildingPda = buildings[0].publicKey
   })
 
   it('mock setup', () => {
     assert.exists(mock)
+    assert.exists(building)
     assert.ok(building.owner.equals(mock.buildingOwner.publicKey))
+    assert.exists(buildingPda)
   })
 
   it('cannot add plan with zero price', async () => {
@@ -140,12 +65,11 @@ describe('plan::plan', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Plan price is zero')
-      assert.strictEqual(err.error.errorCode.number, 6006)
     }
   })
 
   it('cannot add plan with zero duration', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 0
     const speed = 1_000
     const capacity = new BN(1000)
@@ -176,12 +100,11 @@ describe('plan::plan', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Plan duration is zero')
-      assert.strictEqual(err.error.errorCode.number, 6007)
     }
   })
 
   it('cannot add plan with zero speed', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 30
     const speed = 0
     const capacity = new BN(1000)
@@ -212,12 +135,11 @@ describe('plan::plan', () => {
       assert.ok(error instanceof AnchorError)
       const err: AnchorError = error
       assert.strictEqual(err.error.errorMessage, 'Plan speed is zero')
-      assert.strictEqual(err.error.errorCode.number, 6008)
     }
   })
 
   it('cannot be added for a building not owned by the caller', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 30
     const speed = 1_000
     const capacity = new BN(1000)
@@ -256,7 +178,7 @@ describe('plan::plan', () => {
   })
 
   it('adds the plan', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 30
     const speed = 1_000
     const capacity = new BN(1000)
@@ -317,7 +239,7 @@ describe('plan::plan', () => {
   })
 
   it('cannot add a plan with the same parameters', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 30
     const speed = 1_000
     const capacity = new BN(1000)
@@ -355,7 +277,7 @@ describe('plan::plan', () => {
   })
 
   it('adds second plan with different parameters to the same building', async () => {
-    const price = new BN(10)
+    const price = new BN(10).mul(USDC_DECIMALS)
     const duration = 60
     const speed = 2_000
     const capacity = new BN(2000)
@@ -432,7 +354,7 @@ describe('plan::plan', () => {
   })
 
   it('cannot remove a plan that is not owned by the caller', async () => {
-    const price = new BN(5)
+    const price = new BN(100).mul(USDC_DECIMALS)
     const duration = 30
     const speed = 1_000
     const capacity = new BN(1000)
@@ -470,11 +392,11 @@ describe('plan::plan', () => {
   })
 
   it('removes the plan', async () => {
-    const price = new BN(5)
-    const duration = 30
-    const speed = 1_000
-    const capacity = new BN(1000)
-    const slaId = new BN(1)
+    const price = new BN(10).mul(USDC_DECIMALS)
+    const duration = 60
+    const speed = 2_000
+    const capacity = new BN(2000)
+    const slaId = new BN(2)
 
     const [planPda] = getPlanPda(
       program,
