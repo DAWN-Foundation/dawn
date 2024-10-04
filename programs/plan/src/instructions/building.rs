@@ -90,6 +90,7 @@ impl PlanApp {
         building.bump = ctx.bumps.building;
 
         emit!(BuildingAdded {
+            building: building.key(),
             owner: building.owner,
             name: building.name.clone(),
             address: building.address.clone(),

@@ -31,4 +31,10 @@ pub enum PlanError {
 
     #[msg("Plan speed is zero")]
     ZeroPlanSpeed,
+
+    #[msg("Plan is expired")]
+    PlanExpired,
+
+    #[msg("Insufficient funds")]
+    InsufficientFunds,
 }

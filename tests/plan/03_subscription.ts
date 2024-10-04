@@ -5,9 +5,11 @@ import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { getEvent, mock } from './utils'
+import { confirmTx, getEvent, mock } from './utils'
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
 import { BUILDING_SIZE } from './01_building'
+
+const SECONDS_PER_DAY = 86400
 
 // Helper function to get the PDA for a plan given plan parameters
 function getPlanPda(
@@ -85,6 +87,7 @@ describe('plan::subscription', () => {
     program.programId,
   )
 
+  let buildingPda: PublicKey
   let planPda: PublicKey
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
 
@@ -93,6 +96,10 @@ describe('plan::subscription', () => {
     assert.ok(plans.length > 0)
     plan = plans[0].account
     planPda = plans[0].publicKey
+
+    const buildings = await program.account.building.all()
+    assert.ok(buildings.length > 0)
+    buildingPda = buildings[0].publicKey
   })
 
   it('mock setup', () => {
@@ -100,15 +107,63 @@ describe('plan::subscription', () => {
     assert.exists(plan)
     assert.ok(plan.owner.equals(mock.buildingOwner.publicKey))
     assert.exists(planPda)
+    assert.exists(buildingPda)
+  })
+
+  it('cannot subscribe to a plan that doesnt exist', async () => {
+    const [planPda] = getPlanPda(
+      program,
+      buildingPda,
+      new BN(1000),
+      30,
+      100,
+      new BN(1000),
+      new BN(1),
+    )
+
+    try {
+      await program.methods
+        .subscribe()
+        .accounts({
+          caller: mock.tester.publicKey,
+          config: configPda,
+          plan: planPda,
+          andrenaUsdcAccount: mock.andrenaUsdcAccount,
+          dawnUsdcAccount: mock.dawnUsdcAccount,
+          userUsdcAccount: mock.testerUsdcAccount,
+          boUsdcAccount: mock.boUsdcAccount,
+        })
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof AnchorError)
+      const err: AnchorError = error
+      assert.strictEqual(
+        err.error.errorMessage,
+        'The program expected this account to be already initialized',
+      )
+    }
   })
 
   it('subscribes to the plan', async () => {
+    const [subscriptionPda, subscriptionBump] =
+      PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('subscription'),
+          Buffer.from(planPda.toBytes()),
+          Buffer.from(mock.tester.publicKey.toBytes()),
+        ],
+        program.programId,
+      )
+
     const tx = await program.methods
       .subscribe()
       .accounts({
         caller: mock.tester.publicKey,
         config: configPda,
         plan: planPda,
+        subscription: subscriptionPda,
         andrenaUsdcAccount: mock.andrenaUsdcAccount,
         dawnUsdcAccount: mock.dawnUsdcAccount,
         userUsdcAccount: mock.testerUsdcAccount,
@@ -118,5 +173,27 @@ describe('plan::subscription', () => {
       .rpc()
 
     assert.ok(tx.length > 0)
+    await confirmTx(provider.connection, tx)
+
+
+    // get block time, and calculate expected expiration
+    let txDetails = await provider.connection.getParsedTransaction(
+      tx,
+      'confirmed',
+    )
+    let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
+
+    let subscription = await program.account.subscription.fetch(subscriptionPda)
+    assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
+    assert.ok(subscription.plan.equals(planPda))
+    assert.equal(subscription.expiration.toNumber(), expiration)
+    assert.equal(subscription.bump, subscriptionBump)
+
+    // make sure event was emitted
+    const event = await getEvent(program, tx, 'subscribed')
+    assert.ok(event.subscription.equals(subscriptionPda))
+    assert.ok(event.subscriber.equals(mock.tester.publicKey))
+    assert.ok(event.plan.equals(planPda))
+    assert.ok(event.expiration > 0)
   })
 })

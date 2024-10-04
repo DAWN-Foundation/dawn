@@ -144,6 +144,7 @@ impl PlanApp {
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
+            plan: plan.key(),
             owner: plan.owner,
             building: plan.building,
             price: plan.price,

@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, Token, TokenAccount},
@@ -14,8 +14,8 @@ pub struct Subscription {
     pub subscriber: Pubkey,
     /// Associated plan (the subscription plan)
     pub plan: Pubkey,
-    /// Subscription expiration date (UNIX timestamp OR block height)
-    pub expiration: u64,
+    /// Subscription expiration time (UNIX timestamp in seconds)
+    pub expiration: i64,
     /// Subscription PDA bump seed
     pub bump: u8,
 }
@@ -59,7 +59,7 @@ pub struct Subscribe<'info> {
         payer = caller,
         space = SUBSCRIPTION_SIZE,
         seeds = [
-            b"suscription",
+            b"subscription",
             plan.key().as_ref(),
             caller.key().as_ref(),
         ],
@@ -120,7 +120,11 @@ impl PlanApp {
         let plan = &ctx.accounts.plan;
         let subscription = &mut ctx.accounts.subscription;
 
-        msg!("Subscribing to plan price: {:?}", plan.price);
+        // Make sure the user has enough USDC to pay for the plan
+        require!(
+            ctx.accounts.user_usdc_account.amount >= plan.price,
+            PlanError::InsufficientFunds
+        );
 
         // Calculate fees and remainder of plan price for building owner
         let (andrena_fee, dawn_fee, remainder) =
@@ -159,14 +163,31 @@ impl PlanApp {
         );
         token::transfer(bo_fee_cpi_ctx, remainder)?;
 
+        // Get the current timestamp from the clock
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
+
+        // Calculate plan duration in seconds (days to seconds)
+        let duration_in_seconds = (plan.duration as u64)
+            .checked_mul(SECONDS_PER_DAY)
+            .ok_or(PlanError::Overflow)?;
+
+        // calculate subscription expiration by adding plan `duration` days to current timestamp
+        let expiration = current_timestamp
+            .checked_add(duration_in_seconds as i64)
+            .ok_or(PlanError::Overflow)?;
+
         // Save subscription data
         subscription.subscriber = ctx.accounts.caller.key();
         subscription.plan = ctx.accounts.plan.key();
-        subscription.expiration = 0; // TODO: set expiration from plan duration
+        subscription.expiration = expiration;
         subscription.bump = ctx.bumps.subscription;
 
         emit!(Subscribed {
+            subscription: subscription.key(),
             subscriber: ctx.accounts.caller.key(),
+            plan: ctx.accounts.plan.key(),
+            expiration: subscription.expiration,
         });
 
         Ok(())
