@@ -157,6 +157,8 @@ impl PlanApp {
     }
 
     pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+        // TODO >> Make sure plan doesnt have any active subscriptions
+
         emit!(PlanRemoved {
             plan: ctx.accounts.plan.key(),
             building: ctx.accounts.building.key(),

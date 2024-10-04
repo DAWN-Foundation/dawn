@@ -454,18 +454,17 @@ describe('plan::plan', () => {
       .rpc()
     assert.ok(tx.length > 0)
 
-    // try {
-    //   await program.account.plan.fetch(planPda)
-    //   assert.ok(false)
-    // } catch (error) {
-    //   assert.ok(error instanceof AnchorError)
-    //   const err: AnchorError = error
-    //   assert.strictEqual(
-    //     err.error.errorMessage,
-    //     'The program expected this account to be already initialized',
-    //   )
-    //   assert.strictEqual(err.error.errorCode.number, 3012)
-    // }
+    try {
+      await program.account.plan.fetch(planPda)
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof Error)
+      const err: Error = error
+      assert.strictEqual(
+        err.message,
+        'Account does not exist or has no data ' + planPda.toString(),
+      )
+    }
 
     // make sure event was emitted
     const event = await getEvent(program, tx, 'planRemoved')
