@@ -16,13 +16,13 @@ pub struct Config {
     /// The fee charged by Andrena (5%)
     pub andrena_fee: u64,
 
-    // SPLITS
+    // RATIOS
     /// Andrena Commission in DAWN (90%)
-    pub andrena_dawn_split: u64,
+    pub andrena_dawn_ratio: u64,
     /// Building Owner Commission in DAWN (80%)
-    pub bo_dawn_split: u64,
-    /// Building Owner Escrow split (20%)
-    pub bo_escrow_split: u64,
+    pub bo_dawn_ratio: u64,
+    /// Building Owner Escrow ratio (20%)
+    pub bo_escrow_ratio: u64,
 
     // MINTS
     /// The USDC mint account
@@ -42,7 +42,7 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The config with fees and splits applied to the plan payments
+    /// The config with fees and ratios applied to the plan payments
     #[account(
         init,
         payer = caller,
@@ -76,9 +76,9 @@ impl PlanApp {
         ctx: Context<Initialize>,
         dawn_fee: u64,
         andrena_fee: u64,
-        andrena_dawn_split: u64,
-        bo_dawn_split: u64,
-        bo_escrow_split: u64,
+        andrena_dawn_ratio: u64,
+        bo_dawn_ratio: u64,
+        bo_escrow_ratio: u64,
     ) -> Result<()> {
         msg!(
             "Initializing the PlanApp program by {}",
@@ -97,10 +97,10 @@ impl PlanApp {
         config.dawn_fee = dawn_fee;
         config.andrena_fee = andrena_fee;
 
-        // splits
-        config.andrena_dawn_split = andrena_dawn_split;
-        config.bo_dawn_split = bo_dawn_split;
-        config.bo_escrow_split = bo_escrow_split;
+        // ratios
+        config.andrena_dawn_ratio = andrena_dawn_ratio;
+        config.bo_dawn_ratio = bo_dawn_ratio;
+        config.bo_escrow_ratio = bo_escrow_ratio;
 
         // mints
         config.usdc_mint = ctx.accounts.usdc_mint.key();

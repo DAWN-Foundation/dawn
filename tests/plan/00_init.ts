@@ -1,11 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN } from '@coral-xyz/anchor'
+import { Program } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { setup, Mock } from './utils'
+import { setup, mock } from './utils'
 
 describe('plan::initialize', () => {
   const provider = anchor.AnchorProvider.env()
@@ -20,10 +20,12 @@ describe('plan::initialize', () => {
     program.programId,
   )
 
-  let mock: Mock
-
   before(async () => {
-    mock = await setup(provider.connection, wallet)
+    await setup(provider.connection, wallet)
+  })
+
+  it('mock setup', () => {
+    assert.exists(mock)
   })
 
   it('initializes the program', async () => {
@@ -31,9 +33,9 @@ describe('plan::initialize', () => {
       .initialize(
         mock.dawnFee,
         mock.andrenaFee,
-        mock.andrenaDawnSplit,
-        mock.boDawnSplit,
-        mock.boEscrowSplit,
+        mock.andrenaDawnRatio,
+        mock.boDawnRatio,
+        mock.boEscrowRatio,
       )
       .accounts({
         caller: wallet.payer.publicKey,
@@ -54,10 +56,10 @@ describe('plan::initialize', () => {
     // fees
     assert.ok(config.dawnFee.eq(mock.dawnFee))
     assert.ok(config.andrenaFee.eq(mock.andrenaFee))
-    // splits
-    assert.ok(config.andrenaDawnSplit.eq(mock.andrenaDawnSplit))
-    assert.ok(config.boDawnSplit.eq(mock.boDawnSplit))
-    assert.ok(config.boEscrowSplit.eq(mock.boEscrowSplit))
+    // ratio
+    assert.ok(config.andrenaDawnRatio.eq(mock.andrenaDawnRatio))
+    assert.ok(config.boDawnRatio.eq(mock.boDawnRatio))
+    assert.ok(config.boEscrowRatio.eq(mock.boEscrowRatio))
     // accounts
     assert.ok(config.usdcMint.equals(mock.usdcMint))
     assert.ok(config.dawnMint.equals(mock.dawnMint))
@@ -71,9 +73,9 @@ describe('plan::initialize', () => {
         .initialize(
           mock.dawnFee,
           mock.andrenaFee,
-          mock.andrenaDawnSplit,
-          mock.boDawnSplit,
-          mock.boEscrowSplit,
+          mock.andrenaDawnRatio,
+          mock.boDawnRatio,
+          mock.boEscrowRatio,
         )
         .accounts({
           caller: wallet.payer.publicKey,

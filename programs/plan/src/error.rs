@@ -19,4 +19,13 @@ pub enum PlanError {
 
     #[msg("Building address is too long")]
     BuildingAddressTooLong,
+
+    #[msg("Plan price is zero")]
+    ZeroPlanPrice,
+
+    #[msg("Plan duration is zero")]
+    ZeroPlanDuration,
+
+    #[msg("Plan speed is zero")]
+    ZeroPlanSpeed,
 }

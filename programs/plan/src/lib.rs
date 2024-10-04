@@ -7,9 +7,9 @@ mod error;
 mod events;
 mod instructions;
 
-use instructions::*;
 use error::*;
 use events::*;
+use instructions::*;
 
 #[program]
 pub mod plan {
@@ -19,17 +19,17 @@ pub mod plan {
         ctx: Context<Initialize>,
         dawn_fee: u64,
         andrena_fee: u64,
-        andrena_dawn_split: u64,
-        bo_dawn_split: u64,
-        bo_escrow_split: u64,
+        andrena_dawn_ratio: u64,
+        bo_dawn_ratio: u64,
+        bo_escrow_ratio: u64,
     ) -> Result<()> {
         PlanApp::initialize(
             ctx,
             dawn_fee,
             andrena_fee,
-            andrena_dawn_split,
-            bo_dawn_split,
-            bo_escrow_split,
+            andrena_dawn_ratio,
+            bo_dawn_ratio,
+            bo_escrow_ratio,
         )
     }
 
@@ -41,5 +41,19 @@ pub mod plan {
     ) -> Result<()> {
         PlanApp::add_building(ctx, name, address, floors)
     }
-}
 
+    pub fn add_plan(
+        ctx: Context<AddPlan>,
+        price: u64,
+        duration: u16,
+        speed: u32,
+        capacity: u64,
+        sla_id: u64,
+    ) -> Result<()> {
+        PlanApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
+    }
+
+    pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+        PlanApp::remove_plan(ctx)
+    }
+}

@@ -1,7 +1,9 @@
-mod init;
 mod building;
+mod init;
+mod plan;
 
-pub use init::*;
 pub use building::*;
+pub use init::*;
+pub use plan::*;
 
 pub struct PlanApp;
