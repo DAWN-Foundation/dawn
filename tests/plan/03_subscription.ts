@@ -8,8 +8,10 @@ import { Plan } from '../../target/types/plan'
 import { confirmTx, getEvent, mock } from './utils'
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
 import { BUILDING_SIZE } from './01_building'
+import { getAccount } from '@solana/spl-token'
 
-const SECONDS_PER_DAY = 86400
+const SECONDS_PER_DAY = 86_400
+const BPS_DENOMINATOR = new BN(10_000)
 
 // Helper function to get the PDA for a plan given plan parameters
 function getPlanPda(
@@ -147,6 +149,27 @@ describe('plan::subscription', () => {
   })
 
   it('subscribes to the plan', async () => {
+    const testerUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.testerUsdcAccount)
+      ).amount.toString(),
+    )
+    const andrenaUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.andrenaUsdcAccount)
+      ).amount.toString(),
+    )
+    const dawnUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.dawnUsdcAccount)
+      ).amount.toString(),
+    )
+    const boUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.boUsdcAccount)
+      ).amount.toString(),
+    )
+
     const [subscriptionPda, subscriptionBump] =
       PublicKey.findProgramAddressSync(
         [
@@ -175,7 +198,6 @@ describe('plan::subscription', () => {
     assert.ok(tx.length > 0)
     await confirmTx(provider.connection, tx)
 
-
     // get block time, and calculate expected expiration
     let txDetails = await provider.connection.getParsedTransaction(
       tx,
@@ -195,5 +217,33 @@ describe('plan::subscription', () => {
     assert.ok(event.subscriber.equals(mock.tester.publicKey))
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
+
+    // make sure the user USDC account was debited
+    const userUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.testerUsdcAccount)
+      ).amount.toString(),
+    )
+    assert.ok(userUsdcBalanceAfter.eq(testerUsdcBalanceBefore.sub(plan.price)))
+
+    // make sure the Andrena USDC account was credited
+    const andrenaUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.andrenaUsdcAccount)
+      ).amount.toString(),
+    )
+    const andrenaFee = mock.andrenaFee.mul(plan.price).div(BPS_DENOMINATOR)
+    assert.ok(
+      andrenaUsdcBalanceAfter.eq(andrenaUsdcBalanceBefore.add(andrenaFee)),
+    )
+
+    // make sure the Dawn USDC account was credited
+    const dawnUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.dawnUsdcAccount)
+      ).amount.toString(),
+    )
+    const dawnFee = mock.dawnFee.mul(plan.price).div(BPS_DENOMINATOR)
+    assert.ok(dawnUsdcBalanceAfter.eq(dawnUsdcBalanceBefore.add(dawnFee)))
   })
 })
