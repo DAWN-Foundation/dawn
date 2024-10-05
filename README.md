@@ -93,11 +93,28 @@ anchor build
 anchor test
 ```
 
+### Run local validator
+
+```bash
+# First run
+solana-test-validator
+
+# Subsequent runs
+solana-test-validator --reset
+
+# Airdrop 5 SOL to specified address
+solana airdrop --url l 5 <address>
+```
+
 ### Deploy
 
 ```bash
 # Deploy the program locally
 anchor deploy --provider.cluster l
+
+# Copy the IDL of the deployed program to the clipboard
+# where `~/andrena/dawn` points to the project directory
+pbcopy < ~/andrena/dawn/target/idl/plan.json
 ```
 
 ### Environment Setup
