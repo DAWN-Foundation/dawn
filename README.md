@@ -117,12 +117,9 @@ anchor deploy --provider.cluster l
 pbcopy < ~/andrena/dawn/target/idl/plan.json
 ```
 
-### Environment Setup
+### Testnet Setup
 
 ```bash
-# Make the setup script executable
-chmod +x ./scripts/setup.sh
-
-# Run the setup script
-./scripts/setup.sh
+# Run the testnet script
+yarn testnet
 ```
