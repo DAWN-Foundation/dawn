@@ -11,7 +11,9 @@
     "plan:init": "yarn build && node dist/app/plan/init.js",
     "plan:get_config": "yarn build && node dist/app/plan/get_config.js",
     "plan:add_building": "yarn build && node dist/app/plan/add_building.js",
-    "plan:get_buildings": "yarn build && node dist/app/plan/get_buildings.js"
+    "plan:get_buildings": "yarn build && node dist/app/plan/get_buildings.js",
+    "plan:add_plan": "yarn build && node dist/app/plan/add_plan.js",
+    "plan:get_plans": "yarn build && node dist/app/plan/get_plans.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",

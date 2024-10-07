@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { getFlag, getIDL, getWallet, submitTx } from './utils'
+import { connect, getFlag, getIDL, getWallet, submitTx } from './utils'
 
 // CONSTANTS
 const NAME = 'Building 1'
@@ -14,15 +14,7 @@ async function main() {
   const address = getFlag('--address') || ADDRESS
   const floors = parseInt(getFlag('--floors')) || FLOORS
 
-  const wallet = getWallet()
-  console.log({ signer: wallet.payer.publicKey.toBase58() })
-
-  const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet)
-  anchor.setProvider(provider)
-  const idl = getIDL()
-  const program = new anchor.Program<Plan>(idl as Plan, provider)
-
+  const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const [buildingPda] = PublicKey.findProgramAddressSync(
@@ -41,12 +33,16 @@ async function main() {
     .addBuilding(name, address, floors)
     .accounts({
       caller: wallet.payer.publicKey,
-      building: new PublicKey(buildingPda),
+      building: buildingPda,
     })
     .instruction()
 
-  const txResult = await submitTx(connection, wallet, itx).catch(console.error)
-  console.log('Tx submitted', { txResult })
+  try {
+    const txResult = await submitTx(connection, wallet, itx)
+    console.log('Tx submitted', { txResult })
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 main().catch(console.error)

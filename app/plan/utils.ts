@@ -1,8 +1,11 @@
 const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
+import { BN } from '@coral-xyz/anchor'
 import {
+  BlockheightBasedTransactionConfirmationStrategy,
   Connection,
   Keypair,
+  PublicKey,
   Transaction,
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
@@ -37,6 +40,22 @@ export function getIDL(): Plan {
   return JSON.parse(idlData)
 }
 
+export async function connect(): Promise<{
+  wallet: anchor.Wallet
+  program: anchor.Program<Plan>
+  connection: Connection
+}> {
+  const wallet = getWallet()
+  console.log({ signer: wallet.payer.publicKey.toBase58() })
+  const connection = new Connection('http://127.0.0.1:8899')
+  const provider = new anchor.AnchorProvider(connection, wallet)
+  anchor.setProvider(provider)
+  const idl = getIDL()
+  const program = new anchor.Program<Plan>(idl as Plan, provider)
+
+  return { wallet, program, connection }
+}
+
 // helper function to get wallet from the config
 function configWallet(
   accountName: 'root' | 'tester' | 'buildingOwner',
@@ -59,7 +78,9 @@ export function loadWallet(): anchor.Wallet {
 export function getWallet(): anchor.Wallet {
   let wallet: anchor.Wallet
 
-  if (hasFlag('--tester')) {
+  if (hasFlag('--root')) {
+    wallet = configWallet('root')
+  } else if (hasFlag('--tester')) {
     wallet = configWallet('tester')
   } else if (hasFlag('--building-owner')) {
     wallet = configWallet('buildingOwner')
@@ -89,15 +110,50 @@ export async function submitTx(
   let txSignature = await connection.sendRawTransaction(signed.serialize(), {
     skipPreflight: true,
   })
+  console.log({ txSignature })
 
   const confirmationResult = await connection.confirmTransaction(
     txSignature,
     'confirmed',
   )
 
+  console.log('confirmationResult', confirmationResult)
+
   if (confirmationResult.value.err) {
     throw new Error(JSON.stringify(confirmationResult.value.err))
   }
 
   return confirmationResult
+}
+
+// Helper function to get the PDA for a plan given plan parameters
+export function getPlanPda(
+  program: anchor.Program<Plan>,
+  building: PublicKey,
+  price: BN,
+  duration: number,
+  speed: number,
+  capacity: BN,
+  slaId: BN,
+): [PublicKey, number] {
+  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
+  durationBuffer.writeUInt16LE(duration)
+
+  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
+  speedBuffer.writeUInt32LE(speed)
+
+  const [planPda, planBump] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('plan'),
+      Buffer.from(building.toBytes()),
+      Buffer.from(price.toArray('le', 8)),
+      durationBuffer,
+      speedBuffer,
+      Buffer.from(capacity.toArray('le', 8)),
+      Buffer.from(slaId.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
+  return [planPda, planBump]
 }

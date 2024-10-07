@@ -1,21 +1,9 @@
-import * as anchor from '@coral-xyz/anchor'
-import { Connection, PublicKey } from '@solana/web3.js'
-
-import { Plan } from '../../target/types/plan'
-import { getFlag, getIDL, getWallet, submitTx } from './utils'
+import { connect, getFlag } from './utils'
 
 async function main() {
   const owner = getFlag('--owner')
 
-  const wallet = getWallet()
-  console.log({ signer: wallet.payer.publicKey.toBase58() })
-
-  const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet)
-  anchor.setProvider(provider)
-  const idl = getIDL()
-  const program = new anchor.Program<Plan>(idl as Plan, provider)
-
+  const { program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   let filters = []

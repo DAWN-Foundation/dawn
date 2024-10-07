@@ -1,29 +1,28 @@
 import fs from 'fs'
-import { Connection } from '@solana/web3.js'
+import { Connection, Keypair } from '@solana/web3.js'
 import { PlanInitConfig } from './types'
 
+const { PublicKey } = require('@solana/web3.js')
 const {
-  Keypair,
-  ParsedTransactionWithMeta,
-  PublicKey,
-  VersionedTransactionResponse,
-} = require('@solana/web3.js')
-const {
-  TOKEN_PROGRAM_ID,
   createMint,
-  createAccount,
   mintTo,
   getOrCreateAssociatedTokenAccount,
 } = require('@solana/spl-token')
 
 const PROGRAM_ID = new PublicKey('79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq')
 
-async function fund(connection, wallet) {
+async function fund(connection: Connection, wallet: Keypair) {
   const signature = await connection.requestAirdrop(
     wallet.publicKey,
     100 * 10 ** 9,
   )
-  await connection.confirmTransaction(signature)
+  const latestBlockHash = await connection.getLatestBlockhash()
+
+  await connection.confirmTransaction({
+    blockhash: latestBlockHash.blockhash,
+    lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    signature,
+  })
   const balance = await connection.getBalance(wallet.publicKey)
   console.log(`Funded (${wallet.publicKey.toBase58()}) with`, balance)
 }
