@@ -172,4 +172,24 @@ yarn plan:get_plans
 
 # Get all plans for a specific building
 yarn plan:get_plans --building <building>
+
+# Mint USDC
+yarn mint:usdc \
+    --root \
+    --recipient <recipient> \
+    --amount 240
+
+# Subscribe to a plan (as --tester)
+yarn plan:subscribe \
+    --tester \
+    --plan <plan>
+
+# Get all subscriptions
+yarn plan:get_subscriptions
+
+# Get all subscriptions for a specific plan
+yarn plan:get_subscriptions --plan <plan>
+
+# Get all subscriptions for a specific subscriber
+yarn plan:get_subscriptions --subscriber <subscriber>
 ```

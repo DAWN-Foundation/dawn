@@ -8,12 +8,15 @@
     "build": "tsc --outDir dist --esModuleInterop true app/*.ts app/**/*.ts",
     "pretestnet": "yarn build",
     "testnet": "node dist/app/testnet.js",
+    "mint:usdc": "yarn build && node dist/app/plan/mint_usdc.js",
     "plan:init": "yarn build && node dist/app/plan/init.js",
     "plan:get_config": "yarn build && node dist/app/plan/get_config.js",
     "plan:add_building": "yarn build && node dist/app/plan/add_building.js",
     "plan:get_buildings": "yarn build && node dist/app/plan/get_buildings.js",
     "plan:add_plan": "yarn build && node dist/app/plan/add_plan.js",
-    "plan:get_plans": "yarn build && node dist/app/plan/get_plans.js"
+    "plan:get_plans": "yarn build && node dist/app/plan/get_plans.js",
+    "plan:subscribe": "yarn build && node dist/app/plan/subscribe.js",
+    "plan:get_subscriptions": "yarn build && node dist/app/plan/get_subscriptions.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
