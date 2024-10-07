@@ -1,6 +1,7 @@
+import fs from 'fs'
 import { Connection } from '@solana/web3.js'
+import { PlanInitConfig } from './types'
 
-const fs = require('fs')
 const {
   Keypair,
   ParsedTransactionWithMeta,
@@ -27,7 +28,7 @@ async function fund(connection, wallet) {
   console.log(`Funded (${wallet.publicKey.toBase58()}) with`, balance)
 }
 
-async function setup(connection: Connection) {
+async function setup(connection: Connection): Promise<PlanInitConfig> {
   // Create Root KeyPair
   let root = Keypair.generate()
   console.log('\nCreating root account:', root.publicKey.toBase58())
