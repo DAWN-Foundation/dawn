@@ -1,16 +1,7 @@
-const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  TransactionBlockhashCtor,
-} from '@solana/web3.js'
+import { Connection } from '@solana/web3.js'
 
 import { loadWallet, getConfig, getIDL } from './utils'
-import { PlanInitConfig } from '../types'
 import { Plan } from '../../target/types/plan'
 
 async function main() {
