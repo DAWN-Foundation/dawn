@@ -117,12 +117,79 @@ anchor deploy --provider.cluster l
 pbcopy < ~/andrena/dawn/target/idl/plan.json
 ```
 
-### Environment Setup
+### Testnet Setup
 
 ```bash
-# Make the setup script executable
-chmod +x ./scripts/setup.sh
+# Run the testnet script
+yarn testnet
+```
 
-# Run the setup script
-./scripts/setup.sh
+### Local Testnet
+
+These command allow interaction with the plan contract deployed on local testnet
+
+```bash
+# Initialize the plan contract (as local identity )
+yarn plan:init
+
+# [Optional] Its also possible to specify following signers 
+# apart from default one located at ~/.config/solana/id.json
+# these can be applied to all transaction commands below
+# for example:
+# --root was used to mint tokens, might be used for init, but not necessary
+# --building-owner is usually used to add a building and create plans
+# --tester should have some USDC and can be used to pay for plan subscription
+yarn plan:init --root
+yarn plan:add_building --building-owner
+yarn plan:subscribe --tester
+
+
+# Add a building to the plan contract (as --building-owner)
+yarn plan:add_building \
+    --building-owner \
+    --name 'Building 1' \
+    --address '123 Main St' \
+    --floors 5
+
+# Get all buildings
+yarn plan:get_buildings
+
+# Get all buildings for a specific owner
+yarn plan:get_buildings --owner <owner>
+
+# Create a plan for a building (as --building-owner)
+yarn plan:add_plan \
+    --building-owner \
+    --building <building> \
+    --price 100000000 \
+    --duration 30 \
+    --speed 100 \
+    --capacity 1000 \
+    --sla 1
+
+# Get all plans
+yarn plan:get_plans
+
+# Get all plans for a specific building
+yarn plan:get_plans --building <building>
+
+# Mint USDC
+yarn mint:usdc \
+    --root \
+    --recipient <recipient> \
+    --amount 240
+
+# Subscribe to a plan (as --tester)
+yarn plan:subscribe \
+    --tester \
+    --plan <plan>
+
+# Get all subscriptions
+yarn plan:get_subscriptions
+
+# Get all subscriptions for a specific plan
+yarn plan:get_subscriptions --plan <plan>
+
+# Get all subscriptions for a specific subscriber
+yarn plan:get_subscriptions --subscriber <subscriber>
 ```
