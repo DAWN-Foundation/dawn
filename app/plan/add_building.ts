@@ -45,22 +45,8 @@ async function main() {
     })
     .instruction()
 
-  const eventListener = program.addEventListener(
-    'buildingAdded',
-    (event, slot) => {
-      console.log(`Event[slot: ${slot}]: BuildingAdded`, event)
-    },
-  )
-
-  try {
-    const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-  } catch (error) {
-    console.error(error)
-  } finally {
-    program.removeEventListener(eventListener)
-  }
+  const txResult = await submitTx(connection, wallet, itx).catch(console.error)
+  console.log('Tx submitted', { txResult })
 }
 
 main().catch(console.error)

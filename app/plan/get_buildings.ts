@@ -18,20 +18,26 @@ async function main() {
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  // const [buildingPda] = PublicKey.findProgramAddressSync(
-  //   [
-  //     Buffer.from('building'),
-  //     Buffer.from(name),
-  //     Buffer.from(address),
-  //     Buffer.from([floors]),
-  //   ],
-  //   program.programId,
-  // )
-  // console.log({ buildingPda: buildingPda.toBase58() })
+  let filters = []
+  if (owner) {
+    filters = [
+      {
+        memcmp: {
+          offset: 8,
+          bytes: owner,
+        },
+      },
+    ]
+  }
 
-  const buildings = await program.account.building.all()
+  const buildings = await program.account.building.all(filters)
 
-  console.log(buildings)
+  console.log(
+    buildings.map((b) => ({
+      owner: b.publicKey.toBase58(),
+      account: { ...b.account, owner: b.account.owner.toBase58() },
+    })),
+  )
 }
 
 main().catch(console.error)
