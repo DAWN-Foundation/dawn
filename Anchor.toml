@@ -1,11 +1,12 @@
 [toolchain]
+anchor_version = "0.30.1"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-plan = "79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq"
+plan = "4K4X1EcCU6iX5x3NDgKzZuEeRw9VRpyQM3Rq13JQGbr7"
 
 [registry]
 url = "https://api.apr.dev"

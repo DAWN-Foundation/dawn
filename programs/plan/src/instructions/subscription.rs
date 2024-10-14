@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -67,13 +69,17 @@ pub struct Subscribe<'info> {
     )]
     pub subscription: Account<'info, Subscription>,
 
-    /// The Andrena USDC token account
-    #[account(mut, address = config.andrena_usdc_account)]
-    pub andrena_usdc_account: Account<'info, TokenAccount>,
+    /// The DAWN DAO DAWN token account
+    #[account(mut, address = config.dao_dawn_account)]
+    pub dao_dawn_account: Account<'info, TokenAccount>,
 
-    /// The DAWN Foundation USDC token account
-    #[account(mut, address = config.dawn_usdc_account)]
-    pub dawn_usdc_account: Account<'info, TokenAccount>,
+    /// The Validator DAWN pool token account
+    #[account(mut, address = config.validator_dawn_account)]
+    pub validator_dawn_account: Account<'info, TokenAccount>,
+
+    /// The Medallion DAWN pool token account
+    #[account(mut, address = config.medallion_dawn_account)]
+    pub medallion_dawn_account: Account<'info, TokenAccount>,
 
     /// The callers associated USDC token account
     #[account(
@@ -97,22 +103,36 @@ pub struct Subscribe<'info> {
 }
 
 impl PlanApp {
-    fn calculate_fees(price: u64, andrena_fee: u64, dawn_fee: u64) -> Result<(u64, u64, u64)> {
-        let andrena_fee = price
-            .checked_mul(andrena_fee)
+    fn calculate_fees(
+        price: u64,
+        dao_fee: u64,
+        validator_fee: u64,
+        medallion_fee: u64,
+    ) -> Result<(u64, u64, u64, u64)> {
+        let dao_fee = price
+            .checked_mul(dao_fee)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        let dawn_fee = price
-            .checked_mul(dawn_fee)
+        let validator_fee = price
+            .checked_mul(validator_fee)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        let remainder = price.saturating_sub(andrena_fee).saturating_sub(dawn_fee);
+        let medallion_fee = price
+            .checked_mul(medallion_fee)
+            .ok_or(PlanError::Overflow)?
+            .checked_div(BPS_DENOMINATOR)
+            .ok_or(PlanError::Underflow)?;
 
-        Ok((andrena_fee, dawn_fee, remainder))
+        let remainder = price
+            .saturating_sub(dao_fee)
+            .saturating_sub(validator_fee)
+            .saturating_sub(medallion_fee);
+
+        Ok((dao_fee, validator_fee, medallion_fee, remainder))
     }
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
@@ -127,41 +147,32 @@ impl PlanApp {
         );
 
         // Calculate fees and remainder of plan price for building owner
-        let (andrena_fee, dawn_fee, remainder) =
-            Self::calculate_fees(plan.price, config.andrena_fee, config.dawn_fee)?;
+        let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_fees(
+            plan.price,
+            config.dao_fee,
+            config.validator_fee,
+            config.medallion_fee,
+        )?;
 
-        // Transfer Andrena USDC fee from user to Andrena
-        let andrena_fee_cpi_ctx = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::Transfer {
-                from: ctx.accounts.user_usdc_account.to_account_info(),
-                to: ctx.accounts.andrena_usdc_account.to_account_info(),
-                authority: ctx.accounts.caller.to_account_info(),
-            },
-        );
-        token::transfer(andrena_fee_cpi_ctx, andrena_fee)?;
+        let total_fee = dao_fee.add(validator_fee).add(medallion_fee);
+        msg!("total fee: {:?}", total_fee);
 
-        // Transfer DAWN Foundation USDC fee from user to DAWN Foundation
-        let dawn_fee_cpi_ctx = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::Transfer {
-                from: ctx.accounts.user_usdc_account.to_account_info(),
-                to: ctx.accounts.dawn_usdc_account.to_account_info(),
-                authority: ctx.accounts.caller.to_account_info(),
-            },
-        );
-        token::transfer(dawn_fee_cpi_ctx, dawn_fee)?;
+        // swap total_fee to dawn
 
-        // Transfer remainder of plan price from user to building owner
-        let bo_fee_cpi_ctx = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::Transfer {
-                from: ctx.accounts.user_usdc_account.to_account_info(),
-                to: ctx.accounts.bo_usdc_account.to_account_info(),
-                authority: ctx.accounts.caller.to_account_info(),
-            },
-        );
-        token::transfer(bo_fee_cpi_ctx, remainder)?;
+        // distribute dawn to fee to dao, validator pool and medallion pool
+
+        // deposit remainder into escrow program
+
+        // Transfer DAO DAWN fee from user to DAWN DAO
+        // let dao_fee_cpi_ctx = CpiContext::new(
+        //     ctx.accounts.token_program.to_account_info(),
+        //     token::Transfer {
+        //         from: ctx.accounts.user_usdc_account.to_account_info(),
+        //         to: ctx.accounts.dawn_usdc_account.to_account_info(),
+        //         authority: ctx.accounts.caller.to_account_info(),
+        //     },
+        // );
+        // token::transfer(dawn_fee_cpi_ctx, dawn_fee)?;
 
         // Get the current timestamp from the clock
         let clock = Clock::get()?;

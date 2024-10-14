@@ -1,3 +1,5 @@
+import fs from 'fs'
+import { execSync } from 'child_process'
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import {
@@ -14,7 +16,7 @@ import {
   getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
-import { Plan } from '../../target/types/plan'
+import { Plan } from '../../../target/types/plan'
 
 export let mock: Mock
 
@@ -74,25 +76,47 @@ export async function getEvent(
   return event.data
 }
 
+// Helper to deploy the Raydium CLMM
+function deployRaydium() {
+  // Deploy the program
+  const output = execSync(
+    'cd ../raydium-clmm && anchor deploy --provider.cluster localnet',
+    {
+      encoding: 'utf-8',
+    },
+  )
+  console.log('Raydium CLMM deploy completed successfully')
+  console.log('Output:', output.toString())
+  const raydium = output
+    .toString()
+    .split('\n')
+    .find((line) => line.startsWith('Program Id: '))
+    .split('Program Id: ')[1]
+
+  return raydium
+}
+
 export interface Mock {
-  andrena: Keypair
+  dao: Keypair
+  validatorPool: Keypair
+  medallionPool: Keypair
   buildingOwner: Keypair
   tester: Keypair
   // mints
   usdcMint: PublicKey
   dawnMint: PublicKey
   // token accounts
-  andrenaUsdcAccount: PublicKey
-  andrenaDawnAccount: PublicKey
-  dawnUsdcAccount: PublicKey
-  boUsdcAccount: PublicKey
+  daoDawnAccount: PublicKey
+  validatorDawnAccount: PublicKey
+  medallionDawnAccount: PublicKey
+  boDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
+  // raydium
+  raydium: PublicKey
   // config
-  dawnFee: BN
-  andrenaFee: BN
-  andrenaDawnRatio: BN
-  boDawnRatio: BN
-  boEscrowRatio: BN
+  daoFee: BN
+  validatorFee: BN
+  medallionFee: BN
 }
 
 // Helper to setup the environment for tests and set the mock
@@ -101,16 +125,17 @@ export async function setup(
   connection: anchor.web3.Connection,
   wallet: NodeWallet,
 ) {
-  // Create Andrena KeyPair
-  const andrena = Keypair.generate()
-  await fund(connection, andrena.publicKey, 1000)
+  // Create DAWN DAO KeyPair
+  const dao = Keypair.generate()
+  await fund(connection, dao.publicKey, 1000)
 
-  // Create DAWN Foundation KeyPair
-  const dawn = Keypair.generate()
-  await fund(connection, dawn.publicKey, 1000)
+  // Create Validator Pool KeyPair
+  const validatorPool = Keypair.generate()
+  await fund(connection, validatorPool.publicKey, 1000)
 
-  console.log('Andrena:', andrena.publicKey.toBase58())
-  console.log('DAWN:', dawn.publicKey.toBase58())
+  // Create Medallion Pool KeyPair
+  const medallionPool = Keypair.generate()
+  await fund(connection, medallionPool.publicKey, 1000)
 
   // Create Building Owner KeyPair
   const buildingOwner = Keypair.generate()
@@ -137,36 +162,40 @@ export async function setup(
     9, // Decimals (9 decimals for DAWN)
   )
 
-  // Create USDC account for Andrena
-  const { address: andrenaUsdcAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      connection,
-      andrena,
-      usdcMint,
-      andrena.publicKey,
-    )
-  // Create DAWN account for Andrena
-  const { address: andrenaDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      connection,
-      andrena,
-      dawnMint,
-      andrena.publicKey,
-    )
-  // Create USDC account for DAWN Foundation
-  const { address: dawnUsdcAccount } = await getOrCreateAssociatedTokenAccount(
+  // Create DAWN account for DAWN DAO
+  const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
     connection,
-    dawn,
-    usdcMint,
-    dawn.publicKey,
+    dao,
+    dawnMint,
+    dao.publicKey,
   )
-  // Create USDC account for Tester
-  const { address: boUsdcAccount } = await getOrCreateAssociatedTokenAccount(
+
+  // Create DAWN account for Validator Pool
+  const { address: validatorDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      validatorPool,
+      dawnMint,
+      validatorPool.publicKey,
+    )
+
+  // Create DAWN account for Medallion Pool
+  const { address: medallionDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      medallionPool,
+      dawnMint,
+      medallionPool.publicKey,
+    )
+
+  // Create DAWN account for Building Owner
+  const { address: boDawnAccount } = await getOrCreateAssociatedTokenAccount(
     connection,
     buildingOwner,
-    usdcMint,
+    dawnMint,
     buildingOwner.publicKey,
   )
+
   // Create USDC account for Tester
   const { address: testerUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
@@ -176,29 +205,31 @@ export async function setup(
       tester.publicKey,
     )
 
-  const dawnFee = new BN(200) // 2% fee (dawn_fee)
-  const andrenaFee = new BN(500) // 5% fee (andrena_fee)
-  const andrenaDawnRatio = new BN(9000) // 90% fee (andrena_dawn_ratio)
-  const boDawnRatio = new BN(8000) // 80% fee (bo_dawn_ratio)
-  const boEscrowRatio = new BN(2000) // 20% fee (bo_escrow_ratio)
+  // Deploy Raydium CLMM
+  const raydium = deployRaydium();
+
+  const daoFee = new BN(300) // 3% fee (dao_fee)
+  const validatorFee = new BN(300) // 3% fee (validator_fee)
+  const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
   mock = {
-    andrena,
+    dao,
+    validatorPool,
+    medallionPool,
     buildingOwner,
     tester,
     usdcMint,
     dawnMint,
-    andrenaUsdcAccount,
-    andrenaDawnAccount,
-    dawnUsdcAccount,
-    boUsdcAccount,
+    daoDawnAccount,
+    validatorDawnAccount,
+    medallionDawnAccount,
+    boDawnAccount,
     testerUsdcAccount,
+    raydium: new PublicKey(raydium),
     // config
-    dawnFee,
-    andrenaFee,
-    andrenaDawnRatio,
-    boDawnRatio,
-    boEscrowRatio,
+    daoFee,
+    validatorFee,
+    medallionFee,
   }
 }
 

@@ -38,9 +38,9 @@ async function setup(connection: Connection): Promise<PlanInitConfig> {
   console.log('\nCreating Andrena account:', andrena.publicKey.toBase58())
   await fund(connection, andrena)
 
-  // Create DAWN Foundation KeyPair
+  // Create DAWN DAO KeyPair
   const dawn = Keypair.generate()
-  console.log('\nCreating DAWN Foundation account:', dawn.publicKey.toBase58())
+  console.log('\nCreating DAWN DAO account:', dawn.publicKey.toBase58())
   await fund(connection, dawn)
 
   // Create Building Owner KeyPair
@@ -102,7 +102,7 @@ async function setup(connection: Connection): Promise<PlanInitConfig> {
     andrenaDawnAccount.toBase58(),
   )
 
-  // Create USDC account for DAWN Foundation
+  // Create USDC account for DAWN DAO
   const { address: dawnUsdcAccount } = await getOrCreateAssociatedTokenAccount(
     connection,
     dawn,
@@ -110,7 +110,7 @@ async function setup(connection: Connection): Promise<PlanInitConfig> {
     dawn.publicKey,
   )
   console.log(
-    'Creating USDC account for DAWN Foundation:',
+    'Creating USDC account for DAWN DAO:',
     dawnUsdcAccount.toBase58(),
   )
 
