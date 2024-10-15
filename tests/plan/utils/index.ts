@@ -17,6 +17,8 @@ import {
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
+import { Mock } from './types'
+import { createAmmConfig, createPool, deployRaydium } from './raydium'
 
 export let mock: Mock
 
@@ -76,78 +78,35 @@ export async function getEvent(
   return event.data
 }
 
-// Helper to deploy the Raydium CLMM
-function deployRaydium() {
-  // Deploy the program
-  const output = execSync(
-    'cd ../raydium-clmm && anchor deploy --provider.cluster localnet',
-    {
-      encoding: 'utf-8',
-    },
-  )
-  console.log('Raydium CLMM deploy completed successfully')
-  console.log('Output:', output.toString())
-  const raydium = output
-    .toString()
-    .split('\n')
-    .find((line) => line.startsWith('Program Id: '))
-    .split('Program Id: ')[1]
-
-  return raydium
-}
-
-export interface Mock {
-  dao: Keypair
-  validatorPool: Keypair
-  medallionPool: Keypair
-  buildingOwner: Keypair
-  tester: Keypair
-  // mints
-  usdcMint: PublicKey
-  dawnMint: PublicKey
-  // token accounts
-  daoDawnAccount: PublicKey
-  validatorDawnAccount: PublicKey
-  medallionDawnAccount: PublicKey
-  boDawnAccount: PublicKey
-  testerUsdcAccount: PublicKey
-  // raydium
-  raydium: PublicKey
-  // config
-  daoFee: BN
-  validatorFee: BN
-  medallionFee: BN
-}
-
 // Helper to setup the environment for tests and set the mock
 // only run once in `initialize` test
 export async function setup(
-  connection: anchor.web3.Connection,
+  provider: anchor.AnchorProvider,
   wallet: NodeWallet,
 ) {
   // Create DAWN DAO KeyPair
   const dao = Keypair.generate()
-  await fund(connection, dao.publicKey, 1000)
+  await fund(provider.connection, dao.publicKey, 1000)
 
   // Create Validator Pool KeyPair
   const validatorPool = Keypair.generate()
-  await fund(connection, validatorPool.publicKey, 1000)
+  await fund(provider.connection, validatorPool.publicKey, 1000)
 
   // Create Medallion Pool KeyPair
   const medallionPool = Keypair.generate()
-  await fund(connection, medallionPool.publicKey, 1000)
+  await fund(provider.connection, medallionPool.publicKey, 1000)
 
   // Create Building Owner KeyPair
   const buildingOwner = Keypair.generate()
-  await fund(connection, buildingOwner.publicKey, 1000)
+  await fund(provider.connection, buildingOwner.publicKey, 1000)
 
   // Create Tester KeyPair
   const tester = Keypair.generate()
-  await fund(connection, tester.publicKey, 1000)
+  await fund(provider.connection, tester.publicKey, 1000)
 
   // Mint test USDC token
   const usdcMint = await createMint(
-    connection,
+    provider.connection,
     wallet.payer, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
@@ -155,7 +114,7 @@ export async function setup(
   )
   // Mint test DAWN token
   const dawnMint = await createMint(
-    connection,
+    provider.connection,
     wallet.payer, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
@@ -164,7 +123,7 @@ export async function setup(
 
   // Create DAWN account for DAWN DAO
   const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
-    connection,
+    provider.connection,
     dao,
     dawnMint,
     dao.publicKey,
@@ -173,7 +132,7 @@ export async function setup(
   // Create DAWN account for Validator Pool
   const { address: validatorDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
-      connection,
+      provider.connection,
       validatorPool,
       dawnMint,
       validatorPool.publicKey,
@@ -182,7 +141,7 @@ export async function setup(
   // Create DAWN account for Medallion Pool
   const { address: medallionDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
-      connection,
+      provider.connection,
       medallionPool,
       dawnMint,
       medallionPool.publicKey,
@@ -190,7 +149,7 @@ export async function setup(
 
   // Create DAWN account for Building Owner
   const { address: boDawnAccount } = await getOrCreateAssociatedTokenAccount(
-    connection,
+    provider.connection,
     buildingOwner,
     dawnMint,
     buildingOwner.publicKey,
@@ -199,14 +158,36 @@ export async function setup(
   // Create USDC account for Tester
   const { address: testerUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
-      connection,
+      provider.connection,
       tester,
       usdcMint,
       tester.publicKey,
     )
 
   // Deploy Raydium CLMM
-  const raydium = deployRaydium();
+  const raydium = deployRaydium()
+
+  // wait 5 seconds for the program to be deployed
+  await new Promise((resolve) => setTimeout(resolve, 5_000))
+
+  // Create AMM config
+  console.log('Creating AMM config...')
+  const ammConfig = await createAmmConfig(provider, raydium, wallet.payer)
+
+  // Create DAWN-USDC pool
+  console.log('Creating DAWN-USDC pool...')
+  const pool = await createPool(
+    provider,
+    raydium,
+    dawnMint,
+    usdcMint,
+    wallet.payer,
+    ammConfig,
+  )
+
+  // Add liquidity to the pool
+  console.log('Adding liquidity to the pool...')
+  await addLiquidity(provider, raydium, pool, wallet.payer)
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
@@ -225,7 +206,7 @@ export async function setup(
     medallionDawnAccount,
     boDawnAccount,
     testerUsdcAccount,
-    raydium: new PublicKey(raydium),
+    raydium,
     // config
     daoFee,
     validatorFee,

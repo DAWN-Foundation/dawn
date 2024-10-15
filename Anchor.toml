@@ -7,6 +7,7 @@ skip-lint = false
 
 [programs.localnet]
 plan = "4K4X1EcCU6iX5x3NDgKzZuEeRw9VRpyQM3Rq13JQGbr7"
+raydium = "2mEsbBnNoWjbbxaTtzRhckgQYF8twigyrRK78kpRiNS8"
 
 [registry]
 url = "https://api.apr.dev"

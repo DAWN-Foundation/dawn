@@ -21,7 +21,7 @@ describe('plan::initialize', () => {
   )
 
   before(async () => {
-    await setup(provider.connection, wallet)
+    await setup(provider, wallet)
   })
 
   it('mock setup', () => {
