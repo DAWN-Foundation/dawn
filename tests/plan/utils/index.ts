@@ -239,7 +239,7 @@ export async function setup(
 
   // Open position
   console.log('Opening position...')
-  await openPosition(provider, mint0, mint1)
+  await openPosition(provider, wallet.payer, raydium, pool, mint0, mint1)
 
   // // Add liquidity to the pool
   // console.log('Adding liquidity to the pool...')
