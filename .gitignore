@@ -7,3 +7,4 @@ test-ledger
 .yarn
 dist
 testnet.json
+client_config.ini

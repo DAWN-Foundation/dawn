@@ -18,7 +18,12 @@ import {
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
-import { createAmmConfig, createPool, deployRaydium } from './raydium'
+import { deployRaydium } from './raydium'
+import { addLiquidity } from './raydium/add_liquidity'
+import { createAmmConfig } from './raydium/create_config'
+import { createPool } from './raydium/create_pool'
+import { createOperationAccount } from './raydium/operation_account'
+import { openPosition } from './raydium/open_position'
 
 export let mock: Mock
 
@@ -164,30 +169,89 @@ export async function setup(
       tester.publicKey,
     )
 
+  // Create DAWN token account for wallet.payer
+  const { address: userDawnAccount } = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
+    wallet.payer,
+    dawnMint,
+    wallet.payer.publicKey,
+  )
+
+  // Create USDC token account for wallet.payer
+  const { address: userUsdcAccount } = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
+    wallet.payer,
+    usdcMint,
+    wallet.payer.publicKey,
+  )
+
+  // Mint USDC to user
+  await mintTo(
+    provider.connection,
+    wallet.payer,
+    usdcMint,
+    userUsdcAccount,
+    wallet.payer,
+    BigInt(1_000_000_000),
+  )
+
+  // Mint DAWN to user
+  await mintTo(
+    provider.connection,
+    wallet.payer,
+    dawnMint,
+    userDawnAccount,
+    wallet.payer,
+    BigInt(1_000_000_000),
+  )
+
   // Deploy Raydium CLMM
   const raydium = deployRaydium()
 
   // wait 5 seconds for the program to be deployed
   await new Promise((resolve) => setTimeout(resolve, 5_000))
 
+  let [mint0, mint1] =
+    Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
+      ? [dawnMint, usdcMint]
+      : [usdcMint, dawnMint]
+
+  console.log({ mint0, mint1 })
+
   // Create AMM config
   console.log('Creating AMM config...')
-  const ammConfig = await createAmmConfig(provider, raydium, wallet.payer)
+  const ammConfig = await createAmmConfig(provider, wallet.payer, raydium)
+
+  // Create operation account
+  console.log('Creating operation account...')
+  await createOperationAccount(provider, wallet.payer, raydium)
 
   // Create DAWN-USDC pool
   console.log('Creating DAWN-USDC pool...')
   const pool = await createPool(
     provider,
-    raydium,
-    dawnMint,
-    usdcMint,
     wallet.payer,
+    raydium,
     ammConfig,
+    mint0,
+    mint1,
   )
 
-  // Add liquidity to the pool
-  console.log('Adding liquidity to the pool...')
-  await addLiquidity(provider, raydium, pool, wallet.payer)
+  // Open position
+  console.log('Opening position...')
+  await openPosition(provider, mint0, mint1)
+
+  // // Add liquidity to the pool
+  // console.log('Adding liquidity to the pool...')
+  // await addLiquidity(
+  //   provider,
+  //   raydium,
+  //   ammConfig,
+  //   pool,
+  //   dawnMint,
+  //   usdcMint,
+  //   wallet.payer,
+  // )
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)

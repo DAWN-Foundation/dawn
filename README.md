@@ -86,6 +86,86 @@ anchor idl build --program-name plan
 anchor build
 ```
 
+### Local Program Address
+
+Each local keypair is unique and
+
+```bash
+# Check local program address
+anchor keys list
+
+# Sync local program address
+anchor keys sync
+
+# Build again
+anchor build
+```
+
+### Build Raydium DEX Program
+
+```bash
+# Outside of this repo (one level up)
+git clone https://github.com/thxsh/raydium-clmm.git
+
+cd raydium-clmm
+
+# [Temporary] Checkout fix branch
+git checkout fix/explicit-setup
+
+# Build the Raydium program
+anchor build
+
+# Check the program ID
+anchor keys list
+
+# Sync the program ID
+anchor keys sync
+```
+
+### Ensure Raydium Program ID is correct
+
+```bash
+# Make sure the program ID is correct across Anchor.toml and this repo
+vim programs/amm/src/lib.rs
+```
+
+##### Alternatively, open `programs/amm/src/lib.rs` in IDE
+
+Look for these lines:
+
+![devnet program id](assets/image.png)
+
+And replace `declare_id!("....");` in the following line:
+
+```rust
+#[cfg(not(feature = "devnet"))]
+declare_id!("....");
+```
+
+- **First occurrence** is the Raydium AMM program ID from `anchor keys list`
+
+- **Second occurrence** is the local keypair address from `solana address -k <keypair-path>`
+
+#### Build again
+
+```bash
+anchor build
+```
+
+#### Deploy
+
+```bash
+
+# Deploy the Raydium program
+anchor deploy --provider.cluster l
+
+# Copy the program ID from output and make sure it matches the first occurrence
+```
+
+### Back to this repo
+
+Update `Anchor.toml` with the new program ID
+
 ### Unit testing
 
 ```bash
@@ -114,6 +194,7 @@ anchor deploy --provider.cluster l
 
 # Copy the IDL of the deployed program to the clipboard
 # where `~/andrena/dawn` points to the project directory
+# only needed if need to import the IDL somewhere
 pbcopy < ~/andrena/dawn/target/idl/plan.json
 ```
 
@@ -132,7 +213,7 @@ These command allow interaction with the plan contract deployed on local testnet
 # Initialize the plan contract (as local identity )
 yarn plan:init
 
-# [Optional] Its also possible to specify following signers 
+# [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
 # these can be applied to all transaction commands below
 # for example:

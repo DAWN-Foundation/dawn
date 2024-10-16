@@ -16,30 +16,30 @@ async function main() {
 
   const config = getConfig()
 
-  const itx = await program.methods
-    .initialize(
-      DAWN_FEE,
-      ANDRENA_FEE,
-      ANDRENA_DAWN_RATIO,
-      BUILDING_OWNER_DAWN_RATIO,
-      BUILDING_OWNER_ESCROW_RATIO,
-    )
-    .accounts({
-      caller: wallet.payer.publicKey,
-      usdcMint: new PublicKey(config.usdcMint),
-      dawnMint: new PublicKey(config.dawnMint),
-      andrenaUsdcAccount: new PublicKey(config.andrenaUsdcAccount),
-      andrenaDawnAccount: new PublicKey(config.andrenaDawnAccount),
-      dawnUsdcAccount: new PublicKey(config.dawnUsdcAccount),
-    })
-    .instruction()
+  // const itx = await program.methods
+  //   .initialize(
+  //     DAWN_FEE,
+  //     ANDRENA_FEE,
+  //     ANDRENA_DAWN_RATIO,
+  //     BUILDING_OWNER_DAWN_RATIO,
+  //     BUILDING_OWNER_ESCROW_RATIO,
+  //   )
+  //   .accounts({
+  //     caller: wallet.payer.publicKey,
+  //     usdcMint: new PublicKey(config.usdcMint),
+  //     dawnMint: new PublicKey(config.dawnMint),
+  //     andrenaUsdcAccount: new PublicKey(config.andrenaUsdcAccount),
+  //     andrenaDawnAccount: new PublicKey(config.andrenaDawnAccount),
+  //     dawnUsdcAccount: new PublicKey(config.dawnUsdcAccount),
+  //   })
+  //   .instruction()
 
-  try {
-    const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
-  } catch (error) {
-    console.error(error)
-  }
+  // try {
+  //   const txResult = await submitTx(connection, wallet, itx)
+  //   console.log('Tx submitted', { txResult })
+  // } catch (error) {
+  //   console.error(error)
+  // }
 }
 
 main().catch(console.error)
