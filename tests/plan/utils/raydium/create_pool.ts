@@ -22,7 +22,7 @@ export async function createPool(
 ) {
   const program = getRaydiumProgram(provider)
 
-  // Step 2: Derive the pool PDA
+  // Derive the pool PDA
   const [poolStatePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from(POOL_SEED),
@@ -33,32 +33,24 @@ export async function createPool(
     raydium,
   )
 
-  // Step 3: Calculate sqrt_price_x64 (ratio of dawn to USDC)
+  // Calculate sqrt_price_x64 (ratio of dawn to USDC)
   const dawnAmount = new BN(1_000_000).mul(SIX_DECIMALS) // 1M Dawn with 6 decimals
   const usdcAmount = new BN(500_000).mul(SIX_DECIMALS) // 500K USDC with 6 decimals
   const sqrtPrice = dawnAmount.div(usdcAmount).sqr() // Calculate square root of the price
   const sqrtPriceX64 = toQ64_64(sqrtPrice) // Convert to Q64.64 format
 
-  // Step 4: Derive token vaults PDAs
+  // Derive token vaults PDAs
   const [tokenVault0Pda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(POOL_VAULT_SEED),
-      poolStatePda.toBuffer(),
-      mint0.toBuffer(),
-    ],
+    [Buffer.from(POOL_VAULT_SEED), poolStatePda.toBuffer(), mint0.toBuffer()],
     raydium,
   )
 
   const [tokenVault1Pda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(POOL_VAULT_SEED),
-      poolStatePda.toBuffer(),
-      mint1.toBuffer(),
-    ],
+    [Buffer.from(POOL_VAULT_SEED), poolStatePda.toBuffer(), mint1.toBuffer()],
     raydium,
   )
 
-  // Step 5: Derive the observation and tick array bitmap PDAs
+  // Derive the observation and tick array bitmap PDAs
   const [observationStatePda] = PublicKey.findProgramAddressSync(
     [Buffer.from(OBSERVATION_SEED), poolStatePda.toBuffer()],
     raydium,
@@ -71,7 +63,7 @@ export async function createPool(
 
   const openTime = Math.floor(Date.now() / 1000) // Current timestamp as the open time
 
-  // Step 6: Prepare transaction and create pool
+  // Prepare transaction and create pool
   await program.methods
     .createPool(sqrtPriceX64, new BN(openTime))
     .accounts({

@@ -208,15 +208,15 @@ export async function setup(
   // Deploy Raydium CLMM
   const raydium = deployRaydium()
 
-  // wait 5 seconds for the program to be deployed
-  await new Promise((resolve) => setTimeout(resolve, 5_000))
+  // wait 2.5 seconds for the program to be deployed
+  await new Promise((resolve) => setTimeout(resolve, 2_500))
 
   let [mint0, mint1] =
     Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
       ? [dawnMint, usdcMint]
       : [usdcMint, dawnMint]
 
-  console.log({ mint0, mint1 })
+  console.log({ mint0: mint0.toBase58(), mint1: mint1.toBase58() })
 
   // Create AMM config
   console.log('Creating AMM config...')

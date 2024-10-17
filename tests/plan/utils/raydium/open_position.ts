@@ -30,12 +30,18 @@ export async function openPosition(
 ) {
   const program = getRaydiumProgram(provider)
 
-  // find the pool
-  const poolAcc = await provider.connection.getParsedAccountInfo(pool)
-  if (!poolAcc) {
-    throw new Error('Pool not found')
-  }
-  console.log(poolAcc)
+  const output = execSync(
+    `../raydium-clmm/target/release/client \
+    --mint0 ${mint0.toBase58()} \
+    --mint1 ${mint1.toBase58()} \
+    open-position 1 10 100`,
+    {
+      encoding: 'utf-8',
+    },
+  )
+  console.log('open position output', output)
+
+  return
 
   // Step 1: Define local default variables
   const liquidity = 1_000_000 // Liquidity as BN
@@ -76,25 +82,18 @@ export async function openPosition(
     METADATA_PROGRAM_ID,
   )
 
-  const tickLowerIndexBuffer = Buffer.alloc(4)
-  tickLowerIndexBuffer.writeInt32BE(tickLowerIndex)
-
-  const tickUpperIndexBuffer = Buffer.alloc(4)
-  tickUpperIndexBuffer.writeInt32BE(tickUpperIndex)
-
-  const tickArrayLowerStartIndexBuffer = Buffer.alloc(4)
-  tickArrayLowerStartIndexBuffer.writeInt32BE(tickArrayLowerStartIndex)
-
-  const tickArrayUpperStartIndexBuffer = Buffer.alloc(4)
-  tickArrayUpperStartIndexBuffer.writeInt32BE(tickArrayUpperStartIndex)
+  //  HERE SOME MAGIC has to happed with ticks
+  // Before they can be used to derive PDA
+  // tick_lower_index(1): [0, 1, 13, 217]
+  // tick_upper_index(10): [0, 1, 103, 204]
 
   // Step 4: Derive Protocol Position PDA
   const [protocolPositionKey] = PublicKey.findProgramAddressSync(
     [
       Buffer.from(POSITION_SEED),
       pool.toBuffer(),
-      tickLowerIndexBuffer,
-      tickUpperIndexBuffer,
+      Buffer.from([0, 1, 13, 217]),
+      Buffer.from([0, 1, 103, 204]),
     ],
     raydium,
   )
@@ -108,7 +107,7 @@ export async function openPosition(
     [
       Buffer.from(TICK_ARRAY_SEED),
       pool.toBuffer(),
-      tickArrayLowerStartIndexBuffer,
+      new BN(tickArrayLowerStartIndex).toArrayLike(Buffer, 'be', 4),
     ],
     raydium,
   )
@@ -118,7 +117,7 @@ export async function openPosition(
     [
       Buffer.from(TICK_ARRAY_SEED),
       pool.toBuffer(),
-      tickArrayUpperStartIndexBuffer,
+      new BN(tickArrayUpperStartIndex).toArrayLike(Buffer, 'be', 4),
     ],
     raydium,
   )
@@ -154,15 +153,18 @@ export async function openPosition(
     payer.publicKey,
   )
 
-  console.log({ tokenVault0, tokenVault1 })
+  console.log({
+    tokenVault0: tokenVault0.toBase58(),
+    tokenVault1: tokenVault1.toBase58(),
+  })
 
   // Step 9: Prepare and send transaction to open position
   await program.methods
     .openPositionV2(
-      new BN(liquidity), // Liquidity amount in u128
-      new BN(amount0Max), // Max amount for token 0
-      new BN(amount1Max), // Max amount for token 1
-      new BN(tickLowerIndex), // Lower tick index
+      liquidity, // Liquidity amount in u128
+      amount0Max, // Max amount for token 0
+      amount1Max, // Max amount for token 1
+      tickLowerIndex, // Lower tick index
       new BN(tickUpperIndex), // Upper tick index
       new BN(tickArrayLowerStartIndex), // Lower tick array start index
       new BN(tickArrayUpperStartIndex), // Upper tick array start index
