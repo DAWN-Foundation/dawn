@@ -1,7 +1,7 @@
 import * as anchor from '@coral-xyz/anchor'
 import path from 'path'
 import fs from 'fs'
-import { Program, BN } from '@coral-xyz/anchor'
+import { Program, BN, Idl } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import { execSync } from 'child_process'
 import { AmmV3 } from '../../../../target/types/amm_v3'
@@ -15,7 +15,6 @@ export const POOL_VAULT_SEED = 'pool_vault'
 export const TICK_ARRAY_BITMAP_SEED = 'pool_tick_array_bitmap_extension'
 export const POSITION_SEED = 'position'
 export const TICK_ARRAY_SEED = 'tick_array'
-
 
 // Helper to deploy the Raydium CLMM
 export function deployRaydium() {

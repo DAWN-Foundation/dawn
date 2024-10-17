@@ -1,4 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
+import fs from 'fs'
 import { execSync } from 'child_process'
 import { BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js'
@@ -11,14 +12,40 @@ import {
 } from '.'
 import {
   getOrCreateAssociatedTokenAccount,
+  mintTo,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { fund, loadWallet } from '../'
 
 const METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
 )
+
+// Function to calculate the tick index from a price
+function getTickFromPrice(price: number): number {
+  const sqrt1_0001 = Math.sqrt(1.0001) // Square root of 1.0001
+  const logBase = Math.log(sqrt1_0001) // Log base sqrt(1.0001)
+  const sqrtPrice = Math.sqrt(price) // Square root of the price
+  const tick = Math.log(sqrtPrice) / logBase // Calculate tick index
+  return Math.floor(tick) // Return tick as an integer
+}
+
+// Function to calculate exact tick lower and upper bounds for a given price range
+function calculateTickBounds(
+  targetPrice: number,
+  tickRangePercent: number,
+): { tickLower: number; tickUpper: number } {
+  const lowerPrice = targetPrice * (1 - tickRangePercent / 100) // Lower price bound
+  const upperPrice = targetPrice * (1 + tickRangePercent / 100) // Upper price bound
+
+  // Calculate tick indices for the lower and upper prices
+  const tickLower = getTickFromPrice(lowerPrice)
+  const tickUpper = getTickFromPrice(upperPrice)
+
+  return { tickLower, tickUpper }
+}
 
 export async function openPosition(
   provider: anchor.AnchorProvider,
@@ -27,14 +54,26 @@ export async function openPosition(
   pool: PublicKey,
   mint0: PublicKey,
   mint1: PublicKey,
+  mint0Base: boolean,
 ) {
   const program = getRaydiumProgram(provider)
+
+  console.log(program.account)
+
+  const ticks = mint0Base ? '1.975 2.025' : '0.495 0.525'
+  const amount = mint0Base ? '1000000000' : '500000000000'
+
+  console.log({
+    mint0Base,
+    ticks,
+    amount,
+  })
 
   const output = execSync(
     `../raydium-clmm/target/release/client \
     --mint0 ${mint0.toBase58()} \
     --mint1 ${mint1.toBase58()} \
-    open-position 1 10 100`,
+    open-position ${ticks} ${amount}`,
     {
       encoding: 'utf-8',
     },

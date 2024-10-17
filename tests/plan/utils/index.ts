@@ -19,13 +19,21 @@ import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
 import { deployRaydium } from './raydium'
-import { addLiquidity } from './raydium/add_liquidity'
+import { swap } from './raydium/swap'
 import { createAmmConfig } from './raydium/create_config'
 import { createPool } from './raydium/create_pool'
 import { createOperationAccount } from './raydium/operation_account'
 import { openPosition } from './raydium/open_position'
 
 export let mock: Mock
+
+export function loadWallet(): anchor.Wallet {
+  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
+  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
+  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
+  const keypair = Keypair.fromSecretKey(secretKey)
+  return new anchor.Wallet(keypair)
+}
 
 // Helper to confirm a transaction
 export async function confirmTx(
@@ -126,6 +134,11 @@ export async function setup(
     9, // Decimals (9 decimals for DAWN)
   )
 
+  console.log({
+    usdcMint: usdcMint.toBase58(),
+    dawnMint: dawnMint.toBase58(),
+  })
+
   // Create DAWN account for DAWN DAO
   const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
@@ -185,24 +198,24 @@ export async function setup(
     wallet.payer.publicKey,
   )
 
-  // Mint USDC to user
+  // Mint 1_000_000 USDC to user
   await mintTo(
     provider.connection,
     wallet.payer,
     usdcMint,
     userUsdcAccount,
     wallet.payer,
-    BigInt(1_000_000_000),
+    BigInt(1_000_000_000_000), // 6 decimals
   )
 
-  // Mint DAWN to user
+  // Mint 1_000_000 DAWN to user
   await mintTo(
     provider.connection,
     wallet.payer,
     dawnMint,
     userDawnAccount,
     wallet.payer,
-    BigInt(1_000_000_000),
+    BigInt(1_000_000_000_000_000), // 9 decimals
   )
 
   // Deploy Raydium CLMM
@@ -211,12 +224,12 @@ export async function setup(
   // wait 2.5 seconds for the program to be deployed
   await new Promise((resolve) => setTimeout(resolve, 2_500))
 
-  let [mint0, mint1] =
+  let [mint0, mint1, mint0Base] =
     Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
-      ? [dawnMint, usdcMint]
-      : [usdcMint, dawnMint]
+      ? [dawnMint, usdcMint, true]
+      : [usdcMint, dawnMint, false]
 
-  console.log({ mint0: mint0.toBase58(), mint1: mint1.toBase58() })
+  console.log({ mint0: mint0.toBase58(), mint1: mint1.toBase58(), mint0Base })
 
   // Create AMM config
   console.log('Creating AMM config...')
@@ -235,23 +248,26 @@ export async function setup(
     ammConfig,
     mint0,
     mint1,
+    mint0Base,
   )
 
   // Open position
   console.log('Opening position...')
-  await openPosition(provider, wallet.payer, raydium, pool, mint0, mint1)
+  await openPosition(
+    provider,
+    wallet.payer,
+    raydium,
+    pool,
+    mint0,
+    mint1,
+    mint0Base,
+  )
 
-  // // Add liquidity to the pool
-  // console.log('Adding liquidity to the pool...')
-  // await addLiquidity(
-  //   provider,
-  //   raydium,
-  //   ammConfig,
-  //   pool,
-  //   dawnMint,
-  //   usdcMint,
-  //   wallet.payer,
-  // )
+  await new Promise((resolve) => setTimeout(resolve, 60_000))
+
+  // Swap
+  console.log('Swapping...')
+  await swap(provider, raydium, ammConfig, pool, mint0, mint1)
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
