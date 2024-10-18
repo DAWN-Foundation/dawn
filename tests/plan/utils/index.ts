@@ -241,33 +241,15 @@ export async function setup(
 
   // Create DAWN-USDC pool
   console.log('Creating DAWN-USDC pool...')
-  const pool = await createPool(
-    provider,
-    wallet.payer,
-    raydium,
-    ammConfig,
-    mint0,
-    mint1,
-    mint0Base,
-  )
+  await createPool(raydium, ammConfig, mint0, mint1, mint0Base)
 
   // Open position
   console.log('Opening position...')
-  await openPosition(
-    provider,
-    wallet.payer,
-    raydium,
-    pool,
-    mint0,
-    mint1,
-    mint0Base,
-  )
+  await openPosition(mint0, mint1, mint0Base)
 
-  await new Promise((resolve) => setTimeout(resolve, 60_000))
-
-  // Swap
-  console.log('Swapping...')
-  await swap(provider, raydium, ammConfig, pool, mint0, mint1)
+  // // Swap
+  // console.log('Swapping...')
+  // await swap(mint0, mint1)
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
