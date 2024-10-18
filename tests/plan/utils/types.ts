@@ -18,6 +18,7 @@ export interface Mock {
   testerUsdcAccount: PublicKey
   // raydium
   raydium: PublicKey
+  raydiumPool: PublicKey
   // config
   daoFee: BN
   validatorFee: BN

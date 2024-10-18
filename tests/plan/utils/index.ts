@@ -201,9 +201,9 @@ export async function setup(
     BigInt(1_000_000_000_000_000), // 9 decimals
   )
 
-  const { raydium } = await setupRaydium(dawnMint, usdcMint)
+  const { raydium, poolPda } = await setupRaydium(dawnMint, usdcMint)
 
-  await new Promise((resolve) => setTimeout(resolve, 100_000))
+  // await new Promise((resolve) => setTimeout(resolve, 100_000))
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
@@ -216,6 +216,7 @@ export async function setup(
     buildingOwner,
     tester,
     raydium,
+    raydiumPool: poolPda,
     // mints
     usdcMint,
     dawnMint,
