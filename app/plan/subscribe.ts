@@ -29,9 +29,6 @@ async function main() {
   }
 
   const configPda = new PublicKey(config.configPda)
-  const andrenaUsdcAccount = new PublicKey(config.andrenaUsdcAccount)
-  const dawnUsdcAccount = new PublicKey(config.dawnUsdcAccount)
-  const boUsdcAccount = new PublicKey(config.boUsdcAccount)
   const userUsdcAccount = new PublicKey(config.testerUsdcAccount)
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
@@ -47,26 +44,26 @@ async function main() {
 
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
 
-  const itx = await program.methods
-    .subscribe()
-    .accounts({
-      caller: wallet.publicKey,
-      config: configPda,
-      plan: planPda,
-      subscription: subscriptionPda,
-      andrenaUsdcAccount,
-      dawnUsdcAccount,
-      boUsdcAccount,
-      userUsdcAccount,
-    } as {})
-    .instruction()
+  // const itx = await program.methods
+  //   .subscribe()
+  //   .accounts({
+  //     caller: wallet.publicKey,
+  //     config: configPda,
+  //     plan: planPda,
+  //     subscription: subscriptionPda,
+  //     andrenaUsdcAccount,
+  //     dawnUsdcAccount,
+  //     boUsdcAccount,
+  //     userUsdcAccount,
+  //   } as {})
+  //   .instruction()
 
-  try {
-    const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
-  } catch (error) {
-    console.error(error)
-  }
+  // try {
+  //   const txResult = await submitTx(connection, wallet, itx)
+  //   console.log('Tx submitted', { txResult })
+  // } catch (error) {
+  //   console.error(error)
+  // }
 }
 
 main().catch(console.error)

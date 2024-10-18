@@ -3,18 +3,24 @@ export interface Keypair {
   publicKey: string
 }
 
-export interface PlanInitConfig {
-  root: Keypair
-  andrena: Keypair
-  dawn: Keypair
+export interface TestnetConfig {
+  wallet: string
+  dao: Keypair
+  validatorPool: Keypair
+  medallionPool: Keypair
   buildingOwner: Keypair
   tester: Keypair
+  raydium: string
+  // mints
   usdcMint: string
   dawnMint: string
-  andrenaUsdcAccount: string
-  andrenaDawnAccount: string
-  dawnUsdcAccount: string
-  boUsdcAccount: string
+  // token accounts
+  daoDawnAccount: string
+  validatorDawnAccount: string
+  medallionDawnAccount: string
+  boDawnAccount: string
   testerUsdcAccount: string
+  // PDA
   configPda: string
+  poolPda: string
 }

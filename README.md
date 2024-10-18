@@ -105,6 +105,7 @@ anchor build
 
 ```bash
 # Outside of this repo (one level up)
+cd ..
 git clone https://github.com/thxsh/raydium-clmm.git
 
 cd raydium-clmm
@@ -176,14 +177,13 @@ anchor test
 ### Run local validator
 
 ```bash
-# First run
-solana-test-validator
+# Start local validator (with Metadata program required by Raydium)
+solana-test-validator --reset --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s raydium/metadata.so
 
-# Subsequent runs
-solana-test-validator --reset
+# omit the --reset flag to keep existing data
 
 # Airdrop 5 SOL to specified address
-solana airdrop --url l 5 <address>
+solana airdrop --url l 500 <address>
 ```
 
 ### Deploy

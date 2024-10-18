@@ -14,17 +14,9 @@ import {
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
-import { setupRaydium } from '../../../raydium/utils'
+import { setupRaydium } from '../../../app/utils'
 
 export let mock: Mock
-
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
-  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
-  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
-  const keypair = Keypair.fromSecretKey(secretKey)
-  return new anchor.Wallet(keypair)
-}
 
 // Helper to confirm a transaction
 export async function confirmTx(
@@ -209,7 +201,9 @@ export async function setup(
     BigInt(1_000_000_000_000_000), // 9 decimals
   )
 
-  const raydium = await setupRaydium(provider, wallet.payer, dawnMint, usdcMint)
+  const { raydium } = await setupRaydium(dawnMint, usdcMint)
+
+  await new Promise((resolve) => setTimeout(resolve, 100_000))
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
@@ -221,14 +215,16 @@ export async function setup(
     medallionPool,
     buildingOwner,
     tester,
+    raydium,
+    // mints
     usdcMint,
     dawnMint,
+    // token accounts
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,
     boDawnAccount,
     testerUsdcAccount,
-    raydium,
     // config
     daoFee,
     validatorFee,

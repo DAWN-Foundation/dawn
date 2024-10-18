@@ -2,7 +2,6 @@ const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
 import {
-  BlockheightBasedTransactionConfirmationStrategy,
   Connection,
   Keypair,
   PublicKey,
@@ -10,7 +9,7 @@ import {
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
 
-import { PlanInitConfig } from '../types'
+import { TestnetConfig } from '../types'
 import { Plan } from '../../target/types/plan'
 
 // parse command line arguments
@@ -29,7 +28,7 @@ export function hasFlag(flag: string): boolean {
 }
 
 // helper function to get the config
-export function getConfig(): PlanInitConfig {
+export function getConfig(): TestnetConfig {
   const configData = fs.readFileSync('testnet.json', 'utf8')
   return JSON.parse(configData)
 }
