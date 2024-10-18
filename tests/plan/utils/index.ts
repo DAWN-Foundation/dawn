@@ -1,29 +1,20 @@
 import fs from 'fs'
-import { execSync } from 'child_process'
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import {
   Keypair,
-  ParsedTransactionWithMeta,
   PublicKey,
   VersionedTransactionResponse,
 } from '@solana/web3.js'
 import {
-  TOKEN_PROGRAM_ID,
   createMint,
-  createAccount,
   mintTo,
   getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
-import { deployRaydium } from './raydium'
-import { swap } from './raydium/swap'
-import { createAmmConfig } from './raydium/create_config'
-import { createPool } from './raydium/create_pool'
-import { createOperationAccount } from './raydium/operation_account'
-import { openPosition } from './raydium/open_position'
+import { setupRaydium } from '../../../raydium/utils'
 
 export let mock: Mock
 
@@ -218,38 +209,7 @@ export async function setup(
     BigInt(1_000_000_000_000_000), // 9 decimals
   )
 
-  // Deploy Raydium CLMM
-  const raydium = deployRaydium()
-
-  // wait 2.5 seconds for the program to be deployed
-  await new Promise((resolve) => setTimeout(resolve, 2_500))
-
-  let [mint0, mint1, mint0Base] =
-    Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
-      ? [dawnMint, usdcMint, true]
-      : [usdcMint, dawnMint, false]
-
-  console.log({ mint0: mint0.toBase58(), mint1: mint1.toBase58(), mint0Base })
-
-  // Create AMM config
-  console.log('Creating AMM config...')
-  const ammConfig = await createAmmConfig(provider, wallet.payer, raydium)
-
-  // Create operation account
-  console.log('Creating operation account...')
-  await createOperationAccount(provider, wallet.payer, raydium)
-
-  // Create DAWN-USDC pool
-  console.log('Creating DAWN-USDC pool...')
-  await createPool(raydium, ammConfig, mint0, mint1, mint0Base)
-
-  // Open position
-  console.log('Opening position...')
-  await openPosition(mint0, mint1, mint0Base)
-
-  // // Swap
-  // console.log('Swapping...')
-  // await swap(mint0, mint1)
+  const raydium = await setupRaydium(provider, wallet.payer, dawnMint, usdcMint)
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)

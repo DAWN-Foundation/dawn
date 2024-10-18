@@ -4,7 +4,13 @@ import fs from 'fs'
 import { Program, BN, Idl } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import { execSync } from 'child_process'
-import { AmmV3 } from '../../../../target/types/amm_v3'
+
+import { AmmV3 } from '../../target/types/amm_v3'
+
+import { createAmmConfig } from './create_config'
+import { createOperationAccount } from './operation_account'
+import { createPool } from './create_pool'
+import { openPosition } from './open_position'
 
 export const SIX_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -46,4 +52,46 @@ export function getRaydiumProgram(provider: anchor.AnchorProvider) {
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
   const raydiumProgram = new Program(idl as AmmV3, provider)
   return raydiumProgram
+}
+
+export async function setupRaydium(
+  provider: anchor.AnchorProvider,
+  wallet: anchor.web3.Keypair,
+  dawnMint: PublicKey,
+  usdcMint: PublicKey,
+) {
+  // Deploy Raydium CLMM
+  const raydium = deployRaydium()
+
+  // wait 2.5 seconds for the program to be deployed
+  await new Promise((resolve) => setTimeout(resolve, 2_500))
+
+  let [mint0, mint1, mint0Base] =
+    Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
+      ? [dawnMint, usdcMint, true]
+      : [usdcMint, dawnMint, false]
+
+  console.log({ mint0: mint0.toBase58(), mint1: mint1.toBase58(), mint0Base })
+
+  // Create AMM config
+  console.log('Creating AMM config...')
+  const ammConfig = await createAmmConfig(provider, wallet, raydium)
+
+  // Create operation account
+  console.log('Creating operation account...')
+  await createOperationAccount(provider, wallet, raydium)
+
+  // Create DAWN-USDC pool
+  console.log('Creating DAWN-USDC pool...')
+  await createPool(raydium, ammConfig, mint0, mint1, mint0Base)
+
+  // Open position
+  console.log('Opening position...')
+  await openPosition(mint0, mint1, mint0Base)
+
+  // // Swap
+  // console.log('Swapping...')
+  // await swap(mint0, mint1)
+
+  return raydium
 }
