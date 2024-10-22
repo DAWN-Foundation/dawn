@@ -17,6 +17,10 @@ no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-raydium-clmm = { path = "../../raydium", features = ["no-entrypoint", "cpi"] }
 anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
 anchor-spl = "0.30.1"
+spl-memo = "5.0.0"
+raydium-clmm = { path = "../../raydium", features = ["no-entrypoint", "cpi"] }
+# raydium-amm-v3 = { git = "https://github.com/raydium-io/raydium-clmm.git", branch = "master", features = [
+#     "no-entrypoint",
+# ] }

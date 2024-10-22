@@ -3,9 +3,15 @@ use std::ops::Add;
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Token, TokenAccount},
+    token::{self, Mint, Token, TokenAccount},
+    token_2022::Token2022,
 };
-use raydium_clmm::cpi::accounts::SwapV2;
+use raydium_clmm::{
+    cpi::accounts::{Swap, SwapV2},
+    program::AmmV3,
+    state::TickArrayState,
+    AmmConfig, ObservationState, PoolState,
+};
 
 use super::{Config, Plan, PlanApp};
 use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
@@ -39,66 +45,125 @@ pub struct Subscribe<'info> {
         seeds = [b"config"],
         bump = config.bump,
     )]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
 
-    /// The plan account
+    // /// The plan account
+    // #[account(
+    //     seeds = [
+    //         b"plan",
+    //         plan.building.as_ref(),
+    //         &plan.price.to_le_bytes(),
+    //         &plan.duration.to_le_bytes(),
+    //         &plan.speed.to_le_bytes(),
+    //         &plan.capacity.to_le_bytes(),
+    //         &plan.sla_id.to_le_bytes(),
+    //     ],
+    //     bump = plan.bump
+    // )]
+    // pub plan: Box<Account<'info, Plan>>,
+
+    // /// The subscription account
+    // #[account(
+    //     init_if_needed,
+    //     payer = caller,
+    //     space = SUBSCRIPTION_SIZE,
+    //     seeds = [
+    //         b"subscription",
+    //         plan.key().as_ref(),
+    //         caller.key().as_ref(),
+    //     ],
+    //     bump
+    // )]
+    // pub subscription: Box<Account<'info, Subscription>>,
+
+    // MINTS
+    /// The USDC mint account
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+
+    /// The DAWN mint account
+    #[account(address = config.dawn_mint)]
+    pub dawn_mint: Box<Account<'info, Mint>>,
+
+    // RAYDIUM
+    /// The Raydium program account
+    #[account(address = config.raydium)]
+    pub raydium: Program<'info, AmmV3>,
+
+    /// The Raydium config account
+    /// CHECK: Verified in Raydium upon CPI
+    #[account(address = config.raydium_config)]
+    pub raydium_config: UncheckedAccount<'info>,
+
+    /// The Raydium pool account
+    /// CHECK: Address checked to match the pool from config
+    #[account(mut, address = config.raydium_pool)]
+    pub raydium_pool: UncheckedAccount<'info>,
+
+    /// The Raydium observation account
+    /// CHECK: Address checked to match the pool observation key
+    #[account(mut, address = config.raydium_observation)]
+    pub raydium_observation: UncheckedAccount<'info>,
+
+    /// Tick array state account
+    /// CHECK: Verified in Raydium upon CPI
+    #[account(mut)]
+    pub tick_array: UncheckedAccount<'info>,
+
+    // VAULTS
+    /// The USDC pool vault account
     #[account(
-        seeds = [
-            b"plan",
-            plan.building.as_ref(),
-            &plan.price.to_le_bytes(),
-            &plan.duration.to_le_bytes(),
-            &plan.speed.to_le_bytes(),
-            &plan.capacity.to_le_bytes(),
-            &plan.sla_id.to_le_bytes(),
-        ],
-        bump = plan.bump
+        mut,
+        token::mint = usdc_mint,
+        token::authority = raydium_pool,
+        token::token_program = token_program,
     )]
-    pub plan: Account<'info, Plan>,
+    pub usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The subscription account
+    /// The DAWN pool vault account
     #[account(
-        init,
-        payer = caller,
-        space = SUBSCRIPTION_SIZE,
-        seeds = [
-            b"subscription",
-            plan.key().as_ref(),
-            caller.key().as_ref(),
-        ],
-        bump
+        mut,
+        token::mint = dawn_mint,
+        token::authority = raydium_pool,
+        token::token_program = token_program,
     )]
-    pub subscription: Account<'info, Subscription>,
+    pub dawn_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The DAWN DAO DAWN token account
-    #[account(mut, address = config.dao_dawn_account)]
-    pub dao_dawn_account: Account<'info, TokenAccount>,
+    // // TOKEN ACCOUNTS
+    // /// The DAWN DAO DAWN token account
+    // #[account(address = config.dao_dawn_account)]
+    // pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The Validator DAWN pool token account
-    #[account(mut, address = config.validator_dawn_account)]
-    pub validator_dawn_account: Account<'info, TokenAccount>,
+    // /// The Validator DAWN pool token account
+    // #[account(address = config.validator_dawn_account)]
+    // pub validator_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The Medallion DAWN pool token account
-    #[account(mut, address = config.medallion_dawn_account)]
-    pub medallion_dawn_account: Account<'info, TokenAccount>,
-
+    // /// The Medallion DAWN pool token account
+    // #[account(address = config.medallion_dawn_account)]
+    // pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
     /// The callers associated USDC token account
     #[account(
         mut,
-        associated_token::mint = config.usdc_mint,
+        associated_token::mint = usdc_mint,
         associated_token::authority = caller,
     )]
-    pub user_usdc_account: Account<'info, TokenAccount>,
+    pub user_usdc_account: Box<Account<'info, TokenAccount>>,
 
-    /// The associated plan building owner USDC token account
+    /// The callers associated DAWN token account
     #[account(
         mut,
-        associated_token::mint = config.usdc_mint,
-        associated_token::authority = plan.owner,
+        associated_token::mint = dawn_mint,
+        associated_token::authority = caller,
     )]
-    pub bo_usdc_account: Account<'info, TokenAccount>,
+    pub user_dawn_account: Box<Account<'info, TokenAccount>>,
 
+    // PROGRAMS
+    // /// The memo program account
+    // /// CHECK: Address checked to match the memo program ID
+    // #[account(address = config.memo_program)]
+    // pub memo_program: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+    pub token_program_2022: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
@@ -136,29 +201,86 @@ impl PlanApp {
         Ok((dao_fee, validator_fee, medallion_fee, remainder))
     }
 
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
-        let config = &ctx.accounts.config;
-        let plan = &ctx.accounts.plan;
-        let subscription = &mut ctx.accounts.subscription;
+    pub fn subscribe<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
+    ) -> Result<()> {
+        // let config = &ctx.accounts.config;
+        // let plan = &ctx.accounts.plan;
+        // let subscription = &mut ctx.accounts.subscription;
 
         // Make sure the user has enough USDC to pay for the plan
-        require!(
-            ctx.accounts.user_usdc_account.amount >= plan.price,
-            PlanError::InsufficientFunds
-        );
+        // require!(
+        //     ctx.accounts.user_usdc_account.amount >= plan.price,
+        //     PlanError::InsufficientFunds
+        // );
 
         // Calculate fees and remainder of plan price for building owner
-        let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_fees(
-            plan.price,
-            config.dao_fee,
-            config.validator_fee,
-            config.medallion_fee,
-        )?;
+        // let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_fees(
+        //     plan.price,
+        //     config.dao_fee,
+        //     config.validator_fee,
+        //     config.medallion_fee,
+        // )?;
 
-        let total_fee = dao_fee.add(validator_fee).add(medallion_fee);
+        // let total_fee = dao_fee.add(validator_fee).add(medallion_fee);
+        let total_fee = 100_000_000;
         msg!("total fee: {:?}", total_fee);
 
+        // Since input 0 is always USDC, it is always the quote
+        let input0_is_base = false;
+
+        // let tickarray_bitmap_extension_key = Pubkey::find_program_address(
+        //     &[
+        //         b"pool_tick_array_bitmap_extension",
+        //         ctx.accounts.raydium_pool.key().as_ref(),
+        //     ],
+        //     ctx.accounts.raydium.to_account_info().key,
+        // )
+        // .0;
+
+        // msg!(
+        //     "tickarray_bitmap_extension_key: {:?}",
+        //     tickarray_bitmap_extension_key
+        // );
+
         // swap total_fee to dawn
+        let swap_ctx = CpiContext::new(
+            ctx.accounts.raydium.to_account_info(),
+            Swap {
+                payer: ctx.accounts.caller.to_account_info(),
+                amm_config: ctx.accounts.raydium_config.to_account_info(),
+                pool_state: ctx.accounts.raydium_pool.to_account_info(),
+                observation_state: ctx.accounts.raydium_observation.to_account_info(),
+                input_token_account: ctx.accounts.user_usdc_account.to_account_info(),
+                output_token_account: ctx.accounts.user_dawn_account.to_account_info(),
+                // mints
+                // input_vault_mint: ctx.accounts.usdc_mint.to_account_info(),
+                // output_vault_mint: ctx.accounts.dawn_mint.to_account_info(),
+                // vaults
+                input_vault: ctx.accounts.usdc_vault.to_account_info(),
+                output_vault: ctx.accounts.dawn_vault.to_account_info(),
+                // programs
+                // memo_program: ctx.accounts.memo_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+                // token_program2022: ctx.accounts.token_program_2022.to_account_info(),
+                tick_array: ctx.accounts.tick_array.to_account_info(),
+            },
+        );
+
+        let other_amount_threshold = 206187;
+        let sqrt_price_limit_x64 = 0;
+
+        // let pool = ctx.accounts.raydium_pool.load()?;
+        // let price = pool.sqrt_price_x64;
+        // msg!("pool.sqrt_price_x64: {:?}", price);
+
+        raydium_clmm::cpi::swap(
+            swap_ctx,
+            total_fee,
+            other_amount_threshold,
+            sqrt_price_limit_x64,
+            input0_is_base,
+        )?;
 
         // distribute dawn to fee to dao, validator pool and medallion pool
 
@@ -175,32 +297,32 @@ impl PlanApp {
         // );
         // token::transfer(dawn_fee_cpi_ctx, dawn_fee)?;
 
-        // Get the current timestamp from the clock
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
+        // // Get the current timestamp from the clock
+        // let clock = Clock::get()?;
+        // let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
 
-        // Calculate plan duration in seconds (days to seconds)
-        let duration_in_seconds = (plan.duration as u64)
-            .checked_mul(SECONDS_PER_DAY)
-            .ok_or(PlanError::Overflow)?;
+        // // Calculate plan duration in seconds (days to seconds)
+        // let duration_in_seconds = (plan.duration as u64)
+        //     .checked_mul(SECONDS_PER_DAY)
+        //     .ok_or(PlanError::Overflow)?;
 
-        // calculate subscription expiration by adding plan `duration` days to current timestamp
-        let expiration = current_timestamp
-            .checked_add(duration_in_seconds as i64)
-            .ok_or(PlanError::Overflow)?;
+        // // calculate subscription expiration by adding plan `duration` days to current timestamp
+        // let expiration = current_timestamp
+        //     .checked_add(duration_in_seconds as i64)
+        //     .ok_or(PlanError::Overflow)?;
 
-        // Save subscription data
-        subscription.subscriber = ctx.accounts.caller.key();
-        subscription.plan = ctx.accounts.plan.key();
-        subscription.expiration = expiration;
-        subscription.bump = ctx.bumps.subscription;
+        // // Save subscription data
+        // subscription.subscriber = ctx.accounts.caller.key();
+        // subscription.plan = ctx.accounts.plan.key();
+        // subscription.expiration = expiration;
+        // subscription.bump = ctx.bumps.subscription;
 
-        emit!(Subscribed {
-            subscription: subscription.key(),
-            subscriber: ctx.accounts.caller.key(),
-            plan: ctx.accounts.plan.key(),
-            expiration: subscription.expiration,
-        });
+        // emit!(Subscribed {
+        //     subscription: subscription.key(),
+        //     subscriber: ctx.accounts.caller.key(),
+        //     plan: ctx.accounts.plan.key(),
+        //     expiration: subscription.expiration,
+        // });
 
         Ok(())
     }

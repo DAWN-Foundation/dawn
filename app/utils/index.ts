@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import path from 'path'
 import fs from 'fs'
 import { Program, BN, Idl } from '@coral-xyz/anchor'
-import { Keypair, PublicKey } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey } from '@solana/web3.js'
 import { execSync } from 'child_process'
 
 import { AmmV3 } from '../../target/types/amm_v3'
@@ -11,6 +11,10 @@ import { createAmmConfig } from './create_config'
 import { createOperationAccount } from './operation_account'
 import { createPool } from './create_pool'
 import { openPosition } from './open_position'
+import {
+  createAccount,
+  getOrCreateAssociatedTokenAccount,
+} from '@solana/spl-token'
 
 export const SIX_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -33,6 +37,7 @@ export function loadWallet(): anchor.Wallet {
 // Helper to deploy the Raydium CLMM
 export function deployRaydium() {
   // Deploy the program
+  console.log('Deploying Raydium CLMM...')
   const output = execSync(
     'cd ../raydium-clmm && anchor deploy --provider.cluster localnet',
     {
@@ -53,6 +58,7 @@ export function deployRaydium() {
 export async function setupRaydium(dawnMint: PublicKey, usdcMint: PublicKey) {
   // Deploy Raydium CLMM
   const raydium = deployRaydium()
+  console.log({ raydium: raydium.toBase58() })
 
   // wait 2.5 seconds for the program to be deployed
   await new Promise((resolve) => setTimeout(resolve, 2_500))
@@ -66,7 +72,7 @@ export async function setupRaydium(dawnMint: PublicKey, usdcMint: PublicKey) {
 
   // Create AMM config
   console.log('Creating AMM config...')
-  const ammConfig = await createAmmConfig(raydium, mint0, mint1)
+  const configPda = await createAmmConfig(raydium, mint0, mint1)
 
   // Create operation account
   console.log('Creating operation account...')
@@ -74,7 +80,28 @@ export async function setupRaydium(dawnMint: PublicKey, usdcMint: PublicKey) {
 
   // Create DAWN-USDC pool
   console.log('Creating DAWN-USDC pool...')
-  const poolPda = await createPool(raydium, ammConfig, mint0, mint1, mint0Base)
+  const poolPda = await createPool(raydium, configPda, mint0, mint1, mint0Base)
+
+  // Find observation account PDA
+  const [observationPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from(OBSERVATION_SEED), poolPda.toBuffer()],
+    raydium,
+  )
+  console.log({ observation_PDA: observationPda.toBase58() })
+
+  // Find USDC vault PDA
+  const [usdcVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from(POOL_VAULT_SEED), poolPda.toBuffer(), usdcMint.toBuffer()],
+    raydium,
+  )
+  console.log({ usdc_vault: usdcVault.toBase58() })
+
+  // Find DAWN vault PDA
+  const [dawnVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from(POOL_VAULT_SEED), poolPda.toBuffer(), dawnMint.toBuffer()],
+    raydium,
+  )
+  console.log({ dawn_vault: dawnVault.toBase58() })
 
   // Open position
   console.log('Opening position...')
@@ -84,5 +111,5 @@ export async function setupRaydium(dawnMint: PublicKey, usdcMint: PublicKey) {
   // console.log('Swapping...')
   // await swap(mint0, mint1)
 
-  return { raydium, poolPda }
+  return { raydium, poolPda, configPda, observationPda, usdcVault, dawnVault }
 }

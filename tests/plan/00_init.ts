@@ -39,7 +39,10 @@ describe('plan::initialize', () => {
         validatorDawnAccount: mock.validatorDawnAccount,
         medallionDawnAccount: mock.medallionDawnAccount,
         raydium: mock.raydium,
+        raydiumConfig: mock.raydiumConfig,
         raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
+        memoProgram: mock.memoProgram,
       })
       .rpc()
 
@@ -64,7 +67,9 @@ describe('plan::initialize', () => {
 
     // raydium
     assert.ok(config.raydium.equals(mock.raydium))
+    assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
     assert.ok(config.raydiumPool.equals(mock.raydiumPool))
+    assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
   })
 
   it('cannot be reinitialized', async () => {
@@ -79,7 +84,10 @@ describe('plan::initialize', () => {
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
           raydium: mock.raydium,
+          raydiumConfig: mock.raydiumConfig,
           raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+          memoProgram: mock.memoProgram,
         })
         .rpc()
       assert.ok(false)

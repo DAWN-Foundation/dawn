@@ -12,7 +12,7 @@ const {
   getOrCreateAssociatedTokenAccount,
 } = require('@solana/spl-token')
 
-const PROGRAM_ID = new PublicKey('79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq')
+const PROGRAM_ID = new PublicKey('4K4X1EcCU6iX5x3NDgKzZuEeRw9VRpyQM3Rq13JQGbr7')
 
 export function loadWallet(): Wallet {
   const walletPath = `${require('os').homedir()}/.config/solana/id.json`
@@ -179,6 +179,8 @@ async function setup(connection: Connection): Promise<TestnetConfig> {
     userUsdcAccount.toBase58(),
   )
 
+  // 
+
   // Mint 1_000_000 USDC to user
   await mintTo(
     connection,
@@ -201,15 +203,13 @@ async function setup(connection: Connection): Promise<TestnetConfig> {
   )
   console.log('Minted DAWN token to wallet.payer:', dawnMint.toBase58())
 
-  // Generate config PDA
-  const [configPda] = PublicKey.findProgramAddressSync(
+  console.log('Setting up Raydium...')
+  const { raydium, poolPda, configPda } = await setupRaydium(dawnMint, usdcMint)
+
+  const [planConfigPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     PROGRAM_ID,
   )
-  console.log('Config PDA:', configPda.toBase58())
-
-  console.log('Setting up Raydium...')
-  const { raydium, poolPda } = await setupRaydium(dawnMint, usdcMint)
 
   return {
     wallet: wallet.publicKey.toBase58(),
@@ -233,19 +233,23 @@ async function setup(connection: Connection): Promise<TestnetConfig> {
       secretKey: tester.secretKey.toString(),
       publicKey: tester.publicKey.toBase58(),
     },
-    raydium: raydium.toBase58(),
     // mints
     usdcMint: usdcMint.toBase58(),
     dawnMint: dawnMint.toBase58(),
     // token accounts
+    userUsdcAccount: userUsdcAccount.toBase58(),
+    userDawnAccount: userDawnAccount.toBase58(),
     daoDawnAccount: daoDawnAccount.toBase58(),
     validatorDawnAccount: validatorDawnAccount.toBase58(),
     medallionDawnAccount: medallionDawnAccount.toBase58(),
     boDawnAccount: boDawnAccount.toBase58(),
     testerUsdcAccount: testerUsdcAccount.toBase58(),
-    // PDA
-    configPda: configPda.toBase58(),
-    poolPda: poolPda.toBase58(),
+    // raydium
+    raydium: raydium.toBase58(),
+    raydiumConfig: configPda.toBase58(),
+    raydiumPool: poolPda.toBase58(),
+    // plan accounts
+    configPda: planConfigPda,
   }
 }
 

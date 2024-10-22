@@ -4,7 +4,7 @@ import { POOL_SEED } from '.'
 
 export async function createPool(
   raydium: PublicKey,
-  ammConfig: PublicKey, // amm_config public key
+  configPda: PublicKey, // amm_config public key
   mint0: PublicKey,
   mint1: PublicKey,
   mint0Base: boolean,
@@ -13,7 +13,7 @@ export async function createPool(
   const [poolStatePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from(POOL_SEED),
-      ammConfig.toBuffer(),
+      configPda.toBuffer(),
       mint0.toBuffer(),
       mint1.toBuffer(),
     ],

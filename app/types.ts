@@ -10,17 +10,21 @@ export interface TestnetConfig {
   medallionPool: Keypair
   buildingOwner: Keypair
   tester: Keypair
+  // raydium
   raydium: string
+  raydiumConfig: string
+  raydiumPool: string
   // mints
   usdcMint: string
   dawnMint: string
   // token accounts
+  userUsdcAccount: string
+  userDawnAccount: string
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string
   boDawnAccount: string
   testerUsdcAccount: string
-  // PDA
+  // plan accounts
   configPda: string
-  poolPda: string
 }

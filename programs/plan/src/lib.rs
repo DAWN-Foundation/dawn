@@ -48,7 +48,9 @@ pub mod plan {
         PlanApp::remove_plan(ctx)
     }
 
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+    pub fn subscribe<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
+    ) -> Result<()> {
         PlanApp::subscribe(ctx)
     }
 }

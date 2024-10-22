@@ -16,9 +16,15 @@ export interface Mock {
   medallionDawnAccount: PublicKey
   boDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
+  testerDawnAccount: PublicKey
   // raydium
   raydium: PublicKey
+  raydiumConfig: PublicKey
   raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  usdcVault: PublicKey
+  dawnVault: PublicKey
+  memoProgram: PublicKey
   // config
   daoFee: BN
   validatorFee: BN

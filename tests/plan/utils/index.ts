@@ -16,6 +16,10 @@ import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
 import { setupRaydium } from '../../../app/utils'
 
+const MEMO_PROGRAM_ID = new PublicKey(
+  'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+)
+
 export let mock: Mock
 
 // Helper to confirm a transaction
@@ -81,26 +85,32 @@ export async function setup(
   wallet: NodeWallet,
 ) {
   // Create DAWN DAO KeyPair
+  console.log('Creating DAWN DAO KeyPair...')
   const dao = Keypair.generate()
   await fund(provider.connection, dao.publicKey, 1000)
 
   // Create Validator Pool KeyPair
+  console.log('Creating Validator Pool KeyPair...')
   const validatorPool = Keypair.generate()
   await fund(provider.connection, validatorPool.publicKey, 1000)
 
   // Create Medallion Pool KeyPair
+  console.log('Creating Medallion Pool KeyPair...')
   const medallionPool = Keypair.generate()
   await fund(provider.connection, medallionPool.publicKey, 1000)
 
   // Create Building Owner KeyPair
+  console.log('Creating Building Owner KeyPair...')
   const buildingOwner = Keypair.generate()
   await fund(provider.connection, buildingOwner.publicKey, 1000)
 
   // Create Tester KeyPair
+  console.log('Creating Tester KeyPair...')
   const tester = Keypair.generate()
   await fund(provider.connection, tester.publicKey, 1000)
 
   // Mint test USDC token
+  console.log('Minting test USDC token...')
   const usdcMint = await createMint(
     provider.connection,
     wallet.payer, // Payer for transaction
@@ -109,6 +119,7 @@ export async function setup(
     6, // Decimals (6 decimals for USDC)
   )
   // Mint test DAWN token
+  console.log('Minting test DAWN token...')
   const dawnMint = await createMint(
     provider.connection,
     wallet.payer, // Payer for transaction
@@ -118,11 +129,12 @@ export async function setup(
   )
 
   console.log({
-    usdcMint: usdcMint.toBase58(),
-    dawnMint: dawnMint.toBase58(),
+    usdc_mint: usdcMint.toBase58(),
+    dawn_mint: dawnMint.toBase58(),
   })
 
   // Create DAWN account for DAWN DAO
+  console.log('Creating DAWN account for DAWN DAO...')
   const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
     dao,
@@ -131,6 +143,7 @@ export async function setup(
   )
 
   // Create DAWN account for Validator Pool
+  console.log('Creating DAWN account for Validator Pool...')
   const { address: validatorDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -140,6 +153,7 @@ export async function setup(
     )
 
   // Create DAWN account for Medallion Pool
+  console.log('Creating DAWN account for Medallion Pool...')
   const { address: medallionDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -149,6 +163,7 @@ export async function setup(
     )
 
   // Create DAWN account for Building Owner
+  console.log('Creating DAWN account for Building Owner...')
   const { address: boDawnAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
     buildingOwner,
@@ -157,6 +172,7 @@ export async function setup(
   )
 
   // Create USDC account for Tester
+  console.log('Creating USDC account for Tester...')
   const { address: testerUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -165,7 +181,18 @@ export async function setup(
       tester.publicKey,
     )
 
+  // Create DAWN token account for Tester
+  console.log('Creating DAWN token account for Tester...')
+  const { address: testerDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      tester,
+      dawnMint,
+      tester.publicKey,
+    )
+
   // Create DAWN token account for wallet.payer
+  console.log('Creating DAWN token account for wallet.payer...')
   const { address: userDawnAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
     wallet.payer,
@@ -174,6 +201,7 @@ export async function setup(
   )
 
   // Create USDC token account for wallet.payer
+  console.log('Creating USDC token account for wallet.payer...')
   const { address: userUsdcAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
     wallet.payer,
@@ -182,6 +210,7 @@ export async function setup(
   )
 
   // Mint 1_000_000 USDC to user
+  console.log('Minting 1_000_000 USDC to wallet.payer...')
   await mintTo(
     provider.connection,
     wallet.payer,
@@ -192,6 +221,7 @@ export async function setup(
   )
 
   // Mint 1_000_000 DAWN to user
+  console.log('Minting 1_000_000 DAWN to wallet.payer...')
   await mintTo(
     provider.connection,
     wallet.payer,
@@ -201,9 +231,10 @@ export async function setup(
     BigInt(1_000_000_000_000_000), // 9 decimals
   )
 
-  const { raydium, poolPda } = await setupRaydium(dawnMint, usdcMint)
+  const { raydium, poolPda, configPda, observationPda, usdcVault, dawnVault } =
+    await setupRaydium(dawnMint, usdcMint)
 
-  // await new Promise((resolve) => setTimeout(resolve, 100_000))
+  // await new Promise((resolve) => setTimeout(resolve, 120_000))
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)
@@ -215,8 +246,6 @@ export async function setup(
     medallionPool,
     buildingOwner,
     tester,
-    raydium,
-    raydiumPool: poolPda,
     // mints
     usdcMint,
     dawnMint,
@@ -226,6 +255,15 @@ export async function setup(
     medallionDawnAccount,
     boDawnAccount,
     testerUsdcAccount,
+    testerDawnAccount,
+    // raydium
+    raydium,
+    raydiumConfig: configPda,
+    raydiumPool: poolPda,
+    raydiumObservation: observationPda,
+    usdcVault,
+    dawnVault,
+    memoProgram: MEMO_PROGRAM_ID,
     // config
     daoFee,
     validatorFee,

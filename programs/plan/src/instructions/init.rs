@@ -33,10 +33,16 @@ pub struct Config {
     pub medallion_dawn_account: Pubkey,
 
     // DEX SWAP
-    /// The raydium account
+    /// The Raydium program account
     pub raydium: Pubkey,
+    /// The raydium config account
+    pub raydium_config: Pubkey,
     /// The raydium DAWN/USDC pool account
     pub raydium_pool: Pubkey,
+    /// The raydium observation account
+    pub raydium_observation: Pubkey,
+    /// The memo program account
+    pub memo_program: Pubkey,
 }
 
 pub const CONFIG_SIZE: usize = 8 // id
@@ -50,7 +56,10 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 32 // validator_dawn_account
     + 32 // medallion_dawn_account
     + 32 // raydium
+    + 32 // raydium_config
     + 32 // raydium_pool
+    + 32 // raydium_observation
+    + 32 // memo_program
     + 1; // bump
 
 #[derive(Accounts)]
@@ -76,24 +85,34 @@ pub struct Initialize<'info> {
     pub dawn_mint: Account<'info, Mint>,
 
     /// The DAWN DAO DAWN token account
-    #[account()]
+    #[account(token::mint = dawn_mint)]
     pub dao_dawn_account: Account<'info, TokenAccount>,
     /// The validator DAWN pool token account
-    #[account()]
+    #[account(token::mint = dawn_mint)]
     pub validator_dawn_account: Account<'info, TokenAccount>,
     /// The medallion DAWN pool token account
-    #[account()]
+    #[account(token::mint = dawn_mint)]
     pub medallion_dawn_account: Account<'info, TokenAccount>,
 
-    /// CHECK: Assumes authority has set this to Raydium CLMM account correctly
     /// The Raydium account
-    #[account()]
+    /// CHECK: Assumes authority has set this to Raydium program account correctly
     pub raydium: UncheckedAccount<'info>,
 
-    /// CHECK: Assumes authority has set this to Raydium DAWN/USDC pool account correctly
+    /// The Raydium config account
+    /// CHECK: Assumes authority has set this to Raydium config account correctly
+    pub raydium_config: UncheckedAccount<'info>,
+
     /// The Raydium DAWN/USDC pool account
-    #[account()]
+    /// CHECK: Assumes authority has set this to Raydium DAWN/USDC pool account correctly
     pub raydium_pool: UncheckedAccount<'info>,
+
+    /// The Raydium observation account
+    /// CHECK: Assumes authority has set this to Raydium observation account correctly
+    pub raydium_observation: UncheckedAccount<'info>,
+
+    /// The memo program account
+    /// CHECK: Assumes authority has set this to memo program account correctly
+    pub memo_program: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -137,6 +156,10 @@ impl PlanApp {
         // raydium
         config.raydium = ctx.accounts.raydium.key();
         config.raydium_pool = ctx.accounts.raydium_pool.key();
+        config.raydium_config = ctx.accounts.raydium_config.key();
+        config.raydium_observation = ctx.accounts.raydium_observation.key();
+        // memo program
+        config.memo_program = ctx.accounts.memo_program.key();
 
         Ok(())
     }
