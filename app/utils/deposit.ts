@@ -22,10 +22,10 @@ export async function deposit(
   userMint1: PublicKey,
 ) {
   const [auth] = getAuthAddress(program.programId)
-  const [poolPda] = getPoolAddress(configPda, mint0, mint1, program.programId)
-  const [lpMintAddress] = getPoolLpMintAddress(poolPda, program.programId)
-  const [vault0] = getPoolVaultAddress(poolPda, mint0, program.programId)
-  const [vault1] = getPoolVaultAddress(poolPda, mint1, program.programId)
+  const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)
+  const [lpMintAddress] = getPoolLpMintAddress(pool, program.programId)
+  const [vault0] = getPoolVaultAddress(pool, mint0, program.programId)
+  const [vault1] = getPoolVaultAddress(pool, mint1, program.programId)
   const [creatorLpTokenAddress] = PublicKey.findProgramAddressSync(
     [
       wallet.publicKey.toBuffer(),
@@ -35,16 +35,19 @@ export async function deposit(
     ASSOCIATED_PROGRAM_ID,
   )
 
+  // 10 LP tokens were minted when the pool was created
   const lp_token_amount = new BN(10000000000)
+
+  // 10K more of each token
   const maximum_token_0_amount = new BN(10_000_000_000)
   const maximum_token_1_amount = new BN(10_000_000_000)
 
-  const tx = await program.methods
+  await program.methods
     .deposit(lp_token_amount, maximum_token_0_amount, maximum_token_1_amount)
     .accounts({
       owner: wallet.publicKey,
       authority: auth,
-      poolState: poolPda,
+      poolState: pool,
       ownerLpToken: creatorLpTokenAddress,
       token0Account: userMint0,
       token1Account: userMint1,
@@ -59,9 +62,5 @@ export async function deposit(
     })
     .rpc()
 
-  console.log('Deposited:', { tx })
-
-  await new Promise((resolve) => setTimeout(resolve, 120_000))
-
-  return poolPda
+  console.log('Successfully deposited more liquidity')
 }

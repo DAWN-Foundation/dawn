@@ -19,11 +19,12 @@ export interface Mock {
   testerDawnAccount: PublicKey
   // raydium
   raydium: PublicKey
+  raydiumAuthority: PublicKey
   raydiumConfig: PublicKey
-  // raydiumPool: PublicKey
-  // raydiumObservation: PublicKey
-  // usdcVault: PublicKey
-  // dawnVault: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  dawnVault: PublicKey
+  usdcVault: PublicKey
   // config
   daoFee: BN
   validatorFee: BN

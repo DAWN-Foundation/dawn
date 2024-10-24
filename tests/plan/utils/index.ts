@@ -4,31 +4,17 @@ import { BN, Program } from '@coral-xyz/anchor'
 import {
   Keypair,
   PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
-  Transaction,
   VersionedTransactionResponse,
 } from '@solana/web3.js'
 import {
   createMint,
   mintTo,
   getOrCreateAssociatedTokenAccount,
-  createAccount,
-  TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
-  createInitializeMintInstruction,
-  createInitializeTransferFeeConfigInstruction,
-  getMintLen,
-  ExtensionType,
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
 import { Mock } from './types'
 import { setupRaydium } from '../../../app/utils'
-
-const MEMO_PROGRAM_ID = new PublicKey(
-  'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
-)
 
 export let mock: Mock
 
@@ -137,7 +123,6 @@ export async function setup(
     null, // Freeze authority
     6, // Decimals (6 decimals for DAWN)
   )
-  // 9, // Decimals (9 decimals for DAWN)
 
   console.log({
     usdc_mint: usdcMint.toBase58(),
@@ -202,9 +187,6 @@ export async function setup(
       tester.publicKey,
     )
 
-  const userUsdc = Keypair.generate()
-  const userDawn = Keypair.generate()
-
   // Create DAWN token account for wallet.payer
   console.log('Creating DAWN token account for wallet.payer...')
   const { address: userDawnAccount } = await getOrCreateAssociatedTokenAccount(
@@ -246,14 +228,15 @@ export async function setup(
   )
   // BigInt(1_000_000_000_000_000), // 9 decimals
 
-  const { raydium, configPda } = await setupRaydium(
-    provider,
-    wallet,
-    dawnMint,
-    usdcMint,
-    userDawnAccount,
-    userUsdcAccount,
-  )
+  const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
+    await setupRaydium(
+      provider,
+      wallet,
+      dawnMint,
+      usdcMint,
+      userDawnAccount,
+      userUsdcAccount,
+    )
 
   // await new Promise((resolve) => setTimeout(resolve, 120_000))
 
@@ -279,11 +262,12 @@ export async function setup(
     testerDawnAccount,
     // raydium
     raydium,
-    raydiumConfig: configPda,
-    // raydiumPool: poolPda,
-    // raydiumObservation: observationPda,
-    // usdcVault,
-    // dawnVault,
+    raydiumConfig: config,
+    raydiumAuthority: auth,
+    raydiumPool: pool,
+    raydiumObservation: obs,
+    dawnVault,
+    usdcVault,
     // config
     daoFee,
     validatorFee,

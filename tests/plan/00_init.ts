@@ -33,15 +33,17 @@ describe('plan::initialize', () => {
       .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
       .accounts({
         caller: wallet.payer.publicKey,
+        config: configPda,
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
         daoDawnAccount: mock.daoDawnAccount,
         validatorDawnAccount: mock.validatorDawnAccount,
         medallionDawnAccount: mock.medallionDawnAccount,
         raydium: mock.raydium,
+        raydiumAuthority: mock.raydiumAuthority,
         raydiumConfig: mock.raydiumConfig,
-        // raydiumPool: mock.raydiumPool,
-        // raydiumObservation: mock.raydiumObservation,
+        raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
       })
       .rpc()
 
@@ -66,9 +68,10 @@ describe('plan::initialize', () => {
 
     // raydium
     assert.ok(config.raydium.equals(mock.raydium))
+    assert.ok(config.raydiumAuthority.equals(mock.raydiumAuthority))
     assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
-    // assert.ok(config.raydiumPool.equals(mock.raydiumPool))
-    // assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    assert.ok(config.raydiumPool.equals(mock.raydiumPool))
+    assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
   })
 
   it('cannot be reinitialized', async () => {
@@ -77,15 +80,17 @@ describe('plan::initialize', () => {
         .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accounts({
           caller: wallet.payer.publicKey,
+          config: configPda,
           usdcMint: mock.usdcMint,
           dawnMint: mock.dawnMint,
           daoDawnAccount: mock.daoDawnAccount,
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
           raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
           raydiumConfig: mock.raydiumConfig,
-          // raydiumPool: mock.raydiumPool,
-          // raydiumObservation: mock.raydiumObservation,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
         })
         .rpc()
       assert.ok(false)

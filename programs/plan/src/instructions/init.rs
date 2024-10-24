@@ -35,11 +35,13 @@ pub struct Config {
     // DEX SWAP
     /// The Raydium program account
     pub raydium: Pubkey,
-    /// The raydium config account
+    /// The Raydium authority account
+    pub raydium_authority: Pubkey,
+    /// The Raydium config account
     pub raydium_config: Pubkey,
-    /// The raydium DAWN/USDC pool account
+    /// The Raydium DAWN/USDC pool account
     pub raydium_pool: Pubkey,
-    /// The raydium observation account
+    /// The Raydium observation account
     pub raydium_observation: Pubkey,
 }
 
@@ -54,6 +56,7 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 32 // validator_dawn_account
     + 32 // medallion_dawn_account
     + 32 // raydium
+    + 32 // raydium_authority
     + 32 // raydium_config
     + 32 // raydium_pool
     + 32 // raydium_observation
@@ -94,6 +97,10 @@ pub struct Initialize<'info> {
     /// The Raydium account
     /// CHECK: Assumes authority has set this to Raydium program account correctly
     pub raydium: UncheckedAccount<'info>,
+
+    /// The Raydium authority account
+    /// CHECK: Assumes authority has set this to Raydium authority account correctly
+    pub raydium_authority: UncheckedAccount<'info>,
 
     /// The Raydium config account
     /// CHECK: Assumes authority has set this to Raydium config account correctly
@@ -148,6 +155,7 @@ impl PlanApp {
 
         // raydium
         config.raydium = ctx.accounts.raydium.key();
+        config.raydium_authority = ctx.accounts.raydium_authority.key();
         config.raydium_pool = ctx.accounts.raydium_pool.key();
         config.raydium_config = ctx.accounts.raydium_config.key();
         config.raydium_observation = ctx.accounts.raydium_observation.key();

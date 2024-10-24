@@ -33,10 +33,10 @@ export async function createPool(
 
   console.log({ auth: auth.toBase58() })
 
-  const [poolPda] = getPoolAddress(configPda, mint0, mint1, program.programId)
-  const [lpMintAddress] = getPoolLpMintAddress(poolPda, program.programId)
-  const [vault0] = getPoolVaultAddress(poolPda, mint0, program.programId)
-  const [vault1] = getPoolVaultAddress(poolPda, mint1, program.programId)
+  const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)
+  const [lpMintAddress] = getPoolLpMintAddress(pool, program.programId)
+  const [vault0] = getPoolVaultAddress(pool, mint0, program.programId)
+  const [vault1] = getPoolVaultAddress(pool, mint1, program.programId)
   const [creatorLpTokenAddress] = PublicKey.findProgramAddressSync(
     [
       wallet.publicKey.toBuffer(),
@@ -45,10 +45,7 @@ export async function createPool(
     ],
     ASSOCIATED_PROGRAM_ID,
   )
-  const [observationAddress] = getOrcleAccountAddress(
-    poolPda,
-    program.programId,
-  )
+  const [obs] = getOrcleAccountAddress(pool, program.programId)
 
   await program.methods
     .initialize(mint0Amount, mint1Amount, new BN(0))
@@ -56,7 +53,7 @@ export async function createPool(
       creator: wallet.publicKey,
       ammConfig: configPda,
       authority: auth,
-      poolState: poolPda,
+      poolState: pool,
       token0Mint: mint0,
       token1Mint: mint1,
       lpMint: lpMintAddress,
@@ -66,7 +63,7 @@ export async function createPool(
       token0Vault: vault0,
       token1Vault: vault1,
       createPoolFee,
-      observationState: observationAddress,
+      observationState: obs,
       tokenProgram: TOKEN_PROGRAM_ID,
       token0Program: TOKEN_PROGRAM_ID,
       token1Program: TOKEN_PROGRAM_ID,
@@ -77,10 +74,11 @@ export async function createPool(
     .rpc()
 
   console.log({
-    poolPda: poolPda.toBase58(),
+    pool: pool.toBase58(),
+    authority: auth.toBase58(),
     vault0: vault0.toBase58(),
     vault1: vault1.toBase58(),
   })
 
-  return poolPda
+  return { pool, auth, obs }
 }
