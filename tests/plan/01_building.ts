@@ -254,7 +254,7 @@ describe('plan::building', () => {
     assert.equal(building.bump, buildingBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'buildingAdded')
+    const event = await getEvent(program, tx, 'BuildingAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.equal(event.name, name)
     assert.equal(event.address, address)

@@ -333,7 +333,7 @@ export async function getPlansForBuilding(
   // Decode and return the accounts
   return plans.map((accountInfo) => {
     return program.account.plan.coder.accounts.decode(
-      'plan',
+      'Plan',
       accountInfo.account.data,
     )
   })

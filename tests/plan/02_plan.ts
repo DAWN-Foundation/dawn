@@ -228,7 +228,7 @@ describe('plan::plan', () => {
     assert.equal(buildingPlan.bump, planBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'planAdded')
+    const event = await getEvent(program, tx, 'PlanAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.ok(event.building.equals(buildingPda))
     assert.ok(event.price.eq(price))
@@ -316,7 +316,7 @@ describe('plan::plan', () => {
     assert.equal(plan.bump, planBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'planAdded')
+    const event = await getEvent(program, tx, 'PlanAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.ok(event.building.equals(buildingPda))
     assert.ok(event.price.eq(price))
@@ -432,7 +432,7 @@ describe('plan::plan', () => {
     }
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'planRemoved')
+    const event = await getEvent(program, tx, 'PlanRemoved')
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.building.equals(buildingPda))
   })
