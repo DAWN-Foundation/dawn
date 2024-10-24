@@ -24,13 +24,6 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import {
-  accountMeta,
-  getPdaExBitmapAccount,
-  getPdaTickArrayAddress,
-  PoolUtils,
-  Raydium,
-} from '@raydium-io/raydium-sdk-v2'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -262,31 +255,15 @@ describe('plan::subscription', () => {
     //     epochInfo: await raydium.fetchEpochInfo(),
     //   })
 
-    const { publicKey: tickArrayPDA } = getPdaTickArrayAddress(
-      mock.raydium,
-      mock.raydiumPool,
-      0,
-    )
+    //   let (expect_pda_address, bump) = Pubkey::find_program_address(
+    //     &[
+    //         TICK_ARRAY_SEED.as_bytes(),
+    //         pool_state_loader.key().as_ref(),
+    //         &tick_array_start_index.to_be_bytes(),
+    //     ],
+    //     &crate::id(),
+    // );
 
-  //   let (expect_pda_address, bump) = Pubkey::find_program_address(
-  //     &[
-  //         TICK_ARRAY_SEED.as_bytes(),
-  //         pool_state_loader.key().as_ref(),
-  //         &tick_array_start_index.to_be_bytes(),
-  //     ],
-  //     &crate::id(),
-  // );
-
-  const [t_pda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('tick_array'),
-      mock.raydiumPool.toBuffer(),
-      
-    ],
-    mock.raydium,
-  )
-
-    console.log({ tickArrayPDA })
 
     const tx = await program.methods
       .subscribe()
@@ -299,14 +276,13 @@ describe('plan::subscription', () => {
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
         // raydium
-        raydium: mock.raydium,
-        raydiumConfig: mock.raydiumConfig,
-        raydiumPool: mock.raydiumPool,
-        raydiumObservation: mock.raydiumObservation,
-        tickArray: tickArrayPDA,
-        // vaults
-        usdcVault: mock.usdcVault,
-        dawnVault: mock.dawnVault,
+        // raydium: mock.raydium,
+        // raydiumConfig: mock.raydiumConfig,
+        // raydiumPool: mock.raydiumPool,
+        // raydiumObservation: mock.raydiumObservation,
+        // // vaults
+        // usdcVault: mock.usdcVault,
+        // dawnVault: mock.dawnVault,
         // token accounts
         // daoDawnAccount: mock.daoDawnAccount,
         // validatorDawnAccount: mock.validatorDawnAccount,

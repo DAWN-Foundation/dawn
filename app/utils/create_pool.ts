@@ -1,39 +1,86 @@
-import { execSync } from 'child_process'
-import { PublicKey } from '@solana/web3.js'
-import { POOL_SEED } from '.'
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
+import { Program, Wallet, BN } from '@coral-xyz/anchor'
+import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
+
+import { RaydiumCpSwap } from '../../raydium/raydium_cp_swap'
+
+import {
+  getAuthAddress,
+  getOrcleAccountAddress,
+  getPoolAddress,
+  getPoolLpMintAddress,
+  getPoolVaultAddress,
+} from './pda'
 
 export async function createPool(
-  raydium: PublicKey,
-  configPda: PublicKey, // amm_config public key
+  program: Program<RaydiumCpSwap>,
+  wallet: Wallet,
+  configPda: PublicKey,
   mint0: PublicKey,
   mint1: PublicKey,
-  mint0Base: boolean,
+  userMint0: PublicKey,
+  userMint1: PublicKey,
 ) {
-  // Derive the pool PDA
-  const [poolStatePda] = PublicKey.findProgramAddressSync(
+  const mint0Amount = new BN(10_000_000_000)
+  const mint1Amount = new BN(10_000_000_000)
+
+  const createPoolFee = new PublicKey(
+    'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
+  )
+
+  const [auth] = getAuthAddress(program.programId)
+
+  console.log({ auth: auth.toBase58() })
+
+  const [poolPda] = getPoolAddress(configPda, mint0, mint1, program.programId)
+  const [lpMintAddress] = getPoolLpMintAddress(poolPda, program.programId)
+  const [vault0] = getPoolVaultAddress(poolPda, mint0, program.programId)
+  const [vault1] = getPoolVaultAddress(poolPda, mint1, program.programId)
+  const [creatorLpTokenAddress] = PublicKey.findProgramAddressSync(
     [
-      Buffer.from(POOL_SEED),
-      configPda.toBuffer(),
-      mint0.toBuffer(),
-      mint1.toBuffer(),
+      wallet.publicKey.toBuffer(),
+      TOKEN_PROGRAM_ID.toBuffer(),
+      lpMintAddress.toBuffer(),
     ],
-    raydium,
+    ASSOCIATED_PROGRAM_ID,
   )
-  console.log({ pool_PDA: poolStatePda.toBase58() })
-
-  const initialPrice = mint0Base ? '2' : '0.5'
-
-  const output = execSync(
-    `../raydium-clmm/target/release/client \
-    --mint0 ${mint0.toBase58()} \
-    --mint1 ${mint1.toBase58()} \
-    create-pool 0 ${initialPrice} ${mint0.toBase58()} ${mint1.toBase58()}`,
-    {
-      encoding: 'utf-8',
-    },
+  const [observationAddress] = getOrcleAccountAddress(
+    poolPda,
+    program.programId,
   )
 
-  console.log('create pool output', output)
+  await program.methods
+    .initialize(mint0Amount, mint1Amount, new BN(0))
+    .accounts({
+      creator: wallet.publicKey,
+      ammConfig: configPda,
+      authority: auth,
+      poolState: poolPda,
+      token0Mint: mint0,
+      token1Mint: mint1,
+      lpMint: lpMintAddress,
+      creatorToken0: userMint0,
+      creatorToken1: userMint1,
+      creatorLpToken: creatorLpTokenAddress,
+      token0Vault: vault0,
+      token1Vault: vault1,
+      createPoolFee,
+      observationState: observationAddress,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      token0Program: TOKEN_PROGRAM_ID,
+      token1Program: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+      associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY,
+    })
+    .rpc()
 
-  return poolStatePda
+  console.log({
+    poolPda: poolPda.toBase58(),
+    vault0: vault0.toBase58(),
+    vault1: vault1.toBase58(),
+  })
+
+  return poolPda
 }

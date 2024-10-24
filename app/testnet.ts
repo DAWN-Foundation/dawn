@@ -179,8 +179,6 @@ async function setup(connection: Connection): Promise<TestnetConfig> {
     userUsdcAccount.toBase58(),
   )
 
-  // 
-
   // Mint 1_000_000 USDC to user
   await mintTo(
     connection,
@@ -204,7 +202,12 @@ async function setup(connection: Connection): Promise<TestnetConfig> {
   console.log('Minted DAWN token to wallet.payer:', dawnMint.toBase58())
 
   console.log('Setting up Raydium...')
-  const { raydium, poolPda, configPda } = await setupRaydium(dawnMint, usdcMint)
+  const { raydium, configPda } = await setupRaydium(
+    provider,
+    wallet,
+    dawnMint,
+    usdcMint,
+  )
 
   const [planConfigPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],

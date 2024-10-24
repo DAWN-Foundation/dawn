@@ -88,7 +88,7 @@ anchor build
 
 ### Local Program Address
 
-Each local keypair is unique and
+Each local keypair is unique and must be set correctly to deploy contracts locally
 
 ```bash
 # Check local program address

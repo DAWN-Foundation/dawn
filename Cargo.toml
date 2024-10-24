@@ -1,6 +1,5 @@
 [workspace]
-members = ["programs/*", "raydium"]
-resolver = "2"
+members = ["programs/*"]
 
 [profile.release]
 overflow-checks = true

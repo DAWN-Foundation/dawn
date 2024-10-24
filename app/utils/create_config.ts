@@ -1,35 +1,38 @@
 import { execSync } from 'child_process'
-import { PublicKey } from '@solana/web3.js'
+import { BN, Idl, Program, Wallet } from '@coral-xyz/anchor'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { getAmmConfigAddress } from './pda'
+import { RaydiumCpSwap } from '../../raydium/raydium_cp_swap'
 
 export async function createAmmConfig(
-  raydium: PublicKey,
-  mint0: PublicKey,
-  mint1: PublicKey,
+  program: Program<RaydiumCpSwap>,
+  wallet: Wallet,
 ) {
-  const index = 0
-  const tickSpacing = 1
-  const tradeFeeRate = 30_000
-  const protocolFeeRate = 5_000
-  const fundFeeRate = 2_000
+  const configIndex = 0
+  const tradeFeeRate = new BN(10)
+  const protocolFeeRate = new BN(1000)
+  const fundFeeRate = new BN(25000)
+  const createFee = new BN(0)
 
-  const indexBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  indexBuffer.writeUInt16LE(index)
+  const [configPda] = getAmmConfigAddress(configIndex, program.programId)
 
-  const [ammConfigPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('amm_config'), indexBuffer],
-    raydium,
-  )
+  // Create Amm Config
+  await program.methods
+    .createAmmConfig(
+      configIndex,
+      tradeFeeRate,
+      protocolFeeRate,
+      fundFeeRate,
+      createFee,
+    )
+    .accounts({
+      owner: wallet.publicKey,
+      ammConfig: configPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc()
 
-  const output = execSync(
-    `../raydium-clmm/target/release/client \
-    --mint0 ${mint0.toBase58()} \
-    --mint1 ${mint1.toBase58()} \
-    create-config ${index} ${tickSpacing} ${tradeFeeRate} ${protocolFeeRate} ${fundFeeRate}`,
-    { encoding: 'utf-8' },
-  )
-  console.log(output)
+  console.log('Amm config created', configPda.toBase58())
 
-  console.log('Amm config created', ammConfigPda.toBase58())
-
-  return ammConfigPda
+  return configPda
 }

@@ -4,12 +4,22 @@ import { BN, Program } from '@coral-xyz/anchor'
 import {
   Keypair,
   PublicKey,
+  sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
   VersionedTransactionResponse,
 } from '@solana/web3.js'
 import {
   createMint,
   mintTo,
   getOrCreateAssociatedTokenAccount,
+  createAccount,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  createInitializeMintInstruction,
+  createInitializeTransferFeeConfigInstruction,
+  getMintLen,
+  ExtensionType,
 } from '@solana/spl-token'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { Plan } from '../../../target/types/plan'
@@ -125,8 +135,9 @@ export async function setup(
     wallet.payer, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
-    9, // Decimals (9 decimals for DAWN)
+    6, // Decimals (6 decimals for DAWN)
   )
+  // 9, // Decimals (9 decimals for DAWN)
 
   console.log({
     usdc_mint: usdcMint.toBase58(),
@@ -191,6 +202,9 @@ export async function setup(
       tester.publicKey,
     )
 
+  const userUsdc = Keypair.generate()
+  const userDawn = Keypair.generate()
+
   // Create DAWN token account for wallet.payer
   console.log('Creating DAWN token account for wallet.payer...')
   const { address: userDawnAccount } = await getOrCreateAssociatedTokenAccount(
@@ -228,11 +242,18 @@ export async function setup(
     dawnMint,
     userDawnAccount,
     wallet.payer,
-    BigInt(1_000_000_000_000_000), // 9 decimals
+    BigInt(1_000_000_000_000), // 6 decimals
   )
+  // BigInt(1_000_000_000_000_000), // 9 decimals
 
-  const { raydium, poolPda, configPda, observationPda, usdcVault, dawnVault } =
-    await setupRaydium(dawnMint, usdcMint)
+  const { raydium, configPda } = await setupRaydium(
+    provider,
+    wallet,
+    dawnMint,
+    usdcMint,
+    userDawnAccount,
+    userUsdcAccount,
+  )
 
   // await new Promise((resolve) => setTimeout(resolve, 120_000))
 
@@ -259,11 +280,10 @@ export async function setup(
     // raydium
     raydium,
     raydiumConfig: configPda,
-    raydiumPool: poolPda,
-    raydiumObservation: observationPda,
-    usdcVault,
-    dawnVault,
-    memoProgram: MEMO_PROGRAM_ID,
+    // raydiumPool: poolPda,
+    // raydiumObservation: observationPda,
+    // usdcVault,
+    // dawnVault,
     // config
     daoFee,
     validatorFee,
