@@ -10,10 +10,8 @@ import {
   SystemProgram,
 } from '@solana/web3.js'
 
-import { AmmV3 } from '../../target/types/amm_v3'
 import { Plan } from '../../target/types/plan'
 import { confirmTx, getEvent, mock } from './utils'
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
 import { BUILDING_SIZE } from './01_building'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -59,38 +57,6 @@ function getPlanPda(
 
   return [planPda, planBump]
 }
-
-// async function getPlansForBuilding(
-//   program: Program<Plan>, // Anchor program
-//   building: PublicKey, // Public key of the building
-// ): Promise<any[]> {
-//   // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
-//   const BUILDING_OFFSET = 8 + 32
-
-//   // Fetch all plan accounts and filter by building key
-//   const plans = await program.provider.connection.getProgramAccounts(
-//     program.programId,
-//     {
-//       // Filtering accounts by the `building` public key stored in the Plan account
-//       filters: [
-//         {
-//           memcmp: {
-//             offset: BUILDING_OFFSET, // Offset where the building public key is stored
-//             bytes: building.toBase58(), // The building public key to filter by
-//           },
-//         },
-//       ],
-//     },
-//   )
-
-//   // Decode and return the accounts
-//   return plans.map((accountInfo) => {
-//     return program.account.plan.coder.accounts.decode(
-//       'plan',
-//       accountInfo.account.data,
-//     )
-//   })
-// }
 
 describe('plan::subscription', () => {
   const provider = anchor.AnchorProvider.env()
@@ -264,7 +230,6 @@ describe('plan::subscription', () => {
     //     &crate::id(),
     // );
 
-
     const tx = await program.methods
       .subscribe()
       .accounts({
@@ -276,10 +241,13 @@ describe('plan::subscription', () => {
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
         // raydium
-        // raydium: mock.raydium,
-        // raydiumConfig: mock.raydiumConfig,
-        // raydiumPool: mock.raydiumPool,
-        // raydiumObservation: mock.raydiumObservation,
+        raydium: mock.raydium,
+        raydiumAuthority: mock.raydiumAuthority,
+        raydiumConfig: mock.raydiumConfig,
+        raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
+        dawnVault: mock.dawnVault,
+        usdcVault: mock.usdcVault,
         // // vaults
         // usdcVault: mock.usdcVault,
         // dawnVault: mock.dawnVault,
@@ -292,17 +260,9 @@ describe('plan::subscription', () => {
         // programs
         // memoProgram: mock.memoProgram,
         tokenProgram: TOKEN_PROGRAM_ID,
-        tokenProgram2022: TOKEN_2022_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      // .remainingAccounts([
-      //   accountMeta({
-      //     pubkey: tickArrayPDA.publicKey,
-      //     isSigner: false,
-      //     isWritable: true,
-      //   }),
-      // ])
       .signers([mock.tester])
       .rpc()
 
