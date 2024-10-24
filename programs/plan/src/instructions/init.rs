@@ -41,8 +41,6 @@ pub struct Config {
     pub raydium_pool: Pubkey,
     /// The raydium observation account
     pub raydium_observation: Pubkey,
-    /// The memo program account
-    pub memo_program: Pubkey,
 }
 
 pub const CONFIG_SIZE: usize = 8 // id
@@ -59,7 +57,6 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 32 // raydium_config
     + 32 // raydium_pool
     + 32 // raydium_observation
-    + 32 // memo_program
     + 1; // bump
 
 #[derive(Accounts)]
@@ -110,10 +107,6 @@ pub struct Initialize<'info> {
     /// CHECK: Assumes authority has set this to Raydium observation account correctly
     pub raydium_observation: UncheckedAccount<'info>,
 
-    /// The memo program account
-    /// CHECK: Assumes authority has set this to memo program account correctly
-    pub memo_program: UncheckedAccount<'info>,
-
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -158,8 +151,6 @@ impl PlanApp {
         config.raydium_pool = ctx.accounts.raydium_pool.key();
         config.raydium_config = ctx.accounts.raydium_config.key();
         config.raydium_observation = ctx.accounts.raydium_observation.key();
-        // memo program
-        config.memo_program = ctx.accounts.memo_program.key();
 
         Ok(())
     }

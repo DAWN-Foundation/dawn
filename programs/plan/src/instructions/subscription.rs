@@ -6,12 +6,6 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
     token_2022::Token2022,
 };
-use raydium_clmm::{
-    cpi::accounts::{Swap, SwapV2},
-    program::AmmV3,
-    state::TickArrayState,
-    AmmConfig, ObservationState, PoolState,
-};
 
 use super::{Config, Plan, PlanApp};
 use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
@@ -85,49 +79,44 @@ pub struct Subscribe<'info> {
     #[account(address = config.dawn_mint)]
     pub dawn_mint: Box<Account<'info, Mint>>,
 
-    // RAYDIUM
-    /// The Raydium program account
-    #[account(address = config.raydium)]
-    pub raydium: Program<'info, AmmV3>,
+    // // RAYDIUM
+    // /// The Raydium program account
+    // #[account(address = config.raydium)]
+    // pub raydium: Program<'info, AmmV3>,
 
-    /// The Raydium config account
-    /// CHECK: Verified in Raydium upon CPI
-    #[account(address = config.raydium_config)]
-    pub raydium_config: UncheckedAccount<'info>,
+    // /// The Raydium config account
+    // /// CHECK: Verified in Raydium upon CPI
+    // #[account(address = config.raydium_config)]
+    // pub raydium_config: UncheckedAccount<'info>,
 
-    /// The Raydium pool account
-    /// CHECK: Address checked to match the pool from config
-    #[account(mut, address = config.raydium_pool)]
-    pub raydium_pool: UncheckedAccount<'info>,
+    // /// The Raydium pool account
+    // /// CHECK: Address checked to match the pool from config
+    // #[account(mut, address = config.raydium_pool)]
+    // pub raydium_pool: UncheckedAccount<'info>,
 
-    /// The Raydium observation account
-    /// CHECK: Address checked to match the pool observation key
-    #[account(mut, address = config.raydium_observation)]
-    pub raydium_observation: UncheckedAccount<'info>,
+    // /// The Raydium observation account
+    // /// CHECK: Address checked to match the pool observation key
+    // #[account(mut, address = config.raydium_observation)]
+    // pub raydium_observation: UncheckedAccount<'info>,
 
-    /// Tick array state account
-    /// CHECK: Verified in Raydium upon CPI
-    #[account(mut)]
-    pub tick_array: UncheckedAccount<'info>,
+    // // VAULTS
+    // /// The USDC pool vault account
+    // #[account(
+    //     mut,
+    //     token::mint = usdc_mint,
+    //     token::authority = raydium_pool,
+    //     token::token_program = token_program,
+    // )]
+    // pub usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    // VAULTS
-    /// The USDC pool vault account
-    #[account(
-        mut,
-        token::mint = usdc_mint,
-        token::authority = raydium_pool,
-        token::token_program = token_program,
-    )]
-    pub usdc_vault: Box<Account<'info, TokenAccount>>,
-
-    /// The DAWN pool vault account
-    #[account(
-        mut,
-        token::mint = dawn_mint,
-        token::authority = raydium_pool,
-        token::token_program = token_program,
-    )]
-    pub dawn_vault: Box<Account<'info, TokenAccount>>,
+    // /// The DAWN pool vault account
+    // #[account(
+    //     mut,
+    //     token::mint = dawn_mint,
+    //     token::authority = raydium_pool,
+    //     token::token_program = token_program,
+    // )]
+    // pub dawn_vault: Box<Account<'info, TokenAccount>>,
 
     // // TOKEN ACCOUNTS
     // /// The DAWN DAO DAWN token account
@@ -204,83 +193,7 @@ impl PlanApp {
     pub fn subscribe<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
     ) -> Result<()> {
-        // let config = &ctx.accounts.config;
-        // let plan = &ctx.accounts.plan;
-        // let subscription = &mut ctx.accounts.subscription;
-
-        // Make sure the user has enough USDC to pay for the plan
-        // require!(
-        //     ctx.accounts.user_usdc_account.amount >= plan.price,
-        //     PlanError::InsufficientFunds
-        // );
-
-        // Calculate fees and remainder of plan price for building owner
-        // let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_fees(
-        //     plan.price,
-        //     config.dao_fee,
-        //     config.validator_fee,
-        //     config.medallion_fee,
-        // )?;
-
-        // let total_fee = dao_fee.add(validator_fee).add(medallion_fee);
-        let total_fee = 100_000_000;
-        msg!("total fee: {:?}", total_fee);
-
-        // Since input 0 is always USDC, it is always the quote
-        let input0_is_base = false;
-
-        // let tickarray_bitmap_extension_key = Pubkey::find_program_address(
-        //     &[
-        //         b"pool_tick_array_bitmap_extension",
-        //         ctx.accounts.raydium_pool.key().as_ref(),
-        //     ],
-        //     ctx.accounts.raydium.to_account_info().key,
-        // )
-        // .0;
-
-        // msg!(
-        //     "tickarray_bitmap_extension_key: {:?}",
-        //     tickarray_bitmap_extension_key
-        // );
-
-        // swap total_fee to dawn
-        let swap_ctx = CpiContext::new(
-            ctx.accounts.raydium.to_account_info(),
-            Swap {
-                payer: ctx.accounts.caller.to_account_info(),
-                amm_config: ctx.accounts.raydium_config.to_account_info(),
-                pool_state: ctx.accounts.raydium_pool.to_account_info(),
-                observation_state: ctx.accounts.raydium_observation.to_account_info(),
-                input_token_account: ctx.accounts.user_usdc_account.to_account_info(),
-                output_token_account: ctx.accounts.user_dawn_account.to_account_info(),
-                // mints
-                // input_vault_mint: ctx.accounts.usdc_mint.to_account_info(),
-                // output_vault_mint: ctx.accounts.dawn_mint.to_account_info(),
-                // vaults
-                input_vault: ctx.accounts.usdc_vault.to_account_info(),
-                output_vault: ctx.accounts.dawn_vault.to_account_info(),
-                // programs
-                // memo_program: ctx.accounts.memo_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                // token_program2022: ctx.accounts.token_program_2022.to_account_info(),
-                tick_array: ctx.accounts.tick_array.to_account_info(),
-            },
-        );
-
-        let other_amount_threshold = 206187;
-        let sqrt_price_limit_x64 = 0;
-
-        // let pool = ctx.accounts.raydium_pool.load()?;
-        // let price = pool.sqrt_price_x64;
-        // msg!("pool.sqrt_price_x64: {:?}", price);
-
-        raydium_clmm::cpi::swap(
-            swap_ctx,
-            total_fee,
-            other_amount_threshold,
-            sqrt_price_limit_x64,
-            input0_is_base,
-        )?;
+       
 
         // distribute dawn to fee to dao, validator pool and medallion pool
 
