@@ -1,10 +1,13 @@
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, Token, TokenAccount},
-    token_2022::Token2022,
+    token::{Mint, Token, TokenAccount},
 };
-use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
+use raydium_cp_swap::{
+    cpi,
+    program::RaydiumCpSwap,
+    states::{PoolState, Q32},
+};
 
 use super::{Config, Plan, PlanApp};
 use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
@@ -185,13 +188,135 @@ impl PlanApp {
         Ok((dao_fee, validator_fee, medallion_fee, remainder))
     }
 
+    fn sort_accounts<'info>(
+        pool_mint_0: Pubkey,
+        pool_mint_1: Pubkey,
+        pool_vault_0: Pubkey,
+        pool_vault_1: Pubkey,
+        usdc_mint: AccountInfo<'info>,
+        dawn_mint: AccountInfo<'info>,
+        usdc_vault: AccountInfo<'info>,
+        dawn_vault: AccountInfo<'info>,
+        user_usdc_account: AccountInfo<'info>,
+        user_dawn_account: AccountInfo<'info>,
+    ) -> Result<(
+        AccountInfo<'info>, // input_mint
+        AccountInfo<'info>, // input_vault
+        AccountInfo<'info>, // input_token_account
+        AccountInfo<'info>, // output_mint
+        AccountInfo<'info>, // output_vault
+        AccountInfo<'info>, // output_token_account
+        bool,               // is_usdc_base
+    )> {
+        match (
+            pool_mint_0 == usdc_mint.key(),
+            pool_mint_1 == usdc_mint.key(),
+        ) {
+            (true, false) => {
+                // USDC is token_mint_0, DAWN is token_mint_1
+                if pool_mint_1 != dawn_mint.key() {
+                    return Err(PlanError::InvalidMint.into());
+                }
+                // Verify vault addresses
+                if pool_vault_0 != usdc_vault.key() || pool_vault_1 != dawn_vault.key() {
+                    return Err(PlanError::InvalidVault.into());
+                }
+                Ok((
+                    usdc_mint,
+                    usdc_vault,
+                    user_usdc_account,
+                    dawn_mint,
+                    dawn_vault,
+                    user_dawn_account,
+                    false,
+                ))
+            }
+            (false, true) => {
+                // USDC is token_mint_1, DAWN is token_mint_0
+                if pool_mint_0 != dawn_mint.key() {
+                    return Err(PlanError::InvalidMint.into());
+                }
+                // Verify vault addresses
+                if pool_vault_1 != usdc_vault.key() || pool_vault_0 != dawn_vault.key() {
+                    return Err(PlanError::InvalidVault.into());
+                }
+                Ok((
+                    usdc_mint,
+                    usdc_vault,
+                    user_usdc_account,
+                    dawn_mint,
+                    dawn_vault,
+                    user_dawn_account,
+                    true,
+                ))
+            }
+            _ => {
+                return Err(PlanError::InvalidMint.into());
+            }
+        }
+    }
+
+    fn swap_amounts(
+        ctx: &Context<'_, '_, '_, '_, Subscribe<'_>>,
+        is_usdc_base: bool,
+        total_fee: u64,
+    ) -> Result<(u64, u64)> {
+        let pool_state = ctx.accounts.raydium_pool.load()?;
+        let slippage_bps = 200; // 2% slippage tolerance
+
+        // sort vaults (usdc and dawn) by key
+        let (vault_0, vault_1) = {
+            if ctx.accounts.usdc_vault.key() < ctx.accounts.dawn_vault.key() {
+                (
+                    ctx.accounts.usdc_vault.amount,
+                    ctx.accounts.dawn_vault.amount,
+                )
+            } else {
+                (
+                    ctx.accounts.dawn_vault.amount,
+                    ctx.accounts.usdc_vault.amount,
+                )
+            }
+        };
+
+        // Get current vault amounts and calculate price using pool state's method
+        let (token_0_price_x32, token_1_price_x32) = if is_usdc_base {
+            pool_state.token_price_x32(vault_0, vault_1)
+        } else {
+            pool_state.token_price_x32(vault_1, vault_0)
+        };
+
+        msg!("token_0_price_x32: {}", token_0_price_x32);
+        msg!("token_1_price_x32: {}", token_1_price_x32);
+
+        let amount_in = total_fee; // We only swap the fee amount
+
+        // USDC is base, we're calculating DAWN output
+        let price = if is_usdc_base {
+            token_1_price_x32
+        } else {
+            token_0_price_x32
+        };
+
+        let expected_out = (amount_in as u128)
+            .checked_mul(price)
+            .ok_or(PlanError::Overflow)?
+            .checked_div(Q32)
+            .ok_or(PlanError::Underflow)? as u64;
+
+        let minimum_amount_out = expected_out
+            .checked_mul(BPS_DENOMINATOR - slippage_bps)
+            .ok_or(PlanError::Overflow)?
+            .checked_div(BPS_DENOMINATOR)
+            .ok_or(PlanError::Underflow)?;
+
+        Ok((amount_in, minimum_amount_out))
+    }
+
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
         let plan = &ctx.accounts.plan;
 
-        let amount_in = 100_000_000; // Amount of USDC to swap
-        let minimum_amount_out = 90_000_000; // Minimum acceptable DAWN to receive
-
-        let (pool_token_mint_0, pool_token_mint_1, pool_token_vault_0, pool_token_vault_1) = {
+        let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
             let pool_state = ctx.accounts.raydium_pool.load()?;
             (
                 pool_state.token_0_mint,
@@ -201,12 +326,6 @@ impl PlanApp {
             )
         };
 
-        // token mints and vaults
-        let usdc_mint_key = ctx.accounts.usdc_mint.key();
-        let dawn_mint_key = ctx.accounts.dawn_mint.key();
-        let usdc_vault_key = ctx.accounts.usdc_vault.key();
-        let dawn_vault_key = ctx.accounts.dawn_vault.key();
-
         // Determine input and output tokens and vaults
         let (
             input_mint,
@@ -215,50 +334,38 @@ impl PlanApp {
             output_mint,
             output_vault,
             output_token_account,
-        ) = match (
-            pool_token_mint_0 == usdc_mint_key,
-            pool_token_mint_1 == usdc_mint_key,
-        ) {
-            (true, false) => {
-                // USDC is token_mint_0, DAWN is token_mint_1
-                if pool_token_mint_1 != dawn_mint_key {
-                    return Err(PlanError::InvalidMint.into());
-                }
-                // Verify vault addresses
-                if pool_token_vault_0 != usdc_vault_key || pool_token_vault_1 != dawn_vault_key {
-                    return Err(PlanError::InvalidVault.into());
-                }
-                (
-                    ctx.accounts.usdc_mint.to_account_info(),
-                    ctx.accounts.usdc_vault.to_account_info(),
-                    ctx.accounts.user_usdc_account.to_account_info(),
-                    ctx.accounts.dawn_mint.to_account_info(),
-                    ctx.accounts.dawn_vault.to_account_info(),
-                    ctx.accounts.user_dawn_account.to_account_info(),
-                )
-            }
-            (false, true) => {
-                // USDC is token_mint_1, DAWN is token_mint_0
-                if pool_token_mint_0 != dawn_mint_key {
-                    return Err(PlanError::InvalidMint.into());
-                }
-                // Verify vault addresses
-                if pool_token_vault_1 != usdc_vault_key || pool_token_vault_0 != dawn_vault_key {
-                    return Err(PlanError::InvalidVault.into());
-                }
-                (
-                    ctx.accounts.usdc_mint.to_account_info(),
-                    ctx.accounts.usdc_vault.to_account_info(),
-                    ctx.accounts.user_usdc_account.to_account_info(),
-                    ctx.accounts.dawn_mint.to_account_info(),
-                    ctx.accounts.dawn_vault.to_account_info(),
-                    ctx.accounts.user_dawn_account.to_account_info(),
-                )
-            }
-            _ => {
-                return Err(PlanError::InvalidMint.into());
-            }
-        };
+            is_usdc_base,
+        ) = Self::sort_accounts(
+            pool_mint_0,
+            pool_mint_1,
+            pool_vault_0.clone(),
+            pool_vault_1.clone(),
+            ctx.accounts.usdc_mint.to_account_info(),
+            ctx.accounts.dawn_mint.to_account_info(),
+            ctx.accounts.usdc_vault.to_account_info(),
+            ctx.accounts.dawn_vault.to_account_info(),
+            ctx.accounts.user_usdc_account.to_account_info(),
+            ctx.accounts.user_dawn_account.to_account_info(),
+        )?;
+
+        let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_fees(
+            plan.price,
+            ctx.accounts.config.dao_fee,
+            ctx.accounts.config.validator_fee,
+            ctx.accounts.config.medallion_fee,
+        )?;
+        let total_fee = dao_fee
+            .checked_add(validator_fee)
+            .ok_or(PlanError::Overflow)?
+            .checked_add(medallion_fee)
+            .ok_or(PlanError::Overflow)?;
+
+        // Calculate swap amounts in USDC
+        // 2% slippage tolerance
+        let (amount_in, minimum_amount_out) = Self::swap_amounts(&ctx, is_usdc_base, total_fee)?;
+
+        msg!("amount_in: {}", amount_in);
+        msg!("minimum_amount_out: {}", minimum_amount_out);
 
         // Create CPI accounts for the swap
         let cpi_accounts = cpi::accounts::Swap {
@@ -278,10 +385,7 @@ impl PlanApp {
         };
         let cpi_context = CpiContext::new(ctx.accounts.raydium.to_account_info(), cpi_accounts);
 
-        // Determine swap direction and execute swap
-        let is_base_input = pool_token_mint_0 == usdc_mint_key;
-
-        if is_base_input {
+        if is_usdc_base {
             // USDC is the base token; use swap_base_input
             cpi::swap_base_input(cpi_context, amount_in, minimum_amount_out)?;
         } else {

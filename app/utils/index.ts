@@ -39,7 +39,7 @@ export async function setupRaydium(
   const program = getRaydiumProgram(provider)
 
   // Sort the tokens
-  const [mint0, mint1, userMint0, userMint1, mint0IsBase] =
+  const [mint0, mint1, userMint0, userMint1, dawnIsBase] =
     Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
       ? [dawnMint, usdcMint, userDawnAccount, userUsdcAccount, true]
       : [usdcMint, dawnMint, userUsdcAccount, userDawnAccount, false]
@@ -49,7 +49,7 @@ export async function setupRaydium(
     mint1: mint1.toBase58(),
     userMint0: userMint0.toBase58(),
     userMint1: userMint1.toBase58(),
-    mint0IsBase,
+    pool_symbol: dawnIsBase ? 'DAWN/USDC' : 'USDC/DAWN',
   })
 
   // Create DAWN-USDC pool
@@ -62,6 +62,7 @@ export async function setupRaydium(
     mint1,
     userMint0,
     userMint1,
+    dawnIsBase,
   )
 
   // Deposit
@@ -74,6 +75,7 @@ export async function setupRaydium(
     mint1,
     userMint0,
     userMint1,
+    dawnIsBase,
   )
 
   const [dawnVault] = getPoolVaultAddress(pool, dawnMint, program.programId)

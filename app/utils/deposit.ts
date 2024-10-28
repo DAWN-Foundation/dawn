@@ -20,6 +20,7 @@ export async function deposit(
   mint1: PublicKey,
   userMint0: PublicKey,
   userMint1: PublicKey,
+  dawnIsBase: boolean,
 ) {
   const [auth] = getAuthAddress(program.programId)
   const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)
@@ -39,8 +40,10 @@ export async function deposit(
   const lp_token_amount = new BN(10000000000)
 
   // 10K more of each token
-  const maximum_token_0_amount = new BN(10_000_000_000)
-  const maximum_token_1_amount = new BN(10_000_000_000)
+  const dawn_amount = new BN(10_000_000_000)
+  const usdc_amount = new BN(20_000_000_000)    
+  const maximum_token_0_amount = dawnIsBase ? dawn_amount : usdc_amount
+  const maximum_token_1_amount = dawnIsBase ? usdc_amount : dawn_amount
 
   await program.methods
     .deposit(lp_token_amount, maximum_token_0_amount, maximum_token_1_amount)

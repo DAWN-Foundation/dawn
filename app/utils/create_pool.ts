@@ -21,9 +21,14 @@ export async function createPool(
   mint1: PublicKey,
   userMint0: PublicKey,
   userMint1: PublicKey,
+  dawnIsBase: boolean,
 ) {
-  const mint0Amount = new BN(10_000_000_000)
-  const mint1Amount = new BN(10_000_000_000)
+  // initial price 2 USDC per 1 DAWN
+  const dawnAmount = new BN(10_000_000_000)
+  const usdcAmount = new BN(20_000_000_000)
+
+  const mint0Amount = dawnIsBase ? dawnAmount : usdcAmount
+  const mint1Amount = dawnIsBase ? usdcAmount : dawnAmount
 
   const createPoolFee = new PublicKey(
     'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
