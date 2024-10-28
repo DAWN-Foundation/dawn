@@ -25,8 +25,7 @@ export function loadWallet(): anchor.Wallet {
 export function getRaydiumProgram(provider: anchor.AnchorProvider) {
   const idlPath = path.resolve('raydium/raydium_cp_swap.json')
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
-  const raydiumProgram = new Program(idl as RaydiumCpSwap, RAYDIUM, provider)
-  return raydiumProgram
+  return new Program(idl as RaydiumCpSwap, RAYDIUM, provider)
 }
 
 export async function setupRaydium(
@@ -40,7 +39,7 @@ export async function setupRaydium(
   const program = getRaydiumProgram(provider)
 
   // Sort the tokens
-  let [mint0, mint1, userMint0, userMint1, mint0IsBase] =
+  const [mint0, mint1, userMint0, userMint1, mint0IsBase] =
     Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
       ? [dawnMint, usdcMint, userDawnAccount, userUsdcAccount, true]
       : [usdcMint, dawnMint, userUsdcAccount, userDawnAccount, false]

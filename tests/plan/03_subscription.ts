@@ -22,6 +22,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import { getRaydiumProgram } from '../../app/utils'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -191,52 +192,13 @@ describe('plan::subscription', () => {
         program.programId,
       )
 
-    // const raydium = await Raydium.load({
-    //   owner: wallet.payer,
-    //   connection: provider.connection,
-    //   cluster: 'devnet',
-    //   disableFeatureCheck: true,
-    //   disableLoadToken: true,
-    //   blockhashCommitment: 'finalized',
-    //   // urlConfigs: {
-    //   //   BASE_HOST: '<API_HOST>', // api url configs, currently api doesn't support devnet
-    //   // },
-    // })
-
-    // const data = await raydium.clmm.getPoolInfoFromRpc(
-    //   mock.raydiumPool.toBase58(),
-    // )
-    // const poolInfo = data.poolInfo
-    // const poolKeys = data.poolKeys
-    // const clmmPoolInfo = data.computePoolInfo
-    // const tickCache = data.tickData
-
-    // const { minAmountOut, remainingAccounts } =
-    //   PoolUtils.computeAmountOutFormat({
-    //     poolInfo: clmmPoolInfo,
-    //     tickArrayCache: tickCache[mock.raydiumPool.toBase58()],
-    //     amountIn: new BN(plan.price),
-    //     tokenOut: poolInfo['mintB'],
-    //     slippage: 0.01,
-    //     epochInfo: await raydium.fetchEpochInfo(),
-    //   })
-
-    //   let (expect_pda_address, bump) = Pubkey::find_program_address(
-    //     &[
-    //         TICK_ARRAY_SEED.as_bytes(),
-    //         pool_state_loader.key().as_ref(),
-    //         &tick_array_start_index.to_be_bytes(),
-    //     ],
-    //     &crate::id(),
-    // );
-
     const tx = await program.methods
       .subscribe()
       .accounts({
         caller: mock.tester.publicKey,
         config: configPda,
-        // plan: planPda,
-        // subscription: subscriptionPda,
+        plan: planPda,
+        subscription: subscriptionPda,
         // mints
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
@@ -246,25 +208,23 @@ describe('plan::subscription', () => {
         raydiumConfig: mock.raydiumConfig,
         raydiumPool: mock.raydiumPool,
         raydiumObservation: mock.raydiumObservation,
+        // vaults
         dawnVault: mock.dawnVault,
         usdcVault: mock.usdcVault,
-        // // vaults
-        // usdcVault: mock.usdcVault,
-        // dawnVault: mock.dawnVault,
         // token accounts
-        // daoDawnAccount: mock.daoDawnAccount,
-        // validatorDawnAccount: mock.validatorDawnAccount,
-        // medallionDawnAccount: mock.medallionDawnAccount,
         userUsdcAccount: mock.testerUsdcAccount,
         userDawnAccount: mock.testerDawnAccount,
         // programs
-        // memoProgram: mock.memoProgram,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
       .signers([mock.tester])
       .rpc()
+
+    // const raydium = getRaydiumProgram(provider)
+    // const poolInfo = await raydium.account.poolState.fetch(mock.raydiumPool)
+    // console.log({ poolInfo })
 
     // assert.ok(tx.length > 0)
     // await confirmTx(provider.connection, tx)

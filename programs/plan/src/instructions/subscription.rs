@@ -6,11 +6,7 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
     token_2022::Token2022,
 };
-use raydium_cp_swap::{
-    cpi,
-    program::RaydiumCpSwap,
-    states::{AmmConfig, ObservationState, PoolState},
-};
+use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
 
 use super::{Config, Plan, PlanApp};
 use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
@@ -46,34 +42,34 @@ pub struct Subscribe<'info> {
     )]
     pub config: Box<Account<'info, Config>>,
 
-    // /// The plan account
-    // #[account(
-    //     seeds = [
-    //         b"plan",
-    //         plan.building.as_ref(),
-    //         &plan.price.to_le_bytes(),
-    //         &plan.duration.to_le_bytes(),
-    //         &plan.speed.to_le_bytes(),
-    //         &plan.capacity.to_le_bytes(),
-    //         &plan.sla_id.to_le_bytes(),
-    //     ],
-    //     bump = plan.bump
-    // )]
-    // pub plan: Box<Account<'info, Plan>>,
+    /// The plan account
+    #[account(
+        seeds = [
+            b"plan",
+            plan.building.as_ref(),
+            &plan.price.to_le_bytes(),
+            &plan.duration.to_le_bytes(),
+            &plan.speed.to_le_bytes(),
+            &plan.capacity.to_le_bytes(),
+            &plan.sla_id.to_le_bytes(),
+        ],
+        bump = plan.bump
+    )]
+    pub plan: Box<Account<'info, Plan>>,
 
-    // /// The subscription account
-    // #[account(
-    //     init_if_needed,
-    //     payer = caller,
-    //     space = SUBSCRIPTION_SIZE,
-    //     seeds = [
-    //         b"subscription",
-    //         plan.key().as_ref(),
-    //         caller.key().as_ref(),
-    //     ],
-    //     bump
-    // )]
-    // pub subscription: Box<Account<'info, Subscription>>,
+    /// The subscription account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = SUBSCRIPTION_SIZE,
+        seeds = [
+            b"subscription",
+            plan.key().as_ref(),
+            caller.key().as_ref(),
+        ],
+        bump
+    )]
+    pub subscription: Box<Account<'info, Subscription>>,
 
     // MINTS
     /// The DAWN mint account
@@ -123,19 +119,7 @@ pub struct Subscribe<'info> {
     )]
     pub usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    // // TOKEN ACCOUNTS
-    // /// The DAWN DAO DAWN token account
-    // #[account(address = config.dao_dawn_account)]
-    // pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    // /// The Validator DAWN pool token account
-    // #[account(address = config.validator_dawn_account)]
-    // pub validator_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    // /// The Medallion DAWN pool token account
-    // #[account(address = config.medallion_dawn_account)]
-    // pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
-    //
+    // TOKEN ACCOUNTS
     /// The callers associated DAWN token account
     #[account(
         mut,
@@ -151,6 +135,18 @@ pub struct Subscribe<'info> {
         associated_token::authority = caller,
     )]
     pub user_usdc_account: Box<Account<'info, TokenAccount>>,
+
+    // /// The DAWN DAO DAWN token account
+    // #[account(address = config.dao_dawn_account)]
+    // pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
+
+    // /// The Validator DAWN pool token account
+    // #[account(address = config.validator_dawn_account)]
+    // pub validator_dawn_account: Box<Account<'info, TokenAccount>>,
+
+    // /// The Medallion DAWN pool token account
+    // #[account(address = config.medallion_dawn_account)]
+    // pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
 
     // PROGRAMS
     pub token_program: Program<'info, Token>,
@@ -195,7 +191,6 @@ impl PlanApp {
         let amount_in = 100_000_000; // Amount of USDC to swap
         let minimum_amount_out = 90_000_000; // Minimum acceptable DAWN to receive
 
-        // Load the pool state and limit the scope of the mutable borrow
         let (pool_token_mint_0, pool_token_mint_1, pool_token_vault_0, pool_token_vault_1) = {
             let pool_state = ctx.accounts.raydium_pool.load()?;
             (
@@ -206,10 +201,9 @@ impl PlanApp {
             )
         };
 
-        // Define token mints and vaults
+        // token mints and vaults
         let usdc_mint_key = ctx.accounts.usdc_mint.key();
         let dawn_mint_key = ctx.accounts.dawn_mint.key();
-
         let usdc_vault_key = ctx.accounts.usdc_vault.key();
         let dawn_vault_key = ctx.accounts.dawn_vault.key();
 
@@ -291,7 +285,7 @@ impl PlanApp {
             // USDC is the base token; use swap_base_input
             cpi::swap_base_input(cpi_context, amount_in, minimum_amount_out)?;
         } else {
-            // USDC is the quote token; use swap_quote_input
+            // USDC is the quote token; use swap_base_output
             cpi::swap_base_output(cpi_context, amount_in, minimum_amount_out)?;
         }
 
