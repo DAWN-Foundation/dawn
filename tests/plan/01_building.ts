@@ -17,6 +17,13 @@ const MAX_BUILDING_ADDRESS_LEN = 64
 export const BUILDING_SIZE =
   8 + 32 + (4 + MAX_BUILDING_NAME_LEN) + (4 + MAX_BUILDING_ADDRESS_LEN) + 1 + 1
 
+interface BuildingAdded {
+  owner: PublicKey
+  name: string
+  address: string
+  floors: number
+}
+
 describe('plan::building', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
@@ -254,7 +261,7 @@ describe('plan::building', () => {
     assert.equal(building.bump, buildingBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'BuildingAdded')
+    const event = await getEvent<BuildingAdded>(program, tx, 'BuildingAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.equal(event.name, name)
     assert.equal(event.address, address)
