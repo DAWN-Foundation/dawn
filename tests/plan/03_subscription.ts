@@ -221,6 +221,10 @@ describe('plan::subscription', () => {
         // token accounts
         userUsdcAccount: mock.testerUsdcAccount,
         userDawnAccount: mock.testerDawnAccount,
+        buildingOwnerUsdcAccount: mock.boUsdcAccount,
+        daoDawnAccount: mock.daoDawnAccount,
+        validatorDawnAccount: mock.validatorDawnAccount,
+        medallionDawnAccount: mock.medallionDawnAccount,
         // programs
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -324,6 +328,9 @@ describe('plan::subscription', () => {
           // token accounts
           userUsdcAccount: mock.testerUsdcAccount,
           userDawnAccount: mock.testerDawnAccount,
+          daoDawnAccount: mock.daoDawnAccount,
+          validatorDawnAccount: mock.validatorDawnAccount,
+          medallionDawnAccount: mock.medallionDawnAccount,
           // programs
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -400,6 +407,9 @@ describe('plan::subscription', () => {
         // token accounts
         userUsdcAccount: walletUsdcAccount.address,
         userDawnAccount: walletDawnAccount.address,
+        daoDawnAccount: mock.daoDawnAccount,
+        validatorDawnAccount: mock.validatorDawnAccount,
+        medallionDawnAccount: mock.medallionDawnAccount,
         // programs
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

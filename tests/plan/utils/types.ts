@@ -14,6 +14,7 @@ export interface Mock {
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
+  boUsdcAccount: PublicKey
   boDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
   testerDawnAccount: PublicKey

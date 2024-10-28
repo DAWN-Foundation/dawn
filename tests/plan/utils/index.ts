@@ -168,6 +168,15 @@ export async function setup(
     buildingOwner.publicKey,
   )
 
+  // Create USDC account for Building Owner
+  console.log('Creating USDC account for Building Owner...')
+  const { address: boUsdcAccount } = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
+    buildingOwner,
+    usdcMint,
+    buildingOwner.publicKey,
+  )
+
   // Create USDC account for Tester
   console.log('Creating USDC account for Tester...')
   const { address: testerUsdcAccount } =
@@ -259,6 +268,7 @@ export async function setup(
     validatorDawnAccount,
     medallionDawnAccount,
     boDawnAccount,
+    boUsdcAccount,
     testerUsdcAccount,
     testerDawnAccount,
     // raydium
