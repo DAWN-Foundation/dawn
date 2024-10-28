@@ -101,7 +101,7 @@ anchor keys sync
 anchor build
 ```
 
-### Build Raydium DEX Program
+### Build Raydium DEX Program (optional)
 
 ```bash
 # Outside of this repo (one level up)
@@ -122,30 +122,6 @@ anchor keys list
 # Sync the program ID
 anchor keys sync
 ```
-
-### Ensure Raydium Program ID is correct
-
-```bash
-# Make sure the program ID is correct across Anchor.toml and this repo
-vim programs/amm/src/lib.rs
-```
-
-##### Alternatively, open `programs/amm/src/lib.rs` in IDE
-
-Look for these lines:
-
-![devnet program id](assets/image.png)
-
-And replace `declare_id!("....");` in the following line:
-
-```rust
-#[cfg(not(feature = "devnet"))]
-declare_id!("....");
-```
-
-- **First occurrence** is the Raydium AMM program ID from `anchor keys list`
-
-- **Second occurrence** is the local keypair address from `solana address -k <keypair-path>`
 
 #### Build again
 
@@ -177,8 +153,15 @@ anchor test
 ### Run local validator
 
 ```bash
-# Start local validator (with Metadata program required by Raydium)
-solana-test-validator --reset --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s raydium/metadata.so
+# Start local validator (with cloned Raydium)
+solana-test-validator \
+  --bind-address "0.0.0.0" \
+  --url "https://api.mainnet-beta.solana.com" \
+  --ledger ".anchor/test-ledger" \
+  --rpc-port 8899 \
+  --clone "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C" \
+  --clone "DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8" \
+  --clone "D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2"
 
 # omit the --reset flag to keep existing data
 

@@ -228,7 +228,7 @@ impl PlanApp {
                     dawn_mint,
                     dawn_vault,
                     user_dawn_account,
-                    false,
+                    true,
                 ))
             }
             (false, true) => {
@@ -247,7 +247,7 @@ impl PlanApp {
                     dawn_mint,
                     dawn_vault,
                     user_dawn_account,
-                    true,
+                    false,
                 ))
             }
             _ => {
@@ -265,52 +265,47 @@ impl PlanApp {
         let slippage_bps = 200; // 2% slippage tolerance
 
         // sort vaults (usdc and dawn) by key
+        let pool = ctx.accounts.raydium_pool.load()?;
+
         let (vault_0, vault_1) = {
-            if ctx.accounts.usdc_vault.key() < ctx.accounts.dawn_vault.key() {
-                (
-                    ctx.accounts.usdc_vault.amount,
-                    ctx.accounts.dawn_vault.amount,
-                )
+            if ctx.accounts.dawn_vault.key() == pool.token_0_vault.key() {
+                (&ctx.accounts.dawn_vault, &ctx.accounts.usdc_vault)
             } else {
-                (
-                    ctx.accounts.dawn_vault.amount,
-                    ctx.accounts.usdc_vault.amount,
-                )
+                (&ctx.accounts.usdc_vault, &ctx.accounts.dawn_vault)
             }
         };
 
         // Get current vault amounts and calculate price using pool state's method
-        let (token_0_price_x32, token_1_price_x32) = if is_usdc_base {
-            pool_state.token_price_x32(vault_0, vault_1)
-        } else {
-            pool_state.token_price_x32(vault_1, vault_0)
-        };
+        let (token_0_price_x32, token_1_price_x32) =
+            pool_state.token_price_x32(vault_0.amount, vault_1.amount);
 
         msg!("token_0_price_x32: {}", token_0_price_x32);
         msg!("token_1_price_x32: {}", token_1_price_x32);
 
-        let amount_in = total_fee; // We only swap the fee amount
+        let usdc_amount_in = total_fee; // We only swap the fee amount
 
         // USDC is base, we're calculating DAWN output
-        let price = if is_usdc_base {
-            token_1_price_x32
-        } else {
+        let price = if is_usdc_base && vault_0.key() == ctx.accounts.usdc_vault.key() {
             token_0_price_x32
+        } else {
+            token_1_price_x32
         };
 
-        let expected_out = (amount_in as u128)
+        msg!("price: {:?}", price);
+
+        let expected_out = (usdc_amount_in as u128)
             .checked_mul(price)
             .ok_or(PlanError::Overflow)?
             .checked_div(Q32)
             .ok_or(PlanError::Underflow)? as u64;
 
-        let minimum_amount_out = expected_out
+        let minimum_dawn_amount_out = expected_out
             .checked_mul(BPS_DENOMINATOR - slippage_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        Ok((amount_in, minimum_amount_out))
+        Ok((usdc_amount_in, minimum_dawn_amount_out))
     }
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
@@ -362,10 +357,11 @@ impl PlanApp {
 
         // Calculate swap amounts in USDC
         // 2% slippage tolerance
-        let (amount_in, minimum_amount_out) = Self::swap_amounts(&ctx, is_usdc_base, total_fee)?;
+        let (usdc_amount_in, minimum_dawn_amount_out) =
+            Self::swap_amounts(&ctx, is_usdc_base, total_fee)?;
 
-        msg!("amount_in: {}", amount_in);
-        msg!("minimum_amount_out: {}", minimum_amount_out);
+        msg!("usdc_amount_in: {}", usdc_amount_in);
+        msg!("minimum_dawn_amount_out: {}", minimum_dawn_amount_out);
 
         // Create CPI accounts for the swap
         let cpi_accounts = cpi::accounts::Swap {
@@ -385,12 +381,14 @@ impl PlanApp {
         };
         let cpi_context = CpiContext::new(ctx.accounts.raydium.to_account_info(), cpi_accounts);
 
+        msg!("is_usdc_base: {:?}", is_usdc_base);
+
         if is_usdc_base {
             // USDC is the base token; use swap_base_input
-            cpi::swap_base_input(cpi_context, amount_in, minimum_amount_out)?;
+            cpi::swap_base_input(cpi_context, usdc_amount_in, minimum_dawn_amount_out)?;
         } else {
             // USDC is the quote token; use swap_base_output
-            cpi::swap_base_output(cpi_context, amount_in, minimum_amount_out)?;
+            cpi::swap_base_output(cpi_context, usdc_amount_in, minimum_dawn_amount_out)?;
         }
 
         // distribute dawn to fee to dao, validator pool and medallion pool
