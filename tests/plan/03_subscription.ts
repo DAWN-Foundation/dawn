@@ -27,6 +27,13 @@ import { getRaydiumProgram } from '../../app/utils'
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
 
+interface Subscribed {
+  subscription: PublicKey
+  subscriber: PublicKey
+  plan: PublicKey
+  expiration: number
+}
+
 // Helper function to get the PDA for a plan given plan parameters
 function getPlanPda(
   program: Program<Plan>,
@@ -222,32 +229,28 @@ describe('plan::subscription', () => {
       .signers([mock.tester])
       .rpc()
 
-    // const raydium = getRaydiumProgram(provider)
-    // const poolInfo = await raydium.account.poolState.fetch(mock.raydiumPool)
-    // console.log({ poolInfo })
+    assert.ok(tx.length > 0)
+    await confirmTx(provider.connection, tx)
 
-    // assert.ok(tx.length > 0)
-    // await confirmTx(provider.connection, tx)
+    // get block time, and calculate expected expiration
+    let txDetails = await provider.connection.getParsedTransaction(
+      tx,
+      'confirmed',
+    )
+    let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
 
-    // // get block time, and calculate expected expiration
-    // let txDetails = await provider.connection.getParsedTransaction(
-    //   tx,
-    //   'confirmed',
-    // )
-    // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
+    let subscription = await program.account.subscription.fetch(subscriptionPda)
+    assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
+    assert.ok(subscription.plan.equals(planPda))
+    assert.equal(subscription.expiration.toNumber(), expiration)
+    assert.equal(subscription.bump, subscriptionBump)
 
-    // let subscription = await program.account.subscription.fetch(subscriptionPda)
-    // assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
-    // assert.ok(subscription.plan.equals(planPda))
-    // assert.equal(subscription.expiration.toNumber(), expiration)
-    // assert.equal(subscription.bump, subscriptionBump)
-
-    // // make sure event was emitted
-    // const event = await getEvent(program, tx, 'subscribed')
-    // assert.ok(event.subscription.equals(subscriptionPda))
-    // assert.ok(event.subscriber.equals(mock.tester.publicKey))
-    // assert.ok(event.plan.equals(planPda))
-    // assert.ok(event.expiration > 0)
+    // make sure event was emitted
+    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
+    assert.ok(event.subscription.equals(subscriptionPda))
+    assert.ok(event.subscriber.equals(mock.tester.publicKey))
+    assert.ok(event.plan.equals(planPda))
+    assert.ok(event.expiration > 0)
 
     // make sure the user USDC account was debited
     // const userUsdcBalanceAfter = new BN(
@@ -287,31 +290,57 @@ describe('plan::subscription', () => {
     // assert.ok(boUsdcBalanceAfter.eq(boUsdcBalanceBefore.add(remainder)))
   })
 
-  // it('cannot subscribe to the same plan twice', async () => {
-  //   try {
-  //     await program.methods
-  //       .subscribe()
-  //       .accounts({
-  //         caller: mock.tester.publicKey,
-  //         config: configPda,
-  //         plan: planPda,
-  //         andrenaUsdcAccount: mock.andrenaUsdcAccount,
-  //         dawnUsdcAccount: mock.dawnUsdcAccount,
-  //         boUsdcAccount: mock.boUsdcAccount,
-  //         userUsdcAccount: mock.testerUsdcAccount,
-  //       })
-  //       .signers([mock.tester])
-  //       .rpc()
-  //     assert.ok(false)
-  //   } catch (error) {
-  //     assert.ok(error instanceof SendTransactionError)
-  //     const err: SendTransactionError = error
-  //     assert.strictEqual(
-  //       err.transactionError.message,
-  //       'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
-  //     )
-  //   }
-  // })
+  it('cannot subscribe to the same plan twice', async () => {
+    const [subscriptionPda, subscriptionBump] =
+      PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('subscription'),
+          Buffer.from(planPda.toBytes()),
+          Buffer.from(mock.tester.publicKey.toBytes()),
+        ],
+        program.programId,
+      )
+
+    try {
+      await program.methods
+        .subscribe()
+        .accounts({
+          caller: mock.tester.publicKey,
+          config: configPda,
+          plan: planPda,
+          subscription: subscriptionPda,
+          // mints
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          // raydium
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+          // vaults
+          dawnVault: mock.dawnVault,
+          usdcVault: mock.usdcVault,
+          // token accounts
+          userUsdcAccount: mock.testerUsdcAccount,
+          userDawnAccount: mock.testerDawnAccount,
+          // programs
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof SendTransactionError)
+      const err: SendTransactionError = error
+      assert.strictEqual(
+        err.transactionError.message,
+        'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
+      )
+    }
+  })
 
   // it('can be subscribed to by another user', async () => {
   //   // create USDC account for wallet

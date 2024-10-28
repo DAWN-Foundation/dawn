@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -188,6 +186,8 @@ impl PlanApp {
     }
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+        let plan = &ctx.accounts.plan;
+
         let amount_in = 100_000_000; // Amount of USDC to swap
         let minimum_amount_out = 90_000_000; // Minimum acceptable DAWN to receive
 
@@ -304,32 +304,34 @@ impl PlanApp {
         // );
         // token::transfer(dawn_fee_cpi_ctx, dawn_fee)?;
 
-        // // Get the current timestamp from the clock
-        // let clock = Clock::get()?;
-        // let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
+        // Get the current timestamp from the clock
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
 
-        // // Calculate plan duration in seconds (days to seconds)
-        // let duration_in_seconds = (plan.duration as u64)
-        //     .checked_mul(SECONDS_PER_DAY)
-        //     .ok_or(PlanError::Overflow)?;
+        // Calculate plan duration in seconds (days to seconds)
+        let duration_in_seconds = (plan.duration as u64)
+            .checked_mul(SECONDS_PER_DAY)
+            .ok_or(PlanError::Overflow)?;
 
-        // // calculate subscription expiration by adding plan `duration` days to current timestamp
-        // let expiration = current_timestamp
-        //     .checked_add(duration_in_seconds as i64)
-        //     .ok_or(PlanError::Overflow)?;
+        // calculate subscription expiration by adding plan `duration` days to current timestamp
+        let expiration = current_timestamp
+            .checked_add(duration_in_seconds as i64)
+            .ok_or(PlanError::Overflow)?;
 
-        // // Save subscription data
-        // subscription.subscriber = ctx.accounts.caller.key();
-        // subscription.plan = ctx.accounts.plan.key();
-        // subscription.expiration = expiration;
-        // subscription.bump = ctx.bumps.subscription;
+        // Save subscription data
+        let subscription = &mut ctx.accounts.subscription;
 
-        // emit!(Subscribed {
-        //     subscription: subscription.key(),
-        //     subscriber: ctx.accounts.caller.key(),
-        //     plan: ctx.accounts.plan.key(),
-        //     expiration: subscription.expiration,
-        // });
+        subscription.subscriber = ctx.accounts.caller.key();
+        subscription.plan = ctx.accounts.plan.key();
+        subscription.expiration = expiration;
+        subscription.bump = ctx.bumps.subscription;
+
+        emit!(Subscribed {
+            subscription: subscription.key(),
+            subscriber: ctx.accounts.caller.key(),
+            plan: ctx.accounts.plan.key(),
+            expiration: subscription.expiration,
+        });
 
         Ok(())
     }

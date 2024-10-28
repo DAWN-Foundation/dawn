@@ -60,9 +60,10 @@ export async function getEvent<T>(
 ): Promise<T> {
   const confirmedTx = await confirmTx(program.provider.connection, tx)
 
-  const [log] = confirmedTx.meta.logMessages.filter((msg) =>
+  const logs = confirmedTx.meta.logMessages.filter((msg) =>
     msg.startsWith('Program data: '),
   )
+  const log = logs[logs.length - 1]
 
   const logEncoded = log.split('Program data: ')[1]
   const event = program.coder.events.decode(logEncoded)
