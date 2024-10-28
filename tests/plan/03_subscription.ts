@@ -343,11 +343,19 @@ describe('plan::subscription', () => {
   })
 
   it('can be subscribed to by another user', async () => {
-    // create USDC account for wallet
+    // get USDC account for wallet
     const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       wallet.payer,
       mock.usdcMint,
+      wallet.publicKey,
+    )
+
+    // get Dawn account for wallet
+    const walletDawnAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mock.dawnMint,
       wallet.publicKey,
     )
 
@@ -373,7 +381,7 @@ describe('plan::subscription', () => {
     const tx = await program.methods
       .subscribe()
       .accounts({
-        caller: mock.tester.publicKey,
+        caller: wallet.publicKey,
         config: configPda,
         plan: planPda,
         subscription: subscriptionPda,
@@ -390,14 +398,14 @@ describe('plan::subscription', () => {
         dawnVault: mock.dawnVault,
         usdcVault: mock.usdcVault,
         // token accounts
-        userUsdcAccount: mock.testerUsdcAccount,
-        userDawnAccount: mock.testerDawnAccount,
+        userUsdcAccount: walletUsdcAccount.address,
+        userDawnAccount: walletDawnAccount.address,
         // programs
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      .signers([])
+      .signers([wallet.payer])
       .rpc()
 
     assert.ok(tx.length > 0)
