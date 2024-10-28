@@ -7,6 +7,21 @@ import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 import { Plan } from '../../target/types/plan'
 import { getEvent, mock, getPlanPda, getPlansForBuilding } from './utils'
 
+interface PlanAdded {
+  owner: PublicKey
+  building: PublicKey
+  price: BN
+  duration: number
+  speed: number
+  capacity: BN
+  slaId: BN
+}
+
+interface PlanRemoved {
+  plan: PublicKey
+  building: PublicKey
+}
+
 const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
 describe('plan::plan', () => {
@@ -228,7 +243,7 @@ describe('plan::plan', () => {
     assert.equal(buildingPlan.bump, planBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'PlanAdded')
+    const event = await getEvent<PlanAdded>(program, tx, 'PlanAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.ok(event.building.equals(buildingPda))
     assert.ok(event.price.eq(price))
@@ -316,7 +331,7 @@ describe('plan::plan', () => {
     assert.equal(plan.bump, planBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'PlanAdded')
+    const event = await getEvent<PlanAdded>(program, tx, 'PlanAdded')
     assert.ok(event.owner.equals(mock.buildingOwner.publicKey))
     assert.ok(event.building.equals(buildingPda))
     assert.ok(event.price.eq(price))
@@ -432,7 +447,7 @@ describe('plan::plan', () => {
     }
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'PlanRemoved')
+    const event = await getEvent<PlanRemoved>(program, tx, 'PlanRemoved')
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.building.equals(buildingPda))
   })

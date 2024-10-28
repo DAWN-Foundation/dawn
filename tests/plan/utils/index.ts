@@ -53,11 +53,11 @@ export async function fund(
 }
 
 // Helper to get the event from the transaction
-export async function getEvent(
+export async function getEvent<T>(
   program: anchor.Program<Plan>,
   tx: string,
   name: string,
-) {
+): Promise<T> {
   const confirmedTx = await confirmTx(program.provider.connection, tx)
 
   const [log] = confirmedTx.meta.logMessages.filter((msg) =>
@@ -71,7 +71,7 @@ export async function getEvent(
     throw new Error(`Event name mismatch: ${event.name} !== ${name}`)
   }
 
-  return event.data
+  return event.data as T
 }
 
 // Helper to setup the environment for tests and set the mock
