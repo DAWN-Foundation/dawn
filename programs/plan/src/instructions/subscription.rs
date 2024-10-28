@@ -57,7 +57,7 @@ pub struct Subscribe<'info> {
 
     /// The subscription account
     #[account(
-        init_if_needed,
+        init,
         payer = caller,
         space = SUBSCRIPTION_SIZE,
         seeds = [

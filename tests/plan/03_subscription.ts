@@ -342,56 +342,71 @@ describe('plan::subscription', () => {
     }
   })
 
-  // it('can be subscribed to by another user', async () => {
-  //   // create USDC account for wallet
-  //   const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
-  //     provider.connection,
-  //     wallet.payer,
-  //     mock.usdcMint,
-  //     wallet.publicKey,
-  //   )
+  it('can be subscribed to by another user', async () => {
+    // create USDC account for wallet
+    const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mock.usdcMint,
+      wallet.publicKey,
+    )
 
-  //   // Mint 1'000 USDC to Wallet account
-  //   await mintTo(
-  //     provider.connection,
-  //     wallet.payer, // Payer for tx
-  //     mock.usdcMint, // Mint account
-  //     walletUsdcAccount.address, // Destination
-  //     wallet.payer, // Authority
-  //     1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
-  //   )
+    // Mint 1'000 USDC to Wallet account
+    await mintTo(
+      provider.connection,
+      wallet.payer, // Payer for tx
+      mock.usdcMint, // Mint account
+      walletUsdcAccount.address, // Destination
+      wallet.payer, // Authority
+      1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
+    )
 
-  //   const [subscriptionPda] = PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from('subscription'),
-  //       Buffer.from(planPda.toBytes()),
-  //       Buffer.from(wallet.publicKey.toBytes()),
-  //     ],
-  //     program.programId,
-  //   )
+    const [subscriptionPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('subscription'),
+        Buffer.from(planPda.toBytes()),
+        Buffer.from(wallet.publicKey.toBytes()),
+      ],
+      program.programId,
+    )
 
-  //   const tx = await program.methods
-  //     .subscribe()
-  //     .accounts({
-  //       caller: wallet.publicKey,
-  //       config: configPda,
-  //       plan: planPda,
-  //       subscription: subscriptionPda,
-  //       andrenaUsdcAccount: mock.andrenaUsdcAccount,
-  //       dawnUsdcAccount: mock.dawnUsdcAccount,
-  //       boUsdcAccount: mock.boUsdcAccount,
-  //       userUsdcAccount: walletUsdcAccount.address,
-  //     })
-  //     .signers([])
-  //     .rpc()
+    const tx = await program.methods
+      .subscribe()
+      .accounts({
+        caller: mock.tester.publicKey,
+        config: configPda,
+        plan: planPda,
+        subscription: subscriptionPda,
+        // mints
+        usdcMint: mock.usdcMint,
+        dawnMint: mock.dawnMint,
+        // raydium
+        raydium: mock.raydium,
+        raydiumAuthority: mock.raydiumAuthority,
+        raydiumConfig: mock.raydiumConfig,
+        raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
+        // vaults
+        dawnVault: mock.dawnVault,
+        usdcVault: mock.usdcVault,
+        // token accounts
+        userUsdcAccount: mock.testerUsdcAccount,
+        userDawnAccount: mock.testerDawnAccount,
+        // programs
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([])
+      .rpc()
 
-  //   assert.ok(tx.length > 0)
+    assert.ok(tx.length > 0)
 
-  //   // make sure event was emitted
-  //   const event = await getEvent(program, tx, 'subscribed')
-  //   assert.ok(event.subscription.equals(subscriptionPda))
-  //   assert.ok(event.subscriber.equals(wallet.publicKey))
-  //   assert.ok(event.plan.equals(planPda))
-  //   assert.ok(event.expiration > 0)
-  // })
+    // make sure event was emitted
+    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
+    assert.ok(event.subscription.equals(subscriptionPda))
+    assert.ok(event.subscriber.equals(wallet.publicKey))
+    assert.ok(event.plan.equals(planPda))
+    assert.ok(event.expiration > 0)
+  })
 })
