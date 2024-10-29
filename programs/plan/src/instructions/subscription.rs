@@ -164,65 +164,67 @@ pub struct Subscribe<'info> {
 }
 
 impl PlanApp {
-    fn calculate_usdc_fees(
-        price: u64,
-        dao_fee: u64,
-        validator_fee: u64,
-        medallion_fee: u64,
-    ) -> Result<(u64, u64, u64, u64)> {
-        let dao_usdc_fee = price
-            .checked_mul(dao_fee)
+    fn calculate_usdc_fee(
+        source: u64,
+        dao_fee_bps: u64,
+        validator_fee_bps: u64,
+        medallion_fee_bps: u64,
+    ) -> Result<(u64, u64)> {
+        let dao_usdc_fee = source
+            .checked_mul(dao_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        let validator_usdc_fee = price
-            .checked_mul(validator_fee)
+        let validator_usdc_fee = source
+            .checked_mul(validator_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        let medallion_usdc_fee = price
-            .checked_mul(medallion_fee)
+        let medallion_usdc_fee = source
+            .checked_mul(medallion_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        let usdc_remainder = price
-            .saturating_sub(dao_fee)
-            .saturating_sub(validator_fee)
-            .saturating_sub(medallion_fee);
+        let total_usdc_fee = dao_usdc_fee
+            .checked_add(validator_usdc_fee)
+            .ok_or(PlanError::Overflow)?
+            .checked_add(medallion_usdc_fee)
+            .ok_or(PlanError::Overflow)?;
 
-        Ok((
-            dao_usdc_fee,
-            validator_usdc_fee,
-            medallion_usdc_fee,
-            usdc_remainder,
-        ))
+        let usdc_remainder = source.saturating_sub(total_usdc_fee);
+
+        Ok((total_usdc_fee, usdc_remainder))
     }
 
     fn calculate_dawn_fees(
-        price: u64,
-        dao_fee: u64,
-        validator_fee: u64,
-        medallion_fee: u64,
+        source: u64,
+        dao_fee_bps: u64,
+        validator_fee_bps: u64,
+        medallion_fee_bps: u64,
     ) -> Result<(u64, u64, u64)> {
-        let dao_dawn_fee = price
-            .checked_mul(dao_fee)
+        // Calculate total fee basis points
+        let total_fee_bps = dao_fee_bps + validator_fee_bps + medallion_fee_bps;
+
+        // Calculate each fee based on the total source amount
+        let dao_dawn_fee = source
+            .checked_mul(dao_fee_bps)
             .ok_or(PlanError::Overflow)?
-            .checked_div(BPS_DENOMINATOR)
+            .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
-        let validator_dawn_fee = price
-            .checked_mul(validator_fee)
+        let validator_dawn_fee = source
+            .checked_mul(validator_fee_bps)
             .ok_or(PlanError::Overflow)?
-            .checked_div(BPS_DENOMINATOR)
+            .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
-        let medallion_dawn_fee = price
-            .checked_mul(medallion_fee)
+        let medallion_dawn_fee = source
+            .checked_mul(medallion_fee_bps)
             .ok_or(PlanError::Overflow)?
-            .checked_div(BPS_DENOMINATOR)
+            .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
         Ok((dao_dawn_fee, validator_dawn_fee, medallion_dawn_fee))
@@ -299,7 +301,7 @@ impl PlanApp {
     fn swap_amounts(
         ctx: &Context<'_, '_, '_, '_, Subscribe<'_>>,
         is_usdc_base: bool,
-        total_fee: u64,
+        total_usdc_fee: u64,
     ) -> Result<(u64, u64)> {
         let pool_state = ctx.accounts.raydium_pool.load()?;
         let slippage_bps = 100; // 1% slippage tolerance
@@ -322,7 +324,7 @@ impl PlanApp {
         msg!("token_0_price_x32: {}", token_0_price_x32);
         msg!("token_1_price_x32: {}", token_1_price_x32);
 
-        let usdc_amount_in = total_fee; // We only swap the fee amount
+        let usdc_amount_in = total_usdc_fee; // We only swap the fee amount
 
         // USDC is base, we're calculating DAWN output
         let price = if is_usdc_base && vault_0.key() == ctx.accounts.usdc_vault.key() {
@@ -386,21 +388,17 @@ impl PlanApp {
             ctx.accounts.user_dawn_account.to_account_info(),
         )?;
 
-        let (dao_fee, validator_fee, medallion_fee, remainder) = Self::calculate_usdc_fees(
+        // calculate the total USDC fee and remainder
+        let (total_usdc_fee, usdc_remainder) = Self::calculate_usdc_fee(
             plan.price,
             ctx.accounts.config.dao_fee,
             ctx.accounts.config.validator_fee,
             ctx.accounts.config.medallion_fee,
         )?;
-        let total_fee = dao_fee
-            .checked_add(validator_fee)
-            .ok_or(PlanError::Overflow)?
-            .checked_add(medallion_fee)
-            .ok_or(PlanError::Overflow)?;
 
         // Calculate swap amounts in USDC
         let (usdc_amount_in, minimum_dawn_amount_out) =
-            Self::swap_amounts(&ctx, is_usdc_base, total_fee)?;
+            Self::swap_amounts(&ctx, is_usdc_base, total_usdc_fee)?;
 
         msg!("usdc_amount_in: {}", usdc_amount_in);
         msg!("minimum_dawn_amount_out: {}", minimum_dawn_amount_out);
@@ -423,8 +421,6 @@ impl PlanApp {
         };
         let swap_cpi_ctx = CpiContext::new(ctx.accounts.raydium.to_account_info(), swap_cpi);
 
-        msg!("is_usdc_base: {:?}", is_usdc_base);
-
         if is_usdc_base {
             // USDC is the base token; use swap_base_input
             cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
@@ -433,15 +429,8 @@ impl PlanApp {
             cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
         }
 
-        ctx.accounts.user_usdc_account.reload()?;
-        let balance = ctx.accounts.user_usdc_account.amount;
-        msg!("user USDC balance after swap: {}", balance);
-
-        ctx.accounts.user_dawn_account.reload()?;
-        let balance = ctx.accounts.user_dawn_account.amount;
-
         let (dao_dawn_fee, validator_dawn_fee, medallion_dawn_fee) = Self::calculate_dawn_fees(
-            plan.price,
+            minimum_dawn_amount_out,
             ctx.accounts.config.dao_fee,
             ctx.accounts.config.validator_fee,
             ctx.accounts.config.medallion_fee,
@@ -464,11 +453,6 @@ impl PlanApp {
         );
         token::transfer(dao_fee_cpi_ctx, dao_dawn_fee)?;
 
-        ctx.accounts.user_dawn_account.reload()?;
-        let balance = ctx.accounts.user_dawn_account.amount;
-        msg!("user balance: {}", balance);
-        msg!("validator_dawn_fee: {}", validator_dawn_fee);
-
         // Transfer Validator DAWN fee from user to Validator pool
         let validator_fee_cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -480,38 +464,28 @@ impl PlanApp {
         );
         token::transfer(validator_fee_cpi_ctx, validator_dawn_fee)?;
 
-        ctx.accounts.user_dawn_account.reload()?;
-        let balance = ctx.accounts.user_dawn_account.amount;
-        msg!("user_dawn_account balance: {}", balance);
-        msg!("validator_dawn_fee: {}", validator_dawn_fee);
-
         // Transfer Medallion DAWN fee from user to Medallion pool
-        // let medallion_fee_cpi_ctx = CpiContext::new(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     token::Transfer {
-        //         from: ctx.accounts.user_dawn_account.to_account_info(),
-        //         to: ctx.accounts.medallion_dawn_account.to_account_info(),
-        //         authority: ctx.accounts.caller.to_account_info(),
-        //     },
-        // );
-        // token::transfer(medallion_fee_cpi_ctx, medallion_dawn_fee)?;
+        let medallion_fee_cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_dawn_account.to_account_info(),
+                to: ctx.accounts.medallion_dawn_account.to_account_info(),
+                authority: ctx.accounts.caller.to_account_info(),
+            },
+        );
+        token::transfer(medallion_fee_cpi_ctx, medallion_dawn_fee)?;
 
-        // // get the remaining USDC balance
-        // let user_usdc_balance = ctx.accounts.user_usdc_account.amount;
-
-        // msg!("user_usdc_balance: {}", user_usdc_balance);
-
-        // // TODO >> deposit remainder into escrow program
-        // // for now: transfer USDC remainder to building owner USDC account
-        // let remainder_cpi_ctx = CpiContext::new(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     token::Transfer {
-        //         from: ctx.accounts.user_usdc_account.to_account_info(),
-        //         to: ctx.accounts.building_owner_usdc_account.to_account_info(),
-        //         authority: ctx.accounts.caller.to_account_info(),
-        //     },
-        // );
-        // token::transfer(remainder_cpi_ctx, remainder)?;
+        // TODO >> deposit remainder into escrow program
+        // for now: transfer USDC remainder to building owner USDC account
+        let remainder_cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_usdc_account.to_account_info(),
+                to: ctx.accounts.building_owner_usdc_account.to_account_info(),
+                authority: ctx.accounts.caller.to_account_info(),
+            },
+        );
+        token::transfer(remainder_cpi_ctx, usdc_remainder)?;
 
         // Get the current timestamp from the clock
         let clock = Clock::get()?;
