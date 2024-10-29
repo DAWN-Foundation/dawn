@@ -1,10 +1,66 @@
+import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 
 import { Plan } from '../../../target/types/plan'
 
-export * from './mock'
-export * from './helpers'
+// Helper to confirm a transaction
+export async function confirmTx(
+  connection: anchor.web3.Connection,
+  tx: string,
+): Promise<VersionedTransactionResponse> {
+  const lastBlock = await connection.getLatestBlockhash()
+
+  await connection.confirmTransaction(
+    {
+      signature: tx,
+      blockhash: lastBlock.blockhash,
+      lastValidBlockHeight: lastBlock.lastValidBlockHeight,
+    },
+    'confirmed',
+  )
+
+  const confirmedTx = await connection.getTransaction(tx, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  })
+
+  return confirmedTx
+}
+
+// Helper to fund an account with SOL
+export async function fund(
+  connection: anchor.web3.Connection,
+  account: PublicKey,
+  amount: number,
+) {
+  const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
+  await confirmTx(connection, signature)
+}
+
+// Helper to get the event from the transaction
+export async function getEvent<T>(
+  program: anchor.Program<Plan>,
+  tx: string,
+  name: string,
+): Promise<T> {
+  const confirmedTx = await confirmTx(program.provider.connection, tx)
+
+  const logs = confirmedTx.meta.logMessages.filter((msg) =>
+    msg.startsWith('Program data: '),
+  )
+  const log = logs[logs.length - 1]
+
+  const logEncoded = log.split('Program data: ')[1]
+  const event = program.coder.events.decode(logEncoded)
+
+  if (event.name !== name) {
+    throw new Error(`Event name mismatch: ${event.name} !== ${name}`)
+  }
+
+  return event.data as T
+}
+
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: Program<Plan>,
@@ -37,6 +93,7 @@ export function getPlanPda(
   return [planPda, planBump]
 }
 
+// Helper to get all plans for a building
 export async function getPlansForBuilding(
   program: Program<Plan>, // Anchor program
   building: PublicKey, // Public key of the building

@@ -1,11 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN } from '@coral-xyz/anchor'
+import { Program, BN, AnchorError } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { confirmTx, getEvent, mock } from './utils'
+import { confirmTx, getEvent, getPlanPda, mock } from './utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
@@ -40,6 +40,9 @@ describe('plan::subscription', () => {
   let buildingPda: PublicKey
   let planPda: PublicKey
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
+  let accounts: Record<string, PublicKey>
+  let subscriptionPda: PublicKey
+  let subscriptionBump: number
 
   before(async () => {
     const plans = await program.account.plan.all()
@@ -50,6 +53,49 @@ describe('plan::subscription', () => {
     const buildings = await program.account.building.all()
     assert.ok(buildings.length > 0)
     buildingPda = buildings[0].publicKey
+
+    const newSubscription = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('subscription'),
+        Buffer.from(planPda.toBytes()),
+        Buffer.from(mock.tester.publicKey.toBytes()),
+      ],
+      program.programId,
+    )
+
+    subscriptionPda = newSubscription[0]
+    subscriptionBump = newSubscription[1]
+
+    // accounts for a successful subscription
+    accounts = {
+      caller: mock.tester.publicKey,
+      config: configPda,
+      plan: planPda,
+      subscription: subscriptionPda,
+      // mints
+      usdcMint: mock.usdcMint,
+      dawnMint: mock.dawnMint,
+      // raydium
+      raydium: mock.raydium,
+      raydiumAuthority: mock.raydiumAuthority,
+      raydiumConfig: mock.raydiumConfig,
+      raydiumPool: mock.raydiumPool,
+      raydiumObservation: mock.raydiumObservation,
+      // vaults
+      dawnVault: mock.dawnVault,
+      usdcVault: mock.usdcVault,
+      // token accounts
+      userUsdcAccount: mock.testerUsdcAccount,
+      userDawnAccount: mock.testerDawnAccount,
+      buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
+      daoDawnAccount: mock.daoDawnAccount,
+      validatorDawnAccount: mock.validatorDawnAccount,
+      medallionDawnAccount: mock.medallionDawnAccount,
+      // programs
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    }
   })
 
   it('mock setup', () => {
@@ -58,63 +104,65 @@ describe('plan::subscription', () => {
     assert.ok(plan.owner.equals(mock.buildingOwner.publicKey))
     assert.exists(planPda)
     assert.exists(buildingPda)
+    assert.exists(subscriptionPda)
+    assert.exists(subscriptionBump)
+    assert.exists(accounts)
   })
 
-  // it('cannot subscribe to a plan that doesnt exist', async () => {
-  //   const [planPda] = getPlanPda(
-  //     program,
-  //     buildingPda,
-  //     new BN(1000),
-  //     30,
-  //     100,
-  //     new BN(1000),
-  //     new BN(1),
-  //   )
+  it('cannot subscribe to a plan that doesnt exist', async () => {
+    const [planPda] = getPlanPda(
+      program,
+      buildingPda,
+      new BN(1000),
+      30,
+      100,
+      new BN(1000),
+      new BN(1),
+    )
 
-  //   try {
-  //     await program.methods
-  //       .subscribe()
-  //       .accounts({
-  //         caller: mock.tester.publicKey,
-  //         config: configPda,
-  //         plan: planPda,
-  //         userUsdcAccount: mock.testerUsdcAccount,
-  //       })
-  //       .signers([mock.tester])
-  //       .rpc()
-  //     assert.ok(false)
-  //   } catch (error) {
-  //     assert.ok(error instanceof AnchorError)
-  //     const err: AnchorError = error
-  //     assert.strictEqual(
-  //       err.error.errorMessage,
-  //       'The program expected this account to be already initialized',
-  //     )
-  //   }
-  // })
+    const subPda = PublicKey.findProgramAddressSync(
+      [Buffer.from('subscription'), Buffer.from(planPda.toBytes())],
+      program.programId,
+    )[0]
 
-  // it('cannot subscribe if does not have enough USDC', async () => {
-  //   try {
-  //     await program.methods
-  //       .subscribe()
-  //       .accounts({
-  //         caller: mock.tester.publicKey,
-  //         config: configPda,
-  //         plan: planPda,
-  //         andrenaUsdcAccount: mock.andrenaUsdcAccount,
-  //         dawnUsdcAccount: mock.dawnUsdcAccount,
-  //         boUsdcAccount: mock.boUsdcAccount,
-  //         userUsdcAccount: mock.testerUsdcAccount,
-  //       })
-  //       .signers([mock.tester])
-  //       .rpc()
-  //     assert.ok(false)
-  //   } catch (error) {
-  //     assert.ok(error instanceof AnchorError)
-  //     const err: AnchorError = error
-  //     assert.strictEqual(err.error.errorMessage, 'Insufficient funds')
-  //   }
-  // })
+    try {
+      await program.methods
+        .subscribe()
+        .accounts({
+          ...accounts,
+          plan: planPda,
+          subscription: subPda,
+        })
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof AnchorError)
+      const err: AnchorError = error
+      assert.strictEqual(
+        err.error.errorMessage,
+        'The program expected this account to be already initialized',
+      )
+    }
+  })
+
+  it('cannot subscribe if does not have enough USDC', async () => {
+    try {
+      await program.methods
+        .subscribe()
+        .accounts(accounts)
+        .signers([mock.tester])
+        .rpc()
+      assert.ok(false)
+    } catch (error) {
+      assert.ok(error instanceof SendTransactionError)
+      const err: SendTransactionError = error
+      const insufficientFunds = err.logs.find((log) =>
+        log.includes('Program log: Error: insufficient funds'),
+      )
+      assert.ok(insufficientFunds)
+    }
+  })
 
   it('subscribes to the plan', async () => {
     // Mint 1'000 USDC to Tester account
@@ -132,23 +180,17 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.testerUsdcAccount)
       ).amount.toString(),
     )
-    console.log('testerUsdcBalanceBefore', testerUsdcBalanceBefore.toString())
 
     const daoDawnBalanceBefore = new BN(
       (
         await getAccount(provider.connection, mock.daoDawnAccount)
       ).amount.toString(),
     )
-    console.log('daoDawnBalanceBefore', daoDawnBalanceBefore.toString())
 
     const validatorDawnBalanceBefore = new BN(
       (
         await getAccount(provider.connection, mock.validatorDawnAccount)
       ).amount.toString(),
-    )
-    console.log(
-      'validatorDawnBalanceBefore',
-      validatorDawnBalanceBefore.toString(),
     )
 
     const medallionDawnBalanceBefore = new BN(
@@ -156,62 +198,16 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.medallionDawnAccount)
       ).amount.toString(),
     )
-    console.log(
-      'medallionDawnBalanceBefore',
-      medallionDawnBalanceBefore.toString(),
-    )
 
     const buildingOwnerUsdcBalanceBefore = new BN(
       (
         await getAccount(provider.connection, mock.buildingOwnerUsdcAccount)
       ).amount.toString(),
     )
-    console.log(
-      'buildingOwnerUsdcBalanceBefore',
-      buildingOwnerUsdcBalanceBefore.toString(),
-    )
-
-    const [subscriptionPda, subscriptionBump] =
-      PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(planPda.toBytes()),
-          Buffer.from(mock.tester.publicKey.toBytes()),
-        ],
-        program.programId,
-      )
 
     const tx = await program.methods
       .subscribe()
-      .accounts({
-        caller: mock.tester.publicKey,
-        config: configPda,
-        plan: planPda,
-        subscription: subscriptionPda,
-        // mints
-        usdcMint: mock.usdcMint,
-        dawnMint: mock.dawnMint,
-        // raydium
-        raydium: mock.raydium,
-        raydiumAuthority: mock.raydiumAuthority,
-        raydiumConfig: mock.raydiumConfig,
-        raydiumPool: mock.raydiumPool,
-        raydiumObservation: mock.raydiumObservation,
-        // vaults
-        dawnVault: mock.dawnVault,
-        usdcVault: mock.usdcVault,
-        // token accounts
-        userUsdcAccount: mock.testerUsdcAccount,
-        userDawnAccount: mock.testerDawnAccount,
-        buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
-        daoDawnAccount: mock.daoDawnAccount,
-        validatorDawnAccount: mock.validatorDawnAccount,
-        medallionDawnAccount: mock.medallionDawnAccount,
-        // programs
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
+      .accounts(accounts)
       .signers([mock.tester])
       .rpc()
 
@@ -244,7 +240,6 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.testerUsdcAccount)
       ).amount.toString(),
     )
-    console.log('testerUsdcBalanceAfter', testerUsdcBalanceAfter.toString())
     assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
     // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
     const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
@@ -310,58 +305,19 @@ describe('plan::subscription', () => {
   })
 
   it('cannot subscribe to the same plan twice', async () => {
-    const [subscriptionPda, subscriptionBump] =
-      PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(planPda.toBytes()),
-          Buffer.from(mock.tester.publicKey.toBytes()),
-        ],
-        program.programId,
-      )
-
     try {
       await program.methods
         .subscribe()
-        .accounts({
-          caller: mock.tester.publicKey,
-          config: configPda,
-          plan: planPda,
-          subscription: subscriptionPda,
-          // mints
-          usdcMint: mock.usdcMint,
-          dawnMint: mock.dawnMint,
-          // raydium
-          raydium: mock.raydium,
-          raydiumAuthority: mock.raydiumAuthority,
-          raydiumConfig: mock.raydiumConfig,
-          raydiumPool: mock.raydiumPool,
-          raydiumObservation: mock.raydiumObservation,
-          // vaults
-          dawnVault: mock.dawnVault,
-          usdcVault: mock.usdcVault,
-          // token accounts
-          userUsdcAccount: mock.testerUsdcAccount,
-          userDawnAccount: mock.testerDawnAccount,
-          buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
-          daoDawnAccount: mock.daoDawnAccount,
-          validatorDawnAccount: mock.validatorDawnAccount,
-          medallionDawnAccount: mock.medallionDawnAccount,
-          // programs
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
+        .accounts(accounts)
         .signers([mock.tester])
         .rpc()
       assert.ok(false)
     } catch (error) {
       assert.ok(error instanceof SendTransactionError)
       const err: SendTransactionError = error
-      assert.strictEqual(
-        err.transactionError.message,
-        'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
-      )
+      const msg = `Allocate: account Address { address: ${subscriptionPda.toBase58()}, base: None } already in use`
+      const alreadySubscribed = err.logs.find((log) => log.includes(msg))
+      assert.ok(alreadySubscribed)
     }
   })
 
