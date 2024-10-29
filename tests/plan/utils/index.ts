@@ -161,21 +161,23 @@ export async function setup(
 
   // Create DAWN account for Building Owner
   console.log('Creating DAWN account for Building Owner...')
-  const { address: boDawnAccount } = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    buildingOwner,
-    dawnMint,
-    buildingOwner.publicKey,
-  )
+  const { address: buildingOwnerDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      buildingOwner,
+      dawnMint,
+      buildingOwner.publicKey,
+    )
 
   // Create USDC account for Building Owner
   console.log('Creating USDC account for Building Owner...')
-  const { address: boUsdcAccount } = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    buildingOwner,
-    usdcMint,
-    buildingOwner.publicKey,
-  )
+  const { address: buildingOwnerUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      buildingOwner,
+      usdcMint,
+      buildingOwner.publicKey,
+    )
 
   // Create USDC account for Tester
   console.log('Creating USDC account for Tester...')
@@ -267,8 +269,8 @@ export async function setup(
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,
-    boDawnAccount,
-    boUsdcAccount,
+    buildingOwnerDawnAccount,
+    buildingOwnerUsdcAccount,
     testerUsdcAccount,
     testerDawnAccount,
     // raydium

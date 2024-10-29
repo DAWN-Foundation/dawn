@@ -163,7 +163,7 @@ describe('plan::subscription', () => {
 
     const buildingOwnerUsdcBalanceBefore = new BN(
       (
-        await getAccount(provider.connection, mock.boUsdcAccount)
+        await getAccount(provider.connection, mock.buildingOwnerUsdcAccount)
       ).amount.toString(),
     )
     console.log(
@@ -203,7 +203,7 @@ describe('plan::subscription', () => {
         // token accounts
         userUsdcAccount: mock.testerUsdcAccount,
         userDawnAccount: mock.testerDawnAccount,
-        buildingOwnerUsdcAccount: mock.boUsdcAccount,
+        buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
         daoDawnAccount: mock.daoDawnAccount,
         validatorDawnAccount: mock.validatorDawnAccount,
         medallionDawnAccount: mock.medallionDawnAccount,
@@ -238,7 +238,7 @@ describe('plan::subscription', () => {
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
 
-    // make sure the user USDC account was debited
+    // make sure the tester USDC account was debited
     const testerUsdcBalanceAfter = new BN(
       (
         await getAccount(provider.connection, mock.testerUsdcAccount)
@@ -246,7 +246,7 @@ describe('plan::subscription', () => {
     )
     console.log('testerUsdcBalanceAfter', testerUsdcBalanceAfter.toString())
     assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
-    // make sure the amount debited is the plan price with 0.25% tolerance
+    // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
     const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
     assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
@@ -255,12 +255,10 @@ describe('plan::subscription', () => {
       .add(mock.validatorFee)
       .add(mock.medallionFee)
     const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-    console.log('totalUsdcFee', totalUsdcFee.toString())
 
-    // calculate total fee in DAWN
+    // calculate total fee in DAWN (approximated with small slippage for easier testing)
     const dawnPriceInUsdc = new BN(20250) // ~2.025 USDC per DAWN
     const totalDawnFee = totalUsdcFee.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
-    console.log('~totalDawnFee', totalDawnFee.toString())
 
     // make sure the DAO DAWN account was credited
     const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
@@ -269,10 +267,6 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.daoDawnAccount)
       ).amount.toString(),
     )
-    console.log({
-      daoBalanceDiff: daoDawnBalanceAfter.sub(daoDawnBalanceBefore).toString(),
-      daoFee: daoFee.toString(),
-    })
     assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).gte(daoFee))
 
     // make sure the validator DAWN account was credited (with 0.25% tolerance)
@@ -282,12 +276,6 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.validatorDawnAccount)
       ).amount.toString(),
     )
-    console.log({
-      validatorBalanceDiff: validatorDawnBalanceAfter
-        .sub(validatorDawnBalanceBefore)
-        .toString(),
-      validatorFee: validatorFee.toString(),
-    })
     assert.ok(
       validatorDawnBalanceAfter
         .sub(validatorDawnBalanceBefore)
@@ -301,12 +289,6 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.medallionDawnAccount)
       ).amount.toString(),
     )
-    console.log({
-      medallionBalanceDiff: medallionDawnBalanceAfter
-        .sub(medallionDawnBalanceBefore)
-        .toString(),
-      medallionFee: medallionFee.toString(),
-    })
     assert.ok(
       medallionDawnBalanceAfter
         .sub(medallionDawnBalanceBefore)
@@ -317,15 +299,9 @@ describe('plan::subscription', () => {
     const remainder = plan.price.sub(totalUsdcFee)
     const buildingOwnerUsdcBalanceAfter = new BN(
       (
-        await getAccount(provider.connection, mock.boUsdcAccount)
+        await getAccount(provider.connection, mock.buildingOwnerUsdcAccount)
       ).amount.toString(),
     )
-    console.log({
-      buildingOwnerBalanceDiff: buildingOwnerUsdcBalanceAfter
-        .sub(buildingOwnerUsdcBalanceBefore)
-        .toString(),
-      remainder: remainder.toString(),
-    })
     assert.ok(
       buildingOwnerUsdcBalanceAfter
         .sub(buildingOwnerUsdcBalanceBefore)
@@ -367,7 +343,7 @@ describe('plan::subscription', () => {
           // token accounts
           userUsdcAccount: mock.testerUsdcAccount,
           userDawnAccount: mock.testerDawnAccount,
-          buildingOwnerUsdcAccount: mock.boUsdcAccount,
+          buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
           daoDawnAccount: mock.daoDawnAccount,
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
@@ -447,6 +423,7 @@ describe('plan::subscription', () => {
         // token accounts
         userUsdcAccount: walletUsdcAccount.address,
         userDawnAccount: walletDawnAccount.address,
+        buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
         daoDawnAccount: mock.daoDawnAccount,
         validatorDawnAccount: mock.validatorDawnAccount,
         medallionDawnAccount: mock.medallionDawnAccount,
