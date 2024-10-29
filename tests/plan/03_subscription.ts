@@ -1,69 +1,28 @@
-import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError } from '@coral-xyz/anchor'
+import { Program, BN } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import {
-  Keypair,
-  PublicKey,
-  SendTransactionError,
-  SystemProgram,
-} from '@solana/web3.js'
+import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
 import { confirmTx, getEvent, mock } from './utils'
-import { BUILDING_SIZE } from './01_building'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAccount,
   getAccount,
   getOrCreateAssociatedTokenAccount,
   mintTo,
-  TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import { getRaydiumProgram } from '../../app/utils'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
+const TOLERANCE_BPS = new BN(9975)
 
 interface Subscribed {
   subscription: PublicKey
   subscriber: PublicKey
   plan: PublicKey
   expiration: number
-}
-
-// Helper function to get the PDA for a plan given plan parameters
-function getPlanPda(
-  program: Program<Plan>,
-  building: PublicKey,
-  price: BN,
-  duration: number,
-  speed: number,
-  capacity: BN,
-  slaId: BN,
-): [PublicKey, number] {
-  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  durationBuffer.writeUInt16LE(duration)
-
-  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-  speedBuffer.writeUInt32LE(speed)
-
-  const [planPda, planBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
-      Buffer.from(price.toArray('le', 8)),
-      durationBuffer,
-      speedBuffer,
-      Buffer.from(capacity.toArray('le', 8)),
-      Buffer.from(slaId.toArray('le', 8)),
-    ],
-    program.programId,
-  )
-
-  return [planPda, planBump]
 }
 
 describe('plan::subscription', () => {
@@ -168,26 +127,49 @@ describe('plan::subscription', () => {
       1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
     )
 
-    // const testerUsdcBalanceBefore = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.testerUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const andrenaUsdcBalanceBefore = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.andrenaUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const dawnUsdcBalanceBefore = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.dawnUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const boUsdcBalanceBefore = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.boUsdcAccount)
-    //   ).amount.toString(),
-    // )
+    const testerUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.testerUsdcAccount)
+      ).amount.toString(),
+    )
+    console.log('testerUsdcBalanceBefore', testerUsdcBalanceBefore.toString())
+
+    const daoDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.daoDawnAccount)
+      ).amount.toString(),
+    )
+    console.log('daoDawnBalanceBefore', daoDawnBalanceBefore.toString())
+
+    const validatorDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.validatorDawnAccount)
+      ).amount.toString(),
+    )
+    console.log(
+      'validatorDawnBalanceBefore',
+      validatorDawnBalanceBefore.toString(),
+    )
+
+    const medallionDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.medallionDawnAccount)
+      ).amount.toString(),
+    )
+    console.log(
+      'medallionDawnBalanceBefore',
+      medallionDawnBalanceBefore.toString(),
+    )
+
+    const buildingOwnerUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.boUsdcAccount)
+      ).amount.toString(),
+    )
+    console.log(
+      'buildingOwnerUsdcBalanceBefore',
+      buildingOwnerUsdcBalanceBefore.toString(),
+    )
 
     const [subscriptionPda, subscriptionBump] =
       PublicKey.findProgramAddressSync(
@@ -257,41 +239,98 @@ describe('plan::subscription', () => {
     assert.ok(event.expiration > 0)
 
     // make sure the user USDC account was debited
-    // const userUsdcBalanceAfter = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.testerUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // assert.ok(userUsdcBalanceAfter.eq(testerUsdcBalanceBefore.sub(plan.price)))
+    const testerUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.testerUsdcAccount)
+      ).amount.toString(),
+    )
+    console.log('testerUsdcBalanceAfter', testerUsdcBalanceAfter.toString())
+    assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+    // make sure the amount debited is the plan price with 0.25% tolerance
+    const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+    assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
-    // // make sure the Andrena USDC account was credited
-    // const andrenaUsdcBalanceAfter = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.andrenaUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const andrenaFee = mock.andrenaFee.mul(plan.price).div(BPS_DENOMINATOR)
-    // assert.ok(
-    //   andrenaUsdcBalanceAfter.eq(andrenaUsdcBalanceBefore.add(andrenaFee)),
-    // )
+    // calculate total fee in USDC
+    const totalFeeBps = mock.daoFee
+      .add(mock.validatorFee)
+      .add(mock.medallionFee)
+    const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+    console.log('totalUsdcFee', totalUsdcFee.toString())
 
-    // // make sure the Dawn USDC account was credited
-    // const dawnUsdcBalanceAfter = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.dawnUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const dawnFee = mock.dawnFee.mul(plan.price).div(BPS_DENOMINATOR)
-    // assert.ok(dawnUsdcBalanceAfter.eq(dawnUsdcBalanceBefore.add(dawnFee)))
+    // calculate total fee in DAWN
+    const dawnPriceInUsdc = new BN(20250) // ~2.025 USDC per DAWN
+    const totalDawnFee = totalUsdcFee.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
+    console.log('~totalDawnFee', totalDawnFee.toString())
 
-    // // make sure the BO USDC account was credited
-    // const boUsdcBalanceAfter = new BN(
-    //   (
-    //     await getAccount(provider.connection, mock.boUsdcAccount)
-    //   ).amount.toString(),
-    // )
-    // const remainder = plan.price.sub(andrenaFee).sub(dawnFee)
-    // assert.ok(boUsdcBalanceAfter.eq(boUsdcBalanceBefore.add(remainder)))
+    // make sure the DAO DAWN account was credited
+    const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
+    const daoDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.daoDawnAccount)
+      ).amount.toString(),
+    )
+    console.log({
+      daoBalanceDiff: daoDawnBalanceAfter.sub(daoDawnBalanceBefore).toString(),
+      daoFee: daoFee.toString(),
+    })
+    assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).gte(daoFee))
+
+    // make sure the validator DAWN account was credited (with 0.25% tolerance)
+    const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
+    const validatorDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.validatorDawnAccount)
+      ).amount.toString(),
+    )
+    console.log({
+      validatorBalanceDiff: validatorDawnBalanceAfter
+        .sub(validatorDawnBalanceBefore)
+        .toString(),
+      validatorFee: validatorFee.toString(),
+    })
+    assert.ok(
+      validatorDawnBalanceAfter
+        .sub(validatorDawnBalanceBefore)
+        .gte(validatorFee),
+    )
+
+    // make sure the medallion DAWN account was credited (with 0.25% tolerance)
+    const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
+    const medallionDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.medallionDawnAccount)
+      ).amount.toString(),
+    )
+    console.log({
+      medallionBalanceDiff: medallionDawnBalanceAfter
+        .sub(medallionDawnBalanceBefore)
+        .toString(),
+      medallionFee: medallionFee.toString(),
+    })
+    assert.ok(
+      medallionDawnBalanceAfter
+        .sub(medallionDawnBalanceBefore)
+        .gte(medallionFee),
+    )
+
+    // make sure the building owner USDC account was debited
+    const remainder = plan.price.sub(totalUsdcFee)
+    const buildingOwnerUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.boUsdcAccount)
+      ).amount.toString(),
+    )
+    console.log({
+      buildingOwnerBalanceDiff: buildingOwnerUsdcBalanceAfter
+        .sub(buildingOwnerUsdcBalanceBefore)
+        .toString(),
+      remainder: remainder.toString(),
+    })
+    assert.ok(
+      buildingOwnerUsdcBalanceAfter
+        .sub(buildingOwnerUsdcBalanceBefore)
+        .gte(remainder),
+    )
   })
 
   it('cannot subscribe to the same plan twice', async () => {
@@ -328,6 +367,7 @@ describe('plan::subscription', () => {
           // token accounts
           userUsdcAccount: mock.testerUsdcAccount,
           userDawnAccount: mock.testerDawnAccount,
+          buildingOwnerUsdcAccount: mock.boUsdcAccount,
           daoDawnAccount: mock.daoDawnAccount,
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
