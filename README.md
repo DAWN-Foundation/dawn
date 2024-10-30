@@ -101,48 +101,6 @@ anchor keys sync
 anchor build
 ```
 
-### Build Raydium DEX Program (optional)
-
-```bash
-# Outside of this repo (one level up)
-cd ..
-git clone https://github.com/thxsh/raydium-clmm.git
-
-cd raydium-clmm
-
-# [Temporary] Checkout fix branch
-git checkout fix/explicit-setup
-
-# Build the Raydium program
-anchor build
-
-# Check the program ID
-anchor keys list
-
-# Sync the program ID
-anchor keys sync
-```
-
-#### Build again
-
-```bash
-anchor build
-```
-
-#### Deploy
-
-```bash
-
-# Deploy the Raydium program
-anchor deploy --provider.cluster l
-
-# Copy the program ID from output and make sure it matches the first occurrence
-```
-
-### Back to this repo
-
-Update `Anchor.toml` with the new program ID
-
 ### Unit testing
 
 ```bash
@@ -155,13 +113,10 @@ anchor test
 ```bash
 # Start local validator (with cloned Raydium)
 solana-test-validator \
-  --bind-address "0.0.0.0" \
-  --url "https://api.mainnet-beta.solana.com" \
-  --ledger ".anchor/test-ledger" \
-  --rpc-port 8899 \
-  --clone "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C" \
-  --clone "DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8" \
-  --clone "D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2"
+  --reset \
+  --bpf-program CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C raydium/raydium.so \
+  --account DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8 raydium/pool_fee_receiver.json \
+  --account D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2 raydium/raydium_config.json
 
 # omit the --reset flag to keep existing data
 

@@ -5,7 +5,7 @@ import { Connection, PublicKey } from '@solana/web3.js'
 import { Plan } from '../../target/types/plan'
 import {
   connect,
-  getConfig,
+  getMock,
   getFlag,
   getIDL,
   getPlanPda,
@@ -21,15 +21,15 @@ async function main() {
   const planPda = new PublicKey(plan)
 
   const { wallet, connection, program } = await connect()
-  const config = getConfig()
+  const mock = getMock()
 
   // for now ensure wallet is tester
-  if (wallet.publicKey.toBase58() !== config.tester.publicKey) {
+  if (wallet.publicKey.toBase58() !== mock.tester.publicKey.toBase58()) {
     throw new Error('Wallet must be tester [for now]')
   }
 
-  const configPda = new PublicKey(config.configPda)
-  const userUsdcAccount = new PublicKey(config.testerUsdcAccount)
+  const configPda = new PublicKey(mock.configPda)
+  const userUsdcAccount = new PublicKey(mock.testerUsdcAccount)
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 

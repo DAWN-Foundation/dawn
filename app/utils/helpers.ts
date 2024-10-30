@@ -8,6 +8,7 @@ import { Plan } from '../../target/types/plan'
 export async function confirmTx(
   connection: anchor.web3.Connection,
   tx: string,
+  commitment: 'confirmed' | 'finalized' = 'confirmed',
 ): Promise<VersionedTransactionResponse> {
   const lastBlock = await connection.getLatestBlockhash()
 
@@ -17,11 +18,11 @@ export async function confirmTx(
       blockhash: lastBlock.blockhash,
       lastValidBlockHeight: lastBlock.lastValidBlockHeight,
     },
-    'confirmed',
+    commitment,
   )
 
   const confirmedTx = await connection.getTransaction(tx, {
-    commitment: 'confirmed',
+    commitment,
     maxSupportedTransactionVersion: 0,
   })
 
@@ -33,9 +34,10 @@ export async function fund(
   connection: anchor.web3.Connection,
   account: PublicKey,
   amount: number,
+  commitment: 'confirmed' | 'finalized' = 'confirmed',
 ) {
   const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
-  await confirmTx(connection, signature)
+  await confirmTx(connection, signature, commitment)
 }
 
 // Helper to get the event from the transaction

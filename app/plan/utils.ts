@@ -9,8 +9,10 @@ import {
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
 
-import { TestnetConfig } from '../types'
 import { Plan } from '../../target/types/plan'
+import { Mock } from '../utils'
+
+const PROGRAM_ID = new PublicKey('7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc')
 
 // parse command line arguments
 // find value of the --flag
@@ -27,8 +29,8 @@ export function hasFlag(flag: string): boolean {
   return process.argv.includes(flag)
 }
 
-// helper function to get the config
-export function getConfig(): TestnetConfig {
+// helper function to get the mock config
+export function getMock(): Mock {
   const configData = fs.readFileSync('testnet.json', 'utf8')
   return JSON.parse(configData)
 }
@@ -39,6 +41,13 @@ export function getIDL(): Plan {
   return JSON.parse(idlData)
 }
 
+export function getPlanProgram(
+  provider: anchor.AnchorProvider,
+): anchor.Program<Plan> {
+  const idl = getIDL()
+  return new anchor.Program<Plan>(idl as Plan, PROGRAM_ID, provider)
+}
+
 export async function connect(): Promise<{
   wallet: anchor.Wallet
   program: anchor.Program<Plan>
@@ -47,21 +56,22 @@ export async function connect(): Promise<{
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
   const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet)
+  const provider = new anchor.AnchorProvider(connection, wallet, {})
   anchor.setProvider(provider)
-  const idl = getIDL()
-  const program = new anchor.Program<Plan>(idl as Plan, provider)
+  const program = getPlanProgram(provider)
 
   return { wallet, program, connection }
 }
 
 // helper function to get wallet from the config
 function configWallet(
-  accountName: 'root' | 'tester' | 'buildingOwner',
+  accountName: 'tester' | 'buildingOwner',
 ): anchor.Wallet {
-  const config = getConfig()
-  const secretKey = config[accountName].secretKey.split(',').map(Number)
-  return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
+  const mock = getMock()
+  console.log({mock})
+  // const secretKey = mock[accountName].secretKey.split(',').map(Number)
+  // return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
+  return loadWallet()
 }
 
 // helper function to load the wallet from the local file system
@@ -77,9 +87,7 @@ export function loadWallet(): anchor.Wallet {
 export function getWallet(): anchor.Wallet {
   let wallet: anchor.Wallet
 
-  if (hasFlag('--root')) {
-    wallet = configWallet('root')
-  } else if (hasFlag('--tester')) {
+  if (hasFlag('--tester')) {
     wallet = configWallet('tester')
   } else if (hasFlag('--building-owner')) {
     wallet = configWallet('buildingOwner')

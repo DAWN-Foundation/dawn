@@ -1,11 +1,11 @@
-import { getConfig, connect } from './utils'
+import { getMock, connect } from './utils'
 
 async function main() {
   const { program } = await connect()
   console.log('PROGRAM_ID', program.programId.toBase58())
 
-  const config = getConfig()
-  const configAccount = await program.account.config.fetch(config.configPda)
+  const mock = getMock()
+  const configAccount = await program.account.config.fetch(mock.configPda)
 
   console.log({
     authority: configAccount.authority.toString(),

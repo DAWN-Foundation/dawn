@@ -1,6 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
-import { Keypair } from '@solana/web3.js'
+import { Keypair, PublicKey } from '@solana/web3.js'
 
 import { Mock } from './types'
 import { fund } from './helpers'
@@ -10,6 +10,7 @@ import {
   mintTo,
 } from '@solana/spl-token'
 import { setupRaydium } from './raydium'
+import { getPlanProgram } from '../plan/utils'
 
 export let mock: Mock
 
@@ -18,7 +19,17 @@ export let mock: Mock
 export async function setup(
   provider: anchor.AnchorProvider,
   wallet: anchor.Wallet,
+  isTestnet: boolean = false,
 ) {
+  // Fund wallet
+  console.log('Funding wallet...')
+  await fund(
+    provider.connection,
+    wallet.publicKey,
+    1000,
+    isTestnet ? 'finalized' : 'confirmed',
+  )
+
   // Create DAWN DAO KeyPair
   console.log('Creating DAWN DAO KeyPair...')
   const dao = Keypair.generate()
@@ -194,6 +205,12 @@ export async function setup(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
+  const program = getPlanProgram(provider)
+  const [configPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('config')],
+    program.programId,
+  )
+
   mock = {
     dao,
     validatorPool,
@@ -223,5 +240,9 @@ export async function setup(
     daoFee,
     validatorFee,
     medallionFee,
+    // plan
+    configPda,
   }
+
+  return mock
 }

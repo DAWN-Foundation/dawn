@@ -30,4 +30,6 @@ export interface Mock {
   daoFee: BN
   validatorFee: BN
   medallionFee: BN
+  // plan
+  configPda: PublicKey
 }

@@ -35,9 +35,6 @@ export async function createPool(
   )
 
   const [auth] = getAuthAddress(program.programId)
-
-  console.log({ auth: auth.toBase58() })
-
   const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)
   const [lpMintAddress] = getPoolLpMintAddress(pool, program.programId)
   const [vault0] = getPoolVaultAddress(pool, mint0, program.programId)
