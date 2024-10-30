@@ -5,7 +5,7 @@ import { Connection, PublicKey } from '@solana/web3.js'
 import { Plan } from '../../target/types/plan'
 import {
   connect,
-  getConfig,
+  getMock,
   getFlag,
   getIDL,
   getPlanPda,
@@ -21,18 +21,15 @@ async function main() {
   const planPda = new PublicKey(plan)
 
   const { wallet, connection, program } = await connect()
-  const config = getConfig()
+  const mock = getMock()
 
   // for now ensure wallet is tester
-  if (wallet.publicKey.toBase58() !== config.tester.publicKey) {
+  if (wallet.publicKey.toBase58() !== mock.tester.publicKey.toBase58()) {
     throw new Error('Wallet must be tester [for now]')
   }
 
-  const configPda = new PublicKey(config.configPda)
-  const andrenaUsdcAccount = new PublicKey(config.andrenaUsdcAccount)
-  const dawnUsdcAccount = new PublicKey(config.dawnUsdcAccount)
-  const boUsdcAccount = new PublicKey(config.boUsdcAccount)
-  const userUsdcAccount = new PublicKey(config.testerUsdcAccount)
+  const configPda = new PublicKey(mock.configPda)
+  const userUsdcAccount = new PublicKey(mock.testerUsdcAccount)
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
@@ -47,26 +44,26 @@ async function main() {
 
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
 
-  const itx = await program.methods
-    .subscribe()
-    .accounts({
-      caller: wallet.publicKey,
-      config: configPda,
-      plan: planPda,
-      subscription: subscriptionPda,
-      andrenaUsdcAccount,
-      dawnUsdcAccount,
-      boUsdcAccount,
-      userUsdcAccount,
-    } as {})
-    .instruction()
+  // const itx = await program.methods
+  //   .subscribe()
+  //   .accounts({
+  //     caller: wallet.publicKey,
+  //     config: configPda,
+  //     plan: planPda,
+  //     subscription: subscriptionPda,
+  //     andrenaUsdcAccount,
+  //     dawnUsdcAccount,
+  //     boUsdcAccount,
+  //     userUsdcAccount,
+  //   } as {})
+  //   .instruction()
 
-  try {
-    const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
-  } catch (error) {
-    console.error(error)
-  }
+  // try {
+  //   const txResult = await submitTx(connection, wallet, itx)
+  //   console.log('Tx submitted', { txResult })
+  // } catch (error) {
+  //   console.error(error)
+  // }
 }
 
 main().catch(console.error)

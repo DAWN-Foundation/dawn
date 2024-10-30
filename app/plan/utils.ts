@@ -2,7 +2,6 @@ const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
 import {
-  BlockheightBasedTransactionConfirmationStrategy,
   Connection,
   Keypair,
   PublicKey,
@@ -10,8 +9,10 @@ import {
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
 
-import { PlanInitConfig } from '../types'
 import { Plan } from '../../target/types/plan'
+import { Mock, RawMock } from '../utils'
+
+const PROGRAM_ID = new PublicKey('7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc')
 
 // parse command line arguments
 // find value of the --flag
@@ -28,16 +29,66 @@ export function hasFlag(flag: string): boolean {
   return process.argv.includes(flag)
 }
 
-// helper function to get the config
-export function getConfig(): PlanInitConfig {
+// helper function to get the mock config
+export function getMock(): Mock {
   const configData = fs.readFileSync('testnet.json', 'utf8')
-  return JSON.parse(configData)
+  const mock: RawMock = JSON.parse(configData)
+
+  return {
+    dao: Keypair.fromSecretKey(
+      Uint8Array.from(mock.dao.secretKey.split(',').map(Number)),
+    ),
+    validatorPool: Keypair.fromSecretKey(
+      Uint8Array.from(mock.validatorPool.secretKey.split(',').map(Number)),
+    ),
+    medallionPool: Keypair.fromSecretKey(
+      Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
+    ),
+    buildingOwner: Keypair.fromSecretKey(
+      Uint8Array.from(mock.buildingOwner.secretKey.split(',').map(Number)),
+    ),
+    tester: Keypair.fromSecretKey(
+      Uint8Array.from(mock.tester.secretKey.split(',').map(Number)),
+    ),
+    // mints
+    usdcMint: new PublicKey(mock.usdcMint),
+    dawnMint: new PublicKey(mock.dawnMint),
+    // token accounts
+    daoDawnAccount: new PublicKey(mock.daoDawnAccount),
+    validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
+    medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
+    buildingOwnerUsdcAccount: new PublicKey(mock.buildingOwnerUsdcAccount),
+    buildingOwnerDawnAccount: new PublicKey(mock.buildingOwnerDawnAccount),
+    testerUsdcAccount: new PublicKey(mock.testerUsdcAccount),
+    testerDawnAccount: new PublicKey(mock.testerDawnAccount),
+    // raydium
+    raydium: new PublicKey(mock.raydium),
+    raydiumAuthority: new PublicKey(mock.raydiumAuthority),
+    raydiumConfig: new PublicKey(mock.raydiumConfig),
+    raydiumPool: new PublicKey(mock.raydiumPool),
+    raydiumObservation: new PublicKey(mock.raydiumObservation),
+    dawnVault: new PublicKey(mock.dawnVault),
+    usdcVault: new PublicKey(mock.usdcVault),
+    // config
+    daoFee: new BN(mock.daoFee),
+    validatorFee: new BN(mock.validatorFee),
+    medallionFee: new BN(mock.medallionFee),
+    // plan
+    configPda: new PublicKey(mock.configPda),
+  }
 }
 
 // helper function to get the IDL
 export function getIDL(): Plan {
   const idlData = fs.readFileSync('target/idl/plan.json', 'utf8')
   return JSON.parse(idlData)
+}
+
+export function getPlanProgram(
+  provider: anchor.AnchorProvider,
+): anchor.Program<Plan> {
+  const idl = getIDL()
+  return new anchor.Program<Plan>(idl as Plan, PROGRAM_ID, provider)
 }
 
 export async function connect(): Promise<{
@@ -48,20 +99,17 @@ export async function connect(): Promise<{
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
   const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet)
+  const provider = new anchor.AnchorProvider(connection, wallet, {})
   anchor.setProvider(provider)
-  const idl = getIDL()
-  const program = new anchor.Program<Plan>(idl as Plan, provider)
+  const program = getPlanProgram(provider)
 
   return { wallet, program, connection }
 }
 
 // helper function to get wallet from the config
-function configWallet(
-  accountName: 'root' | 'tester' | 'buildingOwner',
-): anchor.Wallet {
-  const config = getConfig()
-  const secretKey = config[accountName].secretKey.split(',').map(Number)
+function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
+  const mock = getMock()
+  const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
 }
 
@@ -78,9 +126,7 @@ export function loadWallet(): anchor.Wallet {
 export function getWallet(): anchor.Wallet {
   let wallet: anchor.Wallet
 
-  if (hasFlag('--root')) {
-    wallet = configWallet('root')
-  } else if (hasFlag('--tester')) {
+  if (hasFlag('--tester')) {
     wallet = configWallet('tester')
   } else if (hasFlag('--building-owner')) {
     wallet = configWallet('buildingOwner')

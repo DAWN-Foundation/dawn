@@ -2,83 +2,27 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, BN, AnchorError } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
+import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { confirmTx, getEvent, mock } from './utils'
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes'
-import { BUILDING_SIZE } from './01_building'
+import { confirmTx, getEvent, getPlanPda, mock } from '../../app/utils'
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
   getOrCreateAssociatedTokenAccount,
   mintTo,
+  TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
+const TOLERANCE_BPS = new BN(9975)
 
-// Helper function to get the PDA for a plan given plan parameters
-function getPlanPda(
-  program: Program<Plan>,
-  building: PublicKey,
-  price: BN,
-  duration: number,
-  speed: number,
-  capacity: BN,
-  slaId: BN,
-): [PublicKey, number] {
-  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  durationBuffer.writeUInt16LE(duration)
-
-  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-  speedBuffer.writeUInt32LE(speed)
-
-  const [planPda, planBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
-      Buffer.from(price.toArray('le', 8)),
-      durationBuffer,
-      speedBuffer,
-      Buffer.from(capacity.toArray('le', 8)),
-      Buffer.from(slaId.toArray('le', 8)),
-    ],
-    program.programId,
-  )
-
-  return [planPda, planBump]
-}
-
-async function getPlansForBuilding(
-  program: Program<Plan>, // Anchor program
-  building: PublicKey, // Public key of the building
-): Promise<any[]> {
-  // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
-  const BUILDING_OFFSET = 8 + 32
-
-  // Fetch all plan accounts and filter by building key
-  const plans = await program.provider.connection.getProgramAccounts(
-    program.programId,
-    {
-      // Filtering accounts by the `building` public key stored in the Plan account
-      filters: [
-        {
-          memcmp: {
-            offset: BUILDING_OFFSET, // Offset where the building public key is stored
-            bytes: building.toBase58(), // The building public key to filter by
-          },
-        },
-      ],
-    },
-  )
-
-  // Decode and return the accounts
-  return plans.map((accountInfo) => {
-    return program.account.plan.coder.accounts.decode(
-      'plan',
-      accountInfo.account.data,
-    )
-  })
+interface Subscribed {
+  subscription: PublicKey
+  subscriber: PublicKey
+  plan: PublicKey
+  expiration: number
 }
 
 describe('plan::subscription', () => {
@@ -96,6 +40,9 @@ describe('plan::subscription', () => {
   let buildingPda: PublicKey
   let planPda: PublicKey
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
+  let accounts: Record<string, PublicKey>
+  let subscriptionPda: PublicKey
+  let subscriptionBump: number
 
   before(async () => {
     const plans = await program.account.plan.all()
@@ -106,6 +53,49 @@ describe('plan::subscription', () => {
     const buildings = await program.account.building.all()
     assert.ok(buildings.length > 0)
     buildingPda = buildings[0].publicKey
+
+    const newSubscription = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('subscription'),
+        Buffer.from(planPda.toBytes()),
+        Buffer.from(mock.tester.publicKey.toBytes()),
+      ],
+      program.programId,
+    )
+
+    subscriptionPda = newSubscription[0]
+    subscriptionBump = newSubscription[1]
+
+    // accounts for a successful subscription
+    accounts = {
+      caller: mock.tester.publicKey,
+      config: configPda,
+      plan: planPda,
+      subscription: subscriptionPda,
+      // mints
+      usdcMint: mock.usdcMint,
+      dawnMint: mock.dawnMint,
+      // raydium
+      raydium: mock.raydium,
+      raydiumAuthority: mock.raydiumAuthority,
+      raydiumConfig: mock.raydiumConfig,
+      raydiumPool: mock.raydiumPool,
+      raydiumObservation: mock.raydiumObservation,
+      // vaults
+      dawnVault: mock.dawnVault,
+      usdcVault: mock.usdcVault,
+      // token accounts
+      userUsdcAccount: mock.testerUsdcAccount,
+      userDawnAccount: mock.testerDawnAccount,
+      buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
+      daoDawnAccount: mock.daoDawnAccount,
+      validatorDawnAccount: mock.validatorDawnAccount,
+      medallionDawnAccount: mock.medallionDawnAccount,
+      // programs
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    }
   })
 
   it('mock setup', () => {
@@ -114,6 +104,9 @@ describe('plan::subscription', () => {
     assert.ok(plan.owner.equals(mock.buildingOwner.publicKey))
     assert.exists(planPda)
     assert.exists(buildingPda)
+    assert.exists(subscriptionPda)
+    assert.exists(subscriptionBump)
+    assert.exists(accounts)
   })
 
   it('cannot subscribe to a plan that doesnt exist', async () => {
@@ -127,17 +120,18 @@ describe('plan::subscription', () => {
       new BN(1),
     )
 
+    const subPda = PublicKey.findProgramAddressSync(
+      [Buffer.from('subscription'), Buffer.from(planPda.toBytes())],
+      program.programId,
+    )[0]
+
     try {
       await program.methods
         .subscribe()
         .accounts({
-          caller: mock.tester.publicKey,
-          config: configPda,
+          ...accounts,
           plan: planPda,
-          andrenaUsdcAccount: mock.andrenaUsdcAccount,
-          dawnUsdcAccount: mock.dawnUsdcAccount,
-          boUsdcAccount: mock.boUsdcAccount,
-          userUsdcAccount: mock.testerUsdcAccount,
+          subscription: subPda,
         })
         .signers([mock.tester])
         .rpc()
@@ -156,22 +150,17 @@ describe('plan::subscription', () => {
     try {
       await program.methods
         .subscribe()
-        .accounts({
-          caller: mock.tester.publicKey,
-          config: configPda,
-          plan: planPda,
-          andrenaUsdcAccount: mock.andrenaUsdcAccount,
-          dawnUsdcAccount: mock.dawnUsdcAccount,
-          boUsdcAccount: mock.boUsdcAccount,
-          userUsdcAccount: mock.testerUsdcAccount,
-        })
+        .accounts(accounts)
         .signers([mock.tester])
         .rpc()
       assert.ok(false)
     } catch (error) {
-      assert.ok(error instanceof AnchorError)
-      const err: AnchorError = error
-      assert.strictEqual(err.error.errorMessage, 'Insufficient funds')
+      assert.ok(error instanceof SendTransactionError)
+      const err: SendTransactionError = error
+      const insufficientFunds = err.logs.find((log) =>
+        log.includes('Program log: Error: insufficient funds'),
+      )
+      assert.ok(insufficientFunds)
     }
   })
 
@@ -191,44 +180,34 @@ describe('plan::subscription', () => {
         await getAccount(provider.connection, mock.testerUsdcAccount)
       ).amount.toString(),
     )
-    const andrenaUsdcBalanceBefore = new BN(
+
+    const daoDawnBalanceBefore = new BN(
       (
-        await getAccount(provider.connection, mock.andrenaUsdcAccount)
-      ).amount.toString(),
-    )
-    const dawnUsdcBalanceBefore = new BN(
-      (
-        await getAccount(provider.connection, mock.dawnUsdcAccount)
-      ).amount.toString(),
-    )
-    const boUsdcBalanceBefore = new BN(
-      (
-        await getAccount(provider.connection, mock.boUsdcAccount)
+        await getAccount(provider.connection, mock.daoDawnAccount)
       ).amount.toString(),
     )
 
-    const [subscriptionPda, subscriptionBump] =
-      PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(planPda.toBytes()),
-          Buffer.from(mock.tester.publicKey.toBytes()),
-        ],
-        program.programId,
-      )
+    const validatorDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.validatorDawnAccount)
+      ).amount.toString(),
+    )
+
+    const medallionDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.medallionDawnAccount)
+      ).amount.toString(),
+    )
+
+    const buildingOwnerUsdcBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, mock.buildingOwnerUsdcAccount)
+      ).amount.toString(),
+    )
 
     const tx = await program.methods
       .subscribe()
-      .accounts({
-        caller: mock.tester.publicKey,
-        config: configPda,
-        plan: planPda,
-        subscription: subscriptionPda,
-        andrenaUsdcAccount: mock.andrenaUsdcAccount,
-        dawnUsdcAccount: mock.dawnUsdcAccount,
-        boUsdcAccount: mock.boUsdcAccount,
-        userUsdcAccount: mock.testerUsdcAccount,
-      })
+      .accounts(accounts)
       .signers([mock.tester])
       .rpc()
 
@@ -249,82 +228,113 @@ describe('plan::subscription', () => {
     assert.equal(subscription.bump, subscriptionBump)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'subscribed')
+    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
     assert.ok(event.subscription.equals(subscriptionPda))
     assert.ok(event.subscriber.equals(mock.tester.publicKey))
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
 
-    // make sure the user USDC account was debited
-    const userUsdcBalanceAfter = new BN(
+    // make sure the tester USDC account was debited
+    const testerUsdcBalanceAfter = new BN(
       (
         await getAccount(provider.connection, mock.testerUsdcAccount)
       ).amount.toString(),
     )
-    assert.ok(userUsdcBalanceAfter.eq(testerUsdcBalanceBefore.sub(plan.price)))
+    assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+    // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
+    const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+    assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
-    // make sure the Andrena USDC account was credited
-    const andrenaUsdcBalanceAfter = new BN(
+    // calculate total fee in USDC
+    const totalFeeBps = mock.daoFee
+      .add(mock.validatorFee)
+      .add(mock.medallionFee)
+    const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+
+    // calculate total fee in DAWN (approximated with small slippage for easier testing)
+    const dawnPriceInUsdc = new BN(20250) // ~2.025 USDC per DAWN
+    const totalDawnFee = totalUsdcFee.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
+
+    // make sure the DAO DAWN account was credited
+    const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
+    const daoDawnBalanceAfter = new BN(
       (
-        await getAccount(provider.connection, mock.andrenaUsdcAccount)
+        await getAccount(provider.connection, mock.daoDawnAccount)
       ).amount.toString(),
     )
-    const andrenaFee = mock.andrenaFee.mul(plan.price).div(BPS_DENOMINATOR)
+    assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).gte(daoFee))
+
+    // make sure the validator DAWN account was credited (with 0.25% tolerance)
+    const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
+    const validatorDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, mock.validatorDawnAccount)
+      ).amount.toString(),
+    )
     assert.ok(
-      andrenaUsdcBalanceAfter.eq(andrenaUsdcBalanceBefore.add(andrenaFee)),
+      validatorDawnBalanceAfter
+        .sub(validatorDawnBalanceBefore)
+        .gte(validatorFee),
     )
 
-    // make sure the Dawn USDC account was credited
-    const dawnUsdcBalanceAfter = new BN(
+    // make sure the medallion DAWN account was credited (with 0.25% tolerance)
+    const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
+    const medallionDawnBalanceAfter = new BN(
       (
-        await getAccount(provider.connection, mock.dawnUsdcAccount)
+        await getAccount(provider.connection, mock.medallionDawnAccount)
       ).amount.toString(),
     )
-    const dawnFee = mock.dawnFee.mul(plan.price).div(BPS_DENOMINATOR)
-    assert.ok(dawnUsdcBalanceAfter.eq(dawnUsdcBalanceBefore.add(dawnFee)))
+    assert.ok(
+      medallionDawnBalanceAfter
+        .sub(medallionDawnBalanceBefore)
+        .gte(medallionFee),
+    )
 
-    // make sure the BO USDC account was credited
-    const boUsdcBalanceAfter = new BN(
+    // make sure the building owner USDC account was debited
+    const remainder = plan.price.sub(totalUsdcFee)
+    const buildingOwnerUsdcBalanceAfter = new BN(
       (
-        await getAccount(provider.connection, mock.boUsdcAccount)
+        await getAccount(provider.connection, mock.buildingOwnerUsdcAccount)
       ).amount.toString(),
     )
-    const remainder = plan.price.sub(andrenaFee).sub(dawnFee)
-    assert.ok(boUsdcBalanceAfter.eq(boUsdcBalanceBefore.add(remainder)))
+    assert.ok(
+      buildingOwnerUsdcBalanceAfter
+        .sub(buildingOwnerUsdcBalanceBefore)
+        .gte(remainder),
+    )
   })
 
   it('cannot subscribe to the same plan twice', async () => {
     try {
       await program.methods
         .subscribe()
-        .accounts({
-          caller: mock.tester.publicKey,
-          config: configPda,
-          plan: planPda,
-          andrenaUsdcAccount: mock.andrenaUsdcAccount,
-          dawnUsdcAccount: mock.dawnUsdcAccount,
-          boUsdcAccount: mock.boUsdcAccount,
-          userUsdcAccount: mock.testerUsdcAccount,
-        })
+        .accounts(accounts)
         .signers([mock.tester])
         .rpc()
       assert.ok(false)
     } catch (error) {
       assert.ok(error instanceof SendTransactionError)
       const err: SendTransactionError = error
-      assert.strictEqual(
-        err.transactionError.message,
-        'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
-      )
+      const msg = `Allocate: account Address { address: ${subscriptionPda.toBase58()}, base: None } already in use`
+      const alreadySubscribed = err.logs.find((log) => log.includes(msg))
+      assert.ok(alreadySubscribed)
     }
   })
 
-  it('can be subscribed to by another user', async () => {
-    // create USDC account for wallet
+  it('subscribes to the same plan by another user', async () => {
+    // get USDC account for wallet
     const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       wallet.payer,
       mock.usdcMint,
+      wallet.publicKey,
+    )
+
+    // get Dawn account for wallet
+    const walletDawnAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mock.dawnMint,
       wallet.publicKey,
     )
 
@@ -354,18 +364,37 @@ describe('plan::subscription', () => {
         config: configPda,
         plan: planPda,
         subscription: subscriptionPda,
-        andrenaUsdcAccount: mock.andrenaUsdcAccount,
-        dawnUsdcAccount: mock.dawnUsdcAccount,
-        boUsdcAccount: mock.boUsdcAccount,
+        // mints
+        usdcMint: mock.usdcMint,
+        dawnMint: mock.dawnMint,
+        // raydium
+        raydium: mock.raydium,
+        raydiumAuthority: mock.raydiumAuthority,
+        raydiumConfig: mock.raydiumConfig,
+        raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
+        // vaults
+        dawnVault: mock.dawnVault,
+        usdcVault: mock.usdcVault,
+        // token accounts
         userUsdcAccount: walletUsdcAccount.address,
+        userDawnAccount: walletDawnAccount.address,
+        buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
+        daoDawnAccount: mock.daoDawnAccount,
+        validatorDawnAccount: mock.validatorDawnAccount,
+        medallionDawnAccount: mock.medallionDawnAccount,
+        // programs
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       })
-      .signers([])
+      .signers([wallet.payer])
       .rpc()
 
     assert.ok(tx.length > 0)
 
     // make sure event was emitted
-    const event = await getEvent(program, tx, 'subscribed')
+    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
     assert.ok(event.subscription.equals(subscriptionPda))
     assert.ok(event.subscriber.equals(wallet.publicKey))
     assert.ok(event.plan.equals(planPda))

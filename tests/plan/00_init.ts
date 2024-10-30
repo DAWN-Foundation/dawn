@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { setup, mock } from './utils'
+import { setup, mock } from '../../app/utils'
 
 describe('plan::initialize', () => {
   const provider = anchor.AnchorProvider.env()
@@ -21,7 +21,7 @@ describe('plan::initialize', () => {
   )
 
   before(async () => {
-    await setup(provider.connection, wallet)
+    await setup(provider, wallet)
   })
 
   it('mock setup', () => {
@@ -30,20 +30,20 @@ describe('plan::initialize', () => {
 
   it('initializes the program', async () => {
     const tx = await program.methods
-      .initialize(
-        mock.dawnFee,
-        mock.andrenaFee,
-        mock.andrenaDawnRatio,
-        mock.boDawnRatio,
-        mock.boEscrowRatio,
-      )
+      .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
       .accounts({
         caller: wallet.payer.publicKey,
+        config: configPda,
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
-        andrenaUsdcAccount: mock.andrenaUsdcAccount,
-        andrenaDawnAccount: mock.andrenaDawnAccount,
-        dawnUsdcAccount: mock.dawnUsdcAccount,
+        daoDawnAccount: mock.daoDawnAccount,
+        validatorDawnAccount: mock.validatorDawnAccount,
+        medallionDawnAccount: mock.medallionDawnAccount,
+        raydium: mock.raydium,
+        raydiumAuthority: mock.raydiumAuthority,
+        raydiumConfig: mock.raydiumConfig,
+        raydiumPool: mock.raydiumPool,
+        raydiumObservation: mock.raydiumObservation,
       })
       .rpc()
 
@@ -51,43 +51,46 @@ describe('plan::initialize', () => {
 
     const config = await program.account.config.fetch(configPda)
 
-    // console.log(config)
-
     // authority
     assert.ok(config.authority.equals(wallet.payer.publicKey))
     assert.equal(config.bump, configBump)
     // fees
-    assert.ok(config.dawnFee.eq(mock.dawnFee))
-    assert.ok(config.andrenaFee.eq(mock.andrenaFee))
-    // ratio
-    assert.ok(config.andrenaDawnRatio.eq(mock.andrenaDawnRatio))
-    assert.ok(config.boDawnRatio.eq(mock.boDawnRatio))
-    assert.ok(config.boEscrowRatio.eq(mock.boEscrowRatio))
+    assert.ok(config.daoFee.eq(mock.daoFee))
+    assert.ok(config.validatorFee.eq(mock.validatorFee))
+    assert.ok(config.medallionFee.eq(mock.medallionFee))
+
     // accounts
     assert.ok(config.usdcMint.equals(mock.usdcMint))
     assert.ok(config.dawnMint.equals(mock.dawnMint))
-    assert.ok(config.andrenaUsdcAccount.equals(mock.andrenaUsdcAccount))
-    assert.ok(config.andrenaDawnAccount.equals(mock.andrenaDawnAccount))
-    assert.ok(config.dawnUsdcAccount.equals(mock.dawnUsdcAccount))
+    assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
+    assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
+    assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
+
+    // raydium
+    assert.ok(config.raydium.equals(mock.raydium))
+    assert.ok(config.raydiumAuthority.equals(mock.raydiumAuthority))
+    assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
+    assert.ok(config.raydiumPool.equals(mock.raydiumPool))
+    assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
   })
 
   it('cannot be reinitialized', async () => {
     try {
       await program.methods
-        .initialize(
-          mock.dawnFee,
-          mock.andrenaFee,
-          mock.andrenaDawnRatio,
-          mock.boDawnRatio,
-          mock.boEscrowRatio,
-        )
+        .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accounts({
           caller: wallet.payer.publicKey,
+          config: configPda,
           usdcMint: mock.usdcMint,
           dawnMint: mock.dawnMint,
-          andrenaUsdcAccount: mock.andrenaUsdcAccount,
-          andrenaDawnAccount: mock.andrenaDawnAccount,
-          dawnUsdcAccount: mock.dawnUsdcAccount,
+          daoDawnAccount: mock.daoDawnAccount,
+          validatorDawnAccount: mock.validatorDawnAccount,
+          medallionDawnAccount: mock.medallionDawnAccount,
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
         })
         .rpc()
       assert.ok(false)

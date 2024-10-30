@@ -1,25 +1,28 @@
-import { getConfig, connect } from './utils'
+import { getMock, connect } from './utils'
 
 async function main() {
   const { program } = await connect()
   console.log('PROGRAM_ID', program.programId.toBase58())
 
-  const config = await getConfig()
-  const configAccount = await program.account.config.fetch(config.configPda)
+  const mock = getMock()
+  const configAccount = await program.account.config.fetch(mock.configPda)
 
   console.log({
     authority: configAccount.authority.toString(),
-    dawnFee: configAccount.dawnFee.toString(),
-    andrenaFee: configAccount.andrenaFee.toString(),
-    andrenaDawnRatio: configAccount.andrenaDawnRatio.toString(),
-    boDawnRatio: configAccount.boDawnRatio.toString(),
-    boEscrowRatio: configAccount.boEscrowRatio.toString(),
+    bump: configAccount.bump.toString(),
+    daoFee: configAccount.daoFee.toString(),
+    validatorFee: configAccount.validatorFee.toString(),
+    medallionFee: configAccount.medallionFee.toString(),
     usdcMint: configAccount.usdcMint.toBase58(),
     dawnMint: configAccount.dawnMint.toBase58(),
-    andrenaUsdcAccount: configAccount.andrenaUsdcAccount.toBase58(),
-    andrenaDawnAccount: configAccount.andrenaDawnAccount.toBase58(),
-    dawnUsdcAccount: configAccount.dawnUsdcAccount.toBase58(),
-    bump: configAccount.bump.toString(),
+    daoDawnAccount: configAccount.daoDawnAccount.toBase58(),
+    validatorDawnAccount: configAccount.validatorDawnAccount.toBase58(),
+    medallionDawnAccount: configAccount.medallionDawnAccount.toBase58(),
+    raydium: configAccount.raydium.toBase58(),
+    raydiumAuthority: configAccount.raydiumAuthority.toBase58(),
+    raydiumConfig: configAccount.raydiumConfig.toBase58(),
+    raydiumPool: configAccount.raydiumPool.toBase58(),
+    raydiumObservation: configAccount.raydiumObservation.toBase58(),
   })
 }
 

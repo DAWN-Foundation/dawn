@@ -37,4 +37,10 @@ pub enum PlanError {
 
     #[msg("Insufficient funds")]
     InsufficientFunds,
+
+    #[msg("Invalid mint")]
+    InvalidMint,
+
+    #[msg("Invalid vault")]
+    InvalidVault,
 }

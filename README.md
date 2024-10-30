@@ -86,6 +86,21 @@ anchor idl build --program-name plan
 anchor build
 ```
 
+### Local Program Address
+
+Each local keypair is unique and must be set correctly to deploy contracts locally
+
+```bash
+# Check local program address
+anchor keys list
+
+# Sync local program address
+anchor keys sync
+
+# Build again
+anchor build
+```
+
 ### Unit testing
 
 ```bash
@@ -96,14 +111,17 @@ anchor test
 ### Run local validator
 
 ```bash
-# First run
-solana-test-validator
+# Start local validator (with cloned Raydium)
+solana-test-validator \
+  --reset \
+  --bpf-program CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C raydium/raydium.so \
+  --account DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8 raydium/pool_fee_receiver.json \
+  --account D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2 raydium/raydium_config.json
 
-# Subsequent runs
-solana-test-validator --reset
+# omit the --reset flag to keep existing data
 
 # Airdrop 5 SOL to specified address
-solana airdrop --url l 5 <address>
+solana airdrop --url l 500 <address>
 ```
 
 ### Deploy
@@ -114,6 +132,7 @@ anchor deploy --provider.cluster l
 
 # Copy the IDL of the deployed program to the clipboard
 # where `~/andrena/dawn` points to the project directory
+# only needed if need to import the IDL somewhere
 pbcopy < ~/andrena/dawn/target/idl/plan.json
 ```
 
@@ -132,7 +151,7 @@ These command allow interaction with the plan contract deployed on local testnet
 # Initialize the plan contract (as local identity )
 yarn plan:init
 
-# [Optional] Its also possible to specify following signers 
+# [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
 # these can be applied to all transaction commands below
 # for example:

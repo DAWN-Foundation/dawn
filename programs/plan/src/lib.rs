@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("79d7dzfG5hC2xCzNUrwyAdG2agBh6NM9gATyXPBr9zFq");
+declare_id!("7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc");
 
 mod constants;
 mod error;
@@ -18,19 +18,10 @@ pub mod plan {
     pub fn initialize(
         ctx: Context<Initialize>,
         dawn_fee: u64,
-        andrena_fee: u64,
-        andrena_dawn_ratio: u64,
-        bo_dawn_ratio: u64,
-        bo_escrow_ratio: u64,
+        validator_fee: u64,
+        medallion_fee: u64,
     ) -> Result<()> {
-        PlanApp::initialize(
-            ctx,
-            dawn_fee,
-            andrena_fee,
-            andrena_dawn_ratio,
-            bo_dawn_ratio,
-            bo_escrow_ratio,
-        )
+        PlanApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
     pub fn add_building(
@@ -57,7 +48,9 @@ pub mod plan {
         PlanApp::remove_plan(ctx)
     }
 
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+    pub fn subscribe<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
+    ) -> Result<()> {
         PlanApp::subscribe(ctx)
     }
 }

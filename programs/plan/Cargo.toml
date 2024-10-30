@@ -9,13 +9,18 @@ crate-type = ["cdylib", "lib"]
 name = "plan"
 
 [features]
-default = []
-cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+cpi = ["no-entrypoint"]
+default = []
 
 [dependencies]
-anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
-anchor-spl = "0.30.1"
+anchor-lang = "=0.29.0"
+anchor-spl = "=0.29.0"
+raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", features = [
+    "no-entrypoint",
+    "cpi",
+] }
+solana-program = ">=1.16, <1.18"
+spl-memo = "4.0.0"
