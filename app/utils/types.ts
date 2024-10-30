@@ -33,3 +33,41 @@ export interface Mock {
   // plan
   configPda: PublicKey
 }
+
+interface RawKeypair {
+  publicKey: string
+  secretKey: string
+}
+
+export interface RawMock {
+  dao: RawKeypair
+  validatorPool: RawKeypair
+  medallionPool: RawKeypair
+  buildingOwner: RawKeypair
+  tester: RawKeypair
+  // mints
+  usdcMint: string
+  dawnMint: string
+  // token accounts
+  daoDawnAccount: string
+  validatorDawnAccount: string
+  medallionDawnAccount: string
+  buildingOwnerUsdcAccount: string
+  buildingOwnerDawnAccount: string
+  testerUsdcAccount: string
+  testerDawnAccount: string
+  // raydium
+  raydium: string
+  raydiumAuthority: string
+  raydiumConfig: string
+  raydiumPool: string
+  raydiumObservation: string
+  dawnVault: string
+  usdcVault: string
+  // config
+  daoFee: string
+  validatorFee: string
+  medallionFee: string
+  // plan
+  configPda: string
+}

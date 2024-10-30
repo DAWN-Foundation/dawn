@@ -10,7 +10,7 @@ import {
 } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { Mock } from '../utils'
+import { Mock, RawMock } from '../utils'
 
 const PROGRAM_ID = new PublicKey('7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc')
 
@@ -32,7 +32,50 @@ export function hasFlag(flag: string): boolean {
 // helper function to get the mock config
 export function getMock(): Mock {
   const configData = fs.readFileSync('testnet.json', 'utf8')
-  return JSON.parse(configData)
+  const mock: RawMock = JSON.parse(configData)
+
+  return {
+    dao: Keypair.fromSecretKey(
+      Uint8Array.from(mock.dao.secretKey.split(',').map(Number)),
+    ),
+    validatorPool: Keypair.fromSecretKey(
+      Uint8Array.from(mock.validatorPool.secretKey.split(',').map(Number)),
+    ),
+    medallionPool: Keypair.fromSecretKey(
+      Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
+    ),
+    buildingOwner: Keypair.fromSecretKey(
+      Uint8Array.from(mock.buildingOwner.secretKey.split(',').map(Number)),
+    ),
+    tester: Keypair.fromSecretKey(
+      Uint8Array.from(mock.tester.secretKey.split(',').map(Number)),
+    ),
+    // mints
+    usdcMint: new PublicKey(mock.usdcMint),
+    dawnMint: new PublicKey(mock.dawnMint),
+    // token accounts
+    daoDawnAccount: new PublicKey(mock.daoDawnAccount),
+    validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
+    medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
+    buildingOwnerUsdcAccount: new PublicKey(mock.buildingOwnerUsdcAccount),
+    buildingOwnerDawnAccount: new PublicKey(mock.buildingOwnerDawnAccount),
+    testerUsdcAccount: new PublicKey(mock.testerUsdcAccount),
+    testerDawnAccount: new PublicKey(mock.testerDawnAccount),
+    // raydium
+    raydium: new PublicKey(mock.raydium),
+    raydiumAuthority: new PublicKey(mock.raydiumAuthority),
+    raydiumConfig: new PublicKey(mock.raydiumConfig),
+    raydiumPool: new PublicKey(mock.raydiumPool),
+    raydiumObservation: new PublicKey(mock.raydiumObservation),
+    dawnVault: new PublicKey(mock.dawnVault),
+    usdcVault: new PublicKey(mock.usdcVault),
+    // config
+    daoFee: new BN(mock.daoFee),
+    validatorFee: new BN(mock.validatorFee),
+    medallionFee: new BN(mock.medallionFee),
+    // plan
+    configPda: new PublicKey(mock.configPda),
+  }
 }
 
 // helper function to get the IDL
@@ -64,11 +107,9 @@ export async function connect(): Promise<{
 }
 
 // helper function to get wallet from the config
-function configWallet(
-  accountName: 'tester' | 'buildingOwner',
-): anchor.Wallet {
+function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
   const mock = getMock()
-  console.log({mock})
+  console.log({ mock })
   // const secretKey = mock[accountName].secretKey.split(',').map(Number)
   // return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
   return loadWallet()
