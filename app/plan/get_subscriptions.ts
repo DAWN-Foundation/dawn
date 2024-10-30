@@ -28,19 +28,20 @@ async function main() {
     ]
   }
 
-  // const subscriptions = await program.account.subscription.all(filters)
-
-  // console.log(
-  //   subscriptions.map((b) => ({
-  //     owner: b.publicKey.toBase58(),
-  //     account: {
-  //       ...b.account,
-  //       subscriber: b.account.subscriber.toBase58(),
-  //       plan: b.account.plan.toBase58(),
-  //       expiration: b.account.expiration.toString(),
-  //     },
-  //   })),
-  // )
+  const subscriptions = await program.account.subscription.all(filters)
+  console.log(subscriptions)
+  console
+    .log
+    // subscriptions.map((b) => ({
+    //   owner: b.publicKey.toBase58(),
+    //   account: {
+    //     ...b.account,
+    //     subscriber: b.account.subscriber.toBase58(),
+    //     plan: b.account.plan.toBase58(),
+    //     expiration: b.account.expiration.toString(),
+    //   },
+    // })),
+    ()
 }
 
 main().catch(console.error)
