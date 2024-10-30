@@ -1,6 +1,3 @@
-import { BN } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
-
 import { connect, getMock, submitTx } from './utils'
 
 async function main() {

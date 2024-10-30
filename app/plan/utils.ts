@@ -109,10 +109,8 @@ export async function connect(): Promise<{
 // helper function to get wallet from the config
 function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
   const mock = getMock()
-  console.log({ mock })
-  // const secretKey = mock[accountName].secretKey.split(',').map(Number)
-  // return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
-  return loadWallet()
+  const secretKey = mock[accountName].secretKey
+  return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
 }
 
 // helper function to load the wallet from the local file system
