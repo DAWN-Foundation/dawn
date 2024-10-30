@@ -9,7 +9,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from '@solana/spl-token'
-import { setupRaydium } from '../../../app/utils'
+import { setupRaydium } from './raydium'
 
 export let mock: Mock
 

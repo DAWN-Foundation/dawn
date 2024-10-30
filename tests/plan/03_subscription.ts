@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { confirmTx, getEvent, getPlanPda, mock } from './utils'
+import { confirmTx, getEvent, getPlanPda, mock } from '../../app/utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
@@ -321,7 +321,7 @@ describe('plan::subscription', () => {
     }
   })
 
-  it('can be subscribed to by another user', async () => {
+  it('subscribes to the same plan by another user', async () => {
     // get USDC account for wallet
     const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,

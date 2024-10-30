@@ -9,7 +9,7 @@ import {
 } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { confirmTx, getEvent, mock } from './utils'
+import { getEvent, mock } from '../../app/utils'
 
 const MAX_BUILDING_NAME_LEN = 32
 const MAX_BUILDING_ADDRESS_LEN = 64

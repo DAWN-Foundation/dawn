@@ -3,7 +3,7 @@ import { Program, Wallet, BN } from '@coral-xyz/anchor'
 import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
-import { RaydiumCpSwap } from '../../raydium/raydium_cp_swap'
+import { RaydiumCpSwap } from '../../../raydium/raydium_cp_swap'
 
 import {
   getAuthAddress,

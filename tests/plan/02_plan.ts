@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { getEvent, mock, getPlanPda, getPlansForBuilding } from './utils'
+import { getEvent, mock, getPlanPda, getPlansForBuilding } from '../../app/utils'
 
 interface PlanAdded {
   owner: PublicKey

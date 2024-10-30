@@ -36,7 +36,7 @@ pub struct Subscribe<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The config with fees and ratios applied to the plan payments
+    /// The config with fees and accounts
     #[account(
         seeds = [b"config"],
         bump = config.bump,

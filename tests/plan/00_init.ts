@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Plan } from '../../target/types/plan'
-import { setup, mock } from './utils'
+import { setup, mock } from '../../app/utils'
 
 describe('plan::initialize', () => {
   const provider = anchor.AnchorProvider.env()
