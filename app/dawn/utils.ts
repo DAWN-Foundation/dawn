@@ -67,8 +67,8 @@ export function getMock(): Mock {
     raydiumConfig: new PublicKey(mock.raydiumConfig),
     raydiumPool: new PublicKey(mock.raydiumPool),
     raydiumObservation: new PublicKey(mock.raydiumObservation),
-    dawnVault: new PublicKey(mock.dawnVault),
-    usdcVault: new PublicKey(mock.usdcVault),
+    raydiumDawnVault: new PublicKey(mock.raydiumDawnVault),
+    raydiumUsdcVault: new PublicKey(mock.raydiumUsdcVault),
     // config
     daoFee: new BN(mock.daoFee),
     validatorFee: new BN(mock.validatorFee),

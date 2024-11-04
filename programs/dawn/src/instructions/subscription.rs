@@ -36,16 +36,11 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
 pub struct Escrow {
     /// The owner of the escrow account
     pub owner: Pubkey,
-    /// The escrow vault
-    pub vault: Pubkey,
+    /// The escrow USDC vault
+    pub usdc_vault: Pubkey,
     /// The escrow PDA bump seed
     pub bump: u8,
 }
-
-const ESCROW_SIZE: usize = 8 // id
-    + 32 // owner
-    + 32 // vault
-    + 1; // bump
 
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
@@ -88,15 +83,15 @@ pub struct Subscribe<'info> {
     )]
     pub subscription: Box<Account<'info, Subscription>>,
 
-    /// The escrow account
-    #[account(
-        init,
-        payer = caller,
-        space = ESCROW_SIZE,
-        seeds = [b"escrow", subscription.key().as_ref()],
-        bump
-    )]
-    pub escrow: Box<Account<'info, Escrow>>,
+    // /// The escrow account
+    // #[account(
+    //     init,
+    //     payer = caller,
+    //     space = ESCROW_SIZE,
+    //     seeds = [b"escrow", subscription.key().as_ref()],
+    //     bump
+    // )]
+    // pub escrow: Box<Account<'info, Escrow>>,
 
     // MINTS
     /// The DAWN mint account
@@ -137,14 +132,14 @@ pub struct Subscribe<'info> {
         mut,
         token::mint = dawn_mint,
     )]
-    pub dawn_vault: Box<Account<'info, TokenAccount>>,
+    pub raydium_dawn_vault: Box<Account<'info, TokenAccount>>,
 
     /// The USDC pool vault account
     #[account(
         mut,
         token::mint = usdc_mint,
     )]
-    pub usdc_vault: Box<Account<'info, TokenAccount>>,
+    pub raydium_usdc_vault: Box<Account<'info, TokenAccount>>,
 
     // TOKEN ACCOUNTS
     /// The callers associated DAWN token account
@@ -180,9 +175,18 @@ pub struct Subscribe<'info> {
         init_if_needed,
         payer = caller,
         associated_token::mint = usdc_mint,
-        associated_token::authority = escrow,
+        associated_token::authority = subscription,
     )]
     pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
+
+    /// The building owner escrow DAWN token vault
+    #[account(
+        init_if_needed,
+        payer = caller,
+        associated_token::mint = dawn_mint,
+        associated_token::authority = subscription,
+    )]
+    pub escrow_dawn_vault: Box<Account<'info, TokenAccount>>,
 
     // PROGRAMS
     pub token_program: Program<'info, Token>,
@@ -337,10 +341,10 @@ impl DawnApp {
         let pool = ctx.accounts.raydium_pool.load()?;
 
         let (vault_0, vault_1) = {
-            if ctx.accounts.dawn_vault.key() == pool.token_0_vault.key() {
-                (&ctx.accounts.dawn_vault, &ctx.accounts.usdc_vault)
+            if ctx.accounts.raydium_dawn_vault.key() == pool.token_0_vault.key() {
+                (&ctx.accounts.raydium_dawn_vault, &ctx.accounts.raydium_usdc_vault)
             } else {
-                (&ctx.accounts.usdc_vault, &ctx.accounts.dawn_vault)
+                (&ctx.accounts.raydium_usdc_vault, &ctx.accounts.raydium_dawn_vault)
             }
         };
 
@@ -354,7 +358,7 @@ impl DawnApp {
         let usdc_amount_in = total_usdc_fee; // We only swap the fee amount
 
         // USDC is base, we're calculating DAWN output
-        let price = if is_usdc_base && vault_0.key() == ctx.accounts.usdc_vault.key() {
+        let price = if is_usdc_base && vault_0.key() == ctx.accounts.raydium_usdc_vault.key() {
             token_0_price_x32
         } else {
             token_1_price_x32
@@ -409,8 +413,8 @@ impl DawnApp {
             pool_vault_1.clone(),
             ctx.accounts.usdc_mint.to_account_info(),
             ctx.accounts.dawn_mint.to_account_info(),
-            ctx.accounts.usdc_vault.to_account_info(),
-            ctx.accounts.dawn_vault.to_account_info(),
+            ctx.accounts.raydium_usdc_vault.to_account_info(),
+            ctx.accounts.raydium_dawn_vault.to_account_info(),
             ctx.accounts.user_usdc_account.to_account_info(),
             ctx.accounts.user_dawn_account.to_account_info(),
         )?;
@@ -534,18 +538,11 @@ impl DawnApp {
         subscription.expiration = expiration;
         subscription.bump = ctx.bumps.subscription;
 
-        // Save escrow account
-        let escrow = &mut ctx.accounts.escrow;
-        escrow.owner = plan.owner;
-        escrow.vault = ctx.accounts.escrow_usdc_vault.key();
-        escrow.bump = ctx.bumps.escrow;
-
         emit!(Subscribed {
             subscription: subscription.key(),
             subscriber: ctx.accounts.caller.key(),
             plan: ctx.accounts.plan.key(),
             expiration: subscription.expiration,
-            escrow: escrow.key(),
         });
 
         Ok(())

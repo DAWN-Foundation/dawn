@@ -43,8 +43,6 @@ describe('dawn::subscription', () => {
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
   let accounts: Record<string, PublicKey>
   let subscriptionPda: PublicKey
-  let escrowPda: PublicKey
-  let escrowBump: number
   let subscriptionBump: number
 
   before(async () => {
@@ -69,14 +67,6 @@ describe('dawn::subscription', () => {
     subscriptionPda = newSubscription[0]
     subscriptionBump = newSubscription[1]
 
-    const newEscrow = PublicKey.findProgramAddressSync(
-      [Buffer.from('escrow'), Buffer.from(subscriptionPda.toBytes())],
-      program.programId,
-    )
-
-    escrowPda = newEscrow[0]
-    escrowBump = newEscrow[1]
-
     // Create USDC account for building owner escrow vault
     console.log('Creating USDC account for building owner escrow vault...')
     const { address: escrowUsdcVault } =
@@ -84,7 +74,18 @@ describe('dawn::subscription', () => {
         provider.connection,
         mock.buildingOwner,
         mock.usdcMint,
-        escrowPda,
+        subscriptionPda,
+        true,
+      )
+
+    // Create DAWN account for building owner escrow vault
+    console.log('Creating DAWN account for building owner escrow vault...')
+    const { address: escrowDawnVault } =
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        mock.buildingOwner,
+        mock.dawnMint,
+        subscriptionPda,
         true,
       )
 
@@ -94,7 +95,6 @@ describe('dawn::subscription', () => {
       config: configPda,
       plan: planPda,
       subscription: subscriptionPda,
-      escrow: escrowPda,
       // mints
       usdcMint: mock.usdcMint,
       dawnMint: mock.dawnMint,
@@ -105,8 +105,8 @@ describe('dawn::subscription', () => {
       raydiumPool: mock.raydiumPool,
       raydiumObservation: mock.raydiumObservation,
       // vaults
-      dawnVault: mock.dawnVault,
-      usdcVault: mock.usdcVault,
+      raydiumDawnVault: mock.raydiumDawnVault,
+      raydiumUsdcVault: mock.raydiumUsdcVault,
       // token accounts
       userUsdcAccount: mock.testerUsdcAccount,
       userDawnAccount: mock.testerDawnAccount,
@@ -115,6 +115,7 @@ describe('dawn::subscription', () => {
       validatorDawnAccount: mock.validatorDawnAccount,
       medallionDawnAccount: mock.medallionDawnAccount,
       escrowUsdcVault: escrowUsdcVault,
+      escrowDawnVault: escrowDawnVault,
       // programs
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -251,19 +252,12 @@ describe('dawn::subscription', () => {
     assert.equal(subscription.expiration.toNumber(), expiration)
     assert.equal(subscription.bump, subscriptionBump)
 
-    // make sure escrow account was created
-    const escrow = await program.account.escrow.fetch(escrowPda)
-    assert.ok(escrow.owner.equals(plan.owner))
-    assert.ok(escrow.vault.equals(accounts.escrowUsdcVault))
-    assert.equal(escrow.bump, escrowBump)
-
     // make sure event was emitted
     const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
     assert.ok(event.subscription.equals(subscriptionPda))
     assert.ok(event.subscriber.equals(mock.tester.publicKey))
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
-    assert.ok(event.escrow.equals(escrowPda))
 
     // make sure the tester USDC account was debited
     const testerUsdcBalanceAfter = new BN(
@@ -386,16 +380,19 @@ describe('dawn::subscription', () => {
       program.programId,
     )
 
-    const [escrowPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('escrow'), Buffer.from(subscriptionPda.toBytes())],
-      program.programId,
-    )
-
     const escrowUsdcVault = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       mock.buildingOwner,
       mock.usdcMint,
-      escrowPda,
+      subscriptionPda,
+      true,
+    )
+
+    const escrowDawnVault = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      mock.buildingOwner,
+      mock.dawnMint,
+      subscriptionPda,
       true,
     )
 
@@ -405,10 +402,10 @@ describe('dawn::subscription', () => {
         ...accounts,
         caller: wallet.publicKey,
         subscription: subscriptionPda,
-        escrow: escrowPda,
         userDawnAccount: walletDawnAccount.address,
         userUsdcAccount: walletUsdcAccount.address,
         escrowUsdcVault: escrowUsdcVault.address,
+        escrowDawnVault: escrowDawnVault.address,
       })
       .signers([wallet.payer])
       .rpc()

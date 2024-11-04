@@ -234,8 +234,8 @@ export async function setup(
     raydiumAuthority: auth,
     raydiumPool: pool,
     raydiumObservation: obs,
-    dawnVault,
-    usdcVault,
+    raydiumDawnVault: dawnVault,
+    raydiumUsdcVault: usdcVault,
     // config
     daoFee,
     validatorFee,

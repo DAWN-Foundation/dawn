@@ -18,15 +18,14 @@ export interface Mock {
   buildingOwnerDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
   testerDawnAccount: PublicKey
-  escrowUsdcVault: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
   raydiumConfig: PublicKey
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
-  dawnVault: PublicKey
-  usdcVault: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
   // config
   daoFee: BN
   validatorFee: BN
@@ -64,8 +63,8 @@ export interface RawMock {
   raydiumConfig: string
   raydiumPool: string
   raydiumObservation: string
-  dawnVault: string
-  usdcVault: string
+  raydiumDawnVault: string
+  raydiumUsdcVault: string
   // config
   daoFee: string
   validatorFee: string
