@@ -238,34 +238,51 @@ impl DawnApp {
     }
 
     fn calculate_dawn_fees(
-        source: u64,
+        total_dawn: u64,
+        escrow_dawn_in_usdc: u64,
+        price: u128,
         dao_fee_bps: u64,
         validator_fee_bps: u64,
         medallion_fee_bps: u64,
-    ) -> Result<(u64, u64, u64)> {
+    ) -> Result<(u64, u64, u64, u64)> {
+        // Calculate escrow DAWN amount based on the USDC amount and price
+        let escrow_dawn = (escrow_dawn_in_usdc as u128)
+            .checked_mul(price)
+            .ok_or(PlanError::Overflow)?
+            .checked_div(Q32)
+            .ok_or(PlanError::Underflow)? as u64;
+
+        // The remaining DAWN is for fees
+        let remaining_dawn = total_dawn.saturating_sub(escrow_dawn);
+
         // Calculate total fee basis points
         let total_fee_bps = dao_fee_bps + validator_fee_bps + medallion_fee_bps;
 
         // Calculate each fee based on the total source amount
-        let dao_dawn_fee = source
+        let dao_dawn_fee = remaining_dawn
             .checked_mul(dao_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
-        let validator_dawn_fee = source
+        let validator_dawn_fee = remaining_dawn
             .checked_mul(validator_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
-        let medallion_dawn_fee = source
+        let medallion_dawn_fee = remaining_dawn
             .checked_mul(medallion_fee_bps)
             .ok_or(PlanError::Overflow)?
             .checked_div(total_fee_bps)
             .ok_or(PlanError::Underflow)?;
 
-        Ok((dao_dawn_fee, validator_dawn_fee, medallion_dawn_fee))
+        Ok((
+            dao_dawn_fee,
+            validator_dawn_fee,
+            medallion_dawn_fee,
+            escrow_dawn,
+        ))
     }
 
     fn sort_accounts<'info>(
@@ -340,7 +357,7 @@ impl DawnApp {
         ctx: &Context<'_, '_, '_, '_, Subscribe<'_>>,
         is_usdc_base: bool,
         usdc_to_swap: u64,
-    ) -> Result<(u64, u64)> {
+    ) -> Result<(u64, u64, u128)> {
         let pool_state = ctx.accounts.raydium_pool.load()?;
         let slippage_bps = 100; // 1% slippage tolerance
 
@@ -391,7 +408,7 @@ impl DawnApp {
             .checked_div(BPS_DENOMINATOR)
             .ok_or(PlanError::Underflow)?;
 
-        Ok((usdc_amount_in, minimum_dawn_amount_out))
+        Ok((usdc_amount_in, minimum_dawn_amount_out, price))
     }
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
@@ -448,7 +465,7 @@ impl DawnApp {
 
         // Calculate swap amounts in USDC
         let usdc_to_swap = total_usdc_fee.saturating_add(escrow_dawn_in_usdc);
-        let (usdc_amount_in, minimum_dawn_amount_out) =
+        let (usdc_amount_in, minimum_dawn_amount_out, price) =
             Self::swap_amounts(&ctx, is_usdc_base, usdc_to_swap)?;
 
         msg!("usdc_amount_in: {}", usdc_amount_in);
@@ -480,12 +497,20 @@ impl DawnApp {
             cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
         }
 
-        let (dao_dawn_fee, validator_dawn_fee, medallion_dawn_fee) = Self::calculate_dawn_fees(
-            minimum_dawn_amount_out,
-            ctx.accounts.config.dao_fee,
-            ctx.accounts.config.validator_fee,
-            ctx.accounts.config.medallion_fee,
-        )?;
+        let (dao_dawn_fee, validator_dawn_fee, medallion_dawn_fee, escrow_dawn) =
+            Self::calculate_dawn_fees(
+                minimum_dawn_amount_out,
+                escrow_dawn_in_usdc,
+                price,
+                ctx.accounts.config.dao_fee,
+                ctx.accounts.config.validator_fee,
+                ctx.accounts.config.medallion_fee,
+            )?;
+
+        msg!("dao_dawn_fee: {}", dao_dawn_fee);
+        msg!("validator_dawn_fee: {}", validator_dawn_fee);
+        msg!("medallion_dawn_fee: {}", medallion_dawn_fee);
+        msg!("escrow_dawn: {}", escrow_dawn);
 
         // Transfer DAO DAWN fee from user to DAWN DAO
         let dao_fee_cpi_ctx = CpiContext::new(
@@ -521,6 +546,15 @@ impl DawnApp {
         token::transfer(medallion_fee_cpi_ctx, medallion_dawn_fee)?;
 
         // Deposit escrow DAWN into escrow DAWN vault
+        let escrow_dawn_cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.user_dawn_account.to_account_info(),
+                to: ctx.accounts.escrow_dawn_vault.to_account_info(),
+                authority: ctx.accounts.caller.to_account_info(),
+            },
+        );
+        token::transfer(escrow_dawn_cpi_ctx, escrow_dawn)?;
 
         // Deposit remainder into escrow USDC vault
         let remainder_cpi_ctx = CpiContext::new(
