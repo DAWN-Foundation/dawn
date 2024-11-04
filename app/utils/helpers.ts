@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 
 // Helper to confirm a transaction
 export async function confirmTx(
@@ -42,7 +42,7 @@ export async function fund(
 
 // Helper to get the event from the transaction
 export async function getEvent<T>(
-  program: anchor.Program<Plan>,
+  program: Program<Dawn>,
   tx: string,
   name: string,
 ): Promise<T> {
@@ -65,7 +65,7 @@ export async function getEvent<T>(
 
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
-  program: Program<Plan>,
+  program: Program<Dawn>,
   building: PublicKey,
   price: BN,
   duration: number,
@@ -97,7 +97,7 @@ export function getPlanPda(
 
 // Helper to get all plans for a building
 export async function getPlansForBuilding(
-  program: Program<Plan>, // Anchor program
+  program: Program<Dawn>, // Anchor program
   building: PublicKey, // Public key of the building
 ): Promise<any[]> {
   // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)

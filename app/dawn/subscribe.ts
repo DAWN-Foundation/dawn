@@ -1,6 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
-import { Connection, PublicKey } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
 import {
@@ -12,6 +12,11 @@ import {
   getWallet,
   submitTx,
 } from './utils'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 
 async function main() {
   const plan = getFlag('--plan')
@@ -41,29 +46,64 @@ async function main() {
     ],
     program.programId,
   )
-
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
 
-  // const itx = await program.methods
-  //   .subscribe()
-  //   .accounts({
-  //     caller: wallet.publicKey,
-  //     config: configPda,
-  //     plan: planPda,
-  //     subscription: subscriptionPda,
-  //     andrenaUsdcAccount,
-  //     dawnUsdcAccount,
-  //     boUsdcAccount,
-  //     userUsdcAccount,
-  //   } as {})
-  //   .instruction()
+  const escrowUsdcVault = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet.payer,
+    mock.usdcMint,
+    subscriptionPda,
+    true,
+  )
 
-  // try {
-  //   const txResult = await submitTx(connection, wallet, itx)
-  //   console.log('Tx submitted', { txResult })
-  // } catch (error) {
-  //   console.error(error)
-  // }
+  const escrowDawnVault = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet.payer,
+    mock.dawnMint,
+    subscriptionPda,
+    true,
+  )
+
+  const itx = await program.methods
+    .subscribe()
+    .accounts({
+      caller: mock.tester.publicKey,
+      config: configPda,
+      plan: planPda,
+      subscription: subscriptionPda,
+      // mints
+      usdcMint: mock.usdcMint,
+      dawnMint: mock.dawnMint,
+      // raydium
+      raydium: mock.raydium,
+      raydiumAuthority: mock.raydiumAuthority,
+      raydiumConfig: mock.raydiumConfig,
+      raydiumPool: mock.raydiumPool,
+      raydiumObservation: mock.raydiumObservation,
+      // vaults
+      raydiumDawnVault: mock.raydiumDawnVault,
+      raydiumUsdcVault: mock.raydiumUsdcVault,
+      // token accounts
+      userUsdcAccount: mock.testerUsdcAccount,
+      userDawnAccount: mock.testerDawnAccount,
+      daoDawnAccount: mock.daoDawnAccount,
+      validatorDawnAccount: mock.validatorDawnAccount,
+      medallionDawnAccount: mock.medallionDawnAccount,
+      escrowUsdcVault: escrowUsdcVault.address,
+      escrowDawnVault: escrowDawnVault.address,
+      // programs
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .instruction()
+
+  try {
+    const txResult = await submitTx(connection, wallet, itx)
+    console.log('Tx submitted', { txResult })
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 main().catch(console.error)
