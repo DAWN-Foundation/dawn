@@ -31,6 +31,19 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
     + 8 // expiration
     + 1; // bump
 
+/// The escrow account of the service provider
+#[account]
+pub struct Escrow {
+    /// The owner of the escrow account
+    pub owner: Pubkey,
+    /// The escrow PDA bump seed
+    pub bump: u8,
+}
+
+const ESCROW_SIZE: usize = 8 // id
+    + 32 // owner
+    + 1; // bump
+
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
     #[account(mut)]
@@ -71,6 +84,16 @@ pub struct Subscribe<'info> {
         bump
     )]
     pub subscription: Box<Account<'info, Subscription>>,
+
+    /// The escrow account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = ESCROW_SIZE,
+        seeds = [b"escrow", plan.owner.as_ref()],
+        bump
+    )]
+    pub escrow: Box<Account<'info, Escrow>>,
 
     // MINTS
     /// The DAWN mint account
@@ -156,6 +179,14 @@ pub struct Subscribe<'info> {
     /// The Medallion DAWN pool token account
     #[account(mut, address = config.medallion_dawn_account)]
     pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
+
+    /// The building owner escrow USDC token vault
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = escrow,
+    )]
+    pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
 
     // PROGRAMS
     pub token_program: Program<'info, Token>,

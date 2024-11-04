@@ -18,6 +18,7 @@ export interface Mock {
   buildingOwnerDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
   testerDawnAccount: PublicKey
+  escrowUsdcVault: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -56,6 +57,7 @@ export interface RawMock {
   buildingOwnerDawnAccount: string
   testerUsdcAccount: string
   testerDawnAccount: string
+  escrowUsdcVault: string
   // raydium
   raydium: string
   raydiumAuthority: string

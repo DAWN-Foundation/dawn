@@ -804,6 +804,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dawn"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "raydium-cp-swap",
+ "solana-program",
+ "spl-memo",
+]
+
+[[package]]
 name = "derivation-path"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1389,17 +1400,6 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
-
-[[package]]
-name = "plan"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "raydium-cp-swap",
- "solana-program",
- "spl-memo",
-]
 
 [[package]]
 name = "polyval"

@@ -4,7 +4,7 @@ import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { confirmTx, getEvent, getPlanPda, mock } from '../../app/utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -25,11 +25,11 @@ interface Subscribed {
   expiration: number
 }
 
-describe('plan::subscription', () => {
+describe('dawn::subscription', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
 
-  const program = anchor.workspace.Plan as Program<Plan>
+  const program = anchor.workspace.Dawn as Program<Dawn>
   const wallet = provider.wallet as NodeWallet
 
   const [configPda] = PublicKey.findProgramAddressSync(
@@ -42,6 +42,7 @@ describe('plan::subscription', () => {
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
   let accounts: Record<string, PublicKey>
   let subscriptionPda: PublicKey
+  let escrowPda: PublicKey
   let subscriptionBump: number
 
   before(async () => {
@@ -66,12 +67,29 @@ describe('plan::subscription', () => {
     subscriptionPda = newSubscription[0]
     subscriptionBump = newSubscription[1]
 
+    escrowPda = PublicKey.findProgramAddressSync(
+      [Buffer.from('escrow'), Buffer.from(plan.owner.toBytes())],
+      program.programId,
+    )[0]
+
+    // Create USDC account for building owner escrow vault
+    console.log('Creating USDC account for building owner escrow vault...')
+    const { address: escrowUsdcVault } =
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        mock.buildingOwner,
+        mock.usdcMint,
+        escrowPda,
+        true,
+      )
+
     // accounts for a successful subscription
     accounts = {
       caller: mock.tester.publicKey,
       config: configPda,
       plan: planPda,
       subscription: subscriptionPda,
+      escrow: escrowPda,
       // mints
       usdcMint: mock.usdcMint,
       dawnMint: mock.dawnMint,
@@ -91,6 +109,7 @@ describe('plan::subscription', () => {
       daoDawnAccount: mock.daoDawnAccount,
       validatorDawnAccount: mock.validatorDawnAccount,
       medallionDawnAccount: mock.medallionDawnAccount,
+      escrowUsdcVault: escrowUsdcVault,
       // programs
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -360,33 +379,11 @@ describe('plan::subscription', () => {
     const tx = await program.methods
       .subscribe()
       .accounts({
+        ...accounts,
         caller: wallet.publicKey,
-        config: configPda,
-        plan: planPda,
         subscription: subscriptionPda,
-        // mints
-        usdcMint: mock.usdcMint,
-        dawnMint: mock.dawnMint,
-        // raydium
-        raydium: mock.raydium,
-        raydiumAuthority: mock.raydiumAuthority,
-        raydiumConfig: mock.raydiumConfig,
-        raydiumPool: mock.raydiumPool,
-        raydiumObservation: mock.raydiumObservation,
-        // vaults
-        dawnVault: mock.dawnVault,
-        usdcVault: mock.usdcVault,
-        // token accounts
-        userUsdcAccount: walletUsdcAccount.address,
         userDawnAccount: walletDawnAccount.address,
-        buildingOwnerUsdcAccount: mock.buildingOwnerUsdcAccount,
-        daoDawnAccount: mock.daoDawnAccount,
-        validatorDawnAccount: mock.validatorDawnAccount,
-        medallionDawnAccount: mock.medallionDawnAccount,
-        // programs
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
+        userUsdcAccount: walletUsdcAccount.address,
       })
       .signers([wallet.payer])
       .rpc()

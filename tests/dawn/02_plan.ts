@@ -4,7 +4,7 @@ import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { getEvent, mock, getPlanPda, getPlansForBuilding } from '../../app/utils'
 
 interface PlanAdded {
@@ -24,11 +24,11 @@ interface PlanRemoved {
 
 const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
-describe('plan::plan', () => {
+describe('dawn::plan', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
 
-  const program = anchor.workspace.Plan as Program<Plan>
+  const program = anchor.workspace.Dawn as Program<Dawn>
   const wallet = provider.wallet as NodeWallet
 
   let buildingPda: PublicKey

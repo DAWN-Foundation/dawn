@@ -9,10 +9,10 @@ import {
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { Mock, RawMock } from '../utils'
 
-const PROGRAM_ID = new PublicKey('7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc')
+const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
 
 // parse command line arguments
 // find value of the --flag
@@ -79,21 +79,21 @@ export function getMock(): Mock {
 }
 
 // helper function to get the IDL
-export function getIDL(): Plan {
-  const idlData = fs.readFileSync('target/idl/plan.json', 'utf8')
+export function getIDL(): Dawn {
+  const idlData = fs.readFileSync('target/idl/dawn.json', 'utf8')
   return JSON.parse(idlData)
 }
 
-export function getPlanProgram(
+export function getDawnProgram(
   provider: anchor.AnchorProvider,
-): anchor.Program<Plan> {
+): anchor.Program<Dawn> {
   const idl = getIDL()
-  return new anchor.Program<Plan>(idl as Plan, PROGRAM_ID, provider)
+  return new anchor.Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
 }
 
 export async function connect(): Promise<{
   wallet: anchor.Wallet
-  program: anchor.Program<Plan>
+  program: anchor.Program<Dawn>
   connection: Connection
 }> {
   const wallet = getWallet()
@@ -101,7 +101,7 @@ export async function connect(): Promise<{
   const connection = new Connection('http://127.0.0.1:8899')
   const provider = new anchor.AnchorProvider(connection, wallet, {})
   anchor.setProvider(provider)
-  const program = getPlanProgram(provider)
+  const program = getDawnProgram(provider)
 
   return { wallet, program, connection }
 }
@@ -174,7 +174,7 @@ export async function submitTx(
 
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
-  program: anchor.Program<Plan>,
+  program: anchor.Program<Dawn>,
   building: PublicKey,
   price: BN,
   duration: number,

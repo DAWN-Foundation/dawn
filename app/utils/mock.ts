@@ -10,7 +10,7 @@ import {
   mintTo,
 } from '@solana/spl-token'
 import { setupRaydium } from './raydium'
-import { getPlanProgram } from '../plan/utils'
+import { getDawnProgram } from '../dawn/utils'
 
 export let mock: Mock
 
@@ -205,7 +205,7 @@ export async function setup(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const program = getPlanProgram(provider)
+  const program = getDawnProgram(provider)
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId,

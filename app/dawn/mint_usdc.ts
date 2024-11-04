@@ -1,6 +1,5 @@
-import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
-import { Connection, PublicKey } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 const { mintTo } = require('@solana/spl-token')
 
 import { connect, getMock, getFlag } from './utils'

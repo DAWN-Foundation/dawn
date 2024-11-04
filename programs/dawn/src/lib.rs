@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc");
+declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
 
 mod constants;
 mod error;
@@ -12,7 +12,7 @@ use events::*;
 use instructions::*;
 
 #[program]
-pub mod plan {
+pub mod dawn {
     use super::*;
 
     pub fn initialize(

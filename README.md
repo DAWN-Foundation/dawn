@@ -4,7 +4,7 @@ Solana smart contracts for the DAWN protocol
 
 ## Programs
 
-- [Subscription Plan](./programs/plan/README.md)
+- [Dawn Protocol](./programs/dawn/README.md)
 
 ## Prerequisites
 
@@ -79,9 +79,6 @@ solana address --keypair ~/.config/solana/id.json
 ### Build
 
 ```bash
-# Build the IDL
-anchor idl build --program-name plan
-
 # Build the program
 anchor build
 ```
@@ -149,7 +146,7 @@ These command allow interaction with the plan contract deployed on local testnet
 
 ```bash
 # Initialize the plan contract (as local identity )
-yarn plan:init
+yarn dawn:init
 
 # [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
@@ -158,26 +155,26 @@ yarn plan:init
 # --root was used to mint tokens, might be used for init, but not necessary
 # --building-owner is usually used to add a building and create plans
 # --tester should have some USDC and can be used to pay for plan subscription
-yarn plan:init --root
-yarn plan:add_building --building-owner
-yarn plan:subscribe --tester
+yarn dawn:init --root
+yarn dawn:add_building --building-owner
+yarn dawn:subscribe --tester
 
 
 # Add a building to the plan contract (as --building-owner)
-yarn plan:add_building \
+yarn dawn:add_building \
     --building-owner \
     --name 'Building 1' \
     --address '123 Main St' \
     --floors 5
 
 # Get all buildings
-yarn plan:get_buildings
+yarn dawn:get_buildings
 
 # Get all buildings for a specific owner
-yarn plan:get_buildings --owner <owner>
+yarn dawn:get_buildings --owner <owner>
 
 # Create a plan for a building (as --building-owner)
-yarn plan:add_plan \
+yarn dawn:add_plan \
     --building-owner \
     --building <building> \
     --price 100000000 \
@@ -187,10 +184,10 @@ yarn plan:add_plan \
     --sla 1
 
 # Get all plans
-yarn plan:get_plans
+yarn dawn:get_plans
 
 # Get all plans for a specific building
-yarn plan:get_plans --building <building>
+yarn dawn:get_plans --building <building>
 
 # Mint USDC
 yarn mint:usdc \
@@ -199,16 +196,16 @@ yarn mint:usdc \
     --amount 240
 
 # Subscribe to a plan (as --tester)
-yarn plan:subscribe \
+yarn dawn:subscribe \
     --tester \
     --plan <plan>
 
 # Get all subscriptions
-yarn plan:get_subscriptions
+yarn dawn:get_subscriptions
 
 # Get all subscriptions for a specific plan
-yarn plan:get_subscriptions --plan <plan>
+yarn dawn:get_subscriptions --plan <plan>
 
 # Get all subscriptions for a specific subscriber
-yarn plan:get_subscriptions --subscriber <subscriber>
+yarn dawn:get_subscriptions --subscriber <subscriber>
 ```

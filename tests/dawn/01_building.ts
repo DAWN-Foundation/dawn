@@ -8,7 +8,7 @@ import {
   SendTransactionError,
 } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { getEvent, mock } from '../../app/utils'
 
 const MAX_BUILDING_NAME_LEN = 32
@@ -24,11 +24,11 @@ interface BuildingAdded {
   floors: number
 }
 
-describe('plan::building', () => {
+describe('dawn::building', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
 
-  const program = anchor.workspace.Plan as Program<Plan>
+  const program = anchor.workspace.Dawn as Program<Dawn>
   const wallet = provider.wallet as NodeWallet
 
   it('mock setup', () => {

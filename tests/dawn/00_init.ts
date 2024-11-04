@@ -4,14 +4,14 @@ import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { setup, mock } from '../../app/utils'
 
-describe('plan::initialize', () => {
+describe('dawn::initialize', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
 
-  const program = anchor.workspace.Plan as Program<Plan>
+  const program = anchor.workspace.Dawn as Program<Dawn>
   const wallet = provider.wallet as NodeWallet
 
   // Generate config PDA
