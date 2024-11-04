@@ -67,8 +67,8 @@ describe('dawn::subscription', () => {
     subscriptionPda = newSubscription[0]
     subscriptionBump = newSubscription[1]
 
-    // Create USDC account for building owner escrow vault
-    console.log('Creating USDC account for building owner escrow vault...')
+    // Create USDC vault token account for subscription escrow
+    console.log('Creating USDC vault token account for subscription escrow...')
     const { address: escrowUsdcVault } =
       await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -78,8 +78,8 @@ describe('dawn::subscription', () => {
         true,
       )
 
-    // Create DAWN account for building owner escrow vault
-    console.log('Creating DAWN account for building owner escrow vault...')
+    // Create DAWN vault token account for subscription escrow
+    console.log('Creating DAWN vault token account for subscription escrow...')
     const { address: escrowDawnVault } =
       await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -317,14 +317,13 @@ describe('dawn::subscription', () => {
 
     // make sure the building owner escrow vault USDC account was debited
     const remainder = plan.price.sub(totalUsdcFee)
+    const expected = remainder.sub(remainder.div(new BN(plan.duration)))
     const escrowUsdcBalanceAfter = new BN(
       (
         await getAccount(provider.connection, accounts.escrowUsdcVault)
       ).amount.toString(),
     )
-    assert.ok(
-      escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(remainder),
-    )
+    assert.ok(escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(expected))
   })
 
   it('cannot subscribe to the same plan twice', async () => {

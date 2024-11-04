@@ -200,7 +200,8 @@ impl DawnApp {
         dao_fee_bps: u64,
         validator_fee_bps: u64,
         medallion_fee_bps: u64,
-    ) -> Result<(u64, u64)> {
+        plan_duration: u16,
+    ) -> Result<(u64, u64, u64)> {
         let dao_usdc_fee = source
             .checked_mul(dao_fee_bps)
             .ok_or(PlanError::Overflow)?
@@ -225,9 +226,15 @@ impl DawnApp {
             .checked_add(medallion_usdc_fee)
             .ok_or(PlanError::Overflow)?;
 
-        let usdc_remainder = source.saturating_sub(total_usdc_fee);
+        let remainder = source.saturating_sub(total_usdc_fee);
 
-        Ok((total_usdc_fee, usdc_remainder))
+        let escrow_dawn_in_usdc = remainder
+            .checked_div(plan_duration as u64)
+            .ok_or(PlanError::Underflow)?;
+
+        let escrow_usdc_remainder = remainder.saturating_sub(escrow_dawn_in_usdc);
+
+        Ok((total_usdc_fee, escrow_dawn_in_usdc, escrow_usdc_remainder))
     }
 
     fn calculate_dawn_fees(
@@ -332,7 +339,7 @@ impl DawnApp {
     fn swap_amounts(
         ctx: &Context<'_, '_, '_, '_, Subscribe<'_>>,
         is_usdc_base: bool,
-        total_usdc_fee: u64,
+        usdc_to_swap: u64,
     ) -> Result<(u64, u64)> {
         let pool_state = ctx.accounts.raydium_pool.load()?;
         let slippage_bps = 100; // 1% slippage tolerance
@@ -342,9 +349,15 @@ impl DawnApp {
 
         let (vault_0, vault_1) = {
             if ctx.accounts.raydium_dawn_vault.key() == pool.token_0_vault.key() {
-                (&ctx.accounts.raydium_dawn_vault, &ctx.accounts.raydium_usdc_vault)
+                (
+                    &ctx.accounts.raydium_dawn_vault,
+                    &ctx.accounts.raydium_usdc_vault,
+                )
             } else {
-                (&ctx.accounts.raydium_usdc_vault, &ctx.accounts.raydium_dawn_vault)
+                (
+                    &ctx.accounts.raydium_usdc_vault,
+                    &ctx.accounts.raydium_dawn_vault,
+                )
             }
         };
 
@@ -355,7 +368,7 @@ impl DawnApp {
         msg!("token_0_price_x32: {}", token_0_price_x32);
         msg!("token_1_price_x32: {}", token_1_price_x32);
 
-        let usdc_amount_in = total_usdc_fee; // We only swap the fee amount
+        let usdc_amount_in = usdc_to_swap;
 
         // USDC is base, we're calculating DAWN output
         let price = if is_usdc_base && vault_0.key() == ctx.accounts.raydium_usdc_vault.key() {
@@ -420,16 +433,23 @@ impl DawnApp {
         )?;
 
         // calculate the total USDC fee and remainder
-        let (total_usdc_fee, usdc_remainder) = Self::calculate_usdc_fee(
-            plan.price,
-            ctx.accounts.config.dao_fee,
-            ctx.accounts.config.validator_fee,
-            ctx.accounts.config.medallion_fee,
-        )?;
+        let (total_usdc_fee, escrow_dawn_in_usdc, escrow_usdc_remainder) =
+            Self::calculate_usdc_fee(
+                plan.price,
+                ctx.accounts.config.dao_fee,
+                ctx.accounts.config.validator_fee,
+                ctx.accounts.config.medallion_fee,
+                plan.duration,
+            )?;
+
+        msg!("total_usdc_fee: {}", total_usdc_fee);
+        msg!("escrow_dawn_in_usdc: {}", escrow_dawn_in_usdc);
+        msg!("escrow_usdc_remainder: {}", escrow_usdc_remainder);
 
         // Calculate swap amounts in USDC
+        let usdc_to_swap = total_usdc_fee.saturating_add(escrow_dawn_in_usdc);
         let (usdc_amount_in, minimum_dawn_amount_out) =
-            Self::swap_amounts(&ctx, is_usdc_base, total_usdc_fee)?;
+            Self::swap_amounts(&ctx, is_usdc_base, usdc_to_swap)?;
 
         msg!("usdc_amount_in: {}", usdc_amount_in);
         msg!("minimum_dawn_amount_out: {}", minimum_dawn_amount_out);
@@ -466,12 +486,6 @@ impl DawnApp {
             ctx.accounts.config.validator_fee,
             ctx.accounts.config.medallion_fee,
         )?;
-        msg!(
-            "user DAWN balance after swap: {}, expected: {}",
-            balance,
-            dao_dawn_fee + validator_dawn_fee + medallion_dawn_fee
-        );
-        msg!("dao_dawn_fee: {}", dao_dawn_fee);
 
         // Transfer DAO DAWN fee from user to DAWN DAO
         let dao_fee_cpi_ctx = CpiContext::new(
@@ -506,7 +520,9 @@ impl DawnApp {
         );
         token::transfer(medallion_fee_cpi_ctx, medallion_dawn_fee)?;
 
-        // Deposit remainder into escrow account USDC vault
+        // Deposit escrow DAWN into escrow DAWN vault
+
+        // Deposit remainder into escrow USDC vault
         let remainder_cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
@@ -515,7 +531,7 @@ impl DawnApp {
                 authority: ctx.accounts.caller.to_account_info(),
             },
         );
-        token::transfer(remainder_cpi_ctx, usdc_remainder)?;
+        token::transfer(remainder_cpi_ctx, escrow_usdc_remainder)?;
 
         // Get the current timestamp from the clock
         let clock = Clock::get()?;
