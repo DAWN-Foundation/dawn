@@ -230,6 +230,12 @@ describe('dawn::subscription', () => {
       ).amount.toString(),
     )
 
+    const escrowDawnBalanceBefore = new BN(
+      (
+        await getAccount(provider.connection, accounts.escrowDawnVault)
+      ).amount.toString(),
+    )
+
     const tx = await program.methods
       .subscribe()
       .accounts(accounts)
@@ -315,15 +321,29 @@ describe('dawn::subscription', () => {
         .gte(medallionFee),
     )
 
-    // make sure the building owner escrow vault USDC account was debited
+    // make sure the building owner escrow USDC vault account was debited
     const remainder = plan.price.sub(totalUsdcFee)
-    const expected = remainder.sub(remainder.div(new BN(plan.duration)))
+    const daily = remainder.div(new BN(plan.duration))
+    const usdcExpected = remainder.sub(daily)
     const escrowUsdcBalanceAfter = new BN(
       (
         await getAccount(provider.connection, accounts.escrowUsdcVault)
       ).amount.toString(),
     )
-    assert.ok(escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(expected))
+    assert.ok(
+      escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(usdcExpected),
+    )
+
+    // make sure the building owner escrow DAWN vault account was credited
+    const dawnExpected = daily.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
+    const escrowDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, accounts.escrowDawnVault)
+      ).amount.toString(),
+    )
+    assert.ok(
+      escrowDawnBalanceAfter.sub(escrowDawnBalanceBefore).gte(dawnExpected),
+    )
   })
 
   it('cannot subscribe to the same plan twice', async () => {
