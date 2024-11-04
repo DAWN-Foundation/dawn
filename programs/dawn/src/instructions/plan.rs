@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
-use super::{Building, PlanApp};
+use super::{Building, DawnApp};
 use crate::{PlanAdded, PlanError, PlanRemoved};
 
 /// The plan account, representing a subscription plan tied to a building
@@ -114,7 +114,7 @@ pub struct RemovePlan<'info> {
     pub plan: Account<'info, Plan>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn add_plan(
         ctx: Context<AddPlan>,
         price: u64,

@@ -8,4 +8,4 @@ pub use init::*;
 pub use plan::*;
 pub use subscription::*;
 
-pub struct PlanApp;
+pub struct DawnApp;

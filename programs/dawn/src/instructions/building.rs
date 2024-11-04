@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
-use super::PlanApp;
+use super::DawnApp;
 use crate::{
     constants::{MAX_BUILDING_ADDRESS_LEN, MAX_BUILDING_NAME_LEN},
     BuildingAdded, PlanError,
@@ -52,7 +52,7 @@ pub struct AddBuilding<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn add_building(
         ctx: Context<AddBuilding>,
         name: String,

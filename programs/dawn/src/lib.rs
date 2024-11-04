@@ -21,7 +21,7 @@ pub mod dawn {
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        PlanApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
+        DawnApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
     pub fn add_building(
@@ -30,7 +30,7 @@ pub mod dawn {
         address: String,
         floors: u8,
     ) -> Result<()> {
-        PlanApp::add_building(ctx, name, address, floors)
+        DawnApp::add_building(ctx, name, address, floors)
     }
 
     pub fn add_plan(
@@ -41,16 +41,16 @@ pub mod dawn {
         capacity: u64,
         sla_id: u64,
     ) -> Result<()> {
-        PlanApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
+        DawnApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
     }
 
     pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
-        PlanApp::remove_plan(ctx)
+        DawnApp::remove_plan(ctx)
     }
 
     pub fn subscribe<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
     ) -> Result<()> {
-        PlanApp::subscribe(ctx)
+        DawnApp::subscribe(ctx)
     }
 }

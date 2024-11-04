@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use super::PlanApp;
+use super::DawnApp;
 
 #[account]
 pub struct Config {
@@ -119,7 +119,7 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn initialize(
         ctx: Context<Initialize>,
         dao_fee: u64,

@@ -9,7 +9,7 @@ use raydium_cp_swap::{
     states::{PoolState, Q32},
 };
 
-use super::{Config, Plan, PlanApp};
+use super::{Config, DawnApp, Plan};
 use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
 
 /// The plan account, representing a subscription plan tied to a building
@@ -36,12 +36,15 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
 pub struct Escrow {
     /// The owner of the escrow account
     pub owner: Pubkey,
+    /// The escrow vault
+    pub vault: Pubkey,
     /// The escrow PDA bump seed
     pub bump: u8,
 }
 
 const ESCROW_SIZE: usize = 8 // id
     + 32 // owner
+    + 32 // vault
     + 1; // bump
 
 #[derive(Accounts)]
@@ -87,10 +90,10 @@ pub struct Subscribe<'info> {
 
     /// The escrow account
     #[account(
-        init_if_needed,
+        init,
         payer = caller,
         space = ESCROW_SIZE,
-        seeds = [b"escrow", plan.owner.as_ref()],
+        seeds = [b"escrow", subscription.key().as_ref()],
         bump
     )]
     pub escrow: Box<Account<'info, Escrow>>,
@@ -160,14 +163,6 @@ pub struct Subscribe<'info> {
     )]
     pub user_usdc_account: Box<Account<'info, TokenAccount>>,
 
-    /// The building owner USDC token account
-    #[account(
-        mut,
-        associated_token::mint = usdc_mint,
-        associated_token::authority = plan.owner
-    )]
-    pub building_owner_usdc_account: Box<Account<'info, TokenAccount>>,
-
     /// The DAWN DAO DAWN token account
     #[account(mut, address = config.dao_dawn_account)]
     pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
@@ -182,7 +177,8 @@ pub struct Subscribe<'info> {
 
     /// The building owner escrow USDC token vault
     #[account(
-        mut,
+        init_if_needed,
+        payer = caller,
         associated_token::mint = usdc_mint,
         associated_token::authority = escrow,
     )]
@@ -194,7 +190,7 @@ pub struct Subscribe<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl PlanApp {
+impl DawnApp {
     fn calculate_usdc_fee(
         source: u64,
         dao_fee_bps: u64,
@@ -506,13 +502,12 @@ impl PlanApp {
         );
         token::transfer(medallion_fee_cpi_ctx, medallion_dawn_fee)?;
 
-        // TODO >> deposit remainder into escrow program
-        // for now: transfer USDC remainder to building owner USDC account
+        // Deposit remainder into escrow account USDC vault
         let remainder_cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             token::Transfer {
                 from: ctx.accounts.user_usdc_account.to_account_info(),
-                to: ctx.accounts.building_owner_usdc_account.to_account_info(),
+                to: ctx.accounts.escrow_usdc_vault.to_account_info(),
                 authority: ctx.accounts.caller.to_account_info(),
             },
         );
@@ -534,17 +529,23 @@ impl PlanApp {
 
         // Save subscription data
         let subscription = &mut ctx.accounts.subscription;
-
         subscription.subscriber = ctx.accounts.caller.key();
         subscription.plan = ctx.accounts.plan.key();
         subscription.expiration = expiration;
         subscription.bump = ctx.bumps.subscription;
+
+        // Save escrow account
+        let escrow = &mut ctx.accounts.escrow;
+        escrow.owner = plan.owner;
+        escrow.vault = ctx.accounts.escrow_usdc_vault.key();
+        escrow.bump = ctx.bumps.escrow;
 
         emit!(Subscribed {
             subscription: subscription.key(),
             subscriber: ctx.accounts.caller.key(),
             plan: ctx.accounts.plan.key(),
             expiration: subscription.expiration,
+            escrow: escrow.key(),
         });
 
         Ok(())
