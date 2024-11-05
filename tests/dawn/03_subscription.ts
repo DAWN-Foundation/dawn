@@ -5,7 +5,13 @@ import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { confirmTx, getEvent, getPlanPda, mock } from '../../app/utils'
+import {
+  confirmTx,
+  getEvent,
+  getPlanPda,
+  getRaydiumProgram,
+  mock,
+} from '../../app/utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
@@ -18,12 +24,14 @@ const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
 const TOLERANCE_BPS = new BN(9975)
 
+const Q32 = new BN(2).pow(new BN(32))
+
 interface Subscribed {
   subscription: PublicKey
   subscriber: PublicKey
   plan: PublicKey
   expiration: number
-  escrow: PublicKey
+  swapPrice: BN
 }
 
 describe('dawn::subscription', () => {
@@ -236,6 +244,28 @@ describe('dawn::subscription', () => {
       ).amount.toString(),
     )
 
+    // get balances of raydium vaults
+    const raydiumDawnVault = await getAccount(
+      provider.connection,
+      accounts.raydiumDawnVault,
+    )
+    const raydiumUsdcVault = await getAccount(
+      provider.connection,
+      accounts.raydiumUsdcVault,
+    )
+
+    console.log({
+      raydiumDawnVault: raydiumDawnVault.amount.toString(),
+      raydiumUsdcVault: raydiumUsdcVault.amount.toString(),
+    })
+
+    // get current price of DAWN in USDC
+    const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+    const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+    const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+    console.log({ price: price.toString() })
+
     const tx = await program.methods
       .subscribe()
       .accounts(accounts)
@@ -245,25 +275,13 @@ describe('dawn::subscription', () => {
     assert.ok(tx.length > 0)
     await confirmTx(provider.connection, tx)
 
-    // get block time, and calculate expected expiration
-    let txDetails = await provider.connection.getParsedTransaction(
-      tx,
-      'confirmed',
-    )
-    let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
-
-    let subscription = await program.account.subscription.fetch(subscriptionPda)
-    assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
-    assert.ok(subscription.plan.equals(planPda))
-    assert.equal(subscription.expiration.toNumber(), expiration)
-    assert.equal(subscription.bump, subscriptionBump)
-
     // make sure event was emitted
     const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
     assert.ok(event.subscription.equals(subscriptionPda))
     assert.ok(event.subscriber.equals(mock.tester.publicKey))
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
+    assert.ok(event.swapPrice.eq(price))
 
     // make sure the tester USDC account was debited
     const testerUsdcBalanceAfter = new BN(
@@ -274,6 +292,11 @@ describe('dawn::subscription', () => {
     assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
     // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
     const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+    console.log({
+      diff: diff.toString(),
+      planPrice: plan.price.toString(),
+      tolerance: plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR).toString(),
+    })
     assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
     // calculate total fee in USDC
@@ -282,9 +305,47 @@ describe('dawn::subscription', () => {
       .add(mock.medallionFee)
     const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
 
+    // make sure the building owner escrow USDC vault account was debited
+    const usdcRemainder = plan.price.sub(totalUsdcFee)
+    const dailyUsdc = usdcRemainder.div(new BN(plan.duration))
+    const dailyDawn = dailyUsdc.mul(price).div(Q32)
+    const usdcExpected = usdcRemainder.sub(dailyUsdc)
+    const escrowUsdcBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, accounts.escrowUsdcVault)
+      ).amount.toString(),
+    )
+    assert.ok(
+      escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(usdcExpected),
+    )
+
+    // make sure the building owner escrow DAWN vault account was credited
+    const escrowDawnBalanceAfter = new BN(
+      (
+        await getAccount(provider.connection, accounts.escrowDawnVault)
+      ).amount.toString(),
+    )
+    assert.ok(escrowDawnBalanceAfter.sub(escrowDawnBalanceBefore).eq(dailyDawn))
+
     // calculate total fee in DAWN (approximated with small slippage for easier testing)
-    const dawnPriceInUsdc = new BN(20250) // ~2.025 USDC per DAWN
-    const totalDawnFee = totalUsdcFee.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
+    // const dawnPriceInUsdc = new BN(20250) // ~2.025 USDC per DAWN
+
+    // const totalDawnFee = totalUsdcFee.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
+    const totalDawn = totalUsdcFee.add(dailyUsdc).mul(price).div(Q32)
+    const totalDawnWithSlippage = totalDawn
+      .mul(BPS_DENOMINATOR.sub(new BN(100)))
+      .div(BPS_DENOMINATOR)
+    const totalDawnFee = totalDawnWithSlippage.sub(dailyDawn)
+
+    console.log({
+      totalUsdcFee: totalUsdcFee.toString(),
+      dawnPriceInUsdc: price.toString(),
+      totalDawn: totalDawn.toString(),
+      totalDawnWithSlippage: totalDawnWithSlippage.toString(),
+      totalDawnFee: totalDawnFee.toString(),
+      dailyUsdc: dailyUsdc.toString(),
+      dailyDawn: dailyDawn.toString(),
+    })
 
     // make sure the DAO DAWN account was credited
     const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
@@ -293,7 +354,13 @@ describe('dawn::subscription', () => {
         await getAccount(provider.connection, mock.daoDawnAccount)
       ).amount.toString(),
     )
-    assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).gte(daoFee))
+    console.log({
+      daoDawnBalanceAfter: daoDawnBalanceAfter.toString(),
+      daoDawnBalanceBefore: daoDawnBalanceBefore.toString(),
+      diff: daoDawnBalanceAfter.sub(daoDawnBalanceBefore).toString(),
+      daoFee: daoFee.toString(),
+    })
+    assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).eq(daoFee))
 
     // make sure the validator DAWN account was credited (with 0.25% tolerance)
     const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
@@ -305,7 +372,7 @@ describe('dawn::subscription', () => {
     assert.ok(
       validatorDawnBalanceAfter
         .sub(validatorDawnBalanceBefore)
-        .gte(validatorFee),
+        .eq(validatorFee),
     )
 
     // make sure the medallion DAWN account was credited (with 0.25% tolerance)
@@ -318,32 +385,29 @@ describe('dawn::subscription', () => {
     assert.ok(
       medallionDawnBalanceAfter
         .sub(medallionDawnBalanceBefore)
-        .gte(medallionFee),
+        .eq(medallionFee),
     )
 
-    // make sure the building owner escrow USDC vault account was debited
-    const remainder = plan.price.sub(totalUsdcFee)
-    const daily = remainder.div(new BN(plan.duration))
-    const usdcExpected = remainder.sub(daily)
-    const escrowUsdcBalanceAfter = new BN(
-      (
-        await getAccount(provider.connection, accounts.escrowUsdcVault)
-      ).amount.toString(),
+    // get block time, and calculate expected expiration
+    let txDetails = await provider.connection.getParsedTransaction(
+      tx,
+      'confirmed',
     )
-    assert.ok(
-      escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).gte(usdcExpected),
-    )
+    let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
 
-    // make sure the building owner escrow DAWN vault account was credited
-    const dawnExpected = daily.mul(BPS_DENOMINATOR).div(dawnPriceInUsdc)
-    const escrowDawnBalanceAfter = new BN(
-      (
-        await getAccount(provider.connection, accounts.escrowDawnVault)
-      ).amount.toString(),
-    )
-    assert.ok(
-      escrowDawnBalanceAfter.sub(escrowDawnBalanceBefore).gte(dawnExpected),
-    )
+    // make sure the subscription was created
+    let subscription = await program.account.subscription.fetch(subscriptionPda)
+    assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
+    assert.ok(subscription.plan.equals(planPda))
+    assert.equal(subscription.expiration.toNumber(), expiration)
+    assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
+    assert.ok(subscription.claimableDawn.eq(dailyDawn))
+    console.log({
+      subDailyUsdc: subscription.dailyUsdc.toString(),
+      dailyUsdc: dailyUsdc.toString(),
+    })
+    assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
+    assert.equal(subscription.bump, subscriptionBump)
   })
 
   it('cannot subscribe to the same plan twice', async () => {
@@ -437,5 +501,10 @@ describe('dawn::subscription', () => {
     assert.ok(event.subscriber.equals(wallet.publicKey))
     assert.ok(event.plan.equals(planPda))
     assert.ok(event.expiration > 0)
+
+    const eventPrice = event.swapPrice
+    console.log({
+      eventPrice: eventPrice.toString(),
+    })
   })
 })

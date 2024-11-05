@@ -366,12 +366,15 @@ impl DawnApp {
             }
         };
 
+        msg!("vault_0: {:?}", vault_0.amount);
+        msg!("vault_1: {:?}", vault_1.amount);
+
         // Get current vault amounts and calculate price using pool state's method
         let (token_0_price_x32, token_1_price_x32) =
             pool_state.token_price_x32(vault_0.amount, vault_1.amount);
 
-        msg!("token_0_price_x32: {}", token_0_price_x32);
-        msg!("token_1_price_x32: {}", token_1_price_x32);
+        msg!("token_0_price_x32: {:?}", token_0_price_x32);
+        msg!("token_1_price_x32: {:?}", token_1_price_x32);
 
         let usdc_amount_in = usdc_to_swap;
 
@@ -569,11 +572,6 @@ impl DawnApp {
             .checked_add(duration_in_seconds as i64)
             .ok_or(DawnError::Overflow)?;
 
-        // Calculate daily USDC portion
-        let daily_usdc = escrow_usdc_remainder
-            .checked_div(plan.duration as u64)
-            .ok_or(DawnError::Underflow)?;
-
         // Save subscription data
         let subscription = &mut ctx.accounts.subscription;
         subscription.subscriber = ctx.accounts.caller.key();
@@ -581,7 +579,7 @@ impl DawnApp {
         subscription.expiration = expiration;
         subscription.last_claim = current_timestamp;
         subscription.claimable_dawn = escrow_dawn; // Initial DAWN amount is locked for 24h
-        subscription.daily_usdc = daily_usdc;
+        subscription.daily_usdc = escrow_dawn_in_usdc;
         subscription.bump = ctx.bumps.subscription;
 
         emit!(Subscribed {
@@ -589,6 +587,7 @@ impl DawnApp {
             subscriber: ctx.accounts.caller.key(),
             plan: ctx.accounts.plan.key(),
             expiration: subscription.expiration,
+            swap_price: price,
         });
 
         Ok(())

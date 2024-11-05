@@ -33,4 +33,5 @@ pub struct Subscribed {
     pub subscriber: Pubkey,
     pub plan: Pubkey,
     pub expiration: i64,
+    pub swap_price: u128,
 }
