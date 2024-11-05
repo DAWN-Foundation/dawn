@@ -10,17 +10,23 @@ use raydium_cp_swap::{
 };
 
 use super::{Config, DawnApp, Plan};
-use crate::{constants::BPS_DENOMINATOR, PlanError, Subscribed};
+use crate::{constants::BPS_DENOMINATOR, DawnError, Subscribed};
 
 /// The plan account, representing a subscription plan tied to a building
 #[account]
 pub struct Subscription {
     /// The plan subscriber
     pub subscriber: Pubkey,
-    /// Associated plan (the subscription plan)
+    /// Associated subscription plan
     pub plan: Pubkey,
     /// Subscription expiration time (UNIX timestamp in seconds)
     pub expiration: i64,
+    /// Last claim timestamp for DAWN tokens
+    pub last_claim: i64,
+    /// Next claimable amount of DAWN tokens
+    pub claimable_dawn: u64,
+    /// Daily USDC portion for swaps
+    pub daily_usdc: u64,
     /// Subscription PDA bump seed
     pub bump: u8,
 }
@@ -29,18 +35,10 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
     + 32 // subscriber
     + 32 // plan
     + 8 // expiration
+    + 8 // last_claim
+    + 8 // claimable_dawn
+    + 8 // daily_usdc
     + 1; // bump
-
-/// The escrow account of the service provider
-#[account]
-pub struct Escrow {
-    /// The owner of the escrow account
-    pub owner: Pubkey,
-    /// The escrow USDC vault
-    pub usdc_vault: Pubkey,
-    /// The escrow PDA bump seed
-    pub bump: u8,
-}
 
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
@@ -82,16 +80,6 @@ pub struct Subscribe<'info> {
         bump
     )]
     pub subscription: Box<Account<'info, Subscription>>,
-
-    // /// The escrow account
-    // #[account(
-    //     init,
-    //     payer = caller,
-    //     space = ESCROW_SIZE,
-    //     seeds = [b"escrow", subscription.key().as_ref()],
-    //     bump
-    // )]
-    // pub escrow: Box<Account<'info, Escrow>>,
 
     // MINTS
     /// The DAWN mint account
@@ -204,33 +192,33 @@ impl DawnApp {
     ) -> Result<(u64, u64, u64)> {
         let dao_usdc_fee = source
             .checked_mul(dao_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let validator_usdc_fee = source
             .checked_mul(validator_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let medallion_usdc_fee = source
             .checked_mul(medallion_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let total_usdc_fee = dao_usdc_fee
             .checked_add(validator_usdc_fee)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_add(medallion_usdc_fee)
-            .ok_or(PlanError::Overflow)?;
+            .ok_or(DawnError::Overflow)?;
 
         let remainder = source.saturating_sub(total_usdc_fee);
 
         let escrow_dawn_in_usdc = remainder
             .checked_div(plan_duration as u64)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let escrow_usdc_remainder = remainder.saturating_sub(escrow_dawn_in_usdc);
 
@@ -248,9 +236,9 @@ impl DawnApp {
         // Calculate escrow DAWN amount based on the USDC amount and price
         let escrow_dawn = (escrow_dawn_in_usdc as u128)
             .checked_mul(price)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(Q32)
-            .ok_or(PlanError::Underflow)? as u64;
+            .ok_or(DawnError::Underflow)? as u64;
 
         // The remaining DAWN is for fees
         let remaining_dawn = total_dawn.saturating_sub(escrow_dawn);
@@ -261,21 +249,21 @@ impl DawnApp {
         // Calculate each fee based on the total source amount
         let dao_dawn_fee = remaining_dawn
             .checked_mul(dao_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(total_fee_bps)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let validator_dawn_fee = remaining_dawn
             .checked_mul(validator_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(total_fee_bps)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         let medallion_dawn_fee = remaining_dawn
             .checked_mul(medallion_fee_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(total_fee_bps)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         Ok((
             dao_dawn_fee,
@@ -312,11 +300,11 @@ impl DawnApp {
             (true, false) => {
                 // USDC is token_mint_0, DAWN is token_mint_1
                 if pool_mint_1 != dawn_mint.key() {
-                    return Err(PlanError::InvalidMint.into());
+                    return Err(DawnError::InvalidMint.into());
                 }
                 // Verify vault addresses
                 if pool_vault_0 != usdc_vault.key() || pool_vault_1 != dawn_vault.key() {
-                    return Err(PlanError::InvalidVault.into());
+                    return Err(DawnError::InvalidVault.into());
                 }
                 Ok((
                     usdc_mint,
@@ -331,11 +319,11 @@ impl DawnApp {
             (false, true) => {
                 // USDC is token_mint_1, DAWN is token_mint_0
                 if pool_mint_0 != dawn_mint.key() {
-                    return Err(PlanError::InvalidMint.into());
+                    return Err(DawnError::InvalidMint.into());
                 }
                 // Verify vault addresses
                 if pool_vault_1 != usdc_vault.key() || pool_vault_0 != dawn_vault.key() {
-                    return Err(PlanError::InvalidVault.into());
+                    return Err(DawnError::InvalidVault.into());
                 }
                 Ok((
                     usdc_mint,
@@ -348,7 +336,7 @@ impl DawnApp {
                 ))
             }
             _ => {
-                return Err(PlanError::InvalidMint.into());
+                return Err(DawnError::InvalidMint.into());
             }
         }
     }
@@ -398,15 +386,15 @@ impl DawnApp {
 
         let expected_out = (usdc_amount_in as u128)
             .checked_mul(price)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(Q32)
-            .ok_or(PlanError::Underflow)? as u64;
+            .ok_or(DawnError::Underflow)? as u64;
 
         let minimum_dawn_amount_out = expected_out
             .checked_mul(BPS_DENOMINATOR - slippage_bps)
-            .ok_or(PlanError::Overflow)?
+            .ok_or(DawnError::Overflow)?
             .checked_div(BPS_DENOMINATOR)
-            .ok_or(PlanError::Underflow)?;
+            .ok_or(DawnError::Underflow)?;
 
         Ok((usdc_amount_in, minimum_dawn_amount_out, price))
     }
@@ -574,18 +562,26 @@ impl DawnApp {
         // Calculate plan duration in seconds (days to seconds)
         let duration_in_seconds = (plan.duration as u64)
             .checked_mul(SECONDS_PER_DAY)
-            .ok_or(PlanError::Overflow)?;
+            .ok_or(DawnError::Overflow)?;
 
-        // calculate subscription expiration by adding plan `duration` days to current timestamp
+        // Calculate subscription expiration by adding plan `duration` days to current timestamp
         let expiration = current_timestamp
             .checked_add(duration_in_seconds as i64)
-            .ok_or(PlanError::Overflow)?;
+            .ok_or(DawnError::Overflow)?;
+
+        // Calculate daily USDC portion
+        let daily_usdc = escrow_usdc_remainder
+            .checked_div(plan.duration as u64)
+            .ok_or(DawnError::Underflow)?;
 
         // Save subscription data
         let subscription = &mut ctx.accounts.subscription;
         subscription.subscriber = ctx.accounts.caller.key();
         subscription.plan = ctx.accounts.plan.key();
         subscription.expiration = expiration;
+        subscription.last_claim = current_timestamp;
+        subscription.claimable_dawn = escrow_dawn; // Initial DAWN amount is locked for 24h
+        subscription.daily_usdc = daily_usdc;
         subscription.bump = ctx.bumps.subscription;
 
         emit!(Subscribed {
