@@ -366,15 +366,9 @@ impl DawnApp {
             }
         };
 
-        msg!("vault_0: {:?}", vault_0.amount);
-        msg!("vault_1: {:?}", vault_1.amount);
-
         // Get current vault amounts and calculate price using pool state's method
         let (token_0_price_x32, token_1_price_x32) =
             pool_state.token_price_x32(vault_0.amount, vault_1.amount);
-
-        msg!("token_0_price_x32: {:?}", token_0_price_x32);
-        msg!("token_1_price_x32: {:?}", token_1_price_x32);
 
         let usdc_amount_in = usdc_to_swap;
 
@@ -384,8 +378,6 @@ impl DawnApp {
         } else {
             token_1_price_x32
         };
-
-        msg!("price: {:?}", price);
 
         let expected_out = (usdc_amount_in as u128)
             .checked_mul(price)
@@ -404,9 +396,6 @@ impl DawnApp {
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
         let plan = &ctx.accounts.plan;
-
-        let balance = ctx.accounts.user_usdc_account.amount;
-        msg!("initial user USDC balance: {}", balance);
 
         let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
             let pool_state = ctx.accounts.raydium_pool.load()?;
@@ -450,17 +439,10 @@ impl DawnApp {
                 plan.duration,
             )?;
 
-        msg!("total_usdc_fee: {}", total_usdc_fee);
-        msg!("escrow_dawn_in_usdc: {}", escrow_dawn_in_usdc);
-        msg!("escrow_usdc_remainder: {}", escrow_usdc_remainder);
-
         // Calculate swap amounts in USDC
         let usdc_to_swap = total_usdc_fee.saturating_add(escrow_dawn_in_usdc);
         let (usdc_amount_in, minimum_dawn_amount_out, price) =
             Self::swap_amounts(&ctx, is_usdc_base, usdc_to_swap)?;
-
-        msg!("usdc_amount_in: {}", usdc_amount_in);
-        msg!("minimum_dawn_amount_out: {}", minimum_dawn_amount_out);
 
         // Create CPI accounts for the swap
         let swap_cpi = cpi::accounts::Swap {
@@ -497,11 +479,6 @@ impl DawnApp {
                 ctx.accounts.config.validator_fee,
                 ctx.accounts.config.medallion_fee,
             )?;
-
-        msg!("dao_dawn_fee: {}", dao_dawn_fee);
-        msg!("validator_dawn_fee: {}", validator_dawn_fee);
-        msg!("medallion_dawn_fee: {}", medallion_dawn_fee);
-        msg!("escrow_dawn: {}", escrow_dawn);
 
         // Transfer DAO DAWN fee from user to DAWN DAO
         let dao_fee_cpi_ctx = CpiContext::new(
