@@ -6,6 +6,7 @@ mod constants;
 mod error;
 mod events;
 mod instructions;
+mod utils;
 
 use error::*;
 use events::*;
