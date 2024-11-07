@@ -26,15 +26,7 @@ const TOLERANCE_BPS = new BN(9975)
 
 const Q32 = new BN(2).pow(new BN(32))
 
-interface Subscribed {
-  subscription: PublicKey
-  subscriber: PublicKey
-  plan: PublicKey
-  expiration: number
-  swapPrice: BN
-}
-
-describe('dawn::subscription', () => {
+describe('dawn::claim', () => {
   const provider = anchor.AnchorProvider.env()
   anchor.setProvider(provider)
 
@@ -49,9 +41,11 @@ describe('dawn::subscription', () => {
   let buildingPda: PublicKey
   let planPda: PublicKey
   let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
-  let accounts: Record<string, PublicKey>
+  let subscription: Awaited<
+    ReturnType<typeof program.account.subscription.fetch>
+  >
   let subscriptionPda: PublicKey
-  let subscriptionBump: number
+  let accounts: Record<string, PublicKey>
 
   before(async () => {
     const plans = await program.account.plan.all()
@@ -63,20 +57,13 @@ describe('dawn::subscription', () => {
     assert.ok(buildings.length > 0)
     buildingPda = buildings[0].publicKey
 
-    const newSubscription = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('subscription'),
-        Buffer.from(planPda.toBytes()),
-        Buffer.from(mock.tester.publicKey.toBytes()),
-      ],
-      program.programId,
-    )
+    const subscriptions = await program.account.subscription.all()
+    assert.ok(subscriptions.length > 0)
+    console.log({ subscriptions })
+    subscription = subscriptions[0].account
+    subscriptionPda = subscriptions[0].publicKey
 
-    subscriptionPda = newSubscription[0]
-    subscriptionBump = newSubscription[1]
-
-    // Create USDC vault token account for subscription escrow
-    console.log('Creating USDC vault token account for subscription escrow...')
+    // Get USDC vault token account for subscription escrow
     const { address: escrowUsdcVault } =
       await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -86,8 +73,7 @@ describe('dawn::subscription', () => {
         true,
       )
 
-    // Create DAWN vault token account for subscription escrow
-    console.log('Creating DAWN vault token account for subscription escrow...')
+    // Get DAWN vault token account for subscription escrow
     const { address: escrowDawnVault } =
       await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -116,13 +102,9 @@ describe('dawn::subscription', () => {
       raydiumDawnVault: mock.raydiumDawnVault,
       raydiumUsdcVault: mock.raydiumUsdcVault,
       // token accounts
-      userUsdcAccount: mock.testerUsdcAccount,
-      userDawnAccount: mock.testerDawnAccount,
-      daoDawnAccount: mock.daoDawnAccount,
-      validatorDawnAccount: mock.validatorDawnAccount,
-      medallionDawnAccount: mock.medallionDawnAccount,
       escrowUsdcVault: escrowUsdcVault,
       escrowDawnVault: escrowDawnVault,
+      providerDawnAccount: mock.buildingOwnerDawnAccount,
       // programs
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -137,66 +119,10 @@ describe('dawn::subscription', () => {
     assert.exists(planPda)
     assert.exists(buildingPda)
     assert.exists(subscriptionPda)
-    assert.exists(subscriptionBump)
     assert.exists(accounts)
   })
 
-  it('cannot subscribe to a plan that doesnt exist', async () => {
-    const [planPda] = getPlanPda(
-      program,
-      buildingPda,
-      new BN(1000),
-      30,
-      100,
-      new BN(1000),
-      new BN(1),
-    )
-
-    const subPda = PublicKey.findProgramAddressSync(
-      [Buffer.from('subscription'), Buffer.from(planPda.toBytes())],
-      program.programId,
-    )[0]
-
-    try {
-      await program.methods
-        .subscribe()
-        .accounts({
-          ...accounts,
-          plan: planPda,
-          subscription: subPda,
-        })
-        .signers([mock.tester])
-        .rpc()
-      assert.ok(false)
-    } catch (error) {
-      assert.ok(error instanceof AnchorError)
-      const err: AnchorError = error
-      assert.strictEqual(
-        err.error.errorMessage,
-        'The program expected this account to be already initialized',
-      )
-    }
-  })
-
-  it('cannot subscribe if does not have enough USDC', async () => {
-    try {
-      await program.methods
-        .subscribe()
-        .accounts(accounts)
-        .signers([mock.tester])
-        .rpc()
-      assert.ok(false)
-    } catch (error) {
-      assert.ok(error instanceof SendTransactionError)
-      const err: SendTransactionError = error
-      const insufficientFunds = err.logs.find((log) =>
-        log.includes('Program log: Error: insufficient funds'),
-      )
-      assert.ok(insufficientFunds)
-    }
-  })
-
-  it('subscribes to the plan', async () => {
+  it('claims daily DAWN', async () => {
     // Mint 1'000 USDC to Tester account
     await mintTo(
       provider.connection,
@@ -258,7 +184,7 @@ describe('dawn::subscription', () => {
     const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
     const tx = await program.methods
-      .subscribe()
+      .claim(subscription.subscriber)
       .accounts(accounts)
       .signers([mock.tester])
       .rpc()
@@ -266,13 +192,13 @@ describe('dawn::subscription', () => {
     assert.ok(tx.length > 0)
     await confirmTx(provider.connection, tx)
 
-    // make sure event was emitted
-    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
-    assert.ok(event.subscription.equals(subscriptionPda))
-    assert.ok(event.subscriber.equals(mock.tester.publicKey))
-    assert.ok(event.plan.equals(planPda))
-    assert.ok(event.expiration > 0)
-    assert.ok(event.swapPrice.eq(price))
+    // // make sure event was emitted
+    // const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
+    // assert.ok(event.subscription.equals(subscriptionPda))
+    // assert.ok(event.subscriber.equals(mock.tester.publicKey))
+    // assert.ok(event.plan.equals(planPda))
+    // assert.ok(event.expiration > 0)
+    // assert.ok(event.swapPrice.eq(price))
 
     // make sure the tester USDC account was debited
     const testerUsdcBalanceAfter = new BN(
@@ -362,107 +288,14 @@ describe('dawn::subscription', () => {
     )
     let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
 
-    // make sure the subscription was created
-    let subscription = await program.account.subscription.fetch(subscriptionPda)
-    assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
-    assert.ok(subscription.plan.equals(planPda))
-    assert.equal(subscription.expiration.toNumber(), expiration)
-    assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
-    assert.ok(subscription.claimableDawn.eq(dailyDawn))
-    assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
-    assert.equal(subscription.bump, subscriptionBump)
-  })
-
-  it('cannot subscribe to the same plan twice', async () => {
-    try {
-      await program.methods
-        .subscribe()
-        .accounts(accounts)
-        .signers([mock.tester])
-        .rpc()
-      assert.ok(false)
-    } catch (error) {
-      assert.ok(error instanceof SendTransactionError)
-      const err: SendTransactionError = error
-      const msg = `Allocate: account Address { address: ${subscriptionPda.toBase58()}, base: None } already in use`
-      const alreadySubscribed = err.logs.find((log) => log.includes(msg))
-      assert.ok(alreadySubscribed)
-    }
-  })
-
-  it('subscribes to the same plan by another user', async () => {
-    // get USDC account for wallet
-    const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      wallet.payer,
-      mock.usdcMint,
-      wallet.publicKey,
-    )
-
-    // get Dawn account for wallet
-    const walletDawnAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      wallet.payer,
-      mock.dawnMint,
-      wallet.publicKey,
-    )
-
-    // Mint 1'000 USDC to Wallet account
-    await mintTo(
-      provider.connection,
-      wallet.payer, // Payer for tx
-      mock.usdcMint, // Mint account
-      walletUsdcAccount.address, // Destination
-      wallet.payer, // Authority
-      1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
-    )
-
-    const [subscriptionPda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('subscription'),
-        Buffer.from(planPda.toBytes()),
-        Buffer.from(wallet.publicKey.toBytes()),
-      ],
-      program.programId,
-    )
-
-    const escrowUsdcVault = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      mock.buildingOwner,
-      mock.usdcMint,
-      subscriptionPda,
-      true,
-    )
-
-    const escrowDawnVault = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      mock.buildingOwner,
-      mock.dawnMint,
-      subscriptionPda,
-      true,
-    )
-
-    const tx = await program.methods
-      .subscribe()
-      .accounts({
-        ...accounts,
-        caller: wallet.publicKey,
-        subscription: subscriptionPda,
-        userDawnAccount: walletDawnAccount.address,
-        userUsdcAccount: walletUsdcAccount.address,
-        escrowUsdcVault: escrowUsdcVault.address,
-        escrowDawnVault: escrowDawnVault.address,
-      })
-      .signers([wallet.payer])
-      .rpc()
-
-    assert.ok(tx.length > 0)
-
-    // make sure event was emitted
-    const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
-    assert.ok(event.subscription.equals(subscriptionPda))
-    assert.ok(event.subscriber.equals(wallet.publicKey))
-    assert.ok(event.plan.equals(planPda))
-    assert.ok(event.expiration > 0)
+    // // make sure the subscription was created
+    // const subscription = await program.account.subscription.fetch(subscriptionPda)
+    // assert.ok(subscription.subscriber.equals(mock.tester.publicKey))
+    // assert.ok(subscription.plan.equals(planPda))
+    // assert.equal(subscription.expiration.toNumber(), expiration)
+    // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
+    // assert.ok(subscription.claimableDawn.eq(dailyDawn))
+    // assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
+    // assert.equal(subscription.bump, subscriptionBump)
   })
 })

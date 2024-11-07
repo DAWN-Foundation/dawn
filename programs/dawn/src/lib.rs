@@ -54,4 +54,8 @@ pub mod dawn {
     ) -> Result<()> {
         DawnApp::subscribe(ctx)
     }
+
+    pub fn claim(ctx: Context<Claim>, subscriber: Pubkey) -> Result<()> {
+        DawnApp::claim(ctx, subscriber)
+    }
 }
