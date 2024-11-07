@@ -5,7 +5,7 @@ export interface Mock {
   dao: Keypair
   validatorPool: Keypair
   medallionPool: Keypair
-  buildingOwner: Keypair
+  provider: Keypair
   tester: Keypair
   // mints
   usdcMint: PublicKey
@@ -14,8 +14,8 @@ export interface Mock {
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
-  buildingOwnerUsdcAccount: PublicKey
-  buildingOwnerDawnAccount: PublicKey
+  providerUsdcAccount: PublicKey
+  providerDawnAccount: PublicKey
   testerUsdcAccount: PublicKey
   testerDawnAccount: PublicKey
   // raydium
@@ -43,7 +43,7 @@ export interface RawMock {
   dao: RawKeypair
   validatorPool: RawKeypair
   medallionPool: RawKeypair
-  buildingOwner: RawKeypair
+  provider: RawKeypair
   tester: RawKeypair
   // mints
   usdcMint: string
@@ -52,8 +52,8 @@ export interface RawMock {
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string
-  buildingOwnerUsdcAccount: string
-  buildingOwnerDawnAccount: string
+  providerUsdcAccount: string
+  providerDawnAccount: string
   testerUsdcAccount: string
   testerDawnAccount: string
   escrowUsdcVault: string

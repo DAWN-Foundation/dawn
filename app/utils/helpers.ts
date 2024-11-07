@@ -36,8 +36,8 @@ export async function fund(
   amount: number,
   commitment: 'confirmed' | 'finalized' = 'confirmed',
 ) {
-  const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
-  await confirmTx(connection, signature, commitment)
+  // const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
+  // await confirmTx(connection, signature, commitment)
 }
 
 // Helper to get the event from the transaction

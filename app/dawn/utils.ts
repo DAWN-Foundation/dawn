@@ -10,7 +10,8 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { Mock, RawMock } from '../utils'
+import { loadWallet, Mock, RawMock } from '../utils'
+import { BankrunProvider, startAnchor } from 'anchor-bankrun'
 
 const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
 
@@ -44,8 +45,8 @@ export function getMock(): Mock {
     medallionPool: Keypair.fromSecretKey(
       Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
     ),
-    buildingOwner: Keypair.fromSecretKey(
-      Uint8Array.from(mock.buildingOwner.secretKey.split(',').map(Number)),
+    provider: Keypair.fromSecretKey(
+      Uint8Array.from(mock.provider.secretKey.split(',').map(Number)),
     ),
     tester: Keypair.fromSecretKey(
       Uint8Array.from(mock.tester.secretKey.split(',').map(Number)),
@@ -57,8 +58,8 @@ export function getMock(): Mock {
     daoDawnAccount: new PublicKey(mock.daoDawnAccount),
     validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
     medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
-    buildingOwnerUsdcAccount: new PublicKey(mock.buildingOwnerUsdcAccount),
-    buildingOwnerDawnAccount: new PublicKey(mock.buildingOwnerDawnAccount),
+    providerUsdcAccount: new PublicKey(mock.providerUsdcAccount),
+    providerDawnAccount: new PublicKey(mock.providerDawnAccount),
     testerUsdcAccount: new PublicKey(mock.testerUsdcAccount),
     testerDawnAccount: new PublicKey(mock.testerDawnAccount),
     // raydium
@@ -85,7 +86,7 @@ export function getIDL(): Dawn {
 }
 
 export function getDawnProgram(
-  provider: anchor.AnchorProvider,
+  provider: BankrunProvider,
 ): anchor.Program<Dawn> {
   const idl = getIDL()
   return new anchor.Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
@@ -98,12 +99,12 @@ export async function connect(): Promise<{
 }> {
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
-  const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet, {})
+  const context = await startAnchor('.', [], [])
+  const provider = new BankrunProvider(context)
   anchor.setProvider(provider)
   const program = getDawnProgram(provider)
 
-  return { wallet, program, connection }
+  return { wallet, program, connection: provider.connection }
 }
 
 // helper function to get wallet from the config
@@ -111,15 +112,6 @@ function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
-}
-
-// helper function to load the wallet from the local file system
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
-  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
-  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
-  const keypair = Keypair.fromSecretKey(secretKey)
-  return new anchor.Wallet(keypair)
 }
 
 // helper function to get the wallet based on the flag

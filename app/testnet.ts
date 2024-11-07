@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { Connection, Keypair } from '@solana/web3.js'
-import { loadWallet, fund, setup } from './utils'
+import { loadWallet, fund, setup, createAccounts } from './utils'
 import { AnchorProvider } from '@coral-xyz/anchor'
 
 const { PublicKey } = require('@solana/web3.js')
@@ -17,7 +17,8 @@ async function main() {
   await fund(provider.connection, wallet.publicKey, 500)
 
   // Setup accounts
-  const accounts = await setup(provider, wallet, true)
+  const accounts = createAccounts()
+  const mock = await setup(provider, accounts, true)
 
   // Parse into readable format
   let parsed = {}

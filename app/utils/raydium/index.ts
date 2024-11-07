@@ -8,28 +8,21 @@ import { createPool } from './create_pool'
 import { deposit } from './deposit'
 import { RaydiumCpSwap } from '../../../raydium/raydium_cp_swap'
 import { getPoolVaultAddress } from './pda'
+import { BankrunProvider } from 'anchor-bankrun'
 
 const RAYDIUM = new PublicKey('CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C')
 const RAYDIUM_CONFIG = new PublicKey(
   'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
 )
 
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
-  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
-  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
-  const keypair = Keypair.fromSecretKey(secretKey)
-  return new anchor.Wallet(keypair)
-}
-
-export function getRaydiumProgram(provider: anchor.AnchorProvider) {
+export function getRaydiumProgram(provider: BankrunProvider) {
   const idlPath = path.resolve('raydium/raydium_cp_swap.json')
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
   return new Program(idl as RaydiumCpSwap, RAYDIUM, provider)
 }
 
 export async function setupRaydium(
-  provider: anchor.AnchorProvider,
+  provider: BankrunProvider,
   wallet: Wallet,
   dawnMint: PublicKey,
   usdcMint: PublicKey,

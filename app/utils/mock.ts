@@ -1,59 +1,118 @@
+import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
-
-import { Mock } from './types'
-import { fund } from './helpers'
+import { BankrunProvider } from 'anchor-bankrun'
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from '@solana/spl-token'
+
+import { Mock } from './types'
+import { fund } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
+import { AddedAccount, startAnchor } from 'solana-bankrun'
+
+export const PROGRAM_ID = new PublicKey(
+  'dawn111111111111111111111111111111111111111',
+)
 
 export let mock: Mock
+let provider: BankrunProvider
 
-// Setup the environment for tests and set the mock
-// only run once in `initialize` test
-export async function setup(
-  provider: anchor.AnchorProvider,
-  wallet: anchor.Wallet,
-  isTestnet: boolean = false,
-) {
-  // Fund wallet
-  console.log('Funding wallet...')
-  await fund(
-    provider.connection,
-    wallet.publicKey,
-    1000,
-    isTestnet ? 'finalized' : 'confirmed',
-  )
+export async function getProvider(accounts?: AddedAccount[]) {
+  if (provider) {
+    console.log('Using existing provider')
+    return provider
+  }
+  const context = await startAnchor('.', [], accounts ?? [])
+  provider = new BankrunProvider(context)
+  return provider
+}
+
+// helper function to load the wallet from the local file system
+export function loadWallet(): anchor.Wallet {
+  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
+  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
+  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
+  const keypair = Keypair.fromSecretKey(secretKey)
+  return new anchor.Wallet(keypair)
+}
+
+export function createAccounts() {
+  // Load wallet
+  console.log('Loading local wallet...')
+  const wallet = loadWallet()
 
   // Create DAWN DAO KeyPair
   console.log('Creating DAWN DAO KeyPair...')
   const dao = Keypair.generate()
-  await fund(provider.connection, dao.publicKey, 1000)
 
   // Create Validator Pool KeyPair
   console.log('Creating Validator Pool KeyPair...')
   const validatorPool = Keypair.generate()
-  await fund(provider.connection, validatorPool.publicKey, 1000)
 
   // Create Medallion Pool KeyPair
   console.log('Creating Medallion Pool KeyPair...')
   const medallionPool = Keypair.generate()
-  await fund(provider.connection, medallionPool.publicKey, 1000)
 
-  // Create Building Owner KeyPair
-  console.log('Creating Building Owner KeyPair...')
-  const buildingOwner = Keypair.generate()
-  await fund(provider.connection, buildingOwner.publicKey, 1000)
+  // Create Service Provider KeyPair
+  console.log('Creating Service Provider KeyPair...')
+  const provider = Keypair.generate()
 
   // Create Tester KeyPair
   console.log('Creating Tester KeyPair...')
   const tester = Keypair.generate()
-  await fund(provider.connection, tester.publicKey, 1000)
+
+  const newAccounts = {
+    wallet,
+    dao,
+    validatorPool,
+    medallionPool,
+    provider,
+    tester,
+  }
+
+  return {
+    ...newAccounts,
+    addedAccounts: Object.values(newAccounts).map((acc) => ({
+      address: acc.publicKey,
+      info: {
+        lamports: 1000_000_000_000,
+        executable: false,
+        owner: anchor.web3.SystemProgram.programId,
+        data: Buffer.alloc(0),
+      },
+    })),
+  }
+}
+
+// Setup the environment for tests and set the mock
+// only run once in `initialize` test
+export async function setup(
+  provider: BankrunProvider,
+  accounts: ReturnType<typeof createAccounts>,
+  isTestnet: boolean = false,
+) {
+  const {
+    wallet,
+    dao,
+    validatorPool,
+    medallionPool,
+    provider: serviceProvider,
+    tester,
+  } = accounts
+
+  // // Fund wallet
+  // console.log('Funding wallet...')
+  // await fund(
+  //   provider.connection,
+  //   wallet.publicKey,
+  //   1000,
+  //   isTestnet ? 'finalized' : 'confirmed',
+  // )
 
   // Mint test USDC token
   console.log('Minting test USDC token...')
@@ -108,24 +167,24 @@ export async function setup(
       medallionPool.publicKey,
     )
 
-  // Create DAWN account for Building Owner
-  console.log('Creating DAWN account for Building Owner...')
-  const { address: buildingOwnerDawnAccount } =
+  // Create DAWN account for Service Provider
+  console.log('Creating DAWN account for Service Provider...')
+  const { address: providerDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      buildingOwner,
+      serviceProvider,
       dawnMint,
-      buildingOwner.publicKey,
+      serviceProvider.publicKey,
     )
 
-  // Create USDC account for Building Owner
-  console.log('Creating USDC account for Building Owner...')
-  const { address: buildingOwnerUsdcAccount } =
+  // Create USDC account for Service Provider
+  console.log('Creating USDC account for Service Provider...')
+  const { address: providerUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      buildingOwner,
+      serviceProvider,
       usdcMint,
-      buildingOwner.publicKey,
+      serviceProvider.publicKey,
     )
 
   // Create USDC account for Tester
@@ -215,7 +274,7 @@ export async function setup(
     dao,
     validatorPool,
     medallionPool,
-    buildingOwner,
+    provider: serviceProvider,
     tester,
     // mints
     usdcMint,
@@ -224,8 +283,8 @@ export async function setup(
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,
-    buildingOwnerDawnAccount,
-    buildingOwnerUsdcAccount,
+    providerDawnAccount,
+    providerUsdcAccount,
     testerUsdcAccount,
     testerDawnAccount,
     // raydium
