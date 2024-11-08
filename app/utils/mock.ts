@@ -30,17 +30,12 @@ import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 
 export const PROGRAM_ID = new PublicKey(
-  'dawn111111111111111111111111111111111111111',
+  'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
 )
 
 export const RAYDIUM_PROGRAM_ID = new PublicKey(
   'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
 )
-
-type Acc = {
-  account: AccountInfo<Buffer>
-  pubkey: PublicKey
-}
 
 export const RAYDIUM_CONFIG = new PublicKey(
   'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
@@ -49,35 +44,6 @@ export const RAYDIUM_CONFIG = new PublicKey(
 export const RAYDIUM_POOL_FEE_RECEIVER = new PublicKey(
   'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
 )
-
-// async function mintTo(
-//   banksClient: BanksClient,
-//   payer: Signer,
-//   mint: PublicKey,
-//   destination: PublicKey,
-//   authorityPublicKey: PublicKey,
-//   amount: bigint,
-// ) {
-//   console.log({
-//     mint,
-//     destination,
-//     authorityPublicKey,
-//   })
-//   const tx = new Transaction().add(
-//     createMintToInstruction(
-//       mint,
-//       destination,
-//       authorityPublicKey,
-//       amount,
-//       [],
-//       TOKEN_PROGRAM_ID,
-//     ),
-//   )
-//   ;[tx.recentBlockhash] = (await banksClient.getLatestBlockhash())!
-//   tx.sign(payer)
-
-//   return await banksClient.processTransaction(tx)
-// }
 
 export let mock: Mock
 let provider: BankrunProvider
@@ -88,7 +54,6 @@ export async function getProvider(accounts?: AddedAccount[]) {
     console.log('Using existing provider')
     return provider
   }
-  console.log({ accounts })
   const context = await startAnchor(
     '.',
     [

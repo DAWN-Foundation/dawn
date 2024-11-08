@@ -112,7 +112,7 @@ export const initTests = () =>
         const err: SendTransactionError = error
         assert.strictEqual(
           err.transactionError.message,
-          'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
+          'Error processing Instruction 0: custom program error: 0x0',
         )
       }
     })

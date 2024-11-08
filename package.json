@@ -1,7 +1,7 @@
 {
   "license": "ISC",
   "scripts": {
-    "test": "RUST_LOG= jest --runInBand",
+    "test": "cp target/deploy/dawn.so tests/fixtures && RUST_LOG= jest --runInBand --verbose",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "clean": "rm -rf dist",
