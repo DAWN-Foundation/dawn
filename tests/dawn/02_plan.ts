@@ -15,6 +15,7 @@ import {
   PROGRAM_ID,
 } from '../../app/utils'
 import { beforeAll } from '@jest/globals'
+import { BanksClient } from 'solana-bankrun'
 
 interface PlanAdded {
   owner: PublicKey
@@ -39,13 +40,15 @@ export const planTests = () =>
     let wallet: NodeWallet
     let buildingPda: PublicKey
     let building: Awaited<ReturnType<typeof program.account.building.fetch>>
+    let client: BanksClient
 
     beforeAll(async () => {
-      const provider = await getProvider()
+      const { provider, client: banksClient } = await getProvider()
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       wallet = provider.wallet
+      client = banksClient
 
       const buildings = await program.account.building.all()
       assert.ok(buildings.length > 0)
@@ -229,8 +232,9 @@ export const planTests = () =>
           plan: planPda,
         })
         .signers([mock.provider])
-        .rpc()
-      assert.ok(tx.length > 0)
+        .transaction()
+
+      const txDetails = await client.processTransaction(tx)
 
       const plan = await program.account.plan.fetch(planPda)
 
@@ -255,7 +259,7 @@ export const planTests = () =>
       assert.equal(buildingPlan.bump, planBump)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, tx, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.provider.publicKey))
       assert.ok(event.building.equals(buildingPda))
       assert.ok(event.price.eq(price))
@@ -328,8 +332,9 @@ export const planTests = () =>
           plan: planPda,
         })
         .signers([mock.provider])
-        .rpc()
-      assert.ok(tx.length > 0)
+        .transaction()
+
+      const txDetails = await client.processTransaction(tx)
 
       const plan = await program.account.plan.fetch(planPda)
 
@@ -343,7 +348,7 @@ export const planTests = () =>
       assert.equal(plan.bump, planBump)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, tx, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.provider.publicKey))
       assert.ok(event.building.equals(buildingPda))
       assert.ok(event.price.eq(price))
@@ -443,8 +448,9 @@ export const planTests = () =>
           plan: planPda,
         })
         .signers([mock.provider])
-        .rpc()
-      assert.ok(tx.length > 0)
+        .transaction()
+
+      const txDetails = await client.processTransaction(tx)
 
       try {
         await program.account.plan.fetch(planPda)
@@ -459,7 +465,11 @@ export const planTests = () =>
       }
 
       // make sure event was emitted
-      const event = await getEvent<PlanRemoved>(program, tx, 'PlanRemoved')
+      const event = await getEvent<PlanRemoved>(
+        program,
+        txDetails,
+        'PlanRemoved',
+      )
       assert.ok(event.plan.equals(planPda))
       assert.ok(event.building.equals(buildingPda))
     })

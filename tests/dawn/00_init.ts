@@ -22,7 +22,7 @@ export const initTests = () =>
 
     beforeAll(async () => {
       const accounts = await createAccounts()
-      const provider = await getProvider(accounts.addedAccounts)
+      const { provider } = await getProvider(accounts.addedAccounts)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)

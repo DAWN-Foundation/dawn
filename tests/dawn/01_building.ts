@@ -1,17 +1,16 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, AnchorError } from '@coral-xyz/anchor'
-import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
-import { assert } from 'chai'
+import { Program, AnchorError, Wallet } from '@coral-xyz/anchor'
 import {
   MAX_SEED_LENGTH,
   PublicKey,
   SendTransactionError,
 } from '@solana/web3.js'
-import { BankrunProvider } from 'anchor-bankrun'
 
 import { Dawn, IDL } from '../../target/types/dawn'
 import { getEvent, mock, getProvider, PROGRAM_ID } from '../../app/utils'
-import { beforeAll } from '@jest/globals'
+import { beforeAll, expect } from '@jest/globals'
+import { BanksClient } from 'solana-bankrun'
+import { BankrunProvider } from 'anchor-bankrun'
 
 const MAX_BUILDING_NAME_LEN = 32
 const MAX_BUILDING_ADDRESS_LEN = 64
@@ -29,16 +28,21 @@ interface BuildingAdded {
 export const buildingTests = () =>
   describe('dawn::building', () => {
     let program: Program<Dawn>
+    let provider: BankrunProvider
+    let client: BanksClient
 
     beforeAll(async () => {
-      const provider = await getProvider()
+      const chain = await getProvider()
+      provider = chain.provider
+      provider.wallet = new Wallet(mock.provider)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      client = chain.client
     })
 
     test('mock setup', () => {
-      assert.exists(mock)
+      expect(mock).toBeDefined()
     })
 
     test('cannot add building with an empty name', async () => {
@@ -65,11 +69,11 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof AnchorError)
+        expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Building name is empty')
+        expect(err.error.errorMessage).toBe('Building name is empty')
       }
     })
 
@@ -97,11 +101,11 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof AnchorError)
+        expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Building address is empty')
+        expect(err.error.errorMessage).toBe('Building address is empty')
       }
     })
 
@@ -129,11 +133,11 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof AnchorError)
+        expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Building name is too long')
+        expect(err.error.errorMessage).toBe('Building name is too long')
       }
     })
 
@@ -161,14 +165,11 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof AnchorError)
+        expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        assert.strictEqual(
-          err.error.errorMessage,
-          'Building address is too long',
-        )
+        expect(err.error.errorMessage).toBe('Building address is too long')
       }
     })
 
@@ -196,11 +197,11 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof AnchorError)
+        expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Invalid number of floors')
+        expect(err.error.errorMessage).toBe('Invalid number of floors')
       }
     })
 
@@ -228,12 +229,9 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof RangeError)
-        const err: RangeError = error
-        assert.strictEqual(
-          err.message,
+        expect(error.message).toBe(
           'The value of "value" is out of range. It must be >= 0 and <= 255. Received 256',
         )
       }
@@ -258,23 +256,36 @@ export const buildingTests = () =>
         .addBuilding(name, address, floors)
         .accounts({ caller: mock.provider.publicKey, building: buildingPda })
         .signers([mock.provider])
-        .rpc()
-      assert.ok(tx.length > 0)
+        .transaction()
+
+      tx.recentBlockhash = (await client.getLatestBlockhash())[0]
+      tx.feePayer = mock.provider.publicKey
+      tx.sign(provider.wallet.payer)
+      console.log({
+        tx,
+        wallet: provider.wallet.publicKey.toBase58(),
+      })
+      const txDetails = await provider.context.banksClient.processTransaction(
+        tx,
+      )
 
       const building = await program.account.building.fetch(buildingPda)
-
-      assert.ok(building.owner.equals(mock.provider.publicKey))
-      assert.equal(building.name, name)
-      assert.equal(building.address, address)
-      assert.equal(building.floors, floors)
-      assert.equal(building.bump, buildingBump)
+      expect(building.owner.equals(mock.provider.publicKey)).toBeTruthy()
+      expect(building.name).toBe(name)
+      expect(building.address).toBe(address)
+      expect(building.floors).toBe(floors)
+      expect(building.bump).toBe(buildingBump)
 
       // make sure event was emitted
-      const event = await getEvent<BuildingAdded>(program, tx, 'BuildingAdded')
-      assert.ok(event.owner.equals(mock.provider.publicKey))
-      assert.equal(event.name, name)
-      assert.equal(event.address, address)
-      assert.equal(event.floors, floors)
+      const event = await getEvent<BuildingAdded>(
+        program,
+        txDetails,
+        'BuildingAdded',
+      )
+      expect(event.owner.equals(mock.provider.publicKey)).toBeTruthy()
+      expect(event.name).toBe(name)
+      expect(event.address).toBe(address)
+      expect(event.floors).toBe(floors)
     })
 
     // given previous case created this building
@@ -302,13 +313,12 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
-        assert.ok(false)
+        expect(false).toBeTruthy()
       } catch (error) {
-        assert.ok(error instanceof SendTransactionError)
+        expect(error instanceof SendTransactionError).toBeTruthy()
         const err: SendTransactionError = error
-        assert.strictEqual(
-          err.transactionError.message,
-          'Transaction simulation failed: Error processing Instruction 0: custom program error: 0x0',
+        expect(err.transactionError.message).toBe(
+          'Error processing Instruction 0: custom program error: 0x0',
         )
       }
     })

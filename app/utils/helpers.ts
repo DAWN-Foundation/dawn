@@ -3,31 +3,7 @@ import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-
-// Helper to confirm a transaction
-export async function confirmTx(
-  connection: anchor.web3.Connection,
-  tx: string,
-  commitment: 'confirmed' | 'finalized' = 'confirmed',
-): Promise<VersionedTransactionResponse> {
-  const lastBlock = await connection.getLatestBlockhash()
-
-  await connection.confirmTransaction(
-    {
-      signature: tx,
-      blockhash: lastBlock.blockhash,
-      lastValidBlockHeight: lastBlock.lastValidBlockHeight,
-    },
-    commitment,
-  )
-
-  const confirmedTx = await connection.getTransaction(tx, {
-    commitment,
-    maxSupportedTransactionVersion: 0,
-  })
-
-  return confirmedTx
-}
+import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
 
 // Helper to fund an account with SOL
 export async function fund(
@@ -43,14 +19,10 @@ export async function fund(
 // Helper to get the event from the transaction
 export async function getEvent<T>(
   program: Program<Dawn>,
-  tx: string,
+  tx: BanksTransactionMeta,
   name: string,
 ): Promise<T> {
-  const confirmedTx = await confirmTx(program.provider.connection, tx)
-
-  const logs = confirmedTx.meta.logMessages.filter((msg) =>
-    msg.startsWith('Program data: '),
-  )
+  const logs = tx.logMessages.filter((msg) => msg.startsWith('Program data: '))
   const log = logs[logs.length - 1]
 
   const logEncoded = log.split('Program data: ')[1]

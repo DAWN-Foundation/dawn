@@ -52,7 +52,7 @@ let client: BanksClient
 export async function getProvider(accounts?: AddedAccount[]) {
   if (provider) {
     console.log('Using existing provider')
-    return provider
+    return { provider, client }
   }
   const context = await startAnchor(
     '.',
@@ -64,7 +64,7 @@ export async function getProvider(accounts?: AddedAccount[]) {
   )
   provider = new BankrunProvider(context)
   client = context.banksClient
-  return provider
+  return { provider, client }
 }
 
 // helper function to load the wallet from the local file system
@@ -120,6 +120,7 @@ export async function createAccounts() {
     },
   }))
 
+  // Connection to mainnet for cloning accounts
   const connection = new Connection('https://api.mainnet-beta.solana.com')
 
   // Add Raydium config account
@@ -298,8 +299,6 @@ export async function setup(
       userDawnAccount,
       userUsdcAccount,
     )
-
-  // await new Promise((resolve) => setTimeout(resolve, 120_000))
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
   const validatorFee = new BN(300) // 3% fee (validator_fee)

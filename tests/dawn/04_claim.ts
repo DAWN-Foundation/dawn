@@ -13,7 +13,6 @@ import {
 
 import { Dawn, IDL } from '../../target/types/dawn'
 import {
-  confirmTx,
   getEvent,
   getPlanPda,
   getRaydiumProgram,
@@ -22,6 +21,7 @@ import {
   PROGRAM_ID,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
+import { BanksClient } from 'solana-bankrun'
 import { beforeAll } from '@jest/globals'
 
 const SECONDS_PER_DAY = 86_400
@@ -33,6 +33,7 @@ const Q32 = new BN(2).pow(new BN(32))
 export const claimTests = () =>
   describe('dawn::claim', () => {
     let provider: BankrunProvider
+    let client: BanksClient
     let program: Program<Dawn>
 
     let buildingPda: PublicKey
@@ -50,7 +51,9 @@ export const claimTests = () =>
     )
 
     beforeAll(async () => {
-      provider = await getProvider()
+      const chain = await getProvider()
+      provider = chain.provider
+      client = chain.client
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
@@ -187,7 +190,7 @@ export const claimTests = () =>
         .rpc()
 
       assert.ok(tx.length > 0)
-      await confirmTx(provider.connection, tx)
+      // await confirmTx(provider.connection, tx)
 
       // // make sure event was emitted
       // const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
