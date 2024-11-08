@@ -320,6 +320,20 @@ export async function setup(
     program.programId,
   )
 
+  const buildingName = 'Building 1'
+  const buildingAddress = '123 Main St'
+  const buildingFloors = 5
+
+  const [buildingPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('building'),
+      Buffer.from(buildingName.trim()),
+      Buffer.from(buildingAddress),
+      Buffer.from([buildingFloors]),
+    ],
+    program.programId,
+  )
+
   mock = {
     dao,
     validatorPool,
@@ -349,8 +363,13 @@ export async function setup(
     daoFee,
     validatorFee,
     medallionFee,
-    // plan
+    // PDAs
     configPda,
+    buildingPda,
+    // building
+    buildingName,
+    buildingAddress,
+    buildingFloors,
   }
 
   return mock

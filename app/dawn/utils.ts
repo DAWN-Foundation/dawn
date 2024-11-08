@@ -74,8 +74,13 @@ export function getMock(): Mock {
     daoFee: new BN(mock.daoFee),
     validatorFee: new BN(mock.validatorFee),
     medallionFee: new BN(mock.medallionFee),
-    // plan
+    // PDAs
     configPda: new PublicKey(mock.configPda),
+    buildingPda: new PublicKey(mock.buildingPda),
+    // building
+    buildingName: mock.buildingName,
+    buildingAddress: mock.buildingAddress,
+    buildingFloors: mock.buildingFloors,
   }
 }
 

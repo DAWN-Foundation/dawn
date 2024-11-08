@@ -30,8 +30,13 @@ export interface Mock {
   daoFee: BN
   validatorFee: BN
   medallionFee: BN
-  // plan
+  // PDAs
   configPda: PublicKey
+  buildingPda: PublicKey
+  // building
+  buildingName: string
+  buildingAddress: string
+  buildingFloors: number
 }
 
 interface RawKeypair {
@@ -69,6 +74,11 @@ export interface RawMock {
   daoFee: string
   validatorFee: string
   medallionFee: string
-  // plan
+  // PDAs
   configPda: string
+  buildingPda: string
+  // building
+  buildingName: string
+  buildingAddress: string
+  buildingFloors: number
 }

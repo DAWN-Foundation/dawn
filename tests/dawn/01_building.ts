@@ -51,22 +51,20 @@ export const buildingTests = () =>
 
     test('cannot add building with an empty name', async () => {
       const name = '  '
-      const address = '123 Main St'
-      const floors = 5
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
           Buffer.from(name.trim()),
-          Buffer.from(address),
-          Buffer.from([floors]),
+          Buffer.from(mock.buildingAddress),
+          Buffer.from([mock.buildingFloors]),
         ],
         program.programId,
       )
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(name, mock.buildingAddress, mock.buildingFloors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -82,23 +80,21 @@ export const buildingTests = () =>
     })
 
     test('cannot add building with an empty address', async () => {
-      const name = 'Building 1'
       const address = '  '
-      const floors = 5
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
-          Buffer.from(name),
+          Buffer.from(mock.buildingName),
           Buffer.from(address.trim()),
-          Buffer.from([floors]),
+          Buffer.from([mock.buildingFloors]),
         ],
         program.programId,
       )
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(mock.buildingName, address, mock.buildingFloors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -115,22 +111,20 @@ export const buildingTests = () =>
 
     test('cannot add building with name exceeding MAX_BUILDING_NAME_LEN', async () => {
       const name = 'a'.repeat(MAX_BUILDING_NAME_LEN + 1)
-      const address = '123 Main St'
-      const floors = 5
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
           Buffer.from(name.substring(0, MAX_SEED_LENGTH)),
-          Buffer.from(address),
-          Buffer.from([floors]),
+          Buffer.from(mock.buildingAddress),
+          Buffer.from([mock.buildingFloors]),
         ],
         program.programId,
       )
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(name, mock.buildingAddress, mock.buildingFloors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -146,23 +140,21 @@ export const buildingTests = () =>
     })
 
     test('cannot add building with address exceeding MAX_BUILDING_ADDRESS_LEN', async () => {
-      const name = 'Building 1'
       const address = 'a'.repeat(MAX_BUILDING_ADDRESS_LEN + 1)
-      const floors = 5
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
-          Buffer.from(name),
+          Buffer.from(mock.buildingName),
           Buffer.from(address.substring(0, MAX_SEED_LENGTH)),
-          Buffer.from([floors]),
+          Buffer.from([mock.buildingFloors]),
         ],
         program.programId,
       )
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(mock.buildingName, address, mock.buildingFloors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -178,15 +170,13 @@ export const buildingTests = () =>
     })
 
     test('cannot add building with floors less than 1', async () => {
-      const name = 'Building 1'
-      const address = '123 Main St'
       const floors = 0
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
-          Buffer.from(name),
-          Buffer.from(address),
+          Buffer.from(mock.buildingName),
+          Buffer.from(mock.buildingAddress),
           Buffer.from([floors]),
         ],
         program.programId,
@@ -194,7 +184,7 @@ export const buildingTests = () =>
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(mock.buildingName, mock.buildingAddress, floors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -210,15 +200,13 @@ export const buildingTests = () =>
     })
 
     test('cannot add building with floors more than 255', async () => {
-      const name = 'Building 1'
-      const address = '123 Main St'
       const floors = 255 + 1
 
       const [buildingPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('building'),
-          Buffer.from(name),
-          Buffer.from(address),
+          Buffer.from(mock.buildingName),
+          Buffer.from(mock.buildingAddress),
           Buffer.from([floors]),
         ],
         program.programId,
@@ -226,7 +214,7 @@ export const buildingTests = () =>
 
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(mock.buildingName, mock.buildingAddress, floors)
           .accounts({
             caller: mock.provider.publicKey,
             building: buildingPda,
@@ -242,34 +230,26 @@ export const buildingTests = () =>
     })
 
     test('adds the building', async () => {
-      const name = 'Building 1'
-      const address = '123 Main St'
-      const floors = 5
-
-      const [buildingPda, buildingBump] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('building'),
-          Buffer.from(name),
-          Buffer.from(address),
-          Buffer.from([floors]),
-        ],
-        program.programId,
-      )
-
       const tx = await program.methods
-        .addBuilding(name, address, floors)
-        .accounts({ caller: mock.provider.publicKey, building: buildingPda })
+        .addBuilding(
+          mock.buildingName,
+          mock.buildingAddress,
+          mock.buildingFloors,
+        )
+        .accounts({
+          caller: mock.provider.publicKey,
+          building: mock.buildingPda,
+        })
         .signers([mock.provider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
-      const building = await program.account.building.fetch(buildingPda)
+      const building = await program.account.building.fetch(mock.buildingPda)
       expect(building.owner.equals(mock.provider.publicKey)).toBeTruthy()
-      expect(building.name).toBe(name)
-      expect(building.address).toBe(address)
-      expect(building.floors).toBe(floors)
-      expect(building.bump).toBe(buildingBump)
+      expect(building.name).toBe(mock.buildingName)
+      expect(building.address).toBe(mock.buildingAddress)
+      expect(building.floors).toBe(mock.buildingFloors)
 
       // make sure event was emitted
       const event = await getEvent<BuildingAdded>(
@@ -278,9 +258,9 @@ export const buildingTests = () =>
         'BuildingAdded',
       )
       expect(event.owner.equals(mock.provider.publicKey)).toBeTruthy()
-      expect(event.name).toBe(name)
-      expect(event.address).toBe(address)
-      expect(event.floors).toBe(floors)
+      expect(event.name).toBe(mock.buildingName)
+      expect(event.address).toBe(mock.buildingAddress)
+      expect(event.floors).toBe(mock.buildingFloors)
     })
 
     // given previous case created this building
@@ -288,26 +268,16 @@ export const buildingTests = () =>
       // small wait to ensure previous tx is processed
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      const name = 'Building 1'
-      const address = '123 Main St'
-      const floors = 5
-
-      const [buildingPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('building'),
-          Buffer.from(name),
-          Buffer.from(address),
-          Buffer.from([floors]),
-        ],
-        program.programId,
-      )
-
       try {
         await program.methods
-          .addBuilding(name, address, floors)
+          .addBuilding(
+            mock.buildingName,
+            mock.buildingAddress,
+            mock.buildingFloors,
+          )
           .accounts({
             caller: mock.provider.publicKey,
-            building: buildingPda,
+            building: mock.buildingPda,
           })
           .signers([mock.provider])
           .rpc()
@@ -319,7 +289,7 @@ export const buildingTests = () =>
         const txError = err.logs.find((log) => log.includes('already in use'))
         expect(txError).toBeDefined()
         expect(txError).toBe(
-          `Allocate: account Address { address: ${buildingPda.toBase58()}, base: None } already in use`,
+          `Allocate: account Address { address: ${mock.buildingPda.toBase58()}, base: None } already in use`,
         )
       }
     })
