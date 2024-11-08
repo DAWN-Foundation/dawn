@@ -77,10 +77,18 @@ export function getMock(): Mock {
     // PDAs
     configPda: new PublicKey(mock.configPda),
     buildingPda: new PublicKey(mock.buildingPda),
+    planPda: new PublicKey(mock.planPda),
+    planBump: mock.planBump,
     // building
     buildingName: mock.buildingName,
     buildingAddress: mock.buildingAddress,
     buildingFloors: mock.buildingFloors,
+    // plan
+    planPrice: new BN(mock.planPrice),
+    planDuration: mock.planDuration,
+    planSpeed: mock.planSpeed,
+    planCapacity: new BN(mock.planCapacity),
+    planSlaId: new BN(mock.planSlaId),
   }
 }
 

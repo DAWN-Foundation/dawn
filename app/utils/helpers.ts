@@ -4,6 +4,7 @@ import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
 import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
+import { BankrunProvider } from 'anchor-bankrun'
 
 // Helper to fund an account with SOL
 export async function fund(

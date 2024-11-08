@@ -33,10 +33,18 @@ export interface Mock {
   // PDAs
   configPda: PublicKey
   buildingPda: PublicKey
+  planPda: PublicKey
+  planBump: number
   // building
   buildingName: string
   buildingAddress: string
   buildingFloors: number
+  // plan
+  planPrice: BN
+  planDuration: number
+  planSpeed: number
+  planCapacity: BN
+  planSlaId: BN
 }
 
 interface RawKeypair {
@@ -77,8 +85,16 @@ export interface RawMock {
   // PDAs
   configPda: string
   buildingPda: string
+  planPda: string
+  planBump: number
   // building
   buildingName: string
   buildingAddress: string
   buildingFloors: number
+  // plan
+  planPrice: string
+  planDuration: number
+  planSpeed: number
+  planCapacity: string
+  planSlaId: string
 }

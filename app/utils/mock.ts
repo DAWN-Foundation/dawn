@@ -25,9 +25,11 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import { fund } from './helpers'
+import { fund, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
+
+export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
 export const PROGRAM_ID = new PublicKey(
   'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
@@ -87,9 +89,9 @@ export function loadWallet(): anchor.Wallet {
 }
 
 export async function createAccounts() {
-  // // Load wallet
-  // console.log('Loading local wallet...')
-  // const wallet = loadWallet()
+  // Load wallet
+  console.log('Loading local wallet...')
+  const wallet = loadWallet().payer
 
   // Create DAWN DAO KeyPair
   console.log('Creating DAWN DAO KeyPair...')
@@ -112,7 +114,7 @@ export async function createAccounts() {
   const tester = Keypair.generate()
 
   const newAccounts = {
-    // wallet,
+    wallet,
     dao,
     validatorPool,
     medallionPool,
@@ -165,7 +167,6 @@ export async function setup(
   const wallet = provider.wallet
 
   const {
-    // wallet,
     dao,
     validatorPool,
     medallionPool,
@@ -334,6 +335,22 @@ export async function setup(
     program.programId,
   )
 
+  const planPrice = new BN(100).mul(USDC_DECIMALS)
+  const planDuration = 30
+  const planSpeed = 1_000
+  const planCapacity = new BN(1000)
+  const planSlaId = new BN(1)
+
+  const [planPda, planBump] = getPlanPda(
+    program,
+    buildingPda,
+    planPrice,
+    planDuration,
+    planSpeed,
+    planCapacity,
+    planSlaId,
+  )
+
   mock = {
     dao,
     validatorPool,
@@ -366,10 +383,18 @@ export async function setup(
     // PDAs
     configPda,
     buildingPda,
+    planPda,
+    planBump,
     // building
     buildingName,
     buildingAddress,
     buildingFloors,
+    // plan
+    planPrice,
+    planDuration,
+    planSpeed,
+    planCapacity,
+    planSlaId,
   }
 
   return mock
