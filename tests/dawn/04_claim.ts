@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError } from '@coral-xyz/anchor'
+import { Program, BN, AnchorError, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
@@ -33,7 +33,6 @@ const Q32 = new BN(2).pow(new BN(32))
 export const claimTests = () =>
   describe('dawn::claim', () => {
     let provider: BankrunProvider
-    let client: BanksClient
     let program: Program<Dawn>
 
     let buildingPda: PublicKey
@@ -51,9 +50,8 @@ export const claimTests = () =>
     )
 
     beforeAll(async () => {
-      const chain = await getProvider()
-      provider = chain.provider
-      client = chain.client
+      provider = await getProvider()
+      provider.wallet = new Wallet(mock.provider)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)

@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError } from '@coral-xyz/anchor'
+import { Program, BN, AnchorError, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
@@ -13,6 +13,7 @@ import {
   getPlansForBuilding,
   getProvider,
   PROGRAM_ID,
+  confirmTx,
 } from '../../app/utils'
 import { beforeAll } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -37,18 +38,16 @@ const USDC_DECIMALS = new BN(10).pow(new BN(6))
 export const planTests = () =>
   describe('dawn::plan', () => {
     let program: Program<Dawn>
-    let wallet: NodeWallet
+    let provider: BankrunProvider
     let buildingPda: PublicKey
     let building: Awaited<ReturnType<typeof program.account.building.fetch>>
-    let client: BanksClient
 
     beforeAll(async () => {
-      const { provider, client: banksClient } = await getProvider()
+      provider = await getProvider()
+      provider.wallet = new Wallet(mock.provider)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      wallet = provider.wallet
-      client = banksClient
 
       const buildings = await program.account.building.all()
       assert.ok(buildings.length > 0)
@@ -189,11 +188,11 @@ export const planTests = () =>
         await program.methods
           .addPlan(price, duration, speed, capacity, slaId)
           .accounts({
-            caller: wallet.publicKey,
+            caller: mock.provider.publicKey,
             building: buildingPda,
             plan: planPda,
           })
-          .signers([wallet.payer])
+          .signers([mock.provider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -234,7 +233,7 @@ export const planTests = () =>
         .signers([mock.provider])
         .transaction()
 
-      const txDetails = await client.processTransaction(tx)
+      const txDetails = await confirmTx(provider, tx)
 
       const plan = await program.account.plan.fetch(planPda)
 
@@ -334,7 +333,7 @@ export const planTests = () =>
         .signers([mock.provider])
         .transaction()
 
-      const txDetails = await client.processTransaction(tx)
+      const txDetails = await confirmTx(provider, tx)
 
       const plan = await program.account.plan.fetch(planPda)
 
@@ -406,10 +405,11 @@ export const planTests = () =>
         await program.methods
           .removePlan()
           .accounts({
-            caller: wallet.publicKey,
+            caller: mock.provider.publicKey,
             building: buildingPda,
             plan: planPda,
           })
+          .signers([mock.provider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -450,7 +450,7 @@ export const planTests = () =>
         .signers([mock.provider])
         .transaction()
 
-      const txDetails = await client.processTransaction(tx)
+      const txDetails = await confirmTx(provider, tx)
 
       try {
         await program.account.plan.fetch(planPda)

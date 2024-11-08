@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError } from '@coral-xyz/anchor'
+import { Program, BN, AnchorError, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
@@ -20,6 +20,8 @@ import {
   mock,
   getProvider,
   PROGRAM_ID,
+  loadWallet,
+  confirmTx,
 } from '../../app/utils'
 import { beforeAll } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -41,9 +43,7 @@ interface Subscribed {
 export const subscriptionTests = () =>
   describe('dawn::subscription', () => {
     let provider: BankrunProvider
-    let client: BanksClient
     let program: Program<Dawn>
-    let wallet: NodeWallet
 
     let buildingPda: PublicKey
     let planPda: PublicKey
@@ -52,19 +52,19 @@ export const subscriptionTests = () =>
     let subscriptionPda: PublicKey
     let subscriptionBump: number
 
+    const wallet = loadWallet()
+
     const [configPda] = PublicKey.findProgramAddressSync(
       [Buffer.from('config')],
       PROGRAM_ID,
     )
 
     beforeAll(async () => {
-      const chain = await getProvider()
-      provider = chain.provider
-      client = chain.client
+      provider = await getProvider()
+      provider.wallet = new Wallet(mock.tester)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      wallet = provider.wallet
 
       const plans = await program.account.plan.all()
       assert.ok(plans.length > 0)
@@ -279,7 +279,7 @@ export const subscriptionTests = () =>
         .signers([mock.tester])
         .transaction()
 
-      const txDetails = await client.processTransaction(tx)
+      const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
       const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
@@ -471,7 +471,7 @@ export const subscriptionTests = () =>
         .signers([wallet.payer])
         .transaction()
 
-      const txDetails = await client.processTransaction(tx)
+      const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
       const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')

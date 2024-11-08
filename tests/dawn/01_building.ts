@@ -7,7 +7,13 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn, IDL } from '../../target/types/dawn'
-import { getEvent, mock, getProvider, PROGRAM_ID } from '../../app/utils'
+import {
+  getEvent,
+  mock,
+  getProvider,
+  PROGRAM_ID,
+  confirmTx,
+} from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -29,16 +35,14 @@ export const buildingTests = () =>
   describe('dawn::building', () => {
     let program: Program<Dawn>
     let provider: BankrunProvider
-    let client: BanksClient
 
     beforeAll(async () => {
-      const chain = await getProvider()
-      provider = chain.provider
+      provider = await getProvider()
       provider.wallet = new Wallet(mock.provider)
+
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      client = chain.client
     })
 
     test('mock setup', () => {
@@ -258,16 +262,7 @@ export const buildingTests = () =>
         .signers([mock.provider])
         .transaction()
 
-      tx.recentBlockhash = (await client.getLatestBlockhash())[0]
-      tx.feePayer = mock.provider.publicKey
-      tx.sign(provider.wallet.payer)
-      console.log({
-        tx,
-        wallet: provider.wallet.publicKey.toBase58(),
-      })
-      const txDetails = await provider.context.banksClient.processTransaction(
-        tx,
-      )
+      const txDetails = await confirmTx(provider, tx)
 
       const building = await program.account.building.fetch(buildingPda)
       expect(building.owner.equals(mock.provider.publicKey)).toBeTruthy()
@@ -290,6 +285,9 @@ export const buildingTests = () =>
 
     // given previous case created this building
     test('cannot add the building with the same name and address', async () => {
+      // small wait to ensure previous tx is processed
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       const name = 'Building 1'
       const address = '123 Main St'
       const floors = 5
@@ -313,12 +311,15 @@ export const buildingTests = () =>
           })
           .signers([mock.provider])
           .rpc()
+
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof SendTransactionError).toBeTruthy()
         const err: SendTransactionError = error
-        expect(err.transactionError.message).toBe(
-          'Error processing Instruction 0: custom program error: 0x0',
+        const txError = err.logs.find((log) => log.includes('already in use'))
+        expect(txError).toBeDefined()
+        expect(txError).toBe(
+          `Allocate: account Address { address: ${buildingPda.toBase58()}, base: None } already in use`,
         )
       }
     })

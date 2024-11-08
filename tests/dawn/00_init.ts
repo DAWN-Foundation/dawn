@@ -13,16 +13,18 @@ import {
   getProvider,
   createAccounts,
   PROGRAM_ID,
+  confirmTx,
 } from '../../app/utils'
 
 export const initTests = () =>
   describe('dawn::initialize', () => {
     let program: Program<Dawn>
+    let provider: BankrunProvider
     let wallet: NodeWallet
 
     beforeAll(async () => {
       const accounts = await createAccounts()
-      const { provider } = await getProvider(accounts.addedAccounts)
+      provider = await getProvider(accounts.addedAccounts)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
@@ -88,6 +90,9 @@ export const initTests = () =>
     })
 
     test('cannot be reinitialized', async () => {
+      // small wait to ensure previous tx is processed
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       try {
         await program.methods
           .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
@@ -106,13 +111,15 @@ export const initTests = () =>
             raydiumObservation: mock.raydiumObservation,
           })
           .rpc()
+
         assert.ok(false)
       } catch (error) {
-        assert.ok(error instanceof SendTransactionError)
+        expect(error instanceof SendTransactionError).toBeTruthy()
         const err: SendTransactionError = error
-        assert.strictEqual(
-          err.transactionError.message,
-          'Error processing Instruction 0: custom program error: 0x0',
+        const txError = err.logs.find((log) => log.includes('already in use'))
+        expect(txError).toBeDefined()
+        expect(txError).toBe(
+          `Allocate: account Address { address: ${configPda.toBase58()}, base: None } already in use`,
         )
       }
     })
