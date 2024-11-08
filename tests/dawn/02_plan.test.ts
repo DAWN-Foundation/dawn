@@ -42,10 +42,10 @@ export const planTests = () =>
 
     beforeAll(async () => {
       const provider = await getProvider()
-      wallet = provider.wallet as NodeWallet
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      wallet = provider.wallet
 
       const buildings = await program.account.building.all()
       assert.ok(buildings.length > 0)

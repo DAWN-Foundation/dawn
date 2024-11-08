@@ -61,7 +61,7 @@ export const subscriptionTests = () =>
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      wallet = provider.wallet as NodeWallet
+      wallet = provider.wallet
 
       const plans = await program.account.plan.all()
       assert.ok(plans.length > 0)

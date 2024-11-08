@@ -34,7 +34,6 @@ export const claimTests = () =>
   describe('dawn::claim', () => {
     let provider: BankrunProvider
     let program: Program<Dawn>
-    let wallet: NodeWallet
 
     let buildingPda: PublicKey
     let planPda: PublicKey
