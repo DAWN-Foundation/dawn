@@ -79,28 +79,6 @@ export const subscriptionTests = () =>
         Buffer.from(planAccount.data),
       )
 
-      // Create USDC vault token account for subscription escrow
-      console.log(
-        'Creating USDC vault token account for subscription escrow...',
-      )
-      const escrowUsdcVault = await createAssociatedTokenAccount(
-        provider.context.banksClient,
-        mock.serviceProvider,
-        mock.usdcMint,
-        mock.subscriptionPda,
-      )
-
-      // Create DAWN vault token account for subscription escrow
-      console.log(
-        'Creating DAWN vault token account for subscription escrow...',
-      )
-      const escrowDawnVault = await createAssociatedTokenAccount(
-        provider.context.banksClient,
-        mock.serviceProvider,
-        mock.dawnMint,
-        mock.subscriptionPda,
-      )
-
       // accounts for a successful subscription
       accounts = {
         caller: mock.customer.publicKey,
@@ -125,8 +103,8 @@ export const subscriptionTests = () =>
         daoDawnAccount: mock.daoDawnAccount,
         validatorDawnAccount: mock.validatorDawnAccount,
         medallionDawnAccount: mock.medallionDawnAccount,
-        escrowUsdcVault: escrowUsdcVault,
-        escrowDawnVault: escrowDawnVault,
+        escrowUsdcVault: mock.escrowUsdcVault,
+        escrowDawnVault: mock.escrowDawnVault,
         // programs
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

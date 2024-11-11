@@ -358,6 +358,24 @@ export async function setup(
     program.programId,
   )
 
+  // Create USDC vault token account for subscription escrow
+  console.log('Creating USDC vault token account for subscription escrow...')
+  const escrowUsdcVault = await createAssociatedTokenAccount(
+    provider.context.banksClient,
+    serviceProvider,
+    usdcMint,
+    subscriptionPda,
+  )
+
+  // Create DAWN vault token account for subscription escrow
+  console.log('Creating DAWN vault token account for subscription escrow...')
+  const escrowDawnVault = await createAssociatedTokenAccount(
+    provider.context.banksClient,
+    serviceProvider,
+    dawnMint,
+    subscriptionPda,
+  )
+
   mock = {
     dao,
     validatorPool,
@@ -373,10 +391,12 @@ export async function setup(
     medallionDawnAccount,
     serviceProviderDawnAccount,
     serviceProviderUsdcAccount,
-    customerUsdcAccount,
     customerDawnAccount,
+    customerUsdcAccount,
     walletDawnAccount,
     walletUsdcAccount,
+    escrowDawnVault,
+    escrowUsdcVault,
     // raydium
     raydium,
     raydiumConfig: config,

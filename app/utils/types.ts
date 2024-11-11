@@ -14,12 +14,14 @@ export interface Mock {
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
-  serviceProviderUsdcAccount: PublicKey
   serviceProviderDawnAccount: PublicKey
-  customerUsdcAccount: PublicKey
+  serviceProviderUsdcAccount: PublicKey
   customerDawnAccount: PublicKey
+  customerUsdcAccount: PublicKey
   walletDawnAccount: PublicKey
   walletUsdcAccount: PublicKey
+  escrowDawnVault: PublicKey
+  escrowUsdcVault: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -70,12 +72,14 @@ export interface RawMock {
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string
-  serviceProviderUsdcAccount: string
   serviceProviderDawnAccount: string
-  customerUsdcAccount: string
+  serviceProviderUsdcAccount: string
   customerDawnAccount: string
+  customerUsdcAccount: string
   walletDawnAccount: string
   walletUsdcAccount: string
+  escrowDawnVault: string
+  escrowUsdcVault: string
   // raydium
   raydium: string
   raydiumAuthority: string

@@ -68,13 +68,13 @@ pub struct Claim<'info> {
     )]
     pub escrow_dawn_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The plan provider DAWN token account
+    /// The service provider DAWN token account
     #[account(
         mut,
         associated_token::mint = dawn_mint,
         associated_token::authority = caller,
     )]
-    pub provider_dawn_account: Box<Account<'info, TokenAccount>>,
+    pub service_provider_dawn_account: Box<Account<'info, TokenAccount>>,
 
     // RAYDIUM
     /// The Raydium program account
@@ -157,7 +157,7 @@ impl DawnApp {
                 ctx.accounts.token_program.to_account_info(),
                 token::Transfer {
                     from: ctx.accounts.escrow_dawn_vault.to_account_info(),
-                    to: ctx.accounts.provider_dawn_account.to_account_info(),
+                    to: ctx.accounts.service_provider_dawn_account.to_account_info(),
                     authority: subscription_account,
                 },
                 signer,
