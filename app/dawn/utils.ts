@@ -62,6 +62,8 @@ export function getMock(): Mock {
     serviceProviderDawnAccount: new PublicKey(mock.serviceProviderDawnAccount),
     customerUsdcAccount: new PublicKey(mock.customerUsdcAccount),
     customerDawnAccount: new PublicKey(mock.customerDawnAccount),
+    walletDawnAccount: new PublicKey(mock.walletDawnAccount),
+    walletUsdcAccount: new PublicKey(mock.walletUsdcAccount),
     // raydium
     raydium: new PublicKey(mock.raydium),
     raydiumAuthority: new PublicKey(mock.raydiumAuthority),

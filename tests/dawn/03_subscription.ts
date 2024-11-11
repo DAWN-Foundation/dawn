@@ -186,23 +186,23 @@ export const subscriptionTests = () =>
       }
     })
 
-    // test('cannot subscribe if does not have enough USDC', async () => {
-    //   try {
-    //     await program.methods
-    //       .subscribe()
-    //       .accounts(accounts)
-    //       .signers([mock.customer])
-    //       .rpc()
-    //     assert.ok(false)
-    //   } catch (error) {
-    //     assert.ok(error instanceof SendTransactionError)
-    //     const err: SendTransactionError = error
-    //     const insufficientFunds = err.logs.find((log) =>
-    //       log.includes('Program log: Error: insufficient funds'),
-    //     )
-    //     assert.ok(insufficientFunds)
-    //   }
-    // })
+    test('cannot subscribe if does not have enough USDC', async () => {
+      try {
+        await program.methods
+          .subscribe()
+          .accounts(accounts)
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+        const err: SendTransactionError = error
+        const insufficientFunds = err.logs.find((log) =>
+          log.includes('Program log: Error: insufficient funds'),
+        )
+        assert.ok(insufficientFunds)
+      }
+    })
 
     test('subscribes to the plan', async () => {
       // Mint 1'000 USDC to Customer account
@@ -364,112 +364,88 @@ export const subscriptionTests = () =>
           .eq(medallionFee),
       )
 
+      // TODO >> fix this
       // get block time, and calculate expected expiration
       // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
 
-      // // make sure the subscription was created
-      // let subscription = await program.account.subscription.fetch(
-      //   subscriptionPda,
-      // )
-      // assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
-      // assert.ok(subscription.plan.equals(planPda))
+      // make sure the subscription was created
+      let subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
+      assert.ok(subscription.plan.equals(mock.planPda))
       // assert.equal(subscription.expiration.toNumber(), expiration)
       // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
-      // assert.ok(subscription.claimableDawn.eq(dailyDawn))
-      // assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
-      // assert.equal(subscription.bump, subscriptionBump)
+      assert.ok(subscription.claimableDawn.eq(dailyDawn))
+      assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
+      assert.equal(subscription.bump, mock.subscriptionBump)
     })
 
-    // test('cannot subscribe to the same plan twice', async () => {
-    //   try {
-    //     await program.methods
-    //       .subscribe()
-    //       .accounts(accounts)
-    //       .signers([mock.customer])
-    //       .rpc()
-    //     assert.ok(false)
-    //   } catch (error) {
-    //     assert.ok(error instanceof SendTransactionError)
-    //     const err: SendTransactionError = error
-    //     const msg = `Allocate: account Address { address: ${mock.subscriptionPda.toBase58()}, base: None } already in use`
-    //     const alreadySubscribed = err.logs.find((log) => log.includes(msg))
-    //     assert.ok(alreadySubscribed)
-    //   }
-    // })
+    test('cannot subscribe to the same plan twice', async () => {
+      try {
+        await program.methods
+          .subscribe()
+          .accounts(accounts)
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+        const err: SendTransactionError = error
+        const msg = `Allocate: account Address { address: ${mock.subscriptionPda.toBase58()}, base: None } already in use`
+        const alreadySubscribed = err.logs.find((log) => log.includes(msg))
+        assert.ok(alreadySubscribed)
+      }
+    })
 
-    // test('subscribes to the same plan by another user', async () => {
-    //   // get USDC account for wallet
-    //   const walletUsdcAccount = await getOrCreateAssociatedTokenAccount(
-    //     provider.connection,
-    //     wallet.payer,
-    //     mock.usdcMint,
-    //     wallet.publicKey,
-    //   )
+    test('subscribes to the same plan by another user', async () => {
+      const [subscriptionPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('subscription'),
+          Buffer.from(mock.planPda.toBytes()),
+          Buffer.from(wallet.publicKey.toBytes()),
+        ],
+        program.programId,
+      )
 
-    //   // get Dawn account for wallet
-    //   const walletDawnAccount = await getOrCreateAssociatedTokenAccount(
-    //     provider.connection,
-    //     wallet.payer,
-    //     mock.dawnMint,
-    //     wallet.publicKey,
-    //   )
+      const escrowUsdcVault = await createAssociatedTokenAccount(
+        provider.context.banksClient,
+        mock.serviceProvider,
+        mock.usdcMint,
+        subscriptionPda,
+      )
 
-    //   // Mint 1'000 USDC to Wallet account
-    //   await mintTo(
-    //     provider.connection,
-    //     wallet.payer, // Payer for tx
-    //     mock.usdcMint, // Mint account
-    //     walletUsdcAccount.address, // Destination
-    //     wallet.payer, // Authority
-    //     1_000 * 10 ** 6, // Mint 1,000 USDC (remember 6 decimals)
-    //   )
+      const escrowDawnVault = await createAssociatedTokenAccount(
+        provider.context.banksClient,
+        mock.serviceProvider,
+        mock.dawnMint,
+        subscriptionPda,
+      )
 
-    //   const [subscriptionPda] = PublicKey.findProgramAddressSync(
-    //     [
-    //       Buffer.from('subscription'),
-    //       Buffer.from(mock.planPda.toBytes()),
-    //       Buffer.from(wallet.publicKey.toBytes()),
-    //     ],
-    //     program.programId,
-    //   )
+      provider.wallet = new Wallet(wallet.payer)
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-    //   const escrowUsdcVault = await getOrCreateAssociatedTokenAccount(
-    //     provider.connection,
-    //     mock.serviceProvider,
-    //     mock.usdcMint,
-    //     subscriptionPda,
-    //     true,
-    //   )
+      const tx = await program2.methods
+        .subscribe()
+        .accounts({
+          ...accounts,
+          caller: wallet.publicKey,
+          subscription: subscriptionPda,
+          userDawnAccount: mock.walletDawnAccount,
+          userUsdcAccount: mock.walletUsdcAccount,
+          escrowUsdcVault,
+          escrowDawnVault,
+        })
+        .signers([wallet.payer])
+        .transaction()
 
-    //   const escrowDawnVault = await getOrCreateAssociatedTokenAccount(
-    //     provider.connection,
-    //     mock.serviceProvider,
-    //     mock.dawnMint,
-    //     subscriptionPda,
-    //     true,
-    //   )
+      const txDetails = await confirmTx(provider, tx)
 
-    //   const tx = await program.methods
-    //     .subscribe()
-    //     .accounts({
-    //       ...accounts,
-    //       caller: wallet.publicKey,
-    //       subscription: subscriptionPda,
-    //       userDawnAccount: walletDawnAccount.address,
-    //       userUsdcAccount: walletUsdcAccount.address,
-    //       escrowUsdcVault: escrowUsdcVault.address,
-    //       escrowDawnVault: escrowDawnVault.address,
-    //     })
-    //     .signers([wallet.payer])
-    //     .transaction()
-
-    //   const txDetails = await confirmTx(provider, tx)
-
-    //   // make sure event was emitted
-    //   const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
-    //   assert.ok(event.subscription.equals(subscriptionPda))
-    //   assert.ok(event.subscriber.equals(wallet.publicKey))
-    //   assert.ok(event.plan.equals(mock.planPda))
-    //   assert.ok(event.expiration > 0)
-    // })
+      // make sure event was emitted
+      const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
+      assert.ok(event.subscription.equals(subscriptionPda))
+      assert.ok(event.subscriber.equals(wallet.publicKey))
+      assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.expiration > 0)
+    })
   })

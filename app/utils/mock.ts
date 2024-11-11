@@ -51,10 +51,7 @@ export let mock: Mock
 let provider: BankrunProvider
 
 export async function getProvider(accounts?: AddedAccount[]) {
-  if (provider) {
-    console.log('Using existing provider')
-    return provider
-  }
+  if (provider) return provider
   const context = await startAnchor(
     '.',
     [
@@ -262,42 +259,42 @@ export async function setup(
     customer.publicKey,
   )
 
-  // Create DAWN token account for wallet.payer
-  console.log('Creating DAWN token account for wallet.payer...')
-  const userDawnAccount = await createAssociatedTokenAccount(
+  // Create DAWN token account for wallet
+  console.log('Creating DAWN token account for wallet...')
+  const walletDawnAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     wallet,
     dawnMint,
     wallet.publicKey,
   )
 
-  // Create USDC token account for wallet.payer
-  console.log('Creating USDC token account for wallet.payer...')
-  const userUsdcAccount = await createAssociatedTokenAccount(
+  // Create USDC token account for wallet
+  console.log('Creating USDC token account for wallet...')
+  const walletUsdcAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     wallet,
     usdcMint,
     wallet.publicKey,
   )
 
-  // Mint 1_000_000 USDC to user
-  console.log('Minting 1_000_000 USDC to wallet.payer...')
+  // Mint 1_000_000 USDC to wallet
+  console.log('Minting 1_000_000 USDC to wallet...')
   await mintTo(
     provider.context.banksClient, // Banks client
     wallet, // Payer for transaction
     usdcMint, // Mint
-    userUsdcAccount, // Token account
+    walletUsdcAccount, // Token account
     wallet.publicKey, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
-  // Mint 1_000_000 DAWN to user
-  console.log('Minting 1_000_000 DAWN to wallet.payer...')
+  // Mint 1_000_000 DAWN to wallet
+  console.log('Minting 1_000_000 DAWN to wallet...')
   await mintTo(
     provider.context.banksClient, // Banks client
     wallet, // Payer for transaction
     dawnMint, // Mint
-    userDawnAccount, // Token account
+    walletDawnAccount, // Token account
     wallet.publicKey, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
@@ -308,8 +305,8 @@ export async function setup(
       wallet,
       dawnMint,
       usdcMint,
-      userDawnAccount,
-      userUsdcAccount,
+      walletDawnAccount,
+      walletUsdcAccount,
     )
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
@@ -378,6 +375,8 @@ export async function setup(
     serviceProviderUsdcAccount,
     customerUsdcAccount,
     customerDawnAccount,
+    walletDawnAccount,
+    walletUsdcAccount,
     // raydium
     raydium,
     raydiumConfig: config,
