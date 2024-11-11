@@ -1,6 +1,6 @@
 import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
+import { BN, Wallet } from '@coral-xyz/anchor'
 import {
   AccountInfo,
   Connection,
@@ -64,6 +64,8 @@ export async function getProvider(accounts?: AddedAccount[]) {
     accounts ?? [],
   )
   provider = new BankrunProvider(context)
+  const wallet = loadWallet()
+  provider.wallet = new Wallet(wallet.payer)
   return provider
 }
 
@@ -107,19 +109,19 @@ export async function createAccounts() {
 
   // Create Service Provider KeyPair
   console.log('Creating Service Provider KeyPair...')
-  const provider = Keypair.generate()
+  const serviceProvider = Keypair.generate()
 
   // Create Tester KeyPair
   console.log('Creating Tester KeyPair...')
-  const tester = Keypair.generate()
+  const customer = Keypair.generate()
 
   const newAccounts = {
     wallet,
     dao,
     validatorPool,
     medallionPool,
-    provider,
-    tester,
+    serviceProvider,
+    customer,
   }
 
   const addedAccounts = Object.values(newAccounts).map((acc) => ({
@@ -164,22 +166,21 @@ export async function setup(
   accounts: Awaited<ReturnType<typeof createAccounts>>,
   isTestnet: boolean = false,
 ) {
-  const wallet = provider.wallet
-
   const {
+    wallet,
     dao,
     validatorPool,
     medallionPool,
-    provider: serviceProvider,
-    tester,
+    serviceProvider,
+    customer,
   } = accounts
 
   // Mint test USDC token
   console.log('Minting test USDC token...')
   const usdcMint = await createMint(
     provider.context.banksClient, // Banks client
-    wallet.payer, // Payer for transaction
-    wallet.payer.publicKey, // Mint authority
+    wallet, // Payer for transaction
+    wallet.publicKey, // Mint authority
     null, // Freeze authority
     6, // Decimals (6 decimals for USDC)
   )
@@ -187,8 +188,8 @@ export async function setup(
   console.log('Minting test DAWN token...')
   const dawnMint = await createMint(
     provider.context.banksClient, // Banks client
-    wallet.payer, // Payer for transaction
-    wallet.payer.publicKey, // Mint authority
+    wallet, // Payer for transaction
+    wallet.publicKey, // Mint authority
     null, // Freeze authority
     6, // Decimals (6 decimals for DAWN)
   )
@@ -227,7 +228,7 @@ export async function setup(
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
-  const providerDawnAccount = await createAssociatedTokenAccount(
+  const serviceProviderDawnAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
     dawnMint,
@@ -236,7 +237,7 @@ export async function setup(
 
   // Create USDC account for Service Provider
   console.log('Creating USDC account for Service Provider...')
-  const providerUsdcAccount = await createAssociatedTokenAccount(
+  const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
     usdcMint,
@@ -245,48 +246,48 @@ export async function setup(
 
   // Create USDC account for Tester
   console.log('Creating USDC account for Tester...')
-  const testerUsdcAccount = await createAssociatedTokenAccount(
+  const customerUsdcAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
-    tester,
+    customer,
     usdcMint,
-    tester.publicKey,
+    customer.publicKey,
   )
 
   // Create DAWN token account for Tester
   console.log('Creating DAWN token account for Tester...')
-  const testerDawnAccount = await createAssociatedTokenAccount(
+  const customerDawnAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
-    tester,
+    customer,
     dawnMint,
-    tester.publicKey,
+    customer.publicKey,
   )
 
   // Create DAWN token account for wallet.payer
   console.log('Creating DAWN token account for wallet.payer...')
   const userDawnAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
-    wallet.payer,
+    wallet,
     dawnMint,
-    wallet.payer.publicKey,
+    wallet.publicKey,
   )
 
   // Create USDC token account for wallet.payer
   console.log('Creating USDC token account for wallet.payer...')
   const userUsdcAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
-    wallet.payer,
+    wallet,
     usdcMint,
-    wallet.payer.publicKey,
+    wallet.publicKey,
   )
 
   // Mint 1_000_000 USDC to user
   console.log('Minting 1_000_000 USDC to wallet.payer...')
   await mintTo(
     provider.context.banksClient, // Banks client
-    wallet.payer, // Payer for transaction
+    wallet, // Payer for transaction
     usdcMint, // Mint
     userUsdcAccount, // Token account
-    wallet.payer.publicKey, // Mint authority
+    wallet.publicKey, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
@@ -294,10 +295,10 @@ export async function setup(
   console.log('Minting 1_000_000 DAWN to wallet.payer...')
   await mintTo(
     provider.context.banksClient, // Banks client
-    wallet.payer, // Payer for transaction
+    wallet, // Payer for transaction
     dawnMint, // Mint
     userDawnAccount, // Token account
-    wallet.payer.publicKey, // Mint authority
+    wallet.publicKey, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
@@ -351,12 +352,21 @@ export async function setup(
     planSlaId,
   )
 
+  const [subscriptionPda, subscriptionBump] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('subscription'),
+      Buffer.from(planPda.toBytes()),
+      Buffer.from(customer.publicKey.toBytes()),
+    ],
+    program.programId,
+  )
+
   mock = {
     dao,
     validatorPool,
     medallionPool,
-    provider: serviceProvider,
-    tester,
+    serviceProvider,
+    customer,
     // mints
     usdcMint,
     dawnMint,
@@ -364,10 +374,10 @@ export async function setup(
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,
-    providerDawnAccount,
-    providerUsdcAccount,
-    testerUsdcAccount,
-    testerDawnAccount,
+    serviceProviderDawnAccount,
+    serviceProviderUsdcAccount,
+    customerUsdcAccount,
+    customerDawnAccount,
     // raydium
     raydium,
     raydiumConfig: config,
@@ -395,6 +405,9 @@ export async function setup(
     planSpeed,
     planCapacity,
     planSlaId,
+    // subscription
+    subscriptionPda,
+    subscriptionBump,
   }
 
   return mock

@@ -45,11 +45,11 @@ export function getMock(): Mock {
     medallionPool: Keypair.fromSecretKey(
       Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
     ),
-    provider: Keypair.fromSecretKey(
-      Uint8Array.from(mock.provider.secretKey.split(',').map(Number)),
+    serviceProvider: Keypair.fromSecretKey(
+      Uint8Array.from(mock.serviceProvider.secretKey.split(',').map(Number)),
     ),
-    tester: Keypair.fromSecretKey(
-      Uint8Array.from(mock.tester.secretKey.split(',').map(Number)),
+    customer: Keypair.fromSecretKey(
+      Uint8Array.from(mock.customer.secretKey.split(',').map(Number)),
     ),
     // mints
     usdcMint: new PublicKey(mock.usdcMint),
@@ -58,10 +58,10 @@ export function getMock(): Mock {
     daoDawnAccount: new PublicKey(mock.daoDawnAccount),
     validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
     medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
-    providerUsdcAccount: new PublicKey(mock.providerUsdcAccount),
-    providerDawnAccount: new PublicKey(mock.providerDawnAccount),
-    testerUsdcAccount: new PublicKey(mock.testerUsdcAccount),
-    testerDawnAccount: new PublicKey(mock.testerDawnAccount),
+    serviceProviderUsdcAccount: new PublicKey(mock.serviceProviderUsdcAccount),
+    serviceProviderDawnAccount: new PublicKey(mock.serviceProviderDawnAccount),
+    customerUsdcAccount: new PublicKey(mock.customerUsdcAccount),
+    customerDawnAccount: new PublicKey(mock.customerDawnAccount),
     // raydium
     raydium: new PublicKey(mock.raydium),
     raydiumAuthority: new PublicKey(mock.raydiumAuthority),
@@ -89,6 +89,9 @@ export function getMock(): Mock {
     planSpeed: mock.planSpeed,
     planCapacity: new BN(mock.planCapacity),
     planSlaId: new BN(mock.planSlaId),
+    // subscription
+    subscriptionPda: new PublicKey(mock.subscriptionPda),
+    subscriptionBump: mock.subscriptionBump,
   }
 }
 
@@ -121,7 +124,7 @@ export async function connect(): Promise<{
 }
 
 // helper function to get wallet from the config
-function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
+function configWallet(accountName: 'customer' | 'buildingOwner'): anchor.Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
@@ -131,8 +134,8 @@ function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
 export function getWallet(): anchor.Wallet {
   let wallet: anchor.Wallet
 
-  if (hasFlag('--tester')) {
-    wallet = configWallet('tester')
+  if (hasFlag('--customer')) {
+    wallet = configWallet('customer')
   } else if (hasFlag('--building-owner')) {
     wallet = configWallet('buildingOwner')
   } else {

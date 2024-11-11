@@ -28,13 +28,13 @@ async function main() {
   const { wallet, connection, program } = await connect()
   const mock = getMock()
 
-  // for now ensure wallet is tester
-  if (wallet.publicKey.toBase58() !== mock.tester.publicKey.toBase58()) {
-    throw new Error('Wallet must be tester [for now]')
+  // for now ensure wallet is customer
+  if (wallet.publicKey.toBase58() !== mock.customer.publicKey.toBase58()) {
+    throw new Error('Wallet must be customer [for now]')
   }
 
   const configPda = new PublicKey(mock.configPda)
-  const userUsdcAccount = new PublicKey(mock.testerUsdcAccount)
+  const userUsdcAccount = new PublicKey(mock.customerUsdcAccount)
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
@@ -67,7 +67,7 @@ async function main() {
   const itx = await program.methods
     .subscribe()
     .accounts({
-      caller: mock.tester.publicKey,
+      caller: mock.customer.publicKey,
       config: configPda,
       plan: planPda,
       subscription: subscriptionPda,
@@ -84,8 +84,8 @@ async function main() {
       raydiumDawnVault: mock.raydiumDawnVault,
       raydiumUsdcVault: mock.raydiumUsdcVault,
       // token accounts
-      userUsdcAccount: mock.testerUsdcAccount,
-      userDawnAccount: mock.testerDawnAccount,
+      userUsdcAccount: mock.customerUsdcAccount,
+      userDawnAccount: mock.customerDawnAccount,
       daoDawnAccount: mock.daoDawnAccount,
       validatorDawnAccount: mock.validatorDawnAccount,
       medallionDawnAccount: mock.medallionDawnAccount,

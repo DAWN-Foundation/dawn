@@ -23,7 +23,7 @@ export function getRaydiumProgram(provider: BankrunProvider) {
 
 export async function setupRaydium(
   provider: BankrunProvider,
-  wallet: Wallet,
+  wallet: Keypair,
   dawnMint: PublicKey,
   usdcMint: PublicKey,
   userDawnAccount: PublicKey,

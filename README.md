@@ -154,10 +154,10 @@ yarn dawn:init
 # for example:
 # --root was used to mint tokens, might be used for init, but not necessary
 # --building-owner is usually used to add a building and create plans
-# --tester should have some USDC and can be used to pay for plan subscription
+# --customer should have some USDC and can be used to pay for plan subscription
 yarn dawn:init --root
 yarn dawn:add_building --building-owner
-yarn dawn:subscribe --tester
+yarn dawn:subscribe --customer
 
 
 # Add a building to the plan contract (as --building-owner)
@@ -195,9 +195,9 @@ yarn mint:usdc \
     --recipient <recipient> \
     --amount 240
 
-# Subscribe to a plan (as --tester)
+# Subscribe to a plan (as --customer)
 yarn dawn:subscribe \
-    --tester \
+    --customer \
     --plan <plan>
 
 # Get all subscriptions

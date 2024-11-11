@@ -1,4 +1,4 @@
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
+import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js'
 import { Program, Wallet, BN } from '@coral-xyz/anchor'
 import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -15,7 +15,7 @@ import {
 
 export async function createPool(
   program: Program<RaydiumCpSwap>,
-  wallet: Wallet,
+  wallet: Keypair,
   configPda: PublicKey,
   mint0: PublicKey,
   mint1: PublicKey,

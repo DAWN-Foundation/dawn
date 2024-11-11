@@ -43,7 +43,7 @@ export const planTests = () =>
 
     beforeAll(async () => {
       provider = await getProvider()
-      provider.wallet = new Wallet(mock.provider)
+      provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
@@ -60,7 +60,7 @@ export const planTests = () =>
     test('mock setup', () => {
       assert.exists(mock)
       assert.exists(building)
-      assert.ok(building.owner.equals(mock.provider.publicKey))
+      assert.ok(building.owner.equals(mock.serviceProvider.publicKey))
     })
 
     test('cannot add plan with zero price', async () => {
@@ -86,11 +86,11 @@ export const planTests = () =>
             mock.planSlaId,
           )
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
             plan: planPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -123,11 +123,11 @@ export const planTests = () =>
             mock.planSlaId,
           )
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
             plan: planPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -160,11 +160,11 @@ export const planTests = () =>
             mock.planSlaId,
           )
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
             plan: planPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -204,7 +204,7 @@ export const planTests = () =>
         )
         assert.strictEqual(err.error.errorCode.number, 2003)
       } finally {
-        provider.wallet = new Wallet(mock.provider)
+        provider.wallet = new Wallet(mock.serviceProvider)
       }
     })
 
@@ -218,18 +218,18 @@ export const planTests = () =>
           mock.planSlaId,
         )
         .accounts({
-          caller: mock.provider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           building: mock.buildingPda,
           plan: mock.planPda,
         })
-        .signers([mock.provider])
+        .signers([mock.serviceProvider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
+      // make sure plan was created
       const plan = await program.account.plan.fetch(mock.planPda)
-
-      assert.ok(plan.owner.equals(mock.provider.publicKey))
+      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.building.equals(mock.buildingPda))
       assert.ok(plan.price.eq(mock.planPrice))
       assert.equal(plan.duration, mock.planDuration)
@@ -238,24 +238,9 @@ export const planTests = () =>
       assert.ok(plan.slaId.eq(mock.planSlaId))
       assert.equal(plan.bump, mock.planBump)
 
-      // // make sure can fetch the plan by building
-      // const [buildingPlan] = await getPlansForBuilding(
-      //   program,
-      //   provider,
-      //   mock.buildingPda,
-      // )
-      // assert.ok(buildingPlan.owner.equals(mock.provider.publicKey))
-      // assert.ok(buildingPlan.building.equals(mock.buildingPda))
-      // assert.ok(buildingPlan.price.eq(mock.planPrice))
-      // assert.equal(buildingPlan.duration, mock.planDuration)
-      // assert.equal(buildingPlan.speed, mock.planSpeed)
-      // assert.ok(buildingPlan.capacity.eq(mock.planCapacity))
-      // assert.ok(buildingPlan.slaId.eq(mock.planSlaId))
-      // assert.equal(buildingPlan.bump, mock.planBump)
-
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
-      assert.ok(event.owner.equals(mock.provider.publicKey))
+      assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.building.equals(mock.buildingPda))
       assert.ok(event.price.eq(mock.planPrice))
       assert.equal(event.duration, mock.planDuration)
@@ -265,8 +250,11 @@ export const planTests = () =>
     })
 
     test('cannot add a plan with the same parameters', async () => {
+      // small wait to make sure the tx is confirmed
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       try {
-        const tx = await program.methods
+        await program.methods
           .addPlan(
             mock.planPrice,
             mock.planDuration,
@@ -275,23 +263,18 @@ export const planTests = () =>
             mock.planSlaId,
           )
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
             plan: mock.planPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
 
-        // const txDetails = await confirmTx(provider, tx)
-
-        // console.log({ txDetails })
         assert.ok(false)
       } catch (error) {
-        console.log({ error })
         expect(error instanceof SendTransactionError).toBeTruthy()
         const err: SendTransactionError = error
         const txError = err.logs.find((log) => log.includes('already in use'))
-        console.log({ txError })
         expect(txError).toBeDefined()
         expect(txError).toBe(
           `Allocate: account Address { address: ${mock.planPda.toBase58()}, base: None } already in use`,
@@ -319,18 +302,18 @@ export const planTests = () =>
       const tx = await program.methods
         .addPlan(price, duration, speed, capacity, slaId)
         .accounts({
-          caller: mock.provider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           building: mock.buildingPda,
           plan: planPda,
         })
-        .signers([mock.provider])
+        .signers([mock.serviceProvider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
       const plan = await program.account.plan.fetch(planPda)
 
-      assert.ok(plan.owner.equals(mock.provider.publicKey))
+      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.building.equals(mock.buildingPda))
       assert.ok(plan.price.eq(price))
       assert.equal(plan.duration, duration)
@@ -341,7 +324,7 @@ export const planTests = () =>
 
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
-      assert.ok(event.owner.equals(mock.provider.publicKey))
+      assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.building.equals(mock.buildingPda))
       assert.ok(event.price.eq(price))
       assert.equal(event.duration, duration)
@@ -359,11 +342,11 @@ export const planTests = () =>
         await program.methods
           .removePlan()
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
             plan: badPlan.publicKey,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         assert.ok(false)
       } catch (error) {
@@ -433,11 +416,11 @@ export const planTests = () =>
       const tx = await program.methods
         .removePlan()
         .accounts({
-          caller: mock.provider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           building: mock.buildingPda,
           plan: planPda,
         })
-        .signers([mock.provider])
+        .signers([mock.serviceProvider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)

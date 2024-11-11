@@ -38,7 +38,7 @@ export const buildingTests = () =>
 
     beforeAll(async () => {
       provider = await getProvider()
-      provider.wallet = new Wallet(mock.provider)
+      provider.wallet = new Wallet(mock.serviceProvider)
 
       anchor.setProvider(provider)
 
@@ -66,10 +66,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(name, mock.buildingAddress, mock.buildingFloors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -96,10 +96,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(mock.buildingName, address, mock.buildingFloors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -126,10 +126,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(name, mock.buildingAddress, mock.buildingFloors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -156,10 +156,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(mock.buildingName, address, mock.buildingFloors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -186,10 +186,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(mock.buildingName, mock.buildingAddress, floors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -216,10 +216,10 @@ export const buildingTests = () =>
         await program.methods
           .addBuilding(mock.buildingName, mock.buildingAddress, floors)
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
@@ -237,16 +237,16 @@ export const buildingTests = () =>
           mock.buildingFloors,
         )
         .accounts({
-          caller: mock.provider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           building: mock.buildingPda,
         })
-        .signers([mock.provider])
+        .signers([mock.serviceProvider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
       const building = await program.account.building.fetch(mock.buildingPda)
-      expect(building.owner.equals(mock.provider.publicKey)).toBeTruthy()
+      expect(building.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(building.name).toBe(mock.buildingName)
       expect(building.address).toBe(mock.buildingAddress)
       expect(building.floors).toBe(mock.buildingFloors)
@@ -257,7 +257,7 @@ export const buildingTests = () =>
         txDetails,
         'BuildingAdded',
       )
-      expect(event.owner.equals(mock.provider.publicKey)).toBeTruthy()
+      expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.name).toBe(mock.buildingName)
       expect(event.address).toBe(mock.buildingAddress)
       expect(event.floors).toBe(mock.buildingFloors)
@@ -276,10 +276,10 @@ export const buildingTests = () =>
             mock.buildingFloors,
           )
           .accounts({
-            caller: mock.provider.publicKey,
+            caller: mock.serviceProvider.publicKey,
             building: mock.buildingPda,
           })
-          .signers([mock.provider])
+          .signers([mock.serviceProvider])
           .rpc()
 
         expect(false).toBeTruthy()

@@ -5,8 +5,8 @@ export interface Mock {
   dao: Keypair
   validatorPool: Keypair
   medallionPool: Keypair
-  provider: Keypair
-  tester: Keypair
+  serviceProvider: Keypair
+  customer: Keypair
   // mints
   usdcMint: PublicKey
   dawnMint: PublicKey
@@ -14,10 +14,10 @@ export interface Mock {
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
-  providerUsdcAccount: PublicKey
-  providerDawnAccount: PublicKey
-  testerUsdcAccount: PublicKey
-  testerDawnAccount: PublicKey
+  serviceProviderUsdcAccount: PublicKey
+  serviceProviderDawnAccount: PublicKey
+  customerUsdcAccount: PublicKey
+  customerDawnAccount: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -45,6 +45,9 @@ export interface Mock {
   planSpeed: number
   planCapacity: BN
   planSlaId: BN
+  // subscription
+  subscriptionPda: PublicKey
+  subscriptionBump: number
 }
 
 interface RawKeypair {
@@ -56,8 +59,8 @@ export interface RawMock {
   dao: RawKeypair
   validatorPool: RawKeypair
   medallionPool: RawKeypair
-  provider: RawKeypair
-  tester: RawKeypair
+  serviceProvider: RawKeypair
+  customer: RawKeypair
   // mints
   usdcMint: string
   dawnMint: string
@@ -65,10 +68,10 @@ export interface RawMock {
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string
-  providerUsdcAccount: string
-  providerDawnAccount: string
-  testerUsdcAccount: string
-  testerDawnAccount: string
+  serviceProviderUsdcAccount: string
+  serviceProviderDawnAccount: string
+  customerUsdcAccount: string
+  customerDawnAccount: string
   escrowUsdcVault: string
   // raydium
   raydium: string
@@ -97,4 +100,7 @@ export interface RawMock {
   planSpeed: number
   planCapacity: string
   planSlaId: string
+  // subscription
+  subscriptionPda: string
+  subscriptionBump: number
 }
