@@ -163,11 +163,6 @@ export const claimTests = () =>
       const event = await getEvent<Claimed>(program, txDetails, 'Claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
-      console.log({
-        swapPrice: event.swapPrice.toString(),
-        dawnClaimed: event.dawnClaimed.toString(),
-        price: price.toString(),
-      })
       expect(event.swapPrice.gte(price)).toBeTruthy()
       expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
 
@@ -206,10 +201,6 @@ export const claimTests = () =>
         provider.connection,
         accounts.escrowDawnVault,
       )
-      console.log({
-        escrowDawnBalanceAfter: escrowDawnBalanceAfter.toString(),
-        nextDailyDawn: nextDailyDawn.toString(),
-      })
       expect(escrowDawnBalanceAfter.gte(nextDailyDawn)).toBeTruthy()
 
       // make sure the subscription was updated
