@@ -34,8 +34,6 @@ const TOLERANCE_BPS = new BN(9975)
 
 const Q32 = new BN(2).pow(new BN(32))
 
-export let claimableDawn: BN
-
 interface Subscribed {
   subscription: PublicKey
   subscriber: PublicKey
@@ -348,8 +346,6 @@ export const subscriptionTests = () =>
       assert.ok(subscription.claimableDawn.eq(dailyDawn))
       assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
       assert.equal(subscription.bump, mock.subscriptionBump)
-
-      claimableDawn = dailyDawn
     })
 
     test('cannot subscribe to the same plan twice', async () => {
