@@ -1,28 +1,23 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, BN, AnchorError, Wallet } from '@coral-xyz/anchor'
-import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
+import { Program, BN, Wallet, AnchorError } from '@coral-xyz/anchor'
 import { assert } from 'chai'
-import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 
 import { Dawn, IDL } from '../../target/types/dawn'
 import {
   getEvent,
-  getPlanPda,
-  getRaydiumProgram,
   mock,
   getProvider,
   PROGRAM_ID,
   confirmTx,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
-import { BanksClient, Clock } from 'solana-bankrun'
+import { Clock } from 'solana-bankrun'
 import { beforeAll, expect } from '@jest/globals'
 import { getBalance } from '../../app/dawn/utils'
 
@@ -110,15 +105,56 @@ export const claimTests = () =>
       assert.exists(accounts)
     })
 
+    test('cannot claim before the next day', async () => {
+      try {
+        await program.methods
+          .claim()
+          .accounts(accounts)
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Claim too early')
+      }
+    })
+
+    test('cannot claim to a subscription that doesnt exist', async () => {
+      const badSubscriptionPda = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('subscription'),
+          Buffer.from(mock.planPda.toBytes()),
+          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
+        ],
+        program.programId,
+      )[0]
+
+      try {
+        await program.methods
+          .claim()
+          .accounts({
+            ...accounts,
+            subscription: badSubscriptionPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(
+          err.error.errorMessage,
+          'The program expected this account to be already initialized',
+        )
+      }
+    })
+
     test('claims daily DAWN', async () => {
-      // get balances of escrow vaults
+      // get balances of escrow USDC vault
       const escrowUsdcBalanceBefore = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
-      )
-      const escrowDawnBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.escrowDawnVault,
       )
       const serviceProviderDawnBalanceBefore = await getBalance(
         provider.connection,
@@ -206,6 +242,109 @@ export const claimTests = () =>
       // make sure the subscription was updated
       const sub = await program.account.subscription.fetch(mock.subscriptionPda)
       // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
+      expect(sub.claimableDawn.gte(nextDailyDawn)).toBeTruthy()
+    })
+
+    test('cannot claim again right away before the next day', async () => {
+      // small wait to make sure the last claim is updated
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      try {
+        await program.methods
+          .claim()
+          .accounts(accounts)
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Claim too early')
+      }
+    })
+
+    test('claiming after 3 days should claim previous 1 day, then swap and lock 3 days worth of DAWN', async () => {
+      subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+
+      // forward time 3 days
+      const clock = await provider.context.banksClient.getClock()
+      provider.context.setClock(
+        new Clock(
+          clock.slot,
+          clock.epochStartTimestamp,
+          clock.epoch,
+          clock.leaderScheduleEpoch,
+          clock.unixTimestamp + 3n * SECONDS_PER_DAY,
+        ),
+      )
+
+      // get balances of escrow USDC vault
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      const serviceProviderDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
+
+      // get balances of raydium vaults
+      const raydiumDawnVault = await getAccount(
+        provider.connection,
+        accounts.raydiumDawnVault,
+      )
+      const raydiumUsdcVault = await getAccount(
+        provider.connection,
+        accounts.raydiumUsdcVault,
+      )
+
+      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+      const tx = await program.methods
+        .claim()
+        .accounts(accounts)
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure the service provider DAWN account was credited with the claimable DAWN amount (1 day)
+      const serviceProviderDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
+      expect(
+        serviceProviderDawnBalanceAfter
+          .sub(serviceProviderDawnBalanceBefore)
+          .eq(subscription.claimableDawn),
+      ).toBeTruthy()
+
+      // make sure the escrow USDC vault was debited by the daily USDC amount
+      // with 1% tolerance (to account for slippage)
+      const escrowUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      expect(
+        escrowUsdcBalanceBefore
+          .sub(escrowUsdcBalanceAfter)
+          .gte(subscription.dailyUsdc.mul(SLIPPAGE_BPS).div(BPS_DENOMINATOR)),
+      ).toBeTruthy()
+
+      // calculate next daily DAWN portion (with 1% slippage)
+      const nextDailyDawn = subscription.dailyUsdc
+        .mul(new BN(3))
+        .mul(price)
+        .div(Q32)
+        .mul(SLIPPAGE_BPS)
+        .div(BPS_DENOMINATOR)
+
+      // make sure the subscription was updated to have 3 days worth of claimable DAWN
+      const sub = await program.account.subscription.fetch(mock.subscriptionPda)
       expect(sub.claimableDawn.gte(nextDailyDawn)).toBeTruthy()
     })
   })
