@@ -11,9 +11,8 @@ use raydium_cp_swap::{
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
-    constants::BPS_DENOMINATOR,
     utils::{sort_accounts, swap_amounts},
-    DawnError, Subscribed,
+    Claimed, DawnError,
 };
 
 #[derive(Accounts)]
@@ -29,7 +28,10 @@ pub struct Claim<'info> {
     pub config: Box<Account<'info, Config>>,
 
     /// The plan account
-    #[account(address = subscription.plan)]
+    #[account(
+        address = subscription.plan,
+        constraint = caller.key() == plan.owner,
+    )]
     pub plan: Box<Account<'info, Plan>>,
 
     /// The subscription account
@@ -126,7 +128,8 @@ pub struct Claim<'info> {
 impl DawnApp {
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         let subscription_account = ctx.accounts.subscription.to_account_info();
-        let plan = ctx.accounts.plan.key();
+        let subscription_key = subscription_account.key();
+        let plan_key = ctx.accounts.plan.key();
         let subscriber = ctx.accounts.subscription.subscriber;
         let last_claim = ctx.accounts.subscription.last_claim;
         let claimable_dawn = ctx.accounts.subscription.claimable_dawn;
@@ -147,7 +150,7 @@ impl DawnApp {
         // Signer seeds for the subscription account
         let seeds = &[
             b"subscription".as_ref(),
-            plan.as_ref(),
+            plan_key.as_ref(),
             subscriber.as_ref(),
             &[ctx.accounts.subscription.bump],
         ];
@@ -174,8 +177,7 @@ impl DawnApp {
 
         // Handle swapping USDC for next period
         let remaining_usdc = ctx.accounts.escrow_usdc_vault.amount;
-        // msg!("remaining_usdc: {}", remaining_usdc);
-        // msg!("days_since_claim: {}", days_since_claim);
+        let mut swap_price = 0;
         if days_since_claim > 0 && remaining_usdc > 0 {
             let usdc_to_swap = days_since_claim
                 .checked_mul(daily_usdc)
@@ -216,9 +218,6 @@ impl DawnApp {
                     ctx.accounts.escrow_dawn_vault.to_account_info(),
                 )?;
 
-                msg!("input_token_account: {:?}", input_token_account);
-                msg!("output_token_account: {:?}", output_token_account);
-
                 let (usdc_amount_in, minimum_dawn_amount_out, price) = swap_amounts(
                     &ctx.accounts.raydium_pool,
                     &ctx.accounts.raydium_usdc_vault,
@@ -226,9 +225,7 @@ impl DawnApp {
                     is_usdc_base,
                     usdc_to_swap,
                 )?;
-
-                msg!("usdc_amount_in: {}", usdc_amount_in);
-                msg!("minimum_dawn_amount_out: {}", minimum_dawn_amount_out);
+                swap_price = price;
 
                 // Create CPI accounts for the swap
                 let swap_cpi = cpi::accounts::Swap {
@@ -260,8 +257,6 @@ impl DawnApp {
                     cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
                 }
 
-                // panic!("TODO: implement swap");
-
                 // Set newly swapped DAWN as claimable after 24h
                 subscription.claimable_dawn = minimum_dawn_amount_out;
             }
@@ -269,7 +264,12 @@ impl DawnApp {
 
         subscription.last_claim = current_time;
 
-        msg!("Claimed {} DAWN", claimable_dawn);
+        emit!(Claimed {
+            subscription: subscription_key,
+            plan: plan_key,
+            dawn_claimed: claimable_dawn,
+            swap_price,
+        });
 
         Ok(())
     }
