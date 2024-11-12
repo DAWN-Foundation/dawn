@@ -3,11 +3,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, Mint, Token, TokenAccount},
 };
-use raydium_cp_swap::{
-    cpi,
-    program::RaydiumCpSwap,
-    states::{PoolState, Q32},
-};
+use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{

@@ -139,11 +139,7 @@ export const claimTests = () =>
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount
-        .mul(Q32)
-        .div(usdcVaultAmount)
-        .mul(BPS_DENOMINATOR.sub(SLIPPAGE_BPS))
-        .div(BPS_DENOMINATOR)
+      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
       // forward time to the next day
       const clock = await provider.context.banksClient.getClock()
@@ -175,7 +171,7 @@ export const claimTests = () =>
         price: price.toString(),
       })
       expect(event.swapPrice.gte(price)).toBeTruthy()
-      expect(event.dawnClaimed.eq(claimableDawn)).toBeTruthy()
+      expect(event.dawnClaimed.eq(claimableDawn)).toBeTruthy() // claimableDawn is from previous test
 
       // calculate next daily DAWN portion (with 1% slippage)
       const nextDailyDawn = subscription.dailyUsdc.mul(event.swapPrice).div(Q32)

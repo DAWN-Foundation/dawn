@@ -26,6 +26,7 @@ import {
 } from '../../app/utils'
 import { beforeAll } from '@jest/globals'
 import { BanksClient, Clock } from 'solana-bankrun'
+import { getBalance } from '../../app/dawn/utils'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -195,40 +196,34 @@ export const subscriptionTests = () =>
         BigInt(1_000_000_000_000), // 6 decimals
       )
 
-      const testerUsdcBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, mock.customerUsdcAccount)
-        ).amount.toString(),
+      const testerUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
       )
 
-      const daoDawnBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, mock.daoDawnAccount)
-        ).amount.toString(),
+      const daoDawnBalanceBefore = await getBalance(
+        provider.connection,
+        mock.daoDawnAccount,
       )
 
-      const validatorDawnBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, mock.validatorDawnAccount)
-        ).amount.toString(),
+      const validatorDawnBalanceBefore = await getBalance(
+        provider.connection,
+        mock.validatorDawnAccount,
       )
 
-      const medallionDawnBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, mock.medallionDawnAccount)
-        ).amount.toString(),
+      const medallionDawnBalanceBefore = await getBalance(
+        provider.connection,
+        mock.medallionDawnAccount,
       )
 
-      const escrowUsdcBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, accounts.escrowUsdcVault)
-        ).amount.toString(),
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
       )
 
-      const escrowDawnBalanceBefore = new BN(
-        (
-          await getAccount(provider.connection, accounts.escrowDawnVault)
-        ).amount.toString(),
+      const escrowDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
       )
 
       // get balances of raydium vaults
@@ -262,10 +257,9 @@ export const subscriptionTests = () =>
       assert.ok(event.swapPrice.eq(price))
 
       // make sure the customer USDC account was debited
-      const testerUsdcBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, mock.customerUsdcAccount)
-        ).amount.toString(),
+      const testerUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
       )
       assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
 
@@ -284,20 +278,18 @@ export const subscriptionTests = () =>
       const dailyUsdc = usdcRemainder.div(new BN(plan.duration))
       const dailyDawn = dailyUsdc.mul(price).div(Q32)
       const usdcExpected = usdcRemainder.sub(dailyUsdc)
-      const escrowUsdcBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, accounts.escrowUsdcVault)
-        ).amount.toString(),
+      const escrowUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
       )
       assert.ok(
         escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
       )
 
       // make sure the building owner escrow DAWN vault account was credited with the daily DAWN portion
-      const escrowDawnBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, accounts.escrowDawnVault)
-        ).amount.toString(),
+      const escrowDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
       )
       assert.ok(
         escrowDawnBalanceAfter.sub(escrowDawnBalanceBefore).eq(dailyDawn),
@@ -311,19 +303,17 @@ export const subscriptionTests = () =>
 
       // make sure the DAO DAWN account was credited with the DAO fee portion
       const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
-      const daoDawnBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, mock.daoDawnAccount)
-        ).amount.toString(),
+      const daoDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.daoDawnAccount,
       )
       assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).eq(daoFee))
 
       // make sure the validator DAWN account was credited with the validator fee portion
       const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
-      const validatorDawnBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, mock.validatorDawnAccount)
-        ).amount.toString(),
+      const validatorDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.validatorDawnAccount,
       )
       assert.ok(
         validatorDawnBalanceAfter
@@ -333,10 +323,9 @@ export const subscriptionTests = () =>
 
       // make sure the medallion DAWN account was credited with the medallion fee portion
       const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
-      const medallionDawnBalanceAfter = new BN(
-        (
-          await getAccount(provider.connection, mock.medallionDawnAccount)
-        ).amount.toString(),
+      const medallionDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.medallionDawnAccount,
       )
       assert.ok(
         medallionDawnBalanceAfter
