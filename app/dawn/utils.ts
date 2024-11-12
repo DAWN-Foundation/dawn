@@ -12,6 +12,7 @@ import {
 import { Dawn } from '../../target/types/dawn'
 import { loadWallet, Mock, RawMock } from '../utils'
 import { BankrunProvider, startAnchor } from 'anchor-bankrun'
+import { getAccount } from '@solana/spl-token'
 
 const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
 
@@ -128,7 +129,9 @@ export async function connect(): Promise<{
 }
 
 // helper function to get wallet from the config
-function configWallet(accountName: 'customer' | 'buildingOwner'): anchor.Wallet {
+function configWallet(
+  accountName: 'customer' | 'buildingOwner',
+): anchor.Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
@@ -214,4 +217,12 @@ export function getPlanPda(
   )
 
   return [planPda, planBump]
+}
+
+export async function getBalance(
+  connection: Connection,
+  account: PublicKey,
+): Promise<BN> {
+  const balance = (await getAccount(connection, account)).amount.toString()
+  return new BN(balance)
 }

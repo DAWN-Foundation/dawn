@@ -23,13 +23,23 @@ import {
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { BanksClient, Clock } from 'solana-bankrun'
-import { beforeAll } from '@jest/globals'
+import { beforeAll, expect } from '@jest/globals'
+import { getBalance } from '../../app/dawn/utils'
+import { claimableDawn } from './03_subscription'
 
 const SECONDS_PER_DAY = 86_400n
 const BPS_DENOMINATOR = new BN(10_000)
+const SLIPPAGE_BPS = new BN(100)
 const TOLERANCE_BPS = new BN(9975)
 
 const Q32 = new BN(2).pow(new BN(32))
+
+interface Claimed {
+  subscription: PublicKey
+  plan: PublicKey
+  swapPrice: BN
+  dawnClaimed: BN
+}
 
 export const claimTests = () =>
   describe('dawn::claim', () => {
@@ -103,55 +113,37 @@ export const claimTests = () =>
     })
 
     test('claims daily DAWN', async () => {
-      // const testerUsdcBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, mock.customerUsdcAccount)
-      //   ).amount.toString(),
-      // )
+      // get balances of escrow vaults
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      const escrowDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+      const serviceProviderDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
 
-      // const daoDawnBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, mock.daoDawnAccount)
-      //   ).amount.toString(),
-      // )
+      // get balances of raydium vaults
+      const raydiumDawnVault = await getAccount(
+        provider.connection,
+        accounts.raydiumDawnVault,
+      )
+      const raydiumUsdcVault = await getAccount(
+        provider.connection,
+        accounts.raydiumUsdcVault,
+      )
 
-      // const validatorDawnBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, mock.validatorDawnAccount)
-      //   ).amount.toString(),
-      // )
-
-      // const medallionDawnBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, mock.medallionDawnAccount)
-      //   ).amount.toString(),
-      // )
-
-      // const escrowUsdcBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, accounts.escrowUsdcVault)
-      //   ).amount.toString(),
-      // )
-
-      // const escrowDawnBalanceBefore = new BN(
-      //   (
-      //     await getAccount(provider.connection, accounts.escrowDawnVault)
-      //   ).amount.toString(),
-      // )
-
-      // // get balances of raydium vaults
-      // const raydiumDawnVault = await getAccount(
-      //   provider.connection,
-      //   accounts.raydiumDawnVault,
-      // )
-      // const raydiumUsdcVault = await getAccount(
-      //   provider.connection,
-      //   accounts.raydiumUsdcVault,
-      // )
-
-      // const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      // const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      // const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+      const price = dawnVaultAmount
+        .mul(Q32)
+        .div(usdcVaultAmount)
+        .mul(BPS_DENOMINATOR.sub(SLIPPAGE_BPS))
+        .div(BPS_DENOMINATOR)
 
       // forward time to the next day
       const clock = await provider.context.banksClient.getClock()
@@ -169,19 +161,27 @@ export const claimTests = () =>
         .claim()
         .accounts(accounts)
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
 
-      // const txDetails = await confirmTx(provider, tx)
+      const txDetails = await confirmTx(provider, tx)
 
-      // console.log({ txDetails })
+      // make sure event was emitted
+      const event = await getEvent<Claimed>(program, txDetails, 'Claimed')
+      expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
+      expect(event.plan.equals(mock.planPda)).toBeTruthy()
+      console.log({
+        swapPrice: event.swapPrice.toString(),
+        dawnClaimed: event.dawnClaimed.toString(),
+        price: price.toString(),
+      })
+      expect(event.swapPrice.gte(price)).toBeTruthy()
+      expect(event.dawnClaimed.eq(claimableDawn)).toBeTruthy()
 
-      // // make sure event was emitted
-      // const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
-      // assert.ok(event.subscription.equals(subscriptionPda))
-      // assert.ok(event.subscriber.equals(mock.customer.publicKey))
-      // assert.ok(event.plan.equals(planPda))
-      // assert.ok(event.expiration > 0)
-      // assert.ok(event.swapPrice.eq(price))
+      // calculate next daily DAWN portion (with 1% slippage)
+      const nextDailyDawn = subscription.dailyUsdc.mul(event.swapPrice).div(Q32)
+      console.log({
+        nextDailyDawn: nextDailyDawn.toString(),
+      })
 
       // // make sure the customer USDC account was debited
       // const testerUsdcBalanceAfter = new BN(

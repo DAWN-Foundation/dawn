@@ -175,10 +175,12 @@ impl DawnApp {
             subscription.claimable_dawn = 0;
         }
 
+        let mut swap_price = 0;
         // Handle swapping USDC for next period
         let remaining_usdc = ctx.accounts.escrow_usdc_vault.amount;
-        let mut swap_price = 0;
         if days_since_claim > 0 && remaining_usdc > 0 {
+            // Swap daily USDC times the number of days since last claim
+            // Or the remaining USDC if it's less than the cumulative daily USDC
             let usdc_to_swap = days_since_claim
                 .checked_mul(daily_usdc)
                 .ok_or(DawnError::Overflow)?

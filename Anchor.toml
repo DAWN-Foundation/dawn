@@ -22,17 +22,17 @@ startup_wait = 5000
 shutdown_wait = 2000
 upgradeable = false
 
-[test.validator]
-bind_address = "0.0.0.0"
-url = "https://api.mainnet-beta.solana.com"
-ledger = ".anchor/test-ledger"
-rpc_port = 8899
+# [test.validator]
+# bind_address = "0.0.0.0"
+# url = "https://api.mainnet-beta.solana.com"
+# ledger = ".anchor/test-ledger"
+# rpc_port = 8899
 
-[[test.validator.clone]]
-address = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+# [[test.validator.clone]]
+# address = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
 
-[[test.validator.clone]]
-address = "DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8"
+# [[test.validator.clone]]
+# address = "DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8"
 
-[[test.validator.clone]]
-address = "D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2"
+# [[test.validator.clone]]
+# address = "D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2"
