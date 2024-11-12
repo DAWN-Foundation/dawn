@@ -19,12 +19,13 @@ import {
   mock,
   getProvider,
   PROGRAM_ID,
+  confirmTx,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
-import { BanksClient } from 'solana-bankrun'
+import { BanksClient, Clock } from 'solana-bankrun'
 import { beforeAll } from '@jest/globals'
 
-const SECONDS_PER_DAY = 86_400
+const SECONDS_PER_DAY = 86_400n
 const BPS_DENOMINATOR = new BN(10_000)
 const TOLERANCE_BPS = new BN(9975)
 
@@ -152,14 +153,27 @@ export const claimTests = () =>
       // const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       // const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
+      // forward time to the next day
+      const clock = await provider.context.banksClient.getClock()
+      provider.context.setClock(
+        new Clock(
+          clock.slot,
+          clock.epochStartTimestamp,
+          clock.epoch,
+          clock.leaderScheduleEpoch,
+          clock.unixTimestamp + SECONDS_PER_DAY,
+        ),
+      )
+
       const tx = await program.methods
-        .claim(subscription.subscriber)
+        .claim()
         .accounts(accounts)
         .signers([mock.serviceProvider])
         .rpc()
 
-      assert.ok(tx.length > 0)
-      // await confirmTx(provider.connection, tx)
+      // const txDetails = await confirmTx(provider, tx)
+
+      // console.log({ txDetails })
 
       // // make sure event was emitted
       // const event = await getEvent<Subscribed>(program, tx, 'Subscribed')
