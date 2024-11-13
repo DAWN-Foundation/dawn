@@ -150,6 +150,26 @@ export const claimTests = () =>
       }
     })
 
+    test('cannot claim to a subscription that is not owned by the caller', async () => {
+      provider.wallet = new Wallet(mock.customer)
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+
+      try {
+        await program2.methods
+          .claim()
+          .accounts({ ...accounts, caller: mock.customer.publicKey })
+          .signers([mock.customer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('A raw constraint was violated')
+      } finally {
+        provider.wallet = new Wallet(mock.serviceProvider)
+      }
+    })
+
     test('claims daily DAWN', async () => {
       // get balances of escrow USDC vault
       const escrowUsdcBalanceBefore = await getBalance(
