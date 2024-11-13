@@ -1,6 +1,6 @@
 const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
+import { AnchorProvider, BN } from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -107,7 +107,7 @@ export function getIDL(): Dawn {
 }
 
 export function getDawnProgram(
-  provider: BankrunProvider,
+  provider: BankrunProvider | AnchorProvider,
 ): anchor.Program<Dawn> {
   const idl = getIDL()
   return new anchor.Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
@@ -130,7 +130,7 @@ export async function connect(): Promise<{
 
 // helper function to get wallet from the config
 function configWallet(
-  accountName: 'customer' | 'buildingOwner',
+  accountName: 'customer' | 'serviceProvider',
 ): anchor.Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
@@ -143,8 +143,8 @@ export function getWallet(): anchor.Wallet {
 
   if (hasFlag('--customer')) {
     wallet = configWallet('customer')
-  } else if (hasFlag('--building-owner')) {
-    wallet = configWallet('buildingOwner')
+  } else if (hasFlag('--service-provider')) {
+    wallet = configWallet('serviceProvider')
   } else {
     wallet = loadWallet()
   }

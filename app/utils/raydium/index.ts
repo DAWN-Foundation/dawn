@@ -1,7 +1,7 @@
 import * as anchor from '@coral-xyz/anchor'
 import path from 'path'
 import fs from 'fs'
-import { Program, Wallet } from '@coral-xyz/anchor'
+import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
 
 import { createPool } from './create_pool'
@@ -15,33 +15,33 @@ const RAYDIUM_CONFIG = new PublicKey(
   'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
 )
 
-export function getRaydiumProgram(provider: BankrunProvider) {
+export function getRaydiumProgram(provider: BankrunProvider | AnchorProvider) {
   const idlPath = path.resolve('raydium/raydium_cp_swap.json')
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
   return new Program(idl as RaydiumCpSwap, RAYDIUM, provider)
 }
 
 export async function setupRaydium(
-  provider: BankrunProvider,
+  provider: BankrunProvider | AnchorProvider,
   wallet: Keypair,
   dawnMint: PublicKey,
   usdcMint: PublicKey,
-  userDawnAccount: PublicKey,
-  userUsdcAccount: PublicKey,
+  walletDawnAccount: PublicKey,
+  walletUsdcAccount: PublicKey,
 ) {
   const program = getRaydiumProgram(provider)
 
   // Sort the tokens
-  const [mint0, mint1, userMint0, userMint1, dawnIsBase] =
+  const [mint0, mint1, walletMint0, walletMint1, dawnIsBase] =
     Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
-      ? [dawnMint, usdcMint, userDawnAccount, userUsdcAccount, true]
-      : [usdcMint, dawnMint, userUsdcAccount, userDawnAccount, false]
+      ? [dawnMint, usdcMint, walletDawnAccount, walletUsdcAccount, true]
+      : [usdcMint, dawnMint, walletUsdcAccount, walletDawnAccount, false]
 
   console.log({
     mint0: mint0.toBase58(),
     mint1: mint1.toBase58(),
-    userMint0: userMint0.toBase58(),
-    userMint1: userMint1.toBase58(),
+    walletMint0: walletMint0.toBase58(),
+    walletMint1: walletMint1.toBase58(),
     pool_symbol: dawnIsBase ? 'DAWN/USDC' : 'USDC/DAWN',
   })
 
@@ -53,8 +53,8 @@ export async function setupRaydium(
     RAYDIUM_CONFIG,
     mint0,
     mint1,
-    userMint0,
-    userMint1,
+    walletMint0,
+    walletMint1,
     dawnIsBase,
   )
 
@@ -66,8 +66,8 @@ export async function setupRaydium(
     RAYDIUM_CONFIG,
     mint0,
     mint1,
-    userMint0,
-    userMint1,
+    walletMint0,
+    walletMint1,
     dawnIsBase,
   )
 

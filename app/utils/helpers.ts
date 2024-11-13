@@ -5,6 +5,7 @@ import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
 import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
+import { confirmTx } from './mock'
 
 // Helper to fund an account with SOL
 export async function fund(
@@ -13,8 +14,17 @@ export async function fund(
   amount: number,
   commitment: 'confirmed' | 'finalized' = 'confirmed',
 ) {
-  // const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
-  // await confirmTx(connection, signature, commitment)
+  const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash()
+  await connection.confirmTransaction(
+    {
+      blockhash,
+      lastValidBlockHeight,
+      signature,
+    },
+    commitment,
+  )
 }
 
 // Helper to get the event from the transaction
