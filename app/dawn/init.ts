@@ -1,10 +1,10 @@
 import { connect, getMock, submitTx } from './utils'
 
 async function main() {
-  const { wallet, connection, program } = await connect()
-  console.log({ PROGRAM_ID: program.programId.toBase58() })
-
   const mock = getMock()
+  const { wallet, connection, program } = await connect()
+
+  console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const itx = await program.methods
     .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
@@ -22,6 +22,7 @@ async function main() {
       raydiumPool: mock.raydiumPool,
       raydiumObservation: mock.raydiumObservation,
     })
+    .signers([wallet.payer])
     .instruction()
 
   try {

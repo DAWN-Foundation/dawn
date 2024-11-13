@@ -1,7 +1,7 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
+import { Dawn } from '../../target/types/dawn'
 import { connect, getFlag, getIDL, getWallet, submitTx } from './utils'
 
 // CONSTANTS

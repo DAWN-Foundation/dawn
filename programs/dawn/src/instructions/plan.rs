@@ -1,8 +1,8 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
-use super::{Building, PlanApp};
-use crate::{PlanAdded, PlanError, PlanRemoved};
+use super::{Building, DawnApp};
+use crate::{PlanAdded, DawnError, PlanRemoved};
 
 /// The plan account, representing a subscription plan tied to a building
 #[account]
@@ -114,7 +114,7 @@ pub struct RemovePlan<'info> {
     pub plan: Account<'info, Plan>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn add_plan(
         ctx: Context<AddPlan>,
         price: u64,
@@ -126,13 +126,13 @@ impl PlanApp {
         let plan = &mut ctx.accounts.plan;
 
         // Make sure the plan price is not zero
-        require!(price > 0, PlanError::ZeroPlanPrice);
+        require!(price > 0, DawnError::ZeroPlanPrice);
 
         // Make sure the plan duration is not zero
-        require!(duration > 0, PlanError::ZeroPlanDuration);
+        require!(duration > 0, DawnError::ZeroPlanDuration);
 
         // Make sure the plan speed is not zero
-        require!(speed > 0, PlanError::ZeroPlanSpeed);
+        require!(speed > 0, DawnError::ZeroPlanSpeed);
 
         plan.owner = ctx.accounts.caller.key();
         plan.building = ctx.accounts.building.key();

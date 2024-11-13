@@ -1,10 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
-use super::PlanApp;
+use super::DawnApp;
 use crate::{
     constants::{MAX_BUILDING_ADDRESS_LEN, MAX_BUILDING_NAME_LEN},
-    BuildingAdded, PlanError,
+    BuildingAdded, DawnError,
 };
 
 #[account]
@@ -52,7 +52,7 @@ pub struct AddBuilding<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn add_building(
         ctx: Context<AddBuilding>,
         name: String,
@@ -63,24 +63,24 @@ impl PlanApp {
 
         // Make sure the name and address are not empty
         if name.trim().is_empty() {
-            return err!(PlanError::EmptyBuildingName);
+            return err!(DawnError::EmptyBuildingName);
         }
         if address.trim().is_empty() {
-            return err!(PlanError::EmptyBuildingAddress);
+            return err!(DawnError::EmptyBuildingAddress);
         }
 
         // Make sure the name and address are not exceeding the max length
         if name.len() > MAX_BUILDING_NAME_LEN {
             msg!("name.len() = {}", name.len());
-            return err!(PlanError::BuildingNameTooLong);
+            return err!(DawnError::BuildingNameTooLong);
         }
         if address.len() > MAX_BUILDING_ADDRESS_LEN {
-            return err!(PlanError::BuildingAddressTooLong);
+            return err!(DawnError::BuildingAddressTooLong);
         }
 
         // Make sure the floors are between 1 and 255 (ensured by u8 type)
         if floors == 0 {
-            return err!(PlanError::InvalidFloors);
+            return err!(DawnError::InvalidFloors);
         }
 
         building.owner = ctx.accounts.caller.key();

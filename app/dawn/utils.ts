@@ -1,6 +1,6 @@
 const fs = require('fs')
 import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
+import { AnchorProvider, BN } from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -9,10 +9,12 @@ import {
   TransactionBlockhashCtor,
 } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
-import { Mock, RawMock } from '../utils'
+import { Dawn } from '../../target/types/dawn'
+import { loadWallet, Mock, RawMock } from '../utils'
+import { BankrunProvider, startAnchor } from 'anchor-bankrun'
+import { getAccount } from '@solana/spl-token'
 
-const PROGRAM_ID = new PublicKey('7VuWWEAgNE1PbcgwSPjbXQ8BD5R8fHQE6L7fCzZ3x8Gc')
+const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
 
 // parse command line arguments
 // find value of the --flag
@@ -44,11 +46,11 @@ export function getMock(): Mock {
     medallionPool: Keypair.fromSecretKey(
       Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
     ),
-    buildingOwner: Keypair.fromSecretKey(
-      Uint8Array.from(mock.buildingOwner.secretKey.split(',').map(Number)),
+    serviceProvider: Keypair.fromSecretKey(
+      Uint8Array.from(mock.serviceProvider.secretKey.split(',').map(Number)),
     ),
-    tester: Keypair.fromSecretKey(
-      Uint8Array.from(mock.tester.secretKey.split(',').map(Number)),
+    customer: Keypair.fromSecretKey(
+      Uint8Array.from(mock.customer.secretKey.split(',').map(Number)),
     ),
     // mints
     usdcMint: new PublicKey(mock.usdcMint),
@@ -57,79 +59,93 @@ export function getMock(): Mock {
     daoDawnAccount: new PublicKey(mock.daoDawnAccount),
     validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
     medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
-    buildingOwnerUsdcAccount: new PublicKey(mock.buildingOwnerUsdcAccount),
-    buildingOwnerDawnAccount: new PublicKey(mock.buildingOwnerDawnAccount),
-    testerUsdcAccount: new PublicKey(mock.testerUsdcAccount),
-    testerDawnAccount: new PublicKey(mock.testerDawnAccount),
+    serviceProviderDawnAccount: new PublicKey(mock.serviceProviderDawnAccount),
+    serviceProviderUsdcAccount: new PublicKey(mock.serviceProviderUsdcAccount),
+    customerDawnAccount: new PublicKey(mock.customerDawnAccount),
+    customerUsdcAccount: new PublicKey(mock.customerUsdcAccount),
+    walletDawnAccount: new PublicKey(mock.walletDawnAccount),
+    walletUsdcAccount: new PublicKey(mock.walletUsdcAccount),
+    escrowDawnVault: new PublicKey(mock.escrowDawnVault),
+    escrowUsdcVault: new PublicKey(mock.escrowUsdcVault),
     // raydium
     raydium: new PublicKey(mock.raydium),
     raydiumAuthority: new PublicKey(mock.raydiumAuthority),
     raydiumConfig: new PublicKey(mock.raydiumConfig),
     raydiumPool: new PublicKey(mock.raydiumPool),
     raydiumObservation: new PublicKey(mock.raydiumObservation),
-    dawnVault: new PublicKey(mock.dawnVault),
-    usdcVault: new PublicKey(mock.usdcVault),
+    raydiumDawnVault: new PublicKey(mock.raydiumDawnVault),
+    raydiumUsdcVault: new PublicKey(mock.raydiumUsdcVault),
     // config
     daoFee: new BN(mock.daoFee),
     validatorFee: new BN(mock.validatorFee),
     medallionFee: new BN(mock.medallionFee),
-    // plan
+    // PDAs
     configPda: new PublicKey(mock.configPda),
+    buildingPda: new PublicKey(mock.buildingPda),
+    planPda: new PublicKey(mock.planPda),
+    planBump: mock.planBump,
+    // building
+    buildingName: mock.buildingName,
+    buildingAddress: mock.buildingAddress,
+    buildingFloors: mock.buildingFloors,
+    // plan
+    planPrice: new BN(mock.planPrice),
+    planDuration: mock.planDuration,
+    planSpeed: mock.planSpeed,
+    planCapacity: new BN(mock.planCapacity),
+    planSlaId: new BN(mock.planSlaId),
+    // subscription
+    subscriptionPda: new PublicKey(mock.subscriptionPda),
+    subscriptionBump: mock.subscriptionBump,
   }
 }
 
 // helper function to get the IDL
-export function getIDL(): Plan {
-  const idlData = fs.readFileSync('target/idl/plan.json', 'utf8')
+export function getIDL(): Dawn {
+  const idlData = fs.readFileSync('target/idl/dawn.json', 'utf8')
   return JSON.parse(idlData)
 }
 
-export function getPlanProgram(
-  provider: anchor.AnchorProvider,
-): anchor.Program<Plan> {
+export function getDawnProgram(
+  provider: BankrunProvider | AnchorProvider,
+): anchor.Program<Dawn> {
   const idl = getIDL()
-  return new anchor.Program<Plan>(idl as Plan, PROGRAM_ID, provider)
+  return new anchor.Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
 }
 
 export async function connect(): Promise<{
   wallet: anchor.Wallet
-  program: anchor.Program<Plan>
+  program: anchor.Program<Dawn>
   connection: Connection
 }> {
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
+
   const connection = new Connection('http://127.0.0.1:8899')
   const provider = new anchor.AnchorProvider(connection, wallet, {})
   anchor.setProvider(provider)
-  const program = getPlanProgram(provider)
+  const program = getDawnProgram(provider)
 
-  return { wallet, program, connection }
+  return { wallet, program, connection: provider.connection }
 }
 
 // helper function to get wallet from the config
-function configWallet(accountName: 'tester' | 'buildingOwner'): anchor.Wallet {
+function configWallet(
+  accountName: 'customer' | 'serviceProvider',
+): anchor.Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
-}
-
-// helper function to load the wallet from the local file system
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
-  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
-  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
-  const keypair = Keypair.fromSecretKey(secretKey)
-  return new anchor.Wallet(keypair)
 }
 
 // helper function to get the wallet based on the flag
 export function getWallet(): anchor.Wallet {
   let wallet: anchor.Wallet
 
-  if (hasFlag('--tester')) {
-    wallet = configWallet('tester')
-  } else if (hasFlag('--building-owner')) {
-    wallet = configWallet('buildingOwner')
+  if (hasFlag('--customer')) {
+    wallet = configWallet('customer')
+  } else if (hasFlag('--service-provider')) {
+    wallet = configWallet('serviceProvider')
   } else {
     wallet = loadWallet()
   }
@@ -159,7 +175,7 @@ export async function submitTx(
   console.log({ txSignature })
 
   const confirmationResult = await connection.confirmTransaction(
-    txSignature,
+    { signature: txSignature, ...latestBlockHash },
     'confirmed',
   )
 
@@ -174,7 +190,7 @@ export async function submitTx(
 
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
-  program: anchor.Program<Plan>,
+  program: anchor.Program<Dawn>,
   building: PublicKey,
   price: BN,
   duration: number,
@@ -202,4 +218,12 @@ export function getPlanPda(
   )
 
   return [planPda, planBump]
+}
+
+export async function getBalance(
+  connection: Connection,
+  account: PublicKey,
+): Promise<BN> {
+  const balance = (await getAccount(connection, account)).amount.toString()
+  return new BN(balance)
 }

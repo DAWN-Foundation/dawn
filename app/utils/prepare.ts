@@ -8,146 +8,22 @@ import {
   createMint,
   createAssociatedTokenAccount,
   mintTo,
-} from 'spl-token-bankrun'
+  getOrCreateAssociatedTokenAccount,
+} from '@solana/spl-token'
 
 import { Mock } from './types'
-import { getPlanPda } from './helpers'
+import { fund, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
+import { createAccounts, USDC_DECIMALS } from './mock'
 
-export const USDC_DECIMALS = new BN(10).pow(new BN(6))
-
-export const PROGRAM_ID = new PublicKey(
-  'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
-)
-
-export const RAYDIUM_PROGRAM_ID = new PublicKey(
-  'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
-)
-
-export const RAYDIUM_CONFIG = new PublicKey(
-  'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
-)
-
-export const RAYDIUM_POOL_FEE_RECEIVER = new PublicKey(
-  'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
-)
-
-export let mock: Mock
-let provider: BankrunProvider
-
-export async function getProvider(accounts?: AddedAccount[]) {
-  if (provider) return provider
-  const context = await startAnchor(
-    '.',
-    [
-      { name: 'dawn', programId: PROGRAM_ID },
-      { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
-    ],
-    accounts ?? [],
-  )
-  provider = new BankrunProvider(context)
-  const wallet = loadWallet()
-  provider.wallet = new Wallet(wallet.payer)
-  return provider
-}
-
-export async function confirmTx(provider: BankrunProvider, tx: Transaction) {
-  tx.recentBlockhash = (
-    await provider.context.banksClient.getLatestBlockhash()
-  )[0]
-  tx.feePayer = provider.wallet.publicKey
-
-  tx.sign(provider.wallet.payer)
-
-  const txDetails = await provider.context.banksClient.processTransaction(tx)
-  return txDetails
-}
-
-// helper function to load the wallet from the local file system
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
-  const secretKeyString = fs.readFileSync(walletPath, 'utf8')
-  const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
-  const keypair = Keypair.fromSecretKey(secretKey)
-  return new anchor.Wallet(keypair)
-}
-
-export async function createAccounts() {
-  // Load wallet
-  console.log('Loading local wallet...')
-  const wallet = loadWallet().payer
-
-  // Create DAWN DAO KeyPair
-  console.log('Creating DAWN DAO KeyPair...')
-  const dao = Keypair.generate()
-
-  // Create Validator Pool KeyPair
-  console.log('Creating Validator Pool KeyPair...')
-  const validatorPool = Keypair.generate()
-
-  // Create Medallion Pool KeyPair
-  console.log('Creating Medallion Pool KeyPair...')
-  const medallionPool = Keypair.generate()
-
-  // Create Service Provider KeyPair
-  console.log('Creating Service Provider KeyPair...')
-  const serviceProvider = Keypair.generate()
-
-  // Create Tester KeyPair
-  console.log('Creating Tester KeyPair...')
-  const customer = Keypair.generate()
-
-  const newAccounts = {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  }
-
-  const addedAccounts = Object.values(newAccounts).map((acc) => ({
-    address: acc.publicKey,
-    info: {
-      lamports: 1000_000_000_000,
-      executable: false,
-      owner: anchor.web3.SystemProgram.programId,
-      data: Buffer.alloc(0),
-    },
-  }))
-
-  // Connection to mainnet for cloning accounts
-  const connection = new Connection('https://api.mainnet-beta.solana.com')
-
-  // Add Raydium config account
-  const raydiumConfig = await connection.getAccountInfo(RAYDIUM_CONFIG)
-  addedAccounts.push({
-    address: RAYDIUM_CONFIG,
-    info: raydiumConfig,
-  })
-
-  // Add Raydium pool fee receiver account
-  const raydiumPoolFeeReceiver = await connection.getAccountInfo(
-    RAYDIUM_POOL_FEE_RECEIVER,
-  )
-  addedAccounts.push({
-    address: RAYDIUM_POOL_FEE_RECEIVER,
-    info: raydiumPoolFeeReceiver,
-  })
-
-  return {
-    ...newAccounts,
-    addedAccounts,
-  }
-}
-
-// Setup the environment for tests and set the mock
-// only run once in `initialize` test
-export async function setup(
-  provider: BankrunProvider,
+// Prepares the local validator for testnet simulation
+// Creates all necessary accounts and mints tokens
+// Only run once in `testnet` script for validator setup
+export async function prepare(
+  provider: AnchorProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
-) {
+): Promise<Mock> {
   const {
     wallet,
     dao,
@@ -157,19 +33,45 @@ export async function setup(
     customer,
   } = accounts
 
+  // Fund wallet
+  console.log('Funding wallet...')
+  await fund(provider.connection, wallet.publicKey, 1000)
+
+  // Fund DAWN DAO Account
+  console.log('Funding DAWN DAO Account...')
+  await fund(provider.connection, dao.publicKey, 1000)
+
+  // Fund Validator Pool Account
+  console.log('Funding Validator Pool Account...')
+  await fund(provider.connection, validatorPool.publicKey, 1000)
+
+  // Fund Medallion Pool Account
+  console.log('Funding Medallion Pool Account...')
+  await fund(provider.connection, medallionPool.publicKey, 1000)
+
+  // Fund Service Provider Account
+  console.log('Funding Service Provider Account...')
+  await fund(provider.connection, serviceProvider.publicKey, 1000)
+
+  // Fund Customer Account
+  // we await for the transaction to be finalized to ensure all accounts are funded
+  console.log('Funding Customer Account...')
+  await fund(provider.connection, customer.publicKey, 1000, 'finalized')
+
   // Mint test USDC token
   console.log('Minting test USDC token...')
   const usdcMint = await createMint(
-    provider.context.banksClient, // Banks client
+    provider.connection,
     wallet, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
     6, // Decimals (6 decimals for USDC)
   )
+
   // Mint test DAWN token
   console.log('Minting test DAWN token...')
   const dawnMint = await createMint(
-    provider.context.banksClient, // Banks client
+    provider.connection,
     wallet, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
@@ -184,16 +86,16 @@ export async function setup(
   // Create DAWN account for DAWN DAO
   console.log('Creating DAWN account for DAWN DAO...')
   const daoDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient, // Banks client
-    dao, // Payer for transaction
-    dawnMint, // Mint
-    dao.publicKey, // Token account owner
+    provider.connection,
+    dao,
+    dawnMint,
+    dao.publicKey,
   )
 
   // Create DAWN account for Validator Pool
   console.log('Creating DAWN account for Validator Pool...')
   const validatorDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     validatorPool,
     dawnMint,
     validatorPool.publicKey,
@@ -202,7 +104,7 @@ export async function setup(
   // Create DAWN account for Medallion Pool
   console.log('Creating DAWN account for Medallion Pool...')
   const medallionDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     medallionPool,
     dawnMint,
     medallionPool.publicKey,
@@ -211,7 +113,7 @@ export async function setup(
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
   const serviceProviderDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     serviceProvider,
     dawnMint,
     serviceProvider.publicKey,
@@ -220,25 +122,25 @@ export async function setup(
   // Create USDC account for Service Provider
   console.log('Creating USDC account for Service Provider...')
   const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     serviceProvider,
     usdcMint,
     serviceProvider.publicKey,
   )
 
-  // Create USDC account for Tester
-  console.log('Creating USDC account for Tester...')
+  // Create USDC account for Customer
+  console.log('Creating USDC account for Customer...')
   const customerUsdcAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     customer,
     usdcMint,
     customer.publicKey,
   )
 
-  // Create DAWN token account for Tester
-  console.log('Creating DAWN token account for Tester...')
+  // Create DAWN token account for Customer
+  console.log('Creating DAWN token account for Customer...')
   const customerDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     customer,
     dawnMint,
     customer.publicKey,
@@ -247,7 +149,7 @@ export async function setup(
   // Create DAWN token account for wallet
   console.log('Creating DAWN token account for wallet...')
   const walletDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     wallet,
     dawnMint,
     wallet.publicKey,
@@ -256,7 +158,7 @@ export async function setup(
   // Create USDC token account for wallet
   console.log('Creating USDC token account for wallet...')
   const walletUsdcAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+    provider.connection,
     wallet,
     usdcMint,
     wallet.publicKey,
@@ -265,22 +167,22 @@ export async function setup(
   // Mint 1_000_000 USDC to wallet
   console.log('Minting 1_000_000 USDC to wallet...')
   await mintTo(
-    provider.context.banksClient, // Banks client
+    provider.connection,
     wallet, // Payer for transaction
     usdcMint, // Mint
     walletUsdcAccount, // Token account
-    wallet.publicKey, // Mint authority
+    wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
   // Mint 1_000_000 DAWN to wallet
   console.log('Minting 1_000_000 DAWN to wallet...')
   await mintTo(
-    provider.context.banksClient, // Banks client
+    provider.connection,
     wallet, // Payer for transaction
     dawnMint, // Mint
     walletDawnAccount, // Token account
-    wallet.publicKey, // Mint authority
+    wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
@@ -345,23 +247,25 @@ export async function setup(
 
   // Create USDC vault token account for subscription escrow
   console.log('Creating USDC vault token account for subscription escrow...')
-  const escrowUsdcVault = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+  const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
     serviceProvider,
     usdcMint,
     subscriptionPda,
+    true,
   )
 
   // Create DAWN vault token account for subscription escrow
   console.log('Creating DAWN vault token account for subscription escrow...')
-  const escrowDawnVault = await createAssociatedTokenAccount(
-    provider.context.banksClient,
+  const { address: escrowDawnVault } = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
     serviceProvider,
     dawnMint,
     subscriptionPda,
+    true,
   )
 
-  mock = {
+  return {
     dao,
     validatorPool,
     medallionPool,
@@ -413,7 +317,4 @@ export async function setup(
     subscriptionPda,
     subscriptionBump,
   }
-
-  return mock
 }
-

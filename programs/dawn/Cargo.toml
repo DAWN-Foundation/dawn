@@ -1,12 +1,12 @@
 [package]
-name = "plan"
+name = "dawn"
 version = "0.1.0"
-description = "DAWN Plan Subscription Program"
+description = "DAWN Protocol Program"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "plan"
+name = "dawn"
 
 [features]
 no-entrypoint = []

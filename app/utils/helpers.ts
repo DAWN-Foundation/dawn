@@ -2,32 +2,10 @@ import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
 
-import { Plan } from '../../target/types/plan'
-
-// Helper to confirm a transaction
-export async function confirmTx(
-  connection: anchor.web3.Connection,
-  tx: string,
-  commitment: 'confirmed' | 'finalized' = 'confirmed',
-): Promise<VersionedTransactionResponse> {
-  const lastBlock = await connection.getLatestBlockhash()
-
-  await connection.confirmTransaction(
-    {
-      signature: tx,
-      blockhash: lastBlock.blockhash,
-      lastValidBlockHeight: lastBlock.lastValidBlockHeight,
-    },
-    commitment,
-  )
-
-  const confirmedTx = await connection.getTransaction(tx, {
-    commitment,
-    maxSupportedTransactionVersion: 0,
-  })
-
-  return confirmedTx
-}
+import { Dawn } from '../../target/types/dawn'
+import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
+import { BankrunProvider } from 'anchor-bankrun'
+import { confirmTx } from './mock'
 
 // Helper to fund an account with SOL
 export async function fund(
@@ -37,20 +15,25 @@ export async function fund(
   commitment: 'confirmed' | 'finalized' = 'confirmed',
 ) {
   const signature = await connection.requestAirdrop(account, amount * 10 ** 9)
-  await confirmTx(connection, signature, commitment)
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash()
+  await connection.confirmTransaction(
+    {
+      blockhash,
+      lastValidBlockHeight,
+      signature,
+    },
+    commitment,
+  )
 }
 
 // Helper to get the event from the transaction
 export async function getEvent<T>(
-  program: anchor.Program<Plan>,
-  tx: string,
+  program: Program<Dawn>,
+  tx: BanksTransactionMeta,
   name: string,
 ): Promise<T> {
-  const confirmedTx = await confirmTx(program.provider.connection, tx)
-
-  const logs = confirmedTx.meta.logMessages.filter((msg) =>
-    msg.startsWith('Program data: '),
-  )
+  const logs = tx.logMessages.filter((msg) => msg.startsWith('Program data: '))
   const log = logs[logs.length - 1]
 
   const logEncoded = log.split('Program data: ')[1]
@@ -65,7 +48,7 @@ export async function getEvent<T>(
 
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
-  program: Program<Plan>,
+  program: Program<Dawn>,
   building: PublicKey,
   price: BN,
   duration: number,
@@ -97,7 +80,7 @@ export function getPlanPda(
 
 // Helper to get all plans for a building
 export async function getPlansForBuilding(
-  program: Program<Plan>, // Anchor program
+  program: Program<Dawn>, // Anchor program
   building: PublicKey, // Public key of the building
 ): Promise<any[]> {
   // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)

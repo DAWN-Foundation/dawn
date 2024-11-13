@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum PlanError {
+pub enum DawnError {
     #[msg("Arithmetic operation overflowed")]
     Overflow,
 
@@ -43,4 +43,7 @@ pub enum PlanError {
 
     #[msg("Invalid vault")]
     InvalidVault,
+
+    #[msg("Claim too early")]
+    ClaimTooEarly,
 }

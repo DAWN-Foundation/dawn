@@ -4,7 +4,7 @@ Solana smart contracts for the DAWN protocol
 
 ## Programs
 
-- [Subscription Plan](./programs/plan/README.md)
+- [Dawn Protocol](./programs/dawn/README.md)
 
 ## Prerequisites
 
@@ -32,8 +32,11 @@ rustc --version
 ### Solana CLI
 
 ```bash
-# Install the Solana CLI
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+# Install the Solana CLI (version 1.17.0)
+sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+
+# Alternatively, install the latest Solana CLI (not recommended)
+# sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
 
 # Output might ask to:
 # Close and reopen your terminal to apply the PATH changes
@@ -51,11 +54,11 @@ cargo install --git https://github.com/coral-xyz/anchor avm --force
 # Make sure AVM is installed
 avm --version
 
-# Install the latest Anchor version
-avm install latest
+# Install the Anchor version 0.29.0
+avm install 0.29.0
 
-# Use latest Anchor version
-avm use latest
+# Use the installed Anchor version
+avm use 0.29.0
 
 # Make sure Anchor is installed
 anchor --version
@@ -79,9 +82,6 @@ solana address --keypair ~/.config/solana/id.json
 ### Build
 
 ```bash
-# Build the IDL
-anchor idl build --program-name plan
-
 # Build the program
 anchor build
 ```
@@ -120,7 +120,7 @@ solana-test-validator \
 
 # omit the --reset flag to keep existing data
 
-# Airdrop 5 SOL to specified address
+# Airdrop 500 SOL to specified address
 solana airdrop --url l 500 <address>
 ```
 
@@ -130,10 +130,10 @@ solana airdrop --url l 500 <address>
 # Deploy the program locally
 anchor deploy --provider.cluster l
 
+# [Optional] If required to import the IDL somewhere
 # Copy the IDL of the deployed program to the clipboard
 # where `~/andrena/dawn` points to the project directory
-# only needed if need to import the IDL somewhere
-pbcopy < ~/andrena/dawn/target/idl/plan.json
+pbcopy < ~/andrena/dawn/target/idl/dawn.json
 ```
 
 ### Testnet Setup
@@ -149,36 +149,36 @@ These command allow interaction with the plan contract deployed on local testnet
 
 ```bash
 # Initialize the plan contract (as local identity )
-yarn plan:init
+yarn dawn:init
 
 # [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
 # these can be applied to all transaction commands below
 # for example:
 # --root was used to mint tokens, might be used for init, but not necessary
-# --building-owner is usually used to add a building and create plans
-# --tester should have some USDC and can be used to pay for plan subscription
-yarn plan:init --root
-yarn plan:add_building --building-owner
-yarn plan:subscribe --tester
+# --service-provider is usually used to add a building and create plans
+# --customer should have some USDC and can be used to pay for plan subscription
+yarn dawn:init --root
+yarn dawn:add_building --service-provider
+yarn dawn:subscribe --customer
 
 
-# Add a building to the plan contract (as --building-owner)
-yarn plan:add_building \
-    --building-owner \
+# Add a building to the plan contract (as --service-provider)
+yarn dawn:add_building \
+    --service-provider \
     --name 'Building 1' \
     --address '123 Main St' \
     --floors 5
 
 # Get all buildings
-yarn plan:get_buildings
+yarn dawn:get_buildings
 
 # Get all buildings for a specific owner
-yarn plan:get_buildings --owner <owner>
+yarn dawn:get_buildings --owner <owner>
 
-# Create a plan for a building (as --building-owner)
-yarn plan:add_plan \
-    --building-owner \
+# Create a plan for a building (as --service-provider)
+yarn dawn:add_plan \
+    --service-provider \
     --building <building> \
     --price 100000000 \
     --duration 30 \
@@ -187,28 +187,32 @@ yarn plan:add_plan \
     --sla 1
 
 # Get all plans
-yarn plan:get_plans
+yarn dawn:get_plans
 
 # Get all plans for a specific building
-yarn plan:get_plans --building <building>
+yarn dawn:get_plans --building <building>
 
 # Mint USDC
 yarn mint:usdc \
-    --root \
     --recipient <recipient> \
     --amount 240
 
-# Subscribe to a plan (as --tester)
-yarn plan:subscribe \
-    --tester \
+# Subscribe to a plan (as --customer)
+yarn dawn:subscribe \
+    --customer \
     --plan <plan>
 
 # Get all subscriptions
-yarn plan:get_subscriptions
+yarn dawn:get_subscriptions
 
 # Get all subscriptions for a specific plan
-yarn plan:get_subscriptions --plan <plan>
+yarn dawn:get_subscriptions --plan <plan>
 
 # Get all subscriptions for a specific subscriber
-yarn plan:get_subscriptions --subscriber <subscriber>
+yarn dawn:get_subscriptions --subscriber <subscriber>
+
+# Claim locked DAWN after 24 hours (as --service-provider)
+yarn dawn:claim \
+    --service-provider \
+    --subscription <subscription>
 ```

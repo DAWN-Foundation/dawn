@@ -1,6 +1,7 @@
 {
   "license": "ISC",
   "scripts": {
+    "test": "cp target/deploy/dawn.so tests/fixtures && RUST_LOG= jest --runInBand --verbose",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "clean": "rm -rf dist",
@@ -8,29 +9,37 @@
     "build": "tsc --outDir dist --esModuleInterop true --skipLibCheck true app/*.ts app/**/*.ts",
     "pretestnet": "yarn build",
     "testnet": "node dist/app/testnet.js",
-    "mint:usdc": "yarn build && node dist/app/plan/mint_usdc.js",
-    "plan:init": "yarn build && node dist/app/plan/init.js",
-    "plan:get_config": "yarn build && node dist/app/plan/get_config.js",
-    "plan:add_building": "yarn build && node dist/app/plan/add_building.js",
-    "plan:get_buildings": "yarn build && node dist/app/plan/get_buildings.js",
-    "plan:add_plan": "yarn build && node dist/app/plan/add_plan.js",
-    "plan:get_plans": "yarn build && node dist/app/plan/get_plans.js",
-    "plan:subscribe": "yarn build && node dist/app/plan/subscribe.js",
-    "plan:get_subscriptions": "yarn build && node dist/app/plan/get_subscriptions.js"
+    "mint:usdc": "yarn build && node dist/app/dawn/mint_usdc.js",
+    "dawn:init": "yarn build && node dist/app/dawn/init.js",
+    "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
+    "dawn:add_building": "yarn build && node dist/app/dawn/add_building.js",
+    "dawn:get_buildings": "yarn build && node dist/app/dawn/get_buildings.js",
+    "dawn:add_plan": "yarn build && node dist/app/dawn/add_plan.js",
+    "dawn:get_plans": "yarn build && node dist/app/dawn/get_plans.js",
+    "dawn:subscribe": "yarn build && node dist/app/dawn/subscribe.js",
+    "dawn:get_subscriptions": "yarn build && node dist/app/dawn/get_subscriptions.js",
+    "dawn:claim": "yarn build && node dist/app/dawn/claim.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
     "@solana/spl-token": "0.4.0",
-    "@solana/web3.js": "^1.90.0"
+    "@solana/web3.js": "^1.90.0",
+    "anchor-bankrun": "^0.5.0",
+    "solana-bankrun": "^0.4.0",
+    "spl-token-bankrun": "^0.2.6"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@types/bn.js": "^5.1.0",
     "@types/chai": "^4.3.0",
+    "@types/jest": "^29.5.14",
     "@types/mocha": "^9.0.0",
     "@types/node": "^22.7.6",
     "chai": "^4.3.4",
+    "jest": "^29.7.0",
     "mocha": "^9.0.3",
     "prettier": "^2.6.2",
+    "ts-jest": "^29.2.5",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.6.3"
   }

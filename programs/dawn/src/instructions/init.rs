@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use super::PlanApp;
+use super::DawnApp;
 
 #[account]
 pub struct Config {
@@ -119,18 +119,13 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-impl PlanApp {
+impl DawnApp {
     pub fn initialize(
         ctx: Context<Initialize>,
         dao_fee: u64,
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        msg!(
-            "Initializing the Plan program by {}",
-            ctx.accounts.caller.key()
-        );
-
         let config = &mut ctx.accounts.config;
 
         // make caller the authority

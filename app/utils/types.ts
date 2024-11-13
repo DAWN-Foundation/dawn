@@ -5,8 +5,8 @@ export interface Mock {
   dao: Keypair
   validatorPool: Keypair
   medallionPool: Keypair
-  buildingOwner: Keypair
-  tester: Keypair
+  serviceProvider: Keypair
+  customer: Keypair
   // mints
   usdcMint: PublicKey
   dawnMint: PublicKey
@@ -14,24 +14,44 @@ export interface Mock {
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
-  buildingOwnerUsdcAccount: PublicKey
-  buildingOwnerDawnAccount: PublicKey
-  testerUsdcAccount: PublicKey
-  testerDawnAccount: PublicKey
+  serviceProviderDawnAccount: PublicKey
+  serviceProviderUsdcAccount: PublicKey
+  customerDawnAccount: PublicKey
+  customerUsdcAccount: PublicKey
+  walletDawnAccount: PublicKey
+  walletUsdcAccount: PublicKey
+  escrowDawnVault: PublicKey
+  escrowUsdcVault: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
   raydiumConfig: PublicKey
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
-  dawnVault: PublicKey
-  usdcVault: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
   // config
   daoFee: BN
   validatorFee: BN
   medallionFee: BN
-  // plan
+  // PDAs
   configPda: PublicKey
+  buildingPda: PublicKey
+  planPda: PublicKey
+  planBump: number
+  // building
+  buildingName: string
+  buildingAddress: string
+  buildingFloors: number
+  // plan
+  planPrice: BN
+  planDuration: number
+  planSpeed: number
+  planCapacity: BN
+  planSlaId: BN
+  // subscription
+  subscriptionPda: PublicKey
+  subscriptionBump: number
 }
 
 interface RawKeypair {
@@ -43,8 +63,8 @@ export interface RawMock {
   dao: RawKeypair
   validatorPool: RawKeypair
   medallionPool: RawKeypair
-  buildingOwner: RawKeypair
-  tester: RawKeypair
+  serviceProvider: RawKeypair
+  customer: RawKeypair
   // mints
   usdcMint: string
   dawnMint: string
@@ -52,22 +72,42 @@ export interface RawMock {
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string
-  buildingOwnerUsdcAccount: string
-  buildingOwnerDawnAccount: string
-  testerUsdcAccount: string
-  testerDawnAccount: string
+  serviceProviderDawnAccount: string
+  serviceProviderUsdcAccount: string
+  customerDawnAccount: string
+  customerUsdcAccount: string
+  walletDawnAccount: string
+  walletUsdcAccount: string
+  escrowDawnVault: string
+  escrowUsdcVault: string
   // raydium
   raydium: string
   raydiumAuthority: string
   raydiumConfig: string
   raydiumPool: string
   raydiumObservation: string
-  dawnVault: string
-  usdcVault: string
+  raydiumDawnVault: string
+  raydiumUsdcVault: string
   // config
   daoFee: string
   validatorFee: string
   medallionFee: string
-  // plan
+  // PDAs
   configPda: string
+  buildingPda: string
+  planPda: string
+  planBump: number
+  // building
+  buildingName: string
+  buildingAddress: string
+  buildingFloors: number
+  // plan
+  planPrice: string
+  planDuration: number
+  planSpeed: number
+  planCapacity: string
+  planSlaId: string
+  // subscription
+  subscriptionPda: string
+  subscriptionBump: number
 }

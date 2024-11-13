@@ -1,4 +1,4 @@
-import { PublicKey } from '@solana/web3.js'
+import { Keypair, PublicKey } from '@solana/web3.js'
 import { Program, Wallet, BN, Idl } from '@coral-xyz/anchor'
 import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token'
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
@@ -14,7 +14,7 @@ import {
 
 export async function deposit(
   program: Program<RaydiumCpSwap>,
-  wallet: Wallet,
+  wallet: Keypair,
   configPda: PublicKey,
   mint0: PublicKey,
   mint1: PublicKey,
@@ -41,7 +41,7 @@ export async function deposit(
 
   // 10K more of each token
   const dawn_amount = new BN(10_000_000_000)
-  const usdc_amount = new BN(20_000_000_000)    
+  const usdc_amount = new BN(20_000_000_000)
   const maximum_token_0_amount = dawnIsBase ? dawn_amount : usdc_amount
   const maximum_token_1_amount = dawnIsBase ? usdc_amount : dawn_amount
 

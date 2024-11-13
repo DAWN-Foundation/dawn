@@ -33,4 +33,13 @@ pub struct Subscribed {
     pub subscriber: Pubkey,
     pub plan: Pubkey,
     pub expiration: i64,
+    pub swap_price: u128,
+}
+
+#[event]
+pub struct Claimed {
+    pub subscription: Pubkey,
+    pub plan: Pubkey,
+    pub swap_price: u128,
+    pub dawn_claimed: u64,
 }
