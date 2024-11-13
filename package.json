@@ -17,7 +17,8 @@
     "dawn:add_plan": "yarn build && node dist/app/dawn/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/app/dawn/get_plans.js",
     "dawn:subscribe": "yarn build && node dist/app/dawn/subscribe.js",
-    "dawn:get_subscriptions": "yarn build && node dist/app/dawn/get_subscriptions.js"
+    "dawn:get_subscriptions": "yarn build && node dist/app/dawn/get_subscriptions.js",
+    "dawn:claim": "yarn build && node dist/app/dawn/claim.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",

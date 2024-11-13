@@ -210,4 +210,9 @@ yarn dawn:get_subscriptions --plan <plan>
 
 # Get all subscriptions for a specific subscriber
 yarn dawn:get_subscriptions --subscriber <subscriber>
+
+# Claim locked DAWN after 24 hours (as --service-provider)
+yarn dawn:claim \
+    --service-provider \
+    --subscription <subscription>
 ```
