@@ -172,6 +172,7 @@ impl DawnApp {
         }
 
         let mut swap_price = 0;
+
         // Handle swapping USDC for next period
         let remaining_usdc = ctx.accounts.escrow_usdc_vault.amount;
         if days_since_claim > 0 && remaining_usdc > 0 {
@@ -223,6 +224,7 @@ impl DawnApp {
                     is_usdc_base,
                     usdc_to_swap,
                 )?;
+
                 swap_price = price;
 
                 // Create CPI accounts for the swap

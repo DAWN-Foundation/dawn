@@ -367,4 +367,89 @@ export const claimTests = () =>
       const sub = await program.account.subscription.fetch(mock.subscriptionPda)
       expect(sub.claimableDawn.gte(nextDailyDawn)).toBeTruthy()
     })
+
+    test('claims accumulated 3 days worth of DAWN', async () => {
+      subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+
+      // forward time 1 day to unlock claimable_dawn (3 days worth of DAWN)
+      const clock = await provider.context.banksClient.getClock()
+      provider.context.setClock(
+        new Clock(
+          clock.slot,
+          clock.epochStartTimestamp,
+          clock.epoch,
+          clock.leaderScheduleEpoch,
+          clock.unixTimestamp + SECONDS_PER_DAY,
+        ),
+      )
+
+      // get balances of service provider DAWN account
+      const serviceProviderDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
+
+      // get balances of escrow USDC vault
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+
+      // get raydium vaults
+      const raydiumDawnVault = await getAccount(
+        provider.connection,
+        accounts.raydiumDawnVault,
+      )
+      const raydiumUsdcVault = await getAccount(
+        provider.connection,
+        accounts.raydiumUsdcVault,
+      )
+
+      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+      const tx = await program.methods
+        .claim()
+        .accounts(accounts)
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      // make sure the escrow USDC vault was debited by the daily USDC amount
+      // with 1% tolerance (to account for slippage)
+      const escrowUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      expect(
+        escrowUsdcBalanceBefore
+          .sub(escrowUsdcBalanceAfter)
+          .gte(subscription.dailyUsdc.mul(SLIPPAGE_BPS).div(BPS_DENOMINATOR)),
+      ).toBeTruthy()
+
+      // make sure the service provider DAWN account was credited with the claimable DAWN amount
+      const serviceProviderDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
+      expect(
+        serviceProviderDawnBalanceAfter
+          .sub(serviceProviderDawnBalanceBefore)
+          .eq(subscription.claimableDawn),
+      ).toBeTruthy()
+
+      // make sure the escrow DAWN vault was credited by the next daily claimable DAWN amount (1 day)
+      const nextDailyDawn = subscription.dailyUsdc
+        .mul(price)
+        .div(Q32)
+        .mul(SLIPPAGE_BPS)
+        .div(BPS_DENOMINATOR)
+      const escrowDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+      expect(escrowDawnBalanceAfter.gte(nextDailyDawn)).toBeTruthy()
+    })
   })
