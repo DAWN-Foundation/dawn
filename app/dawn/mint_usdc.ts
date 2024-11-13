@@ -3,8 +3,7 @@ import { PublicKey } from '@solana/web3.js'
 const { mintTo } = require('@solana/spl-token')
 
 import { connect, getMock, getFlag } from './utils'
-
-const USDC_DECIMALS = new BN(10).pow(new BN(6))
+import { USDC_DECIMALS } from '../utils'
 
 const AMOUNT = 1000
 

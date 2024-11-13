@@ -126,11 +126,6 @@ impl DawnApp {
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        msg!(
-            "Initializing the Plan program by {}",
-            ctx.accounts.caller.key()
-        );
-
         let config = &mut ctx.accounts.config;
 
         // make caller the authority

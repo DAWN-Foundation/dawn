@@ -54,6 +54,7 @@ async function main() {
       building: buildingPda,
       plan: planPda,
     } as {})
+    .signers([wallet.payer])
     .instruction()
 
   try {

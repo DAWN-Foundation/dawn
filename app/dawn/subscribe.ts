@@ -28,13 +28,10 @@ async function main() {
   const { wallet, connection, program } = await connect()
   const mock = getMock()
 
-  // for now ensure wallet is customer
-  if (wallet.publicKey.toBase58() !== mock.customer.publicKey.toBase58()) {
-    throw new Error('Wallet must be customer [for now]')
-  }
-
-  const configPda = new PublicKey(mock.configPda)
-  const userUsdcAccount = new PublicKey(mock.customerUsdcAccount)
+  // // for now ensure wallet is customer
+  // if (wallet.publicKey.toBase58() !== mock.customer.publicKey.toBase58()) {
+  //   throw new Error('Wallet must be customer [for now]')
+  // }
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
@@ -48,7 +45,7 @@ async function main() {
   )
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
 
-  const escrowUsdcVault = await getOrCreateAssociatedTokenAccount(
+  const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
     mock.usdcMint,
@@ -56,7 +53,7 @@ async function main() {
     true,
   )
 
-  const escrowDawnVault = await getOrCreateAssociatedTokenAccount(
+  const { address: escrowDawnVault } = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
     mock.dawnMint,
@@ -64,11 +61,30 @@ async function main() {
     true,
   )
 
+  // get wallet token accounts
+  const { address: walletUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet.payer,
+      mock.usdcMint,
+      wallet.publicKey,
+      true,
+    )
+
+  const { address: walletDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet.payer,
+      mock.dawnMint,
+      wallet.publicKey,
+      true,
+    )
+
   const itx = await program.methods
     .subscribe()
     .accounts({
-      caller: mock.customer.publicKey,
-      config: configPda,
+      caller: wallet.publicKey,
+      config: mock.configPda,
       plan: planPda,
       subscription: subscriptionPda,
       // mints
@@ -84,18 +100,19 @@ async function main() {
       raydiumDawnVault: mock.raydiumDawnVault,
       raydiumUsdcVault: mock.raydiumUsdcVault,
       // token accounts
-      userUsdcAccount: mock.customerUsdcAccount,
-      userDawnAccount: mock.customerDawnAccount,
+      userUsdcAccount: walletUsdcAccount,
+      userDawnAccount: walletDawnAccount,
       daoDawnAccount: mock.daoDawnAccount,
       validatorDawnAccount: mock.validatorDawnAccount,
       medallionDawnAccount: mock.medallionDawnAccount,
-      escrowUsdcVault: escrowUsdcVault.address,
-      escrowDawnVault: escrowDawnVault.address,
+      escrowUsdcVault,
+      escrowDawnVault,
       // programs
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
+    .signers([wallet.payer])
     .instruction()
 
   try {

@@ -120,8 +120,9 @@ export async function connect(): Promise<{
 }> {
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
-  const context = await startAnchor('.', [], [])
-  const provider = new BankrunProvider(context)
+
+  const connection = new Connection('http://127.0.0.1:8899')
+  const provider = new anchor.AnchorProvider(connection, wallet, {})
   anchor.setProvider(provider)
   const program = getDawnProgram(provider)
 
@@ -174,7 +175,7 @@ export async function submitTx(
   console.log({ txSignature })
 
   const confirmationResult = await connection.confirmTransaction(
-    txSignature,
+    { signature: txSignature, ...latestBlockHash },
     'confirmed',
   )
 
