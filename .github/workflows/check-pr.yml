@@ -19,7 +19,7 @@ jobs:
           path: |
             ~/.local/share/solana/install
             ~/.cargo/bin
-          key: ${{ runner.os }}-solana-anchor-cli-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-solana-anchor-cli
       - name: Install Rust toolchain
         run: rustup default 1.79.0
       - name: Install Solana CLI
