@@ -1,0 +1,30 @@
+name: Check PR
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+    branches: [dev, feat/DAWN-21/ci-tests]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: projectserum/build:v0.29.0
+
+    steps:
+      - name: Set default toolchain
+        run: rustup default 1.79.0
+      - name: List rustup toolchains
+        run: rustup toolchain list
+      - name: Generate new keygen
+        run: solana-keygen new
+      - name: Set solana target cluster to local
+        run: solana config set --url http:localhost:8899
+      - name: Check solana config
+        run: solana config get
+      - name: Install yarn dependencies
+        run: yarn install
+      - name: Build
+        run: anchor build
+      - name: Run tests
+        run: anchor test
