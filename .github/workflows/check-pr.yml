@@ -17,6 +17,8 @@ jobs:
         run: rustup default 1.79.0
       - name: Install Solana CLI
         run: sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+      - name: Set Solana CLI path
+        run: export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
       - name: Install Anchor CLI
         run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
       - name: Generate new keygen
