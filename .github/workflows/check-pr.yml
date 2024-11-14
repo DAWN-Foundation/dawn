@@ -20,7 +20,7 @@ jobs:
             ~/.local/share/solana/install
             ~/.cargo/bin
           key: ${{ runner.os }}-solana-anchor-cli-${{ hashFiles('**/Cargo.lock') }}
-      - name: Set default Rust toolchain
+      - name: Install Rust toolchain
         run: rustup default 1.79.0
       - name: Install Solana CLI
         run: |
@@ -29,7 +29,9 @@ jobs:
       - name: Install Anchor CLI
         run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
       - name: Generate new keygen
-        run: solana-keygen new
+        run: |
+          mkdir -p ~/.config/solana
+          solana-keygen new
       - name: Set solana target cluster to local
         run: solana config set --url http:localhost:8899
       - name: Check solana config
