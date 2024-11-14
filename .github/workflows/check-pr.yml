@@ -9,13 +9,16 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    container: projectserum/build:v0.29.0
 
     steps:
-      - name: Set default toolchain
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set default Rust toolchain
         run: rustup default 1.79.0
-      - name: List rustup toolchains
-        run: rustup toolchain list
+      - name: Install Solana CLI
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+      - name: Install Anchor CLI
+        run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
       - name: Generate new keygen
         run: solana-keygen new
       - name: Set solana target cluster to local
