@@ -13,6 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # CACHE
       - name: Cache Solana and Anchor CLI
         uses: actions/cache@v4
         id: cli-cache
@@ -21,27 +22,36 @@ jobs:
             ~/.local/share/solana/install
             ~/.cargo/bin
           key: ${{ runner.os }}-solana-anchor-cli
+      # RUST
       - name: Install Rust toolchain
         run: rustup default 1.79.0
+      # SOLANA
       - name: Install Solana CLI
         if: steps.cli-cache.outputs.cache-hit != 'true'
-        run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
-          echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+      - name: Set Solana CLI path
+        run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      # ANCHOR
       - name: Install Anchor CLI
         if: steps.cli-cache.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
+      # GENERATE KEY
       - name: Generate new keygen
         run: |
           mkdir -p ~/.config/solana
-          solana-keygen new
+          chmod 700 ~/.config/solana
+          solana-keygen new -o ~/.config/solana/id.json
+      # CONFIG
       - name: Set solana target cluster to local
         run: solana config set --url http:localhost:8899
       - name: Check solana config
         run: solana config get
+      # DEPENDENCIES
       - name: Install yarn dependencies
         run: yarn install
+      # BUILD
       - name: Build
         run: anchor build
+      # TESTS
       - name: Run tests
         run: anchor test
