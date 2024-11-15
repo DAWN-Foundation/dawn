@@ -25,6 +25,8 @@ jobs:
             ~/.cargo/git
             ~/.cache/solana
           key: ${{ runner.os }}-solana-anchor-cli
+          restore-keys: |
+            Linux-solana-anchor-cli
 
       # RUST
       - name: Install Rust toolchain
