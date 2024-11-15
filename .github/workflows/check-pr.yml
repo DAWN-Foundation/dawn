@@ -2,9 +2,9 @@ name: Check PR
 
 on:
   push:
-    branches: [dev, master, feat/DAWN-21/ci-tests]
+    branches: [dev, master]
   pull_request:
-    branches: [dev]
+    branches: [dev, master]
 
 jobs:
   check:
