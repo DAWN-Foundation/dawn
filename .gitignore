@@ -7,3 +7,5 @@ test-ledger
 .yarn
 dist
 testnet.json
+
+tests/fixtures/dawn.so
