@@ -17,6 +17,9 @@ import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
 
+/// Denominator of geo coordinates (Basis Points)
+const COORD_DENOMINATOR = 10 ** 10;
+
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens
 // Only run once in `testnet` script for validator setup
@@ -220,6 +223,24 @@ export async function prepare(
     program.programId,
   )
 
+  const deviceType = { router: {} }
+  const deviceManufacturer = '123 Main St'
+  const deviceModel = "Microtic XXXX"
+  const deviceLatitude = new BN(0.0000000001 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001 * COORD_DENOMINATOR)
+
+  const [devicePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('device'),
+      Buffer.from([0, 0, 0, 0, 0, 0]),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+      Buffer.from(deviceLatitude.toArray('le', 8)),
+      Buffer.from(deviceLongitude.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
   const planPrice = new BN(100).mul(USDC_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
@@ -228,7 +249,7 @@ export async function prepare(
 
   const [planPda, planBump] = getPlanPda(
     program,
-    buildingPda,
+    devicePda,
     planPrice,
     planDuration,
     planSpeed,
@@ -301,12 +322,19 @@ export async function prepare(
     // PDAs
     configPda,
     buildingPda,
+    devicePda,
     planPda,
     planBump,
     // building
     buildingName,
     buildingAddress,
     buildingFloors,
+    // device
+    deviceType,
+    deviceManufacturer,
+    deviceModel,
+    deviceLatitude,
+    deviceLongitude,
     // plan
     planPrice,
     planDuration,

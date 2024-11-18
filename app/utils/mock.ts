@@ -17,8 +17,11 @@ import { getDawnProgram } from '../dawn/utils'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
+/// Denominator of geo coordinates (Basis Points)
+const COORD_DENOMINATOR = 10 ** 10;
+
 export const PROGRAM_ID = new PublicKey(
-  'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
+  'GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact',
 )
 
 export const RAYDIUM_PROGRAM_ID = new PublicKey(
@@ -318,6 +321,24 @@ export async function setup(
     program.programId,
   )
 
+  const deviceType = { router: {} }
+  const deviceManufacturer = '123 Main St'
+  const deviceModel = "Microtic XXXX"
+  const deviceLatitude = new BN(0.0000000001 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN (0.0000000001 * COORD_DENOMINATOR)
+
+  const [devicePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('device'),
+      Buffer.from([0, 0, 0, 0, 0, 0]),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+      Buffer.from(deviceLatitude.toArray('le', 8)),
+      Buffer.from(deviceLongitude.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
   const planPrice = new BN(100).mul(USDC_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
@@ -326,7 +347,7 @@ export async function setup(
 
   const [planPda, planBump] = getPlanPda(
     program,
-    buildingPda,
+    devicePda,
     planPrice,
     planDuration,
     planSpeed,
@@ -397,12 +418,19 @@ export async function setup(
     // PDAs
     configPda,
     buildingPda,
+    devicePda,
     planPda,
     planBump,
     // building
     buildingName,
     buildingAddress,
     buildingFloors,
+    // device
+    deviceType,
+    deviceManufacturer,
+    deviceModel,
+    deviceLatitude,
+    deviceLongitude,
     // plan
     planPrice,
     planDuration,

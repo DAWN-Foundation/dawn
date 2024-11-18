@@ -1,16 +1,16 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
-use super::{Building, DawnApp};
+use super::{DawnApp, Device};
 use crate::{PlanAdded, DawnError, PlanRemoved};
 
-/// The plan account, representing a subscription plan tied to a building
+/// The plan account, representing a subscription plan tied to a device
 #[account]
 pub struct Plan {
     /// The plan owner
     pub owner: Pubkey,
-    /// Associated building
-    pub building: Pubkey,
+    /// Associated device
+    pub device: Pubkey,
     /// The plan price per `duration` days (in USDC with 6 decimals)
     pub price: u64,
     /// The plan duration in days
@@ -28,7 +28,7 @@ pub struct Plan {
 
 const PLAN_SIZE: usize = 8 // id
     + 32 // owner
-    + 32 // building
+    + 32 // device
     + 8 // price
     + 2 // duration
     + 4 // speed
@@ -42,19 +42,21 @@ pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The building account (must be owned by the caller)
+    /// The device account (must be owned by the caller)
     #[account(
         mut,
-        constraint = building.owner == caller.key(),
+        constraint = device.owner == caller.key(),
         seeds = [
-            b"building",
-            &building.name.as_bytes()[..min(building.name.len(), MAX_SEED_LEN)],
-            &building.address.as_bytes()[..min(building.address.len(), MAX_SEED_LEN)],
-            &[building.floors],
+            b"device",
+            &[0u8; 6],
+            &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
+            &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
+            &device.latitude.to_le_bytes(),
+            &device.longitude.to_le_bytes(),
         ],
-        bump = building.bump
+        bump = device.bump
     )]
-    pub building: Account<'info, Building>,
+    pub device: Account<'info, Device>,
 
     /// The plan account
     #[account(
@@ -63,7 +65,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            building.key().as_ref(),
+            device.key().as_ref(),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
@@ -84,16 +86,18 @@ pub struct RemovePlan<'info> {
 
     #[account(
         mut,
-        constraint = building.owner == caller.key(),
+        constraint = device.owner == caller.key(),
         seeds = [
-            b"building",
-            &building.name.as_bytes()[..min(building.name.len(), MAX_SEED_LEN)],
-            &building.address.as_bytes()[..min(building.address.len(), MAX_SEED_LEN)],
-            &[building.floors],
+            b"device",
+            &[0u8; 6],
+            &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
+            &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
+            &device.latitude.to_le_bytes(),
+            &device.longitude.to_le_bytes(),
         ],
-        bump = building.bump
+        bump = device.bump
     )]
-    pub building: Account<'info, Building>,
+    pub device: Account<'info, Device>,
 
     /// The plan account
     #[account(
@@ -102,7 +106,7 @@ pub struct RemovePlan<'info> {
         close = caller,
         seeds = [
             b"plan",
-            building.key().as_ref(),
+            device.key().as_ref(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -135,7 +139,7 @@ impl DawnApp {
         require!(speed > 0, DawnError::ZeroPlanSpeed);
 
         plan.owner = ctx.accounts.caller.key();
-        plan.building = ctx.accounts.building.key();
+        plan.device = ctx.accounts.device.key();
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;
@@ -146,7 +150,7 @@ impl DawnApp {
         emit!(PlanAdded {
             plan: plan.key(),
             owner: plan.owner,
-            building: plan.building,
+            device: plan.device,
             price: plan.price,
             duration: plan.duration,
             speed: plan.speed,
@@ -162,7 +166,7 @@ impl DawnApp {
 
         emit!(PlanRemoved {
             plan: ctx.accounts.plan.key(),
-            building: ctx.accounts.building.key(),
+            device: ctx.accounts.device.key(),
         });
 
         Ok(())

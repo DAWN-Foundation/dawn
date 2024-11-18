@@ -14,7 +14,10 @@ import { loadWallet, Mock, RawMock } from '../utils'
 import { BankrunProvider, startAnchor } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
 
-const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
+const PROGRAM_ID = new PublicKey('GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact')
+
+/// Denominator of geo coordinates (Basis Points)
+const COORD_DENOMINATOR = 10 ** 10;
 
 // parse command line arguments
 // find value of the --flag
@@ -82,12 +85,19 @@ export function getMock(): Mock {
     // PDAs
     configPda: new PublicKey(mock.configPda),
     buildingPda: new PublicKey(mock.buildingPda),
+    devicePda: new PublicKey(mock.devicePda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
     // building
     buildingName: mock.buildingName,
     buildingAddress: mock.buildingAddress,
     buildingFloors: mock.buildingFloors,
+    // device
+    deviceType: mock.deviceType,
+    deviceManufacturer: mock.deviceManufacturer,
+    deviceModel: mock.deviceModel,
+    deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
+    deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
@@ -191,7 +201,7 @@ export async function submitTx(
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: anchor.Program<Dawn>,
-  building: PublicKey,
+  device: PublicKey,
   price: BN,
   duration: number,
   speed: number,
@@ -207,7 +217,7 @@ export function getPlanPda(
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
+      Buffer.from(device.toBytes()),
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,

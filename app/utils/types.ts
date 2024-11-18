@@ -1,5 +1,6 @@
-import { BN } from '@coral-xyz/anchor'
+import { BN, IdlTypes } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
+import { Dawn } from '../../target/types/dawn'
 
 export interface Mock {
   dao: Keypair
@@ -37,12 +38,19 @@ export interface Mock {
   // PDAs
   configPda: PublicKey
   buildingPda: PublicKey
+  devicePda: PublicKey
   planPda: PublicKey
   planBump: number
   // building
   buildingName: string
   buildingAddress: string
   buildingFloors: number
+  // device
+  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceManufacturer: string
+  deviceModel: string
+  deviceLatitude: BN
+  deviceLongitude: BN
   // plan
   planPrice: BN
   planDuration: number
@@ -95,12 +103,19 @@ export interface RawMock {
   // PDAs
   configPda: string
   buildingPda: string
+  devicePda: string
   planPda: string
   planBump: number
   // building
   buildingName: string
   buildingAddress: string
   buildingFloors: number
+  // device
+  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceManufacturer: string
+  deviceModel: string
+  deviceLatitude: number
+  deviceLongitude: number
   // plan
   planPrice: string
   planDuration: number

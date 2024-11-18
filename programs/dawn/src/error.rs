@@ -46,4 +46,22 @@ pub enum DawnError {
 
     #[msg("Claim too early")]
     ClaimTooEarly,
+
+    #[msg("Device manufacturer is empty")]
+    EmptyDeviceManufacturer,
+    
+    #[msg("Device model is empty")]
+    EmptyDeviceModel,
+
+    #[msg("Invalid number of latitude")]
+    InvalidLatitude,
+
+    #[msg("Invalid number of longitude")]
+    InvalidLongitude,
+
+    #[msg("Device manufacturer is too long")]
+    DeviceManufacturerTooLong,
+
+    #[msg("Device model is too long")]
+    DeviceModelTooLong,
 }

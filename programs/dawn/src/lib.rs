@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
+declare_id!("GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact");
 
 mod constants;
 mod error;
@@ -32,6 +32,17 @@ pub mod dawn {
         floors: u8,
     ) -> Result<()> {
         DawnApp::add_building(ctx, name, address, floors)
+    }
+
+    pub fn add_device(
+        ctx: Context<AddDevice>,
+        device_type: DeviceType,
+        manufacturer: String,
+        model: String,
+        latitude: u64,
+        longitude: u64,
+    ) -> Result<()> {
+        DawnApp::add_device(ctx, device_type, manufacturer, model, latitude, longitude)
     }
 
     pub fn add_plan(

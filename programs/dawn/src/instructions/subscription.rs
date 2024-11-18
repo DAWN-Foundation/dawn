@@ -16,7 +16,7 @@ use crate::{
     DawnError, Subscribed,
 };
 
-/// The plan account, representing a subscription plan tied to a building
+/// The plan account, representing a subscription plan tied to a device
 #[account]
 pub struct Subscription {
     /// The plan subscriber
@@ -60,7 +60,7 @@ pub struct Subscribe<'info> {
     #[account(
         seeds = [
             b"plan",
-            plan.building.as_ref(),
+            plan.device.as_ref(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -162,7 +162,7 @@ pub struct Subscribe<'info> {
     #[account(mut, address = config.medallion_dawn_account)]
     pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The building owner escrow USDC token vault
+    /// The device owner escrow USDC token vault
     #[account(
         init_if_needed,
         payer = caller,
@@ -171,7 +171,7 @@ pub struct Subscribe<'info> {
     )]
     pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The building owner escrow DAWN token vault
+    /// The device owner escrow DAWN token vault
     #[account(
         init_if_needed,
         payer = caller,
