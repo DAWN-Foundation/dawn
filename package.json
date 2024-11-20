@@ -12,8 +12,6 @@
     "mint:usdc": "yarn build && node dist/app/dawn/mint_usdc.js",
     "dawn:init": "yarn build && node dist/app/dawn/init.js",
     "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
-    "dawn:add_building": "yarn build && node dist/app/dawn/add_building.js",
-    "dawn:get_buildings": "yarn build && node dist/app/dawn/get_buildings.js",
     "dawn:add_device": "yarn build && node dist/app/dawn/add_device.js",
     "dawn:get_devices": "yarn build && node dist/app/dawn/get_devices.js",
     "dawn:add_plan": "yarn build && node dist/app/dawn/add_plan.js",

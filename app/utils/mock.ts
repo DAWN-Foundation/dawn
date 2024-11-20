@@ -304,23 +304,9 @@ export async function setup(
     program.programId,
   )
 
-  const buildingName = 'Building 1'
-  const buildingAddress = '123 Main St'
-  const buildingFloors = 5
-
-  const [buildingPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('building'),
-      Buffer.from(buildingName.trim()),
-      Buffer.from(buildingAddress),
-      Buffer.from([buildingFloors]),
-    ],
-    program.programId,
-  )
-
   const deviceType = { router: {} }
   const deviceManufacturer = '123 Main St'
-  const deviceModel = "Microtic XXXX"
+  const deviceModel = "GG69420"
   const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
   const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
 
@@ -413,14 +399,9 @@ export async function setup(
     medallionFee,
     // PDAs
     configPda,
-    buildingPda,
     devicePda,
     planPda,
     planBump,
-    // building
-    buildingName,
-    buildingAddress,
-    buildingFloors,
     // device
     deviceType,
     deviceManufacturer,

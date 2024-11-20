@@ -51,7 +51,7 @@ pub struct Claim<'info> {
     pub usdc_mint: Box<Account<'info, Mint>>,
 
     // TOKEN ACCOUNTS
-    /// The building owner escrow USDC token vault
+    /// The device owner escrow USDC token vault
     #[account(
         mut,
         associated_token::mint = usdc_mint,
@@ -59,7 +59,7 @@ pub struct Claim<'info> {
     )]
     pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The building owner escrow DAWN token vault
+    /// The device owner escrow DAWN token vault
     #[account(
         mut,
         associated_token::mint = dawn_mint,

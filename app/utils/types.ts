@@ -37,14 +37,9 @@ export interface Mock {
   medallionFee: BN
   // PDAs
   configPda: PublicKey
-  buildingPda: PublicKey
   devicePda: PublicKey
   planPda: PublicKey
   planBump: number
-  // building
-  buildingName: string
-  buildingAddress: string
-  buildingFloors: number
   // device
   deviceType: IdlTypes<Dawn>["DeviceType"];
   deviceManufacturer: string
@@ -102,14 +97,9 @@ export interface RawMock {
   medallionFee: string
   // PDAs
   configPda: string
-  buildingPda: string
   devicePda: string
   planPda: string
   planBump: number
-  // building
-  buildingName: string
-  buildingAddress: string
-  buildingFloors: number
   // device
   deviceType: IdlTypes<Dawn>["DeviceType"];
   deviceManufacturer: string

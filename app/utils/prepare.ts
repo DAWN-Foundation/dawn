@@ -1,5 +1,4 @@
 import fs from 'fs'
-import * as anchor from '@coral-xyz/anchor'
 import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
 import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -18,7 +17,7 @@ import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
 
 /// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = new anchor.BN(10).pow(new anchor.BN(10));
+const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens
@@ -209,23 +208,9 @@ export async function prepare(
     program.programId,
   )
 
-  const buildingName = 'Building 1'
-  const buildingAddress = '123 Main St'
-  const buildingFloors = 5
-
-  const [buildingPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('building'),
-      Buffer.from(buildingName.trim()),
-      Buffer.from(buildingAddress),
-      Buffer.from([buildingFloors]),
-    ],
-    program.programId,
-  )
-
   const deviceType = { router: {} }
   const deviceManufacturer = '123 Main St'
-  const deviceModel = "Microtic XXXX"
+  const deviceModel = "GG69420"
   const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 
@@ -321,14 +306,9 @@ export async function prepare(
     medallionFee,
     // PDAs
     configPda,
-    buildingPda,
     devicePda,
     planPda,
     planBump,
-    // building
-    buildingName,
-    buildingAddress,
-    buildingFloors,
     // device
     deviceType,
     deviceManufacturer,

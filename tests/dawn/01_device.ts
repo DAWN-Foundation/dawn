@@ -27,7 +27,7 @@ const MAX_DEVICE_MANUFACTURER_LEN = 64;
 /// Denominator of geo coordinates (Basis Points)
 const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
-export const BUILDING_SIZE =
+export const DEVICE_SIZE =
   8 + 32 + 1 + (4 + MAX_DEVICE_MANUFACTURER_LEN) + (4 + MAX_DEVICE_MODEL_LEN) + 6 + 16 + 8 + 8 + 1
 
 type deviceType = anchor.IdlTypes<Dawn>["DeviceType"];
@@ -248,7 +248,7 @@ export const deviceTests = () =>
     test('adds the device', async () => {
       const tx = await program.methods
         .addDevice(
-                    mock.deviceManufacturer,
+          mock.deviceManufacturer,
           mock.deviceModel,
           mock.deviceLatitude,
           mock.deviceLongitude,
@@ -283,8 +283,8 @@ export const deviceTests = () =>
       expect(event.longitude.toNumber()).toBe(mock.deviceLongitude.toNumber())
     })
 
-    // given previous case created this building
-    test('cannot add the device with the manufacturer and model', async () => {
+    // given previous case created this device
+    test('cannot add the same device twice', async () => {
       // small wait to ensure previous tx is processed
       await new Promise((resolve) => setTimeout(resolve, 100))
 

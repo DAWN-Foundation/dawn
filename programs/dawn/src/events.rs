@@ -1,15 +1,6 @@
 use anchor_lang::prelude::*;
 
 #[event]
-pub struct BuildingAdded {
-    pub building: Pubkey,
-    pub owner: Pubkey,
-    pub name: String,
-    pub address: String,
-    pub floors: u8,
-}
-
-#[event]
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
