@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use super::{DawnApp, Device};
-use crate::{PlanAdded, DawnError, PlanRemoved};
+use crate::{DawnError, PlanAdded, PlanRemoved};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -48,7 +48,6 @@ pub struct AddPlan<'info> {
         constraint = device.owner == caller.key(),
         seeds = [
             b"device",
-            &[0u8; 6],
             &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
             &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
             &device.latitude.to_le_bytes(),
@@ -89,7 +88,6 @@ pub struct RemovePlan<'info> {
         constraint = device.owner == caller.key(),
         seeds = [
             b"device",
-            &[0u8; 6],
             &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
             &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
             &device.latitude.to_le_bytes(),

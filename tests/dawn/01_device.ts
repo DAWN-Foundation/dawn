@@ -25,7 +25,7 @@ const MAX_DEVICE_MODEL_LEN = 32;
 const MAX_DEVICE_MANUFACTURER_LEN = 64;
 
 /// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = 10 ** 10;
+const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 export const BUILDING_SIZE =
   8 + 32 + 1 + (4 + MAX_DEVICE_MANUFACTURER_LEN) + (4 + MAX_DEVICE_MODEL_LEN) + 6 + 16 + 8 + 8 + 1
@@ -65,7 +65,6 @@ export const deviceTests = () =>
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(manufacturer.trim()),
           Buffer.from(mock.deviceModel),
           Buffer.from(mock.deviceLatitude.toArray('le', 8)),
@@ -76,7 +75,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, manufacturer, mock.deviceModel, mock.deviceLatitude, mock.deviceLongitude)
+          .addDevice(manufacturer, mock.deviceModel, mock.deviceLatitude, mock.deviceLongitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -97,7 +96,6 @@ export const deviceTests = () =>
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(model.trim()),
           Buffer.from(mock.deviceLatitude.toArray('le', 8)),
@@ -108,7 +106,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, mock.deviceManufacturer, model, mock.deviceLatitude, mock.deviceLongitude)
+          .addDevice(mock.deviceManufacturer, model, mock.deviceLatitude, mock.deviceLongitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -129,7 +127,6 @@ export const deviceTests = () =>
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(manufacturer.substring(0, MAX_SEED_LENGTH)),
           Buffer.from(mock.deviceModel),
           Buffer.from(mock.deviceLatitude.toArray('le', 8)),
@@ -140,7 +137,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, manufacturer, mock.deviceModel, mock.deviceLatitude, mock.deviceLongitude)
+          .addDevice(manufacturer, mock.deviceModel, mock.deviceLatitude, mock.deviceLongitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -161,7 +158,6 @@ export const deviceTests = () =>
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(model.substring(0, MAX_SEED_LENGTH)),
           Buffer.from(mock.deviceLatitude.toArray('le', 8)),
@@ -172,7 +168,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, mock.deviceManufacturer, model, mock.deviceLatitude, mock.deviceLongitude)
+          .addDevice(mock.deviceManufacturer, model, mock.deviceLatitude, mock.deviceLongitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -188,12 +184,11 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with latitude eq 0', async () => {
-      const latitude = new BN(0.0000000000 * COORD_DENOMINATOR)
+      const latitude = new BN(0.0000000000).mul(COORD_DENOMINATOR)
 
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(mock.deviceModel),
           Buffer.from(latitude.toArray('le', 8)),
@@ -204,7 +199,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, mock.deviceManufacturer, mock.deviceModel, latitude, mock.deviceLongitude)
+          .addDevice(mock.deviceManufacturer, mock.deviceModel, latitude, mock.deviceLongitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -220,12 +215,11 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with longitude eq 0', async () => {
-      const longitude = new BN(0.0000000000 * COORD_DENOMINATOR)
+      const longitude = new BN(0.0000000000).mul(COORD_DENOMINATOR)
 
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
-          Buffer.from([0, 0, 0, 0, 0, 0]),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(mock.deviceModel),
           Buffer.from(mock.deviceLatitude.toArray('le', 8)),
@@ -236,7 +230,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceType, mock.deviceManufacturer, mock.deviceModel, mock.deviceLatitude, longitude)
+          .addDevice(mock.deviceManufacturer, mock.deviceModel, mock.deviceLatitude, longitude)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: devicePda,
@@ -254,8 +248,7 @@ export const deviceTests = () =>
     test('adds the device', async () => {
       const tx = await program.methods
         .addDevice(
-          mock.deviceType,
-          mock.deviceManufacturer,
+                    mock.deviceManufacturer,
           mock.deviceModel,
           mock.deviceLatitude,
           mock.deviceLongitude,
@@ -271,7 +264,6 @@ export const deviceTests = () =>
 
       const device = await program.account.device.fetch(mock.devicePda)
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
-      expect(Object.keys(device.deviceType)[0]).toEqual(Object.keys(mock.deviceType)[0])
       expect(device.manufacturer).toBe(mock.deviceManufacturer)
       expect(device.model).toBe(mock.deviceModel)
       expect(device.latitude.toNumber()).toBe(mock.deviceLatitude.toNumber())
@@ -285,7 +277,6 @@ export const deviceTests = () =>
       )
 
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
-      expect(Object.keys(event.deviceType)[0]).toEqual(Object.keys(mock.deviceType)[0])
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
       expect(event.model).toBe(mock.deviceModel)
       expect(event.latitude.toNumber()).toBe(mock.deviceLatitude.toNumber())
@@ -300,7 +291,6 @@ export const deviceTests = () =>
       try {
         await program.methods
           .addDevice(
-            mock.deviceType,
             mock.deviceManufacturer,
             mock.deviceModel,
             mock.deviceLatitude,

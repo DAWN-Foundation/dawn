@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-use crate::DeviceType;
-
 #[event]
 pub struct BuildingAdded {
     pub building: Pubkey,
@@ -48,9 +46,9 @@ pub struct Claimed {
 
 #[event]
 pub struct DeviceAdded {
-    pub device: Pubkey,
     pub owner: Pubkey,
-    pub device_type: DeviceType,
+    pub device: Pubkey,
+    // pub device_type: DeviceType,
     pub manufacturer: String,
     pub model: String,
     pub longitude: u64,

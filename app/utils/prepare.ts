@@ -18,7 +18,7 @@ import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
 
 /// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = 10 ** 10;
+const COORD_DENOMINATOR = new anchor.BN(10).pow(new anchor.BN(10));
 
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens
@@ -226,8 +226,8 @@ export async function prepare(
   const deviceType = { router: {} }
   const deviceManufacturer = '123 Main St'
   const deviceModel = "Microtic XXXX"
-  const deviceLatitude = new BN(0.0000000001 * COORD_DENOMINATOR)
-  const deviceLongitude = new BN(0.0000000001 * COORD_DENOMINATOR)
+  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [

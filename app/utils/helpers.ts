@@ -7,6 +7,8 @@ import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
 import { confirmTx } from './mock'
 
+const COORD_DENOMINATOR = new anchor.BN(10).pow(new anchor.BN(10));
+
 // Helper to fund an account with SOL
 export async function fund(
   connection: anchor.web3.Connection,
@@ -109,4 +111,52 @@ export async function getPlansForDevice(
       accountInfo.account.data,
     )
   })
+}
+
+// Helper to get new deviec pda
+export async function getDevicePda(program: Program<Dawn>): Promise<PublicKey> {
+  const deviceManufacturer = '123 Main St'
+  const deviceModel = "Microtic XXXX"
+  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+
+  const [devicePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('device'),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+      Buffer.from(deviceLatitude.toArray('le', 8)),
+      Buffer.from(deviceLongitude.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+
+  return devicePda
+}
+
+export async function addDevice(program: Program<Dawn>, serviceProvider: anchor.web3.Keypair, devicePda: anchor.web3.PublicKey): Promise<void> {
+  const deviceManufacturer = '123 Main St'
+  const deviceModel = "Microtic XXXX"
+  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+
+  try {
+    await program.methods
+      .addDevice(
+        deviceManufacturer,
+        deviceModel,
+        deviceLatitude,
+        deviceLongitude,
+      )
+      .accounts({
+        caller: serviceProvider.publicKey,
+        device: devicePda,
+      })
+      .signers([serviceProvider])
+      .rpc()
+
+    console.log(`Allocate: account Address { address: ${devicePda.toBase58()}, base: None } already in use`)
+  } catch (error) {
+    console.log(error)
+  }
 }

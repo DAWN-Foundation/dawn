@@ -26,7 +26,7 @@ async function main() {
       account: {
         ...b.account,
         owner: b.account.owner.toBase58(),
-        building: b.account.building.toBase58(),
+        device: b.account.device.toBase58(),
         price: b.account.price.toString(),
         capacity: b.account.capacity.toString(),
         slaId: b.account.slaId.toString(),

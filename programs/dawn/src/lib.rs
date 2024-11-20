@@ -25,24 +25,16 @@ pub mod dawn {
         DawnApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
-    pub fn add_building(
-        ctx: Context<AddBuilding>,
-        name: String,
-        address: String,
-        floors: u8,
-    ) -> Result<()> {
-        DawnApp::add_building(ctx, name, address, floors)
-    }
-
     pub fn add_device(
         ctx: Context<AddDevice>,
-        device_type: DeviceType,
+        // device_type: DeviceType,
         manufacturer: String,
         model: String,
         latitude: u64,
         longitude: u64,
     ) -> Result<()> {
-        DawnApp::add_device(ctx, device_type, manufacturer, model, latitude, longitude)
+        // DawnApp::add_device(ctx, device_type, manufacturer, model, latitude, longitude)
+        DawnApp::add_device(ctx, manufacturer, model, latitude, longitude)
     }
 
     pub fn add_plan(

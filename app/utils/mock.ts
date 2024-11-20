@@ -17,9 +17,6 @@ import { getDawnProgram } from '../dawn/utils'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
-/// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = 10 ** 10;
-
 export const PROGRAM_ID = new PublicKey(
   'GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact',
 )
@@ -324,13 +321,12 @@ export async function setup(
   const deviceType = { router: {} }
   const deviceManufacturer = '123 Main St'
   const deviceModel = "Microtic XXXX"
-  const deviceLatitude = new BN(0.0000000001 * COORD_DENOMINATOR)
-  const deviceLongitude = new BN (0.0000000001 * COORD_DENOMINATOR)
+  const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
+  const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from([0, 0, 0, 0, 0, 0]),
       Buffer.from(deviceManufacturer),
       Buffer.from(deviceModel),
       Buffer.from(deviceLatitude.toArray('le', 8)),

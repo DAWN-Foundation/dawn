@@ -17,7 +17,7 @@ import { getAccount } from '@solana/spl-token'
 const PROGRAM_ID = new PublicKey('GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact')
 
 /// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = 10 ** 10;
+const COORD_DENOMINATOR = new anchor.BN(10).pow(new anchor.BN(10));
 
 // parse command line arguments
 // find value of the --flag
@@ -96,8 +96,8 @@ export function getMock(): Mock {
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,
     deviceModel: mock.deviceModel,
-    deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
-    deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
+    deviceLatitude: new BN(mock.deviceLatitude).mul(COORD_DENOMINATOR),
+    deviceLongitude: new BN(mock.deviceLongitude).mul(COORD_DENOMINATOR),
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,

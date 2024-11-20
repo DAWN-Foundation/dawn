@@ -30,17 +30,17 @@ pub struct Device {
     /// The device owner
     pub owner: Pubkey,
     /// the device type
-    pub device_type: DeviceType,
+    // pub device_type: DeviceType,
     /// the device manufacturer
     pub manufacturer: String,
     /// the device model
     pub model: String,
     /// device mac address
-    pub mac_address: [u8; 6],
-    /// device ip address `(v4)`
-    pub ip_v4: [u8; 4],
-    /// device ip address `(v6)`
-    pub ip_v6: [u8; 16],
+    // pub mac_address: [u8; 6],
+    // /// device ip address `(v4)`
+    // pub ip_v4: [u8; 4],
+    // /// device ip address `(v6)`
+    // pub ip_v6: [u8; 16],
     /// device geographical coordinates - `latitude`
     pub latitude: u64,
     /// device geographical coordinates - `longitude`
@@ -51,18 +51,18 @@ pub struct Device {
 
 pub const DEVIEC_SIZE: usize = 8 // id
     + 32 // owner
-    + 1 // device_type
+    // + 1 // device_type
     + 24 // manufacturer
     + 24 // model
-    + 6 // mac_address
-    + 4 // ip_v4
-    + 16 // ip_v6
+    // + 6 // mac_address
+    // + 4 // ip_v4
+    // + 16 // ip_v6
     + 8 // latitude
     + 8 // longitude
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(device_type: DeviceType, manufacturer: String, model: String, latitude: f64, longitude: f64)]
+#[instruction(manufacturer: String, model: String, latitude: f64, longitude: f64)]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -74,7 +74,6 @@ pub struct AddDevice<'info> {
         space = DEVIEC_SIZE,
         seeds = [
             b"device",
-            &[0u8; 6],
             &manufacturer.trim().as_bytes()[..min(manufacturer.trim().len(), MAX_SEED_LEN)],
             &model.trim().as_bytes()[..min(model.trim().len(), MAX_SEED_LEN)],
             &latitude.to_le_bytes(),
@@ -90,7 +89,7 @@ pub struct AddDevice<'info> {
 impl DawnApp {
     pub fn add_device(
         ctx: Context<AddDevice>,
-        device_type: DeviceType,
+        // device_type: DeviceType,
         manufacturer: String,
         model: String,
         latitude: u64,
@@ -125,16 +124,17 @@ impl DawnApp {
         }
 
         device.owner = ctx.accounts.caller.key();
-        device.device_type = device_type.to_owned();
+        // device.device_type = device_type.to_owned();
         device.manufacturer = manufacturer.trim().to_owned();
         device.model = model.trim().to_owned();
         device.longitude = longitude.to_owned();
         device.latitude = latitude.to_owned();
+        device.bump = ctx.bumps.device;
 
         emit!(DeviceAdded {
             device: device.key(),
             owner: device.owner,
-            device_type: device.device_type.clone(),
+            // device_type: device.device_type.clone(),
             manufacturer: device.manufacturer.clone(),
             model: device.model.clone(),
             longitude: device.longitude,
