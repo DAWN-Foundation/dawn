@@ -7,7 +7,7 @@ import { connect, getFlag, submitTx } from './utils'
 const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // CONSTANTS
-const MANUFACTURER = '123 Main St'
+const MANUFACTURER = 'MikroTik'
 const MODEL = "GG69420"
 const LATITUDE = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 const LONGITUDE = new BN(0.0000000001).mul(COORD_DENOMINATOR)

@@ -115,7 +115,7 @@ export async function getPlansForDevice(
 
 // Helper to get new deviec pda
 export async function getDevicePda(program: Program<Dawn>): Promise<PublicKey> {
-  const deviceManufacturer = '123 Main St'
+  const deviceManufacturer = 'MikroTik'
   const deviceModel = "GG69420"
   const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
@@ -135,7 +135,7 @@ export async function getDevicePda(program: Program<Dawn>): Promise<PublicKey> {
 }
 
 export async function addDevice(program: Program<Dawn>, serviceProvider: anchor.web3.Keypair, devicePda: anchor.web3.PublicKey): Promise<void> {
-  const deviceManufacturer = '123 Main St'
+  const deviceManufacturer = 'MikroTik'
   const deviceModel = "GG69420"
   const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)

@@ -167,7 +167,7 @@ yarn dawn:subscribe --customer
 yarn dawn:add_building \
     --service-provider \
     --name 'Building 1' \
-    --address '123 Main St' \
+    --address 'MikroTik' \
     --floors 5
 
 # Get all buildings

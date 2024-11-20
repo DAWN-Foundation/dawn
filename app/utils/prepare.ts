@@ -209,7 +209,7 @@ export async function prepare(
   )
 
   const deviceType = { router: {} }
-  const deviceManufacturer = '123 Main St'
+  const deviceManufacturer = 'MikroTik'
   const deviceModel = "GG69420"
   const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)

@@ -305,7 +305,7 @@ export async function setup(
   )
 
   const deviceType = { router: {} }
-  const deviceManufacturer = '123 Main St'
+  const deviceManufacturer = 'MikroTik'
   const deviceModel = "GG69420"
   const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
   const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
