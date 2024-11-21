@@ -80,6 +80,7 @@ export function getMock(): Mock {
     medallionFee: new BN(mock.medallionFee),
     // PDAs
     configPda: new PublicKey(mock.configPda),
+    deviceModelPda: new PublicKey(mock.deviceModelPda),
     devicePda: new PublicKey(mock.devicePda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,

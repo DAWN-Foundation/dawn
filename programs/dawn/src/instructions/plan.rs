@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use super::{DawnApp, Device};
 use crate::{DawnError, PlanAdded, PlanRemoved};
@@ -48,8 +47,8 @@ pub struct AddPlan<'info> {
         constraint = device.owner == caller.key(),
         seeds = [
             b"device",
-            &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
-            &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
+            device.owner.as_ref(),
+            device.model.as_ref(),
             &device.latitude.to_le_bytes(),
             &device.longitude.to_le_bytes(),
         ],
@@ -88,8 +87,8 @@ pub struct RemovePlan<'info> {
         constraint = device.owner == caller.key(),
         seeds = [
             b"device",
-            &device.manufacturer.trim().as_bytes()[..min(device.manufacturer.trim().len(), MAX_SEED_LEN)],
-            &device.model.trim().as_bytes()[..min(device.model.trim().len(), MAX_SEED_LEN)],
+            device.owner.as_ref(),
+            device.model.as_ref(),
             &device.latitude.to_le_bytes(),
             &device.longitude.to_le_bytes(),
         ],

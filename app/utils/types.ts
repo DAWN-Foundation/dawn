@@ -37,6 +37,7 @@ export interface Mock {
   medallionFee: BN
   // PDAs
   configPda: PublicKey
+  deviceModelPda: PublicKey
   devicePda: PublicKey
   planPda: PublicKey
   planBump: number
@@ -97,6 +98,7 @@ export interface RawMock {
   medallionFee: string
   // PDAs
   configPda: string
+  deviceModelPda: string
   devicePda: string
   planPda: string
   planBump: number

@@ -7,6 +7,8 @@ import { BanksTransactionMeta } from 'solana-bankrun'
 
 export const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
+export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
+
 // Helper to fund an account with SOL
 export async function fund(
   connection: anchor.web3.Connection,

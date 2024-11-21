@@ -38,10 +38,10 @@ pub enum DawnError {
     #[msg("Device model is empty")]
     EmptyDeviceModel,
 
-    #[msg("Invalid number of latitude")]
+    #[msg("Latitude coordinate is invalid")]
     InvalidLatitude,
 
-    #[msg("Invalid number of longitude")]
+    #[msg("Longitude coordinate is invalid")]
     InvalidLongitude,
 
     #[msg("Device manufacturer is too long")]

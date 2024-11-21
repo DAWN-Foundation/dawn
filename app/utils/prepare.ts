@@ -205,7 +205,17 @@ export async function prepare(
 
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
-  const deviceModel = "GG69420"
+  const deviceModel = 'GG69420'
+
+  const [deviceModelPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('device_model'),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+    ],
+    program.programId,
+  )
+
   const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 
@@ -301,6 +311,7 @@ export async function prepare(
     medallionFee,
     // PDAs
     configPda,
+    deviceModelPda,
     devicePda,
     planPda,
     planBump,

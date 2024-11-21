@@ -306,15 +306,25 @@ export async function setup(
 
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
-  const deviceModel = "GG69420"
+  const deviceModel = 'GG69420'
+
+  const [deviceModelPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('device_model'),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+    ],
+    program.programId,
+  )
+
   const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
   const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from(deviceManufacturer),
-      Buffer.from(deviceModel),
+      Buffer.from(serviceProvider.publicKey.toBytes()),
+      Buffer.from(deviceModelPda.toBytes()),
       Buffer.from(deviceLatitude.toArray('le', 8)),
       Buffer.from(deviceLongitude.toArray('le', 8)),
     ],
@@ -399,6 +409,7 @@ export async function setup(
     medallionFee,
     // PDAs
     configPda,
+    deviceModelPda,
     devicePda,
     planPda,
     planBump,
@@ -421,4 +432,3 @@ export async function setup(
 
   return mock
 }
-
