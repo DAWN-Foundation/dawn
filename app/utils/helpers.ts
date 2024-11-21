@@ -1,11 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
-import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
-import { BankrunProvider } from 'anchor-bankrun'
-import { confirmTx } from './mock'
+import { BanksTransactionMeta } from 'solana-bankrun'
+
+export const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // Helper to fund an account with SOL
 export async function fund(
@@ -49,7 +49,7 @@ export async function getEvent<T>(
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: Program<Dawn>,
-  building: PublicKey,
+  device: PublicKey,
   price: BN,
   duration: number,
   speed: number,
@@ -65,7 +65,7 @@ export function getPlanPda(
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
+      Buffer.from(device.toBytes()),
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,
@@ -78,24 +78,24 @@ export function getPlanPda(
   return [planPda, planBump]
 }
 
-// Helper to get all plans for a building
-export async function getPlansForBuilding(
+// Helper to get all plans for a device
+export async function getPlansForDevice(
   program: Program<Dawn>, // Anchor program
-  building: PublicKey, // Public key of the building
+  device: PublicKey, // Public key of the device
 ): Promise<any[]> {
-  // Define the byte offset for the `building` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
-  const BUILDING_OFFSET = 8 + 32
+  // Define the byte offset for the `device` field in the Plan account (8 bytes for discriminator + 32 bytes for owner)
+  const DEVICE_OFFSET = 8 + 32
 
-  // Fetch all plan accounts and filter by building key
+  // Fetch all plan accounts and filter by device key
   const plans = await program.provider.connection.getProgramAccounts(
     program.programId,
     {
-      // Filtering accounts by the `building` public key stored in the Plan account
+      // Filtering accounts by the `device` public key stored in the Plan account
       filters: [
         {
           memcmp: {
-            offset: BUILDING_OFFSET, // Offset where the building public key is stored
-            bytes: building.toBase58(), // The building public key to filter by
+            offset: DEVICE_OFFSET, // Offset where the device public key is stored
+            bytes: device.toBase58(), // The device public key to filter by
           },
         },
       ],

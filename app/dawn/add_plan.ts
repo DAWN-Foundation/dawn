@@ -20,11 +20,11 @@ const CAPACITY = 0
 const SLA = 1
 
 async function main() {
-  const building = getFlag('--building')
-  if (!building) {
-    throw new Error('--building is required')
+  const device = getFlag('--device')
+  if (!device) {
+    throw new Error('--device is required')
   }
-  const buildingPda = new PublicKey(building)
+  const devicePda = new PublicKey(device)
 
   const price = new BN(getFlag('--price') || PRICE)
   const duration = parseInt(getFlag('--duration')) || DURATION
@@ -37,7 +37,7 @@ async function main() {
 
   const [planPda] = getPlanPda(
     program,
-    buildingPda,
+    devicePda,
     price,
     duration,
     speed,
@@ -51,7 +51,7 @@ async function main() {
     .addPlan(price, duration, speed, capacity, sla)
     .accounts({
       caller: wallet.payer.publicKey,
-      building: buildingPda,
+      device: devicePda,
       plan: planPda,
     } as {})
     .signers([wallet.payer])

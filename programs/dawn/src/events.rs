@@ -1,19 +1,10 @@
 use anchor_lang::prelude::*;
 
 #[event]
-pub struct BuildingAdded {
-    pub building: Pubkey,
-    pub owner: Pubkey,
-    pub name: String,
-    pub address: String,
-    pub floors: u8,
-}
-
-#[event]
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
-    pub building: Pubkey,
+    pub device: Pubkey,
     pub price: u64,
     pub duration: u16,
     pub speed: u32,
@@ -24,7 +15,7 @@ pub struct PlanAdded {
 #[event]
 pub struct PlanRemoved {
     pub plan: Pubkey,
-    pub building: Pubkey,
+    pub device: Pubkey,
 }
 
 #[event]
@@ -42,4 +33,15 @@ pub struct Claimed {
     pub plan: Pubkey,
     pub swap_price: u128,
     pub dawn_claimed: u64,
+}
+
+#[event]
+pub struct DeviceAdded {
+    pub owner: Pubkey,
+    pub device: Pubkey,
+    // pub device_type: DeviceType,
+    pub manufacturer: String,
+    pub model: String,
+    pub longitude: u64,
+    pub latitude: u64,
 }

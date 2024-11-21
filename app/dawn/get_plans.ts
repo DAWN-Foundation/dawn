@@ -1,18 +1,18 @@
 import { connect, getFlag } from './utils'
 
 async function main() {
-  const building = getFlag('--building')
+  const device = getFlag('--device')
 
   const { program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   let filters = []
-  if (building) {
+  if (device) {
     filters = [
       {
         memcmp: {
           offset: 8 + 32,
-          bytes: building,
+          bytes: device,
         },
       },
     ]
@@ -26,7 +26,7 @@ async function main() {
       account: {
         ...b.account,
         owner: b.account.owner.toBase58(),
-        building: b.account.building.toBase58(),
+        device: b.account.device.toBase58(),
         price: b.account.price.toString(),
         capacity: b.account.capacity.toString(),
         slaId: b.account.slaId.toString(),

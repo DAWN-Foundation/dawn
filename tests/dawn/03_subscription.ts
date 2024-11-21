@@ -114,7 +114,7 @@ export const subscriptionTests = () =>
       assert.exists(plan)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.exists(mock.planPda)
-      assert.exists(mock.buildingPda)
+      assert.exists(mock.devicePda)
       assert.exists(mock.subscriptionPda)
       assert.exists(mock.subscriptionBump)
       assert.exists(accounts)
@@ -123,7 +123,7 @@ export const subscriptionTests = () =>
     test('cannot subscribe to a plan that doesnt exist', async () => {
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         new BN(1000),
         30,
         100,
@@ -267,7 +267,7 @@ export const subscriptionTests = () =>
         .add(mock.medallionFee)
       const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
 
-      // make sure the building owner escrow USDC vault account was debited
+      // make sure the device owner escrow USDC vault account was debited
       const usdcRemainder = plan.price.sub(totalUsdcFee)
       const dailyUsdc = usdcRemainder.div(new BN(plan.duration))
       const dailyDawn = dailyUsdc.mul(price).div(Q32)
@@ -280,7 +280,7 @@ export const subscriptionTests = () =>
         escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
       )
 
-      // make sure the building owner escrow DAWN vault account was credited with the daily DAWN portion
+      // make sure the device owner escrow DAWN vault account was credited with the daily DAWN portion
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,

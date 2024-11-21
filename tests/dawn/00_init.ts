@@ -69,6 +69,7 @@ export const initTests = () =>
       // authority
       assert.ok(config.authority.equals(wallet.payer.publicKey))
       assert.equal(config.bump, configBump)
+
       // fees
       assert.ok(config.daoFee.eq(mock.daoFee))
       assert.ok(config.validatorFee.eq(mock.validatorFee))

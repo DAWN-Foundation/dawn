@@ -1,9 +1,6 @@
 import fs from 'fs'
-import * as anchor from '@coral-xyz/anchor'
-import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
-import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
-import { BankrunProvider } from 'anchor-bankrun'
-import { AddedAccount, startAnchor } from 'solana-bankrun'
+import { AnchorProvider, BN } from '@coral-xyz/anchor'
+import { PublicKey } from '@solana/web3.js'
 import {
   createMint,
   createAssociatedTokenAccount,
@@ -12,7 +9,7 @@ import {
 } from '@solana/spl-token'
 
 import { Mock } from './types'
-import { fund, getPlanPda } from './helpers'
+import { COORD_DENOMINATOR, fund, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
@@ -206,16 +203,20 @@ export async function prepare(
     program.programId,
   )
 
-  const buildingName = 'Building 1'
-  const buildingAddress = '123 Main St'
-  const buildingFloors = 5
+  const deviceType = { router: {} }
+  const deviceManufacturer = 'MikroTik'
+  const deviceModel = "GG69420"
+  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 
-  const [buildingPda] = PublicKey.findProgramAddressSync(
+  const [devicePda] = PublicKey.findProgramAddressSync(
     [
-      Buffer.from('building'),
-      Buffer.from(buildingName.trim()),
-      Buffer.from(buildingAddress),
-      Buffer.from([buildingFloors]),
+      Buffer.from('device'),
+      Buffer.from([0, 0, 0, 0, 0, 0]),
+      Buffer.from(deviceManufacturer),
+      Buffer.from(deviceModel),
+      Buffer.from(deviceLatitude.toArray('le', 8)),
+      Buffer.from(deviceLongitude.toArray('le', 8)),
     ],
     program.programId,
   )
@@ -228,7 +229,7 @@ export async function prepare(
 
   const [planPda, planBump] = getPlanPda(
     program,
-    buildingPda,
+    devicePda,
     planPrice,
     planDuration,
     planSpeed,
@@ -300,13 +301,15 @@ export async function prepare(
     medallionFee,
     // PDAs
     configPda,
-    buildingPda,
+    devicePda,
     planPda,
     planBump,
-    // building
-    buildingName,
-    buildingAddress,
-    buildingFloors,
+    // device
+    deviceType,
+    deviceManufacturer,
+    deviceModel,
+    deviceLatitude,
+    deviceLongitude,
     // plan
     planPrice,
     planDuration,

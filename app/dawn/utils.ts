@@ -1,6 +1,5 @@
 const fs = require('fs')
-import * as anchor from '@coral-xyz/anchor'
-import { AnchorProvider, BN } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, Program, Wallet, web3 } from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -10,11 +9,11 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { loadWallet, Mock, RawMock } from '../utils'
-import { BankrunProvider, startAnchor } from 'anchor-bankrun'
+import { COORD_DENOMINATOR, loadWallet, Mock, RawMock } from '../utils'
+import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
 
-const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
+const PROGRAM_ID = new PublicKey('GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact')
 
 // parse command line arguments
 // find value of the --flag
@@ -81,13 +80,15 @@ export function getMock(): Mock {
     medallionFee: new BN(mock.medallionFee),
     // PDAs
     configPda: new PublicKey(mock.configPda),
-    buildingPda: new PublicKey(mock.buildingPda),
+    devicePda: new PublicKey(mock.devicePda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
-    // building
-    buildingName: mock.buildingName,
-    buildingAddress: mock.buildingAddress,
-    buildingFloors: mock.buildingFloors,
+    // device
+    deviceType: mock.deviceType,
+    deviceManufacturer: mock.deviceManufacturer,
+    deviceModel: mock.deviceModel,
+    deviceLatitude: new BN(mock.deviceLatitude).mul(COORD_DENOMINATOR),
+    deviceLongitude: new BN(mock.deviceLongitude).mul(COORD_DENOMINATOR),
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
@@ -108,14 +109,14 @@ export function getIDL(): Dawn {
 
 export function getDawnProgram(
   provider: BankrunProvider | AnchorProvider,
-): anchor.Program<Dawn> {
+): Program<Dawn> {
   const idl = getIDL()
-  return new anchor.Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
+  return new Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
 }
 
 export async function connect(): Promise<{
-  wallet: anchor.Wallet
-  program: anchor.Program<Dawn>
+  wallet: Wallet
+  program: Program<Dawn>
   connection: Connection
 }> {
   const wallet = getWallet()
@@ -132,15 +133,15 @@ export async function connect(): Promise<{
 // helper function to get wallet from the config
 function configWallet(
   accountName: 'customer' | 'serviceProvider',
-): anchor.Wallet {
+): Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
 }
 
 // helper function to get the wallet based on the flag
-export function getWallet(): anchor.Wallet {
-  let wallet: anchor.Wallet
+export function getWallet(): Wallet {
+  let wallet: Wallet
 
   if (hasFlag('--customer')) {
     wallet = configWallet('customer')
@@ -155,8 +156,8 @@ export function getWallet(): anchor.Wallet {
 
 export async function submitTx(
   connection: Connection,
-  wallet: anchor.Wallet,
-  itx: anchor.web3.TransactionInstruction,
+  wallet: Wallet,
+  itx: web3.TransactionInstruction,
 ) {
   const latestBlockHash = await connection.getLatestBlockhash({
     commitment: 'confirmed',
@@ -190,8 +191,8 @@ export async function submitTx(
 
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
-  program: anchor.Program<Dawn>,
-  building: PublicKey,
+  program: Program<Dawn>,
+  device: PublicKey,
   price: BN,
   duration: number,
   speed: number,
@@ -207,7 +208,7 @@ export function getPlanPda(
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
-      Buffer.from(building.toBytes()),
+      Buffer.from(device.toBytes()),
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,

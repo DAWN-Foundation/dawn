@@ -9,7 +9,7 @@ import {
   getEvent,
   mock,
   getPlanPda,
-  getPlansForBuilding,
+  getPlansForDevice,
   getProvider,
   PROGRAM_ID,
   confirmTx,
@@ -20,7 +20,7 @@ import { beforeAll, expect } from '@jest/globals'
 
 interface PlanAdded {
   owner: PublicKey
-  building: PublicKey
+  device: PublicKey
   price: BN
   duration: number
   speed: number
@@ -30,14 +30,14 @@ interface PlanAdded {
 
 interface PlanRemoved {
   plan: PublicKey
-  building: PublicKey
+  device: PublicKey
 }
 
 export const planTests = () =>
   describe('dawn::plan', () => {
     let program: Program<Dawn>
     let provider: BankrunProvider
-    let building: Awaited<ReturnType<typeof program.account.building.fetch>>
+    let device: Awaited<ReturnType<typeof program.account.device.fetch>>
 
     const wallet = loadWallet()
 
@@ -48,19 +48,19 @@ export const planTests = () =>
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-      const buildingAccount = await provider.context.banksClient.getAccount(
-        mock.buildingPda,
+      const deviceAccount = await provider.context.banksClient.getAccount(
+        mock.devicePda,
       )
-      building = program.coder.accounts.decode(
-        'building',
-        Buffer.from(buildingAccount.data),
+      device = program.coder.accounts.decode(
+        'device',
+        Buffer.from(deviceAccount.data),
       )
     })
 
     test('mock setup', () => {
       assert.exists(mock)
-      assert.exists(building)
-      assert.ok(building.owner.equals(mock.serviceProvider.publicKey))
+      assert.exists(device)
+      assert.ok(device.owner.equals(mock.serviceProvider.publicKey))
     })
 
     test('cannot add plan with zero price', async () => {
@@ -68,7 +68,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         price,
         mock.planDuration,
         mock.planSpeed,
@@ -87,7 +87,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -105,7 +105,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         mock.planPrice,
         duration,
         mock.planSpeed,
@@ -124,7 +124,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -142,7 +142,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         mock.planPrice,
         mock.planDuration,
         speed,
@@ -161,7 +161,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -174,7 +174,7 @@ export const planTests = () =>
       }
     })
 
-    test('cannot be added for a building not owned by the caller', async () => {
+    test('cannot be added for a device not owned by the caller', async () => {
       provider.wallet = new Wallet(wallet.payer)
       const program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
@@ -189,7 +189,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: wallet.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: mock.planPda,
           })
           .signers([wallet.payer])
@@ -219,7 +219,7 @@ export const planTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
-          building: mock.buildingPda,
+          device: mock.devicePda,
           plan: mock.planPda,
         })
         .signers([mock.serviceProvider])
@@ -230,7 +230,7 @@ export const planTests = () =>
       // make sure plan was created
       const plan = await program.account.plan.fetch(mock.planPda)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(plan.building.equals(mock.buildingPda))
+      assert.ok(plan.device.equals(mock.devicePda))
       assert.ok(plan.price.eq(mock.planPrice))
       assert.equal(plan.duration, mock.planDuration)
       assert.equal(plan.speed, mock.planSpeed)
@@ -241,7 +241,7 @@ export const planTests = () =>
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(event.building.equals(mock.buildingPda))
+      assert.ok(event.device.equals(mock.devicePda))
       assert.ok(event.price.eq(mock.planPrice))
       assert.equal(event.duration, mock.planDuration)
       assert.equal(event.speed, mock.planSpeed)
@@ -264,7 +264,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: mock.planPda,
           })
           .signers([mock.serviceProvider])
@@ -282,7 +282,7 @@ export const planTests = () =>
       }
     })
 
-    test('adds second plan with different parameters to the same building', async () => {
+    test('adds second plan with different parameters to the same device', async () => {
       const price = new BN(10).mul(USDC_DECIMALS)
       const duration = 60
       const speed = 2_000
@@ -291,7 +291,7 @@ export const planTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         price,
         duration,
         speed,
@@ -303,7 +303,7 @@ export const planTests = () =>
         .addPlan(price, duration, speed, capacity, slaId)
         .accounts({
           caller: mock.serviceProvider.publicKey,
-          building: mock.buildingPda,
+          device: mock.devicePda,
           plan: planPda,
         })
         .signers([mock.serviceProvider])
@@ -314,7 +314,7 @@ export const planTests = () =>
       const plan = await program.account.plan.fetch(planPda)
 
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(plan.building.equals(mock.buildingPda))
+      assert.ok(plan.device.equals(mock.devicePda))
       assert.ok(plan.price.eq(price))
       assert.equal(plan.duration, duration)
       assert.equal(plan.speed, speed)
@@ -325,7 +325,7 @@ export const planTests = () =>
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(event.building.equals(mock.buildingPda))
+      assert.ok(event.device.equals(mock.devicePda))
       assert.ok(event.price.eq(price))
       assert.equal(event.duration, duration)
       assert.equal(event.speed, speed)
@@ -343,7 +343,7 @@ export const planTests = () =>
           .removePlan()
           .accounts({
             caller: mock.serviceProvider.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: badPlan.publicKey,
           })
           .signers([mock.serviceProvider])
@@ -369,7 +369,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         price,
         duration,
         speed,
@@ -382,7 +382,7 @@ export const planTests = () =>
           .removePlan()
           .accounts({
             caller: wallet.publicKey,
-            building: mock.buildingPda,
+            device: mock.devicePda,
             plan: planPda,
           })
           .signers([wallet.payer])
@@ -405,7 +405,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.buildingPda,
+        mock.devicePda,
         price,
         duration,
         speed,
@@ -417,7 +417,7 @@ export const planTests = () =>
         .removePlan()
         .accounts({
           caller: mock.serviceProvider.publicKey,
-          building: mock.buildingPda,
+          device: mock.devicePda,
           plan: planPda,
         })
         .signers([mock.serviceProvider])
@@ -441,6 +441,6 @@ export const planTests = () =>
         'PlanRemoved',
       )
       assert.ok(event.plan.equals(planPda))
-      assert.ok(event.building.equals(mock.buildingPda))
+      assert.ok(event.device.equals(mock.devicePda))
     })
   })

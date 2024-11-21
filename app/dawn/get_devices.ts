@@ -6,22 +6,22 @@ async function main() {
   const { program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  let filters = []
+  const filters = []
   if (owner) {
-    filters = [
+    filters.concat([
       {
         memcmp: {
           offset: 8,
           bytes: owner,
         },
       },
-    ]
+    ])
   }
 
-  const buildings = await program.account.building.all(filters)
+  const devices = await program.account.device.all(filters)
 
   console.log(
-    buildings.map((b) => ({
+    devices.map((b) => ({
       owner: b.publicKey.toBase58(),
       account: { ...b.account, owner: b.account.owner.toBase58() },
     })),
