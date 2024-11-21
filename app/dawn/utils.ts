@@ -9,14 +9,11 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { loadWallet, Mock, RawMock } from '../utils'
-import { BankrunProvider, startAnchor } from 'anchor-bankrun'
+import { COORD_DENOMINATOR, loadWallet, Mock, RawMock } from '../utils'
+import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
 
 const PROGRAM_ID = new PublicKey('GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact')
-
-/// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // parse command line arguments
 // find value of the --flag

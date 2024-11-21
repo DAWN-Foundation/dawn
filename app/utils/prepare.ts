@@ -1,8 +1,6 @@
 import fs from 'fs'
-import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
-import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
-import { BankrunProvider } from 'anchor-bankrun'
-import { AddedAccount, startAnchor } from 'solana-bankrun'
+import { AnchorProvider, BN } from '@coral-xyz/anchor'
+import { PublicKey } from '@solana/web3.js'
 import {
   createMint,
   createAssociatedTokenAccount,
@@ -11,13 +9,10 @@ import {
 } from '@solana/spl-token'
 
 import { Mock } from './types'
-import { fund, getPlanPda } from './helpers'
+import { COORD_DENOMINATOR, fund, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
-
-/// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens

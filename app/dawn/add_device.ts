@@ -2,9 +2,8 @@ import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { connect, getFlag, submitTx } from './utils'
+import { COORD_DENOMINATOR } from '../utils'
 
-/// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'

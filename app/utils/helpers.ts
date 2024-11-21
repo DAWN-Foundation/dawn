@@ -1,13 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
-import { PublicKey, VersionedTransactionResponse } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { BanksClient, BanksTransactionMeta } from 'solana-bankrun'
-import { BankrunProvider } from 'anchor-bankrun'
-import { confirmTx } from './mock'
+import { BanksTransactionMeta } from 'solana-bankrun'
 
-const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
+export const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 // Helper to fund an account with SOL
 export async function fund(

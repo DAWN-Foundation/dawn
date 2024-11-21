@@ -13,6 +13,7 @@ import {
   getProvider,
   PROGRAM_ID,
   confirmTx,
+  COORD_DENOMINATOR,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -23,9 +24,6 @@ const MAX_DEVICE_MODEL_LEN = 32;
 
 /// Maximum length of a device manufacturer
 const MAX_DEVICE_MANUFACTURER_LEN = 64;
-
-/// Denominator of geo coordinates (Basis Points)
-const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
 
 export const DEVICE_SIZE =
   8 + 32 + 1 + (4 + MAX_DEVICE_MANUFACTURER_LEN) + (4 + MAX_DEVICE_MODEL_LEN) + 6 + 16 + 8 + 8 + 1
