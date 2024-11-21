@@ -10,6 +10,7 @@ import { claimTests } from './05_claim'
 // because tests are dependent on the previous ones
 // they accumulate state in logical order:
 // - init (creates config)
+// - device_model (adds device model)
 // - device (adds device)
 // - plan (adds plan)
 // - subscription (subscribes to plan)
@@ -17,6 +18,6 @@ import { claimTests } from './05_claim'
 initTests()
 deviceModelTests()
 deviceTests()
-// planTests()
-// subscriptionTests()
-// claimTests()
+planTests()
+subscriptionTests()
+claimTests()
