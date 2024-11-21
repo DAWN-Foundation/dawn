@@ -1,0 +1,85 @@
+name: Check PR
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+    branches: [dev, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # RUST
+      - name: Install Rust toolchain
+        run: rustup default 1.79.0
+
+      # CACHE SOLANA
+      - name: Cache Solana CLI
+        uses: actions/cache@v4
+        id: solana-cache
+        with:
+          path: |
+            ~/.local/share/solana/install
+            ~/.cache/solana
+          key: ${{ runner.os }}-solana-1.17.0
+
+      # SOLANA
+      - name: Install Solana CLI
+        if: steps.solana-cache.outputs.cache-hit != 'true'
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+      - name: Set Solana CLI path
+        run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      # CACHE ANCHOR
+      - name: Cache Anchor CLI
+        uses: actions/cache@v4
+        id: anchor-cache
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-anchor-0.29.0
+
+      # ANCHOR
+      - name: Install Anchor CLI
+        if: steps.anchor-cache.outputs.cache-hit != 'true'
+        run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
+
+      # GENERATE KEY
+      - name: Generate new keygen
+        run: solana-keygen new --no-bip39-passphrase
+
+      # CACHE DEPENDENCIES
+      - name: Cache NodeJS dependencies
+        uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      # DEPENDENCIES
+      - name: Install yarn dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: yarn install
+
+      # CACHE BUILD
+      - name: Cache Anchor build
+        uses: actions/cache@v4
+        id: build-cache
+        with:
+          path: target
+          key: ${{ runner.os }}-anchor-build-${{ hashFiles('**/Cargo.lock') }}
+
+      # BUILD
+      - name: Build
+        run: anchor build
+
+      # TESTS
+      - name: Run tests
+        run: anchor test
