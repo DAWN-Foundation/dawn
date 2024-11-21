@@ -156,30 +156,31 @@ yarn dawn:init
 # these can be applied to all transaction commands below
 # for example:
 # --root was used to mint tokens, might be used for init, but not necessary
-# --service-provider is usually used to add a building and create plans
+# --service-provider is usually used to add a device and create plans
 # --customer should have some USDC and can be used to pay for plan subscription
 yarn dawn:init --root
-yarn dawn:add_building --service-provider
+yarn dawn:add_device --service-provider
 yarn dawn:subscribe --customer
 
 
-# Add a building to the plan contract (as --service-provider)
-yarn dawn:add_building \
+# Add a device to the plan contract (as --service-provider)
+yarn dawn:add_device \
     --service-provider \
-    --name 'Building 1' \
-    --address 'MikroTik' \
-    --floors 5
+    --manufacturer 'MikroTik' \
+    --model 'GG69420' \
+    --latitude '0.0000000001' \
+    --longitude '0.0000000001' \
 
-# Get all buildings
-yarn dawn:get_buildings
+# Get all devices
+yarn dawn:get_devices
 
-# Get all buildings for a specific owner
-yarn dawn:get_buildings --owner <owner>
+# Get all devices for a specific owner
+yarn dawn:get_devices --owner <owner>
 
-# Create a plan for a building (as --service-provider)
+# Create a plan for a device (as --service-provider)
 yarn dawn:add_plan \
     --service-provider \
-    --building <building> \
+    --device <device> \
     --price 100000000 \
     --duration 30 \
     --speed 100 \
@@ -189,8 +190,8 @@ yarn dawn:add_plan \
 # Get all plans
 yarn dawn:get_plans
 
-# Get all plans for a specific building
-yarn dawn:get_plans --building <building>
+# Get all plans for a specific devices
+yarn dawn:get_plans --device <device>
 
 # Mint USDC
 yarn mint:usdc \
