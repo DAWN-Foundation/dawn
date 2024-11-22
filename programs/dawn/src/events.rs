@@ -64,6 +64,19 @@ pub struct DeviceLocationVerified {
 #[event]
 pub struct IpPoolAdded {
     pub ip_pool: Pubkey,
-    pub range_start: [u8; 4],
-    pub range_end: [u8; 4],
+    pub ip_v4: [u8; 4],
+    pub ip_v4_cidr_mask: u8,
+    pub ip_v6: [u16; 16],
+    pub ip_v6_cidr_mask: u8,
+}
+
+#[event]
+pub struct IpLeased {
+    pub ip_lease: Pubkey,
+    pub ip_pool: Pubkey,
+    pub device: Pubkey,
+    pub ip_v4: [u8; 4],
+    pub ip_v4_cidr_mask: u8,
+    pub ip_v6: [u16; 16],
+    pub ip_v6_cidr_mask: u8,
 }

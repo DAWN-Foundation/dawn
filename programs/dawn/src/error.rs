@@ -16,8 +16,11 @@ pub enum DawnError {
     Underflow,
 
     // IP POOL
-    #[msg("Invalid IP pool range")]
-    InvalidIpPoolRange,
+    #[msg("Invalid IP range")]
+    InvalidIpRange,
+
+    #[msg("Invalid subnet mask")]
+    InvalidSubnetMask,
 
     // DEVICE
     #[msg("Device manufacturer is empty")]

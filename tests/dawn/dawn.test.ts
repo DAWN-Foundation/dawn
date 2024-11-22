@@ -1,5 +1,5 @@
 import { initTests } from './00_init'
-import { ipPoolTests } from './01_ip_pool'
+import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
 import { deviceTests } from './03_device'
 
@@ -21,6 +21,7 @@ initTests()
 ipPoolTests()
 deviceModelTests()
 deviceTests()
+leaseIpTests()
 planTests()
 subscriptionTests()
 claimTests()

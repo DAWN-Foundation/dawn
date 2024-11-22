@@ -11,7 +11,7 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import { deviceTypeSeed, getPlanPda, IpBytes } from './helpers'
+import { deviceTypeSeed, getPlanPda, IpV4Bytes, IpV6Bytes } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 
@@ -304,18 +304,6 @@ export async function setup(
     program.programId,
   )
 
-  const ipPoolRangeStart: IpBytes = [11, 12, 13, 14]
-  const ipPoolRangeEnd: IpBytes = [21, 22, 23, 24]
-
-  const [ipPoolPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_pool'),
-      Buffer.from(ipPoolRangeStart),
-      Buffer.from(ipPoolRangeEnd),
-    ],
-    program.programId,
-  )
-
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -344,6 +332,53 @@ export async function setup(
 
   const [deviceLocationPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
+    program.programId,
+  )
+
+  const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
+  const poolIpV4CidrMask = 24
+  const poolIpV6: IpV6Bytes = [
+    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
+  ]
+  // append 0x00 to the end of poolIpV6 to make it 16 bytes
+  Array.from({ length: 16 - poolIpV6.length }).forEach(() => {
+    poolIpV6.push(0x0000)
+  })
+  const poolIpV6CidrMask = 64
+
+  const [ipPoolPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_pool'),
+      Buffer.from(poolIpV4),
+      Buffer.from([poolIpV4CidrMask]),
+      Buffer.from(poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
+      Buffer.from([poolIpV6CidrMask]),
+    ],
+    program.programId,
+  )
+
+  const leaseIpV4: IpV4Bytes = [11, 12, 13, 14]
+  const leaseIpV4CidrMask = 32
+  const leaseIpV6: IpV6Bytes = [
+    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
+  ]
+  // append 0x00 to the end of leaseIpV6 to make it 16 bytes
+  Array.from({ length: 16 - leaseIpV6.length }).forEach(() => {
+    leaseIpV6.push(0x0000)
+  })
+
+  const leaseIpV6CidrMask = 64
+
+  const [ipLeasePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_lease'),
+      Buffer.from(devicePda.toBytes()),
+      Buffer.from(ipPoolPda.toBytes()),
+      Buffer.from(leaseIpV4),
+      Buffer.from([leaseIpV4CidrMask]),
+      Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
+      Buffer.from([leaseIpV6CidrMask]),
+    ],
     program.programId,
   )
 
@@ -428,12 +463,19 @@ export async function setup(
     ipPoolPda,
     deviceModelPda,
     devicePda,
+    ipLeasePda,
     deviceLocationPda,
     planPda,
     planBump,
     // ip pool
-    ipPoolRangeStart,
-    ipPoolRangeEnd,
+    poolIpV4,
+    poolIpV4CidrMask,
+    poolIpV6,
+    poolIpV6CidrMask,
+    leaseIpV4,
+    leaseIpV4CidrMask,
+    leaseIpV6,
+    leaseIpV6CidrMask,
     // device
     deviceType,
     deviceManufacturer,
