@@ -11,6 +11,7 @@ import { claimTests } from './06_claim'
 // because tests are dependent on the previous ones
 // they accumulate state in logical order:
 // - init (creates config)
+// - ip_pool (adds IP pool)
 // - device_model (adds device model)
 // - device (adds device)
 // - plan (adds plan)
