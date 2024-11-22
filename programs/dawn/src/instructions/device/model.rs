@@ -43,6 +43,7 @@ pub struct AddDeviceModel<'info> {
         space = DEVICE_MODEL_SIZE,
         seeds = [
             b"device_model",
+            device_type.to_seed(),
             &manufacturer.trim().as_bytes()[..min(manufacturer.trim().len(), MAX_SEED_LEN)],
             &model.trim().as_bytes()[..min(model.trim().len(), MAX_SEED_LEN)],
         ],

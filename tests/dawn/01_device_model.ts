@@ -16,6 +16,7 @@ import {
   COORD_DENOMINATOR,
   loadWallet,
   DeviceType,
+  deviceTypeSeed,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -95,6 +96,7 @@ export const deviceModelTests = () =>
       const [deviceModelPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device_model'),
+          deviceTypeSeed(mock.deviceType),
           Buffer.from(manufacturer.trim()),
           Buffer.from(mock.deviceModel),
         ],
@@ -125,6 +127,7 @@ export const deviceModelTests = () =>
       const [deviceModelPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device_model'),
+          deviceTypeSeed(mock.deviceType),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(model.trim()),
         ],
@@ -155,6 +158,7 @@ export const deviceModelTests = () =>
       const [deviceModelPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device_model'),
+          deviceTypeSeed(mock.deviceType),
           Buffer.from(manufacturer.substring(0, MAX_SEED_LENGTH)),
           Buffer.from(mock.deviceModel),
         ],
@@ -185,6 +189,7 @@ export const deviceModelTests = () =>
       const [deviceModelPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device_model'),
+          deviceTypeSeed(mock.deviceType),
           Buffer.from(mock.deviceManufacturer),
           Buffer.from(model.substring(0, MAX_SEED_LENGTH)),
         ],

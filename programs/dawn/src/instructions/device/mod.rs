@@ -14,12 +14,11 @@ pub enum DeviceType {
     WirelessRadio,
 }
 
-impl From<usize> for DeviceType {
-    fn from(value: usize) -> Self {
-        match value {
-            0 => Self::Router,
-            1 => Self::WirelessRadio,
-            _ => Self::Router,
+impl DeviceType {
+    pub fn to_seed(&self) -> &[u8] {
+        match self {
+            Self::Router => &[0],
+            Self::WirelessRadio => &[1],
         }
     }
 }

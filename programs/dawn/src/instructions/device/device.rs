@@ -37,6 +37,7 @@ pub struct AddDevice<'info> {
     #[account(
         seeds = [
             b"device_model",
+            device_model.device_type.to_seed(),
             &device_model.manufacturer.trim().as_bytes()[..min(device_model.manufacturer.trim().len(), MAX_SEED_LEN)],
             &device_model.model.trim().as_bytes()[..min(device_model.model.trim().len(), MAX_SEED_LEN)],
         ],

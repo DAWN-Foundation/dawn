@@ -11,7 +11,7 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import { getPlanPda } from './helpers'
+import { deviceTypeSeed, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 
@@ -311,6 +311,7 @@ export async function setup(
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device_model'),
+      deviceTypeSeed(deviceType),
       Buffer.from(deviceManufacturer),
       Buffer.from(deviceModel),
     ],
