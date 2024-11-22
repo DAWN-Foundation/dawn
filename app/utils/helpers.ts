@@ -5,7 +5,9 @@ import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
 
-export const COORD_DENOMINATOR = new BN(10).pow(new BN(10));
+export const COORD_DENOMINATOR = new BN(10).pow(new BN(10))
+
+export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 
 // Helper to fund an account with SOL
 export async function fund(
@@ -44,6 +46,11 @@ export async function getEvent<T>(
   }
 
   return event.data as T
+}
+
+export function deviceTypeSeed(deviceType: DeviceType) {
+  if (deviceType.wirelessRadio) return Buffer.from([1])
+  return Buffer.from([0])
 }
 
 // Helper function to get the PDA for a plan given plan parameters

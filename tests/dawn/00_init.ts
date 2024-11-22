@@ -1,6 +1,6 @@
 import { expect, test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
-import { Program } from '@coral-xyz/anchor'
+import { Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError } from '@solana/web3.js'
@@ -25,6 +25,7 @@ export const initTests = () =>
     beforeAll(async () => {
       const accounts = await createAccounts()
       provider = await getProvider(accounts.addedAccounts)
+      provider.wallet = new Wallet(accounts.wallet)
       anchor.setProvider(provider)
 
       program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
