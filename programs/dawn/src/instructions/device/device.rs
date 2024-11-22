@@ -4,7 +4,7 @@ use std::cmp::min;
 
 use crate::{DawnApp, DawnError, DeviceAdded};
 
-use super::DeviceModel;
+use super::{DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
@@ -54,36 +54,55 @@ pub struct AddDevice<'info> {
             b"device",
             caller.key().as_ref(),
             device_model.key().as_ref(),
-            &latitude.to_le_bytes(),
-            &longitude.to_le_bytes(),
         ],
         bump
     )]
     pub device: Account<'info, Device>,
+
+    /// The device location account
+    #[account(
+        init,
+        payer = caller,
+        space = DEVICE_LOCATION_SIZE,
+        seeds = [
+            b"device_location",
+            device.key().as_ref(), // ensures one location per device
+        ],
+        bump
+    )]
+    pub device_location: Account<'info, DeviceLocation>,
 
     pub system_program: Program<'info, System>,
 }
 
 impl DawnApp {
     pub fn add_device(ctx: Context<AddDevice>, latitude: u64, longitude: u64) -> Result<()> {
-        let device = &mut ctx.accounts.device;
-
         // Make sure the latitude and longitude are not eq 0
         require!(!latitude.eq(&0u64), DawnError::InvalidLatitude);
         require!(!longitude.eq(&0u64), DawnError::InvalidLongitude);
 
+        let device = &mut ctx.accounts.device;
+        let device_location = &mut ctx.accounts.device_location;
+
+        // Set device info
         device.owner = ctx.accounts.caller.key();
         device.model = ctx.accounts.device_model.key();
-        device.longitude = longitude.to_owned();
-        device.latitude = latitude.to_owned();
         device.bump = ctx.bumps.device;
 
+        // Set device location info
+        device_location.device = device.key();
+        device_location.longitude = longitude;
+        device_location.latitude = latitude;
+        device_location.verified = false;
+        device_location.bump = ctx.bumps.device_location;
+
+        // Emit event
         emit!(DeviceAdded {
             device: device.key(),
             owner: device.owner,
             model: device.model,
-            longitude: device.longitude,
-            latitude: device.latitude,
+            latitude,
+            longitude,
         });
 
         Ok(())

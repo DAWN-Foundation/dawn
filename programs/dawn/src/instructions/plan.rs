@@ -49,8 +49,6 @@ pub struct AddPlan<'info> {
             b"device",
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.latitude.to_le_bytes(),
-            &device.longitude.to_le_bytes(),
         ],
         bump = device.bump
     )]
@@ -89,8 +87,6 @@ pub struct RemovePlan<'info> {
             b"device",
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.latitude.to_le_bytes(),
-            &device.longitude.to_le_bytes(),
         ],
         bump = device.bump
     )]
@@ -124,8 +120,6 @@ impl DawnApp {
         capacity: u64,
         sla_id: u64,
     ) -> Result<()> {
-        let plan = &mut ctx.accounts.plan;
-
         // Make sure the plan price is not zero
         require!(price > 0, DawnError::ZeroPlanPrice);
 
@@ -134,6 +128,8 @@ impl DawnApp {
 
         // Make sure the plan speed is not zero
         require!(speed > 0, DawnError::ZeroPlanSpeed);
+
+        let plan = &mut ctx.accounts.plan;
 
         plan.owner = ctx.accounts.caller.key();
         plan.device = ctx.accounts.device.key();

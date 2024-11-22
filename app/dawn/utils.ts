@@ -82,6 +82,7 @@ export function getMock(): Mock {
     configPda: new PublicKey(mock.configPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     devicePda: new PublicKey(mock.devicePda),
+    deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
     // device
@@ -132,9 +133,7 @@ export async function connect(): Promise<{
 }
 
 // helper function to get wallet from the config
-function configWallet(
-  accountName: 'customer' | 'serviceProvider',
-): Wallet {
+function configWallet(accountName: 'customer' | 'serviceProvider'): Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
