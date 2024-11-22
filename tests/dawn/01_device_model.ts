@@ -105,7 +105,11 @@ export const deviceModelTests = () =>
 
       try {
         await program.methods
-          .addDeviceModel(deviceType as any, mock.deviceManufacturer, mock.deviceModel)
+          .addDeviceModel(
+            deviceType as any,
+            mock.deviceManufacturer,
+            mock.deviceModel,
+          )
           .accounts({
             caller: wallet.publicKey,
             config: mock.configPda,
@@ -330,5 +334,48 @@ export const deviceModelTests = () =>
           `Allocate: account Address { address: ${mock.deviceModelPda.toBase58()}, base: None } already in use`,
         )
       }
+    })
+
+    test('can add device model with same manufacturer and model but different device type', async () => {
+      const deviceType = { wirelessRadio: {} }
+
+      const [deviceModelPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device_model'),
+          deviceTypeSeed(deviceType),
+          Buffer.from(mock.deviceManufacturer),
+          Buffer.from(mock.deviceModel),
+        ],
+        program.programId,
+      )
+
+      const tx = await program.methods
+        .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      const deviceModel = await program.account.deviceModel.fetch(
+        deviceModelPda,
+      )
+      expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
+      expect(deviceModel.model).toBe(mock.deviceModel)
+      expect(deviceModel.deviceType).toStrictEqual(deviceType)
+
+      // make sure event was emitted
+      const event = await getEvent<DeviceModelAdded>(
+        program,
+        txDetails,
+        'DeviceModelAdded',
+      )
+      expect(event.manufacturer).toBe(mock.deviceManufacturer)
+      expect(event.model).toBe(mock.deviceModel)
+      expect(event.deviceType).toStrictEqual(deviceType)
     })
   })
