@@ -11,7 +11,7 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import { deviceTypeSeed, getPlanPda } from './helpers'
+import { deviceTypeSeed, getPlanPda, IpBytes } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 
@@ -304,6 +304,18 @@ export async function setup(
     program.programId,
   )
 
+  const ipPoolRangeStart: IpBytes = [11, 12, 13, 14]
+  const ipPoolRangeEnd: IpBytes = [21, 22, 23, 24]
+
+  const [ipPoolPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_pool'),
+      Buffer.from(ipPoolRangeStart),
+      Buffer.from(ipPoolRangeEnd),
+    ],
+    program.programId,
+  )
+
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -413,11 +425,15 @@ export async function setup(
     medallionFee,
     // PDAs
     configPda,
+    ipPoolPda,
     deviceModelPda,
     devicePda,
     deviceLocationPda,
     planPda,
     planBump,
+    // ip pool
+    ipPoolRangeStart,
+    ipPoolRangeEnd,
     // device
     deviceType,
     deviceManufacturer,

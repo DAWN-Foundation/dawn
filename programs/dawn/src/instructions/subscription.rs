@@ -31,7 +31,7 @@ pub struct Subscription {
     pub claimable_dawn: u64,
     /// Daily USDC portion for swaps
     pub daily_usdc: u64,
-    /// Subscription PDA bump seed
+    /// PDA bump seed
     pub bump: u8,
 }
 

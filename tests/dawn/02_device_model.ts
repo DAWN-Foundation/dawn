@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
+import { Program, AnchorError, Wallet } from '@coral-xyz/anchor'
 import {
   MAX_SEED_LENGTH,
   PublicKey,
@@ -13,7 +13,6 @@ import {
   getProvider,
   PROGRAM_ID,
   confirmTx,
-  COORD_DENOMINATOR,
   loadWallet,
   DeviceType,
   deviceTypeSeed,
@@ -27,13 +26,6 @@ const MAX_DEVICE_MODEL_LEN = 32
 
 /// Maximum length of a device manufacturer
 const MAX_DEVICE_MANUFACTURER_LEN = 64
-
-export const DEVICE_MODEL_SIZE =
-  8 + // id
-  1 + // device_type
-  (4 + MAX_DEVICE_MANUFACTURER_LEN) + // manufacturer
-  (4 + MAX_DEVICE_MODEL_LEN) + // model
-  1 // bump
 
 interface DeviceModelAdded {
   deviceModel: PublicKey
@@ -84,7 +76,13 @@ export const deviceModelTests = () =>
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('A raw constraint was violated')
+        const txError = err.logs.find((log) =>
+          log.includes('A raw constraint was violated'),
+        )
+        expect(txError).toBeDefined()
+        expect(
+          txError.includes('AnchorError caused by account: caller.'),
+        ).toBeTruthy()
       } finally {
         provider.wallet = loadWallet()
       }
@@ -361,13 +359,6 @@ export const deviceModelTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const deviceModel = await program.account.deviceModel.fetch(
-        deviceModelPda,
-      )
-      expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
-      expect(deviceModel.model).toBe(mock.deviceModel)
-      expect(deviceModel.deviceType).toStrictEqual(deviceType)
-
       // make sure event was emitted
       const event = await getEvent<DeviceModelAdded>(
         program,
@@ -377,5 +368,13 @@ export const deviceModelTests = () =>
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
       expect(event.model).toBe(mock.deviceModel)
       expect(event.deviceType).toStrictEqual(deviceType)
+
+      // make sure account was created
+      const deviceModel = await program.account.deviceModel.fetch(
+        deviceModelPda,
+      )
+      expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
+      expect(deviceModel.model).toBe(mock.deviceModel)
+      expect(deviceModel.deviceType).toStrictEqual(deviceType)
     })
   })

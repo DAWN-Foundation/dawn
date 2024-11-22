@@ -60,3 +60,10 @@ pub struct DeviceLocationVerified {
     pub latitude: u64,
     pub longitude: u64,
 }
+
+#[event]
+pub struct IpPoolAdded {
+    pub ip_pool: Pubkey,
+    pub range_start: [u8; 4],
+    pub range_end: [u8; 4],
+}

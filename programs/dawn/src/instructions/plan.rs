@@ -21,7 +21,7 @@ pub struct Plan {
     pub capacity: u64,
     /// TODO >> The Service Level Agreement identifier
     pub sla_id: u64,
-    /// Plan PDA bump seed
+    /// PDA bump seed
     pub bump: u8,
 }
 

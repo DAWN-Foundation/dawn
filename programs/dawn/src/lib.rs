@@ -25,6 +25,14 @@ pub mod dawn {
         DawnApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
+    pub fn add_ip_pool(
+        ctx: Context<AddIpPool>,
+        range_start: [u8; 4],
+        range_end: [u8; 4],
+    ) -> Result<()> {
+        DawnApp::add_ip_pool(ctx, range_start, range_end)
+    }
+
     pub fn add_device_model(
         ctx: Context<AddDeviceModel>,
         device_type: DeviceType,

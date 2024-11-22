@@ -7,7 +7,7 @@ use super::DawnApp;
 pub struct Config {
     /// The authority that can update the config
     pub authority: Pubkey,
-    /// The bump seed used to derive the account address
+    /// PDA bump seed
     pub bump: u8,
 
     // FEES

@@ -9,7 +9,13 @@ import {
 } from '@solana/spl-token'
 
 import { Mock } from './types'
-import { COORD_DENOMINATOR, deviceTypeSeed, fund, getPlanPda } from './helpers'
+import {
+  COORD_DENOMINATOR,
+  deviceTypeSeed,
+  fund,
+  getPlanPda,
+  IpBytes,
+} from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
@@ -203,6 +209,18 @@ export async function prepare(
     program.programId,
   )
 
+  const ipPoolRangeStart: IpBytes = [11, 12, 13, 14]
+  const ipPoolRangeEnd: IpBytes = [21, 22, 23, 24]
+
+  const [ipPoolPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_pool'),
+      Buffer.from(ipPoolRangeStart),
+      Buffer.from(ipPoolRangeEnd),
+    ],
+    program.programId,
+  )
+
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -314,11 +332,15 @@ export async function prepare(
     medallionFee,
     // PDAs
     configPda,
+    ipPoolPda,
     deviceModelPda,
     devicePda,
     deviceLocationPda,
     planPda,
     planBump,
+    // ip pool
+    ipPoolRangeStart,
+    ipPoolRangeEnd,
     // device
     deviceType,
     deviceManufacturer,

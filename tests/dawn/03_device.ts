@@ -1,11 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
-import {
-  Keypair,
-  MAX_SEED_LENGTH,
-  PublicKey,
-  SendTransactionError,
-} from '@solana/web3.js'
+import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
 import { Dawn, IDL } from '../../target/types/dawn'
 import {
@@ -15,25 +10,10 @@ import {
   PROGRAM_ID,
   confirmTx,
   COORD_DENOMINATOR,
-  DeviceType,
   loadWallet,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
-import { BanksClient } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
-
-export const DEVICE_SIZE =
-  8 + // id
-  32 + // owner
-  32 + // model
-  1 // bump
-
-export const DEVICE_LOCATION_SIZE =
-  8 + // id
-  32 + // device
-  8 + // latitude
-  8 + // longitude
-  1 // bump
 
 interface DeviceAdded {
   owner: PublicKey
@@ -167,6 +147,18 @@ export const deviceTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
+      // make sure event was emitted
+      const event = await getEvent<DeviceAdded>(
+        program,
+        txDetails,
+        'DeviceAdded',
+      )
+      expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(event.device.equals(mock.devicePda)).toBeTruthy()
+      expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
+
       // make sure device was created
       const device = await program.account.device.fetch(mock.devicePda)
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
@@ -184,18 +176,6 @@ export const deviceTests = () =>
         mock.deviceLongitude.toString(),
       )
       expect(deviceLocation.verified).toBeFalsy()
-
-      // make sure event was emitted
-      const event = await getEvent<DeviceAdded>(
-        program,
-        txDetails,
-        'DeviceAdded',
-      )
-      expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
-      expect(event.device.equals(mock.devicePda)).toBeTruthy()
-      expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
-      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
-      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
     })
 
     test('cannot verify device location as non-authority', async () => {
@@ -243,11 +223,6 @@ export const deviceTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const deviceLocation = await program2.account.deviceLocation.fetch(
-        mock.deviceLocationPda,
-      )
-      expect(deviceLocation.verified).toBeTruthy()
-
       // make sure event was emitted
       const event = await getEvent<DeviceLocationVerified>(
         program2,
@@ -257,6 +232,12 @@ export const deviceTests = () =>
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
       expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
+
+      // make sure device location was updated
+      const deviceLocation = await program2.account.deviceLocation.fetch(
+        mock.deviceLocationPda,
+      )
+      expect(deviceLocation.verified).toBeTruthy()
 
       provider.wallet = new Wallet(mock.serviceProvider)
     })

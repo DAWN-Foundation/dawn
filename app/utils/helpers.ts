@@ -9,6 +9,8 @@ export const COORD_DENOMINATOR = new BN(10).pow(new BN(10))
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 
+export type IpBytes = [number, number, number, number]
+
 // Helper to fund an account with SOL
 export async function fund(
   connection: anchor.web3.Connection,

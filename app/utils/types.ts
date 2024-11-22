@@ -1,6 +1,7 @@
 import { BN, IdlTypes } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
+import { IpBytes } from './helpers'
 
 export interface Mock {
   dao: Keypair
@@ -37,13 +38,17 @@ export interface Mock {
   medallionFee: BN
   // PDAs
   configPda: PublicKey
+  ipPoolPda: PublicKey
   deviceModelPda: PublicKey
   devicePda: PublicKey
   deviceLocationPda: PublicKey
   planPda: PublicKey
   planBump: number
+  // ip pool
+  ipPoolRangeStart: IpBytes
+  ipPoolRangeEnd: IpBytes
   // device
-  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: BN
@@ -99,13 +104,17 @@ export interface RawMock {
   medallionFee: string
   // PDAs
   configPda: string
+  ipPoolPda: string
   deviceModelPda: string
   devicePda: string
   deviceLocationPda: string
   planPda: string
   planBump: number
+  // ip pool
+  ipPoolRangeStart: IpBytes
+  ipPoolRangeEnd: IpBytes
   // device
-  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: number

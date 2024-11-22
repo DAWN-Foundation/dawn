@@ -80,11 +80,15 @@ export function getMock(): Mock {
     medallionFee: new BN(mock.medallionFee),
     // PDAs
     configPda: new PublicKey(mock.configPda),
+    ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     devicePda: new PublicKey(mock.devicePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
+    // ip pool
+    ipPoolRangeStart: mock.ipPoolRangeStart,
+    ipPoolRangeEnd: mock.ipPoolRangeEnd,
     // device
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,
