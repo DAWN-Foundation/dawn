@@ -68,7 +68,7 @@ jobs:
         run: yarn install
 
       # CACHE BUILD
-      - name: Cache Anchor build
+      - name: Cache Rust & Anchor dependencies
         uses: actions/cache@v4
         id: build-cache
         with:
