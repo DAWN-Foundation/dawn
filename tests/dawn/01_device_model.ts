@@ -90,6 +90,58 @@ export const deviceModelTests = () =>
       }
     })
 
+    test('cannot add device model with non-existing device type', async () => {
+      const deviceType = { other: {} }
+
+      const [deviceModelPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device_model'),
+          Buffer.from([2]),
+          Buffer.from(mock.deviceManufacturer),
+          Buffer.from(mock.deviceModel),
+        ],
+        program.programId,
+      )
+
+      try {
+        await program.methods
+          .addDeviceModel(deviceType as any, mock.deviceManufacturer, mock.deviceModel)
+          .accounts({
+            caller: wallet.publicKey,
+            config: mock.configPda,
+            deviceModel: deviceModelPda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof Error).toBeTruthy()
+        const err: Error = error
+        expect(err.message).toBe('unable to infer src variant')
+      }
+    })
+
+    test('cannot add device model with device type not matching PDA', async () => {
+      const deviceType = { wirelessRadio: {} }
+
+      try {
+        await program.methods
+          .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
+          .accounts({
+            caller: wallet.publicKey,
+            config: mock.configPda,
+            deviceModel: mock.deviceModelPda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('A seeds constraint was violated')
+      }
+    })
+
     test('cannot add device model with an empty manufacturer', async () => {
       const manufacturer = '  '
 
