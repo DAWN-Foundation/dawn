@@ -53,3 +53,10 @@ pub struct DeviceAdded {
     pub longitude: u64,
     pub latitude: u64,
 }
+
+#[event]
+pub struct DeviceLocationVerified {
+    pub device: Pubkey,
+    pub latitude: u64,
+    pub longitude: u64,
+}

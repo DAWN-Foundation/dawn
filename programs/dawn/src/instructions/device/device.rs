@@ -4,7 +4,7 @@ use std::cmp::min;
 
 use crate::{DawnApp, DawnError, DeviceAdded};
 
-use super::DeviceModel;
+use super::{DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
@@ -25,28 +25,6 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 32 // model
     + 8 // latitude
     + 8 // longitude
-    + 1; // bump
-
-/// Device location account
-#[account]
-pub struct DeviceLocation {
-    /// The device account
-    pub device: Pubkey,
-    /// Geographic position - latitude
-    pub latitude: u64,
-    /// Geographic position - longitude
-    pub longitude: u64,
-    /// Verified by the DAWN authority
-    pub verified: bool,
-    /// PDA bump seed
-    pub bump: u8,
-}
-
-pub const DEVICE_LOCATION_SIZE: usize = 8 // id
-    + 32 // device
-    + 8 // latitude
-    + 8 // longitude
-    + 1 // verified
     + 1; // bump
 
 #[derive(Accounts)]
@@ -115,6 +93,8 @@ impl DawnApp {
         device_location.device = device.key();
         device_location.longitude = longitude;
         device_location.latitude = latitude;
+        device_location.verified = false;
+        device_location.bump = ctx.bumps.device_location;
 
         // Emit event
         emit!(DeviceAdded {

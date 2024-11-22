@@ -2,9 +2,11 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 
 mod device;
 mod model;
+mod location;
 
 pub use device::*;
 pub use model::*;
+pub use location::*;
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum DeviceType {

@@ -38,6 +38,10 @@ pub mod dawn {
         DawnApp::add_device(ctx, latitude, longitude)
     }
 
+    pub fn verify_device_location(ctx: Context<VerifyDeviceLocation>) -> Result<()> {
+        DawnApp::verify_device_location(ctx)
+    }
+
     pub fn add_plan(
         ctx: Context<AddPlan>,
         price: u64,
