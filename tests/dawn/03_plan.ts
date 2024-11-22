@@ -9,7 +9,6 @@ import {
   getEvent,
   mock,
   getPlanPda,
-  getPlansForDevice,
   getProvider,
   PROGRAM_ID,
   confirmTx,

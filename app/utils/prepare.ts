@@ -9,7 +9,7 @@ import {
 } from '@solana/spl-token'
 
 import { Mock } from './types'
-import { COORD_DENOMINATOR, fund, getPlanPda } from './helpers'
+import { COORD_DENOMINATOR, deviceTypeSeed, fund, getPlanPda } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
@@ -210,6 +210,7 @@ export async function prepare(
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device_model'),
+      deviceTypeSeed(deviceType),
       Buffer.from(deviceManufacturer),
       Buffer.from(deviceModel),
     ],
@@ -222,12 +223,14 @@ export async function prepare(
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from([0, 0, 0, 0, 0, 0]),
-      Buffer.from(deviceManufacturer),
-      Buffer.from(deviceModel),
-      Buffer.from(deviceLatitude.toArray('le', 8)),
-      Buffer.from(deviceLongitude.toArray('le', 8)),
+      Buffer.from(serviceProvider.publicKey.toBytes()),
+      Buffer.from(deviceModelPda.toBytes()),
     ],
+    program.programId,
+  )
+
+  const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
     program.programId,
   )
 
@@ -313,6 +316,7 @@ export async function prepare(
     configPda,
     deviceModelPda,
     devicePda,
+    deviceLocationPda,
     planPda,
     planBump,
     // device

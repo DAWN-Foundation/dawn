@@ -326,9 +326,12 @@ export async function setup(
       Buffer.from('device'),
       Buffer.from(serviceProvider.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
-      Buffer.from(deviceLatitude.toArray('le', 8)),
-      Buffer.from(deviceLongitude.toArray('le', 8)),
     ],
+    program.programId,
+  )
+
+  const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
     program.programId,
   )
 
@@ -412,6 +415,7 @@ export async function setup(
     configPda,
     deviceModelPda,
     devicePda,
+    deviceLocationPda,
     planPda,
     planBump,
     // device

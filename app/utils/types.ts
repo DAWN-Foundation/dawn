@@ -39,6 +39,7 @@ export interface Mock {
   configPda: PublicKey
   deviceModelPda: PublicKey
   devicePda: PublicKey
+  deviceLocationPda: PublicKey
   planPda: PublicKey
   planBump: number
   // device
@@ -100,6 +101,7 @@ export interface RawMock {
   configPda: string
   deviceModelPda: string
   devicePda: string
+  deviceLocationPda: string
   planPda: string
   planBump: number
   // device

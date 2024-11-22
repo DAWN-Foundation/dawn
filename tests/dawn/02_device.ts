@@ -25,6 +25,11 @@ export const DEVICE_SIZE =
   8 + // id
   32 + // owner
   32 + // model
+  1 // bump
+
+export const DEVICE_LOCATION_SIZE =
+  8 + // id
+  32 + // device
   8 + // latitude
   8 + // longitude
   1 // bump
@@ -65,6 +70,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: invalidModel.publicKey,
             device: mock.devicePda,
+            deviceLocation: mock.deviceLocationPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -86,8 +92,6 @@ export const deviceTests = () =>
           Buffer.from('device'),
           Buffer.from(mock.serviceProvider.publicKey.toBytes()),
           Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(latitude.toArray('le', 8)),
-          Buffer.from(mock.deviceLongitude.toArray('le', 8)),
         ],
         program.programId,
       )
@@ -99,6 +103,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            deviceLocation: mock.deviceLocationPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -118,8 +123,6 @@ export const deviceTests = () =>
           Buffer.from('device'),
           Buffer.from(mock.serviceProvider.publicKey.toBytes()),
           Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceLatitude.toArray('le', 8)),
-          Buffer.from(longitude.toArray('le', 8)),
         ],
         program.programId,
       )
@@ -131,6 +134,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            deviceLocation: mock.deviceLocationPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -149,17 +153,29 @@ export const deviceTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: mock.devicePda,
+          deviceLocation: mock.deviceLocationPda,
         })
         .signers([mock.serviceProvider])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
+      // make sure device was created
       const device = await program.account.device.fetch(mock.devicePda)
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
-      expect(device.latitude.toNumber()).toBe(mock.deviceLatitude.toNumber())
-      expect(device.longitude.toNumber()).toBe(mock.deviceLongitude.toNumber())
+
+      // make sure device location was created
+      const deviceLocation = await program.account.deviceLocation.fetch(
+        mock.deviceLocationPda,
+      )
+      expect(deviceLocation.device.equals(mock.devicePda)).toBeTruthy()
+      expect(deviceLocation.latitude.toString()).toBe(
+        mock.deviceLatitude.toString(),
+      )
+      expect(deviceLocation.longitude.toString()).toBe(
+        mock.deviceLongitude.toString(),
+      )
 
       // make sure event was emitted
       const event = await getEvent<DeviceAdded>(
@@ -170,8 +186,8 @@ export const deviceTests = () =>
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
-      expect(event.latitude.toNumber()).toBe(mock.deviceLatitude.toNumber())
-      expect(event.longitude.toNumber()).toBe(mock.deviceLongitude.toNumber())
+      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
     })
 
     // given previous case created this device
@@ -186,6 +202,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            deviceLocation: mock.deviceLocationPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
