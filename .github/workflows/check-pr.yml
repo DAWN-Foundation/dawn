@@ -65,7 +65,6 @@ jobs:
 
       # DEPENDENCIES
       - name: Install yarn dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
         run: yarn install
 
       # CACHE BUILD
