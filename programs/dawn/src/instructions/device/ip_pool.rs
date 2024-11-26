@@ -230,6 +230,31 @@ impl DawnApp {
 
         require!(ip_network == pool_network, DawnError::InvalidIpRange);
 
+        // Validate provided IP v6 is within the pool's range
+        let v6_network_bits = ip_pool.ip_v6_cidr_mask as usize;
+
+        if v6_network_bits == 128 {
+            // For /128, require exact match of all chunks
+            require!(ip_v6 == ip_pool.ip_v6, DawnError::InvalidIpRange);
+        } else {
+            // Calculate which 16-bit chunk we're working with and the bits remaining
+            let chunk_idx = v6_network_bits / 16;
+            let bits_in_chunk = v6_network_bits % 16;
+
+            // Check all complete chunks must match exactly
+            for i in 0..chunk_idx {
+                require!(ip_v6[i] == ip_pool.ip_v6[i], DawnError::InvalidIpRange);
+            }
+
+            // If there are remaining bits, check the partial chunk
+            if bits_in_chunk > 0 && chunk_idx < 16 {
+                let chunk_mask = !((1u16 << (16 - bits_in_chunk)) - 1);
+                let ip_chunk = ip_v6[chunk_idx] & chunk_mask;
+                let pool_chunk = ip_pool.ip_v6[chunk_idx] & chunk_mask;
+                require!(ip_chunk == pool_chunk, DawnError::InvalidIpRange);
+            }
+        }
+
         let ip_lease = &mut ctx.accounts.ip_lease;
 
         ip_lease.ip_pool = ip_pool.key();
