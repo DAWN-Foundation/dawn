@@ -20,6 +20,7 @@ import {
   IpV4Bytes,
   IpV6Bytes,
   getIpLeasePda,
+  getIpPoolPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -260,6 +261,7 @@ export const leaseIpTests = () =>
     const wallet = loadWallet()
     let provider: BankrunProvider
     let program: Program<Dawn>
+    let ipPoolPda2: PublicKey
 
     beforeAll(async () => {
       provider = await getProvider()
@@ -456,9 +458,10 @@ export const leaseIpTests = () =>
     })
 
     test('cannot lease ip with ip v4 out of range', async () => {
-      // mock.poolIpV4 is 11.11.11.1
-      // mock.leaseIpV4CidrMask is 32
-      const leaseIpV4: IpV4Bytes = [11, 11, 12, 2]
+      // mock.poolIpV4 is 11.11.11.0
+      // mock.leaseIpV4CidrMask is 24
+      // so leaseIpV4 needs to be within 11.11.11.0/24
+      const leaseIpV4: IpV4Bytes = [11, 11, 12, 1]
 
       const [ipLeasePda] = getIpLeasePda(
         program,
@@ -493,6 +496,120 @@ export const leaseIpTests = () =>
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Invalid IP range')
       }
+    })
+
+    test('cannot lease ip with ip v4 from pool of one exact ip', async () => {
+      // add ip pool with ip v4 of 12.12.12.1/32
+      const poolIpV4: IpV4Bytes = [12, 12, 12, 1]
+      const poolIpV4CidrMask = 32
+
+      const [ipPoolPda] = getIpPoolPda(
+        program,
+        poolIpV4,
+        poolIpV4CidrMask,
+        mock.poolIpV6,
+        mock.poolIpV6CidrMask,
+      )
+      ipPoolPda2 = ipPoolPda
+
+      // add ip pool of 12.12.12.1/32
+      await program.methods
+        .addIpPool(
+          poolIpV4,
+          poolIpV4CidrMask,
+          mock.poolIpV6,
+          mock.poolIpV6CidrMask,
+        )
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          ipPool: ipPoolPda2,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // trying to lease ip v4 of 12.12.12.2 should fail
+      const leaseIpV4: IpV4Bytes = [12, 12, 12, 2]
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        ipPoolPda2,
+        leaseIpV4,
+        mock.leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        mock.leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            leaseIpV4,
+            mock.leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            mock.leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+      }
+    })
+
+    test('can lease ip with ip v4 from pool of one exact ip', async () => {
+      // trying to lease ip v4 of 12.12.12.1 should succeed
+      const leaseIpV4: IpV4Bytes = [12, 12, 12, 1]
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        ipPoolPda2,
+        leaseIpV4,
+        mock.leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        mock.leaseIpV6CidrMask,
+      )
+
+      const tx = await program.methods
+        .leaseIp(
+          leaseIpV4,
+          mock.leaseIpV4CidrMask,
+          mock.leaseIpV6,
+          mock.leaseIpV6CidrMask,
+        )
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          device: mock.devicePda,
+          ipPool: ipPoolPda2,
+          ipLease: ipLeasePda,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<IpLeased>(program, txDetails, 'IpLeased')
+      expect(event.ipV4).toStrictEqual(leaseIpV4)
+      expect(event.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
+      expect(event.ipV6).toStrictEqual(mock.leaseIpV6)
+      expect(event.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
+
+      // make sure account was created
+      const ipLease = await program.account.ipLease.fetch(ipLeasePda)
+      expect(ipLease.ipV4).toStrictEqual(leaseIpV4)
+      expect(ipLease.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
+      expect(ipLease.ipV6).toStrictEqual(mock.leaseIpV6)
+      expect(ipLease.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
     })
 
     // test('cannot lease ip with ip v6 out of range', async () => {

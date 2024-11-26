@@ -337,7 +337,7 @@ export async function setup(
   )
 
   // Pool IP V4
-  const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
+  const poolIpV4: IpV4Bytes = [11, 11, 11, 0]
   const poolIpV4CidrMask = 24
 
   // Pool IP V6

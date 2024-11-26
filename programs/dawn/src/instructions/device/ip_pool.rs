@@ -213,9 +213,14 @@ impl DawnApp {
         let ip_pool = &ctx.accounts.ip_pool;
 
         // Validate provided IP v4 is within the pool's range
-        // For IPv4, we compare the network portions by masking both IPs
         let network_bits = ip_pool.ip_v4_cidr_mask;
-        let mask = !((1u32 << (32 - network_bits)) - 1);
+
+        // For /32, we want an exact match
+        let mask = if network_bits == 32 {
+            0xFFFFFFFF
+        } else {
+            !((1u32 << (32 - network_bits)) - 1)
+        };
 
         let ip_as_u32 = u32::from_be_bytes(ip_v4);
         let pool_ip_as_u32 = u32::from_be_bytes(ip_pool.ip_v4);
