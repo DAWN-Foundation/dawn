@@ -212,12 +212,18 @@ impl DawnApp {
 
         let ip_pool = &ctx.accounts.ip_pool;
 
-        // Validate IP V4 and V6 are in the correct ranges from the IP Pool
-        // require!(
-        //     ip_v4 >= ip_pool.ip_v4
-        //         && ip_v4 <= ip_pool.ip_v4.map(|b| b ^ !((1 << ip_v4_cidr_mask) - 1)),
-        //     DawnError::InvalidIpPoolRange
-        // );
+        // Check if the provided IP is within the pool's range
+        // For IPv4, we compare the network portions by masking both IPs
+        let network_bits = ip_pool.ip_v4_cidr_mask;
+        let mask = !((1u32 << (32 - network_bits)) - 1);
+
+        let ip_as_u32 = u32::from_be_bytes(ip_v4);
+        let pool_ip_as_u32 = u32::from_be_bytes(ip_pool.ip_v4);
+
+        let ip_network = ip_as_u32 & mask;
+        let pool_network = pool_ip_as_u32 & mask;
+
+        require!(ip_network == pool_network, DawnError::InvalidIpRange);
 
         let ip_lease = &mut ctx.accounts.ip_lease;
 

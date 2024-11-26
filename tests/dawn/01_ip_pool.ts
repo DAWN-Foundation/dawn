@@ -325,7 +325,7 @@ export const leaseIpTests = () =>
             mock.leaseIpV6CidrMask,
           )
           .accounts({
-            caller: wallet.payer.publicKey,
+            caller: wallet.publicKey,
             config: mock.configPda,
             device: mock.devicePda,
             ipPool: mock.ipPoolPda,
@@ -363,7 +363,7 @@ export const leaseIpTests = () =>
             mock.leaseIpV6CidrMask,
           )
           .accounts({
-            caller: wallet.payer.publicKey,
+            caller: wallet.publicKey,
             config: mock.configPda,
             device: mock.devicePda,
             ipPool: mock.ipPoolPda,
@@ -401,7 +401,7 @@ export const leaseIpTests = () =>
             leaseIpV6CidrMask,
           )
           .accounts({
-            caller: wallet.payer.publicKey,
+            caller: wallet.publicKey,
             config: mock.configPda,
             device: mock.devicePda,
             ipPool: mock.ipPoolPda,
@@ -439,7 +439,7 @@ export const leaseIpTests = () =>
             leaseIpV6CidrMask,
           )
           .accounts({
-            caller: wallet.payer.publicKey,
+            caller: wallet.publicKey,
             config: mock.configPda,
             device: mock.devicePda,
             ipPool: mock.ipPoolPda,
@@ -455,6 +455,48 @@ export const leaseIpTests = () =>
       }
     })
 
+    test('cannot lease ip with ip v4 out of range', async () => {
+      // mock.poolIpV4 is 11.12.13.14
+      // mock.leaseIpV4CidrMask is 32
+      // so leaseIpV4 is out of range
+      const leaseIpV4: IpV4Bytes = [11, 12, 13, 15]
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        mock.ipPoolPda,
+        leaseIpV4,
+        mock.leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        mock.leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            leaseIpV4,
+            mock.leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            mock.leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        console.log(error)
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid IP range')
+      }
+    })
+
     test('leases the ip', async () => {
       const tx = await program.methods
         .leaseIp(
@@ -464,7 +506,7 @@ export const leaseIpTests = () =>
           mock.leaseIpV6CidrMask,
         )
         .accounts({
-          caller: wallet.payer.publicKey,
+          caller: wallet.publicKey,
           config: mock.configPda,
           device: mock.devicePda,
           ipPool: mock.ipPoolPda,

@@ -359,7 +359,7 @@ export async function setup(
   )
 
   // IP V4
-  const leaseIpV4: IpV4Bytes = [11, 12, 13, 14]
+  const leaseIpV4: IpV4Bytes = [11, 11, 11, 2]
   const leaseIpV4CidrMask = 32
 
   // IP V6
