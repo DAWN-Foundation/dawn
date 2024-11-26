@@ -19,6 +19,7 @@ import {
   deviceTypeSeed,
   IpV4Bytes,
   IpV6Bytes,
+  getIpLeasePda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -273,35 +274,186 @@ export const leaseIpTests = () =>
       expect(mock).toBeDefined()
     })
 
-    // test('cannot lease ip by non-authority', async () => {
-    //   provider.wallet = new Wallet(mock.serviceProvider)
-    //   const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+    test('cannot lease ip by non-authority', async () => {
+      provider.wallet = new Wallet(mock.serviceProvider)
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-    //   try {
-    //     await program2.methods
-    //       .leaseIp(
-    //         mock.devicePda,
-    //         mock.leaseIpV4,
-    //         mock.leaseIpV4CidrMask,
-    //         mock.leaseIpV6,
-    //         mock.leaseIpV6CidrMask,
-    //       )
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         config: mock.configPda,
-    //         device: mock.devicePda,
-    //         ipPool: mock.ipPoolPda,
-    //         ipLease: mock.ipLeasePda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //   } finally {
-    //     provider.wallet = loadWallet()
-    //   }
-    // })
+      try {
+        await program2.methods
+          .leaseIp(
+            mock.leaseIpV4,
+            mock.leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            mock.leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: mock.ipLeasePda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+      } finally {
+        provider.wallet = loadWallet()
+      }
+    })
+
+    test('cannot lease ip with ip v4 cidr mask less than 8', async () => {
+      const leaseIpV4CidrMask = 7
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        mock.ipPoolPda,
+        mock.leaseIpV4,
+        leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        mock.leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            mock.leaseIpV4,
+            leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            mock.leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.payer.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid subnet mask')
+      }
+    })
+
+    test('cannot lease ip with ip v4 cidr mask greater than 32', async () => {
+      const leaseIpV4CidrMask = 33
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        mock.ipPoolPda,
+        mock.leaseIpV4,
+        leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        mock.leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            mock.leaseIpV4,
+            leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            mock.leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.payer.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid subnet mask')
+      }
+    })
+
+    test('cannot lease ip with ip v6 cidr mask less than 8', async () => {
+      const leaseIpV6CidrMask = 7
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        mock.ipPoolPda,
+        mock.leaseIpV4,
+        mock.leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            mock.leaseIpV4,
+            mock.leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.payer.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid subnet mask')
+      }
+    })
+
+    test('cannot lease ip with ip v6 cidr mask greater than 128', async () => {
+      const leaseIpV6CidrMask = 129
+
+      const [ipLeasePda] = getIpLeasePda(
+        program,
+        mock.devicePda,
+        mock.ipPoolPda,
+        mock.leaseIpV4,
+        mock.leaseIpV4CidrMask,
+        mock.leaseIpV6,
+        leaseIpV6CidrMask,
+      )
+
+      try {
+        await program.methods
+          .leaseIp(
+            mock.leaseIpV4,
+            mock.leaseIpV4CidrMask,
+            mock.leaseIpV6,
+            leaseIpV6CidrMask,
+          )
+          .accounts({
+            caller: wallet.payer.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            ipPool: mock.ipPoolPda,
+            ipLease: ipLeasePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid subnet mask')
+      }
+    })
 
     test('leases the ip', async () => {
       const tx = await program.methods

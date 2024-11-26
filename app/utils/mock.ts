@@ -14,6 +14,7 @@ import { Mock } from './types'
 import { deviceTypeSeed, getPlanPda, IpV4Bytes, IpV6Bytes } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
+import { getIpLeasePda } from './pda'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -357,29 +358,25 @@ export async function setup(
     program.programId,
   )
 
+  // IP V4
   const leaseIpV4: IpV4Bytes = [11, 12, 13, 14]
   const leaseIpV4CidrMask = 32
-  const leaseIpV6: IpV6Bytes = [
-    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
-  ]
-  // append 0x00 to the end of leaseIpV6 to make it 16 bytes
-  Array.from({ length: 16 - leaseIpV6.length }).forEach(() => {
-    leaseIpV6.push(0x0000)
-  })
 
+  // IP V6
+  const leaseIpV6: IpV6Bytes = [
+    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+  ]
   const leaseIpV6CidrMask = 64
 
-  const [ipLeasePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_lease'),
-      Buffer.from(devicePda.toBytes()),
-      Buffer.from(ipPoolPda.toBytes()),
-      Buffer.from(leaseIpV4),
-      // Buffer.from([leaseIpV4CidrMask]),
-      // Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      // Buffer.from([leaseIpV6CidrMask]),
-    ],
-    program.programId,
+  const [ipLeasePda] = getIpLeasePda(
+    program,
+    devicePda,
+    ipPoolPda,
+    leaseIpV4,
+    leaseIpV4CidrMask,
+    leaseIpV6,
+    leaseIpV6CidrMask,
   )
 
   const planPrice = new BN(100).mul(USDC_DECIMALS)

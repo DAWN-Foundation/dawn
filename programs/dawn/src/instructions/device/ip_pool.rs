@@ -125,9 +125,9 @@ pub struct LeaseIp<'info> {
             device.key().as_ref(),
             ip_pool.key().as_ref(),
             &ip_v4[..],
-            // &[ip_v4_cidr_mask],
-            // &ip_v6.iter().flat_map(|&x| x.to_le_bytes()).collect::<Vec<u8>>(),
-            // &[ip_v6_cidr_mask],
+            &[ip_v4_cidr_mask],
+            &ip_v6.iter().flat_map(|&x| x.to_le_bytes()).collect::<Vec<u8>>(),
+            &[ip_v6_cidr_mask],
         ],
         bump
     )]
