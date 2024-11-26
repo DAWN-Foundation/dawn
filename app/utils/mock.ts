@@ -14,7 +14,7 @@ import { Mock } from './types'
 import { deviceTypeSeed, getPlanPda, IpV4Bytes, IpV6Bytes } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
-import { getIpLeasePda } from './pda'
+import { getIpLeasePda, getIpPoolPda } from './pda'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -336,33 +336,30 @@ export async function setup(
     program.programId,
   )
 
+  // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
   const poolIpV4CidrMask = 24
+
+  // Pool IP V6
   const poolIpV6: IpV6Bytes = [
-    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
+    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
   ]
-  // append 0x00 to the end of poolIpV6 to make it 16 bytes
-  Array.from({ length: 16 - poolIpV6.length }).forEach(() => {
-    poolIpV6.push(0x0000)
-  })
   const poolIpV6CidrMask = 64
 
-  const [ipPoolPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_pool'),
-      Buffer.from(poolIpV4),
-      Buffer.from([poolIpV4CidrMask]),
-      Buffer.from(poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([poolIpV6CidrMask]),
-    ],
-    program.programId,
+  const [ipPoolPda] = getIpPoolPda(
+    program,
+    poolIpV4,
+    poolIpV4CidrMask,
+    poolIpV6,
+    poolIpV6CidrMask,
   )
 
-  // IP V4
+  // Lease IP V4
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 2]
   const leaseIpV4CidrMask = 32
 
-  // IP V6
+  // Lease IP V6
   const leaseIpV6: IpV6Bytes = [
     0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,

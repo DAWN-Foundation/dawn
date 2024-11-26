@@ -3,6 +3,25 @@ import { Dawn } from '../../../target/types/dawn'
 import { PublicKey } from '@solana/web3.js'
 import { IpV4Bytes, IpV6Bytes } from '..'
 
+export function getIpPoolPda(
+  program: Program<Dawn>,
+  poolIpV4: IpV4Bytes,
+  poolIpV4CidrMask: number,
+  poolIpV6: IpV6Bytes,
+  poolIpV6CidrMask: number,
+) {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_pool'),
+      Buffer.from(poolIpV4),
+      Buffer.from([poolIpV4CidrMask]),
+      Buffer.from(poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
+      Buffer.from([poolIpV6CidrMask]),
+    ],
+    program.programId,
+  )
+}
+
 export function getIpLeasePda(
   program: Program<Dawn>,
   devicePda: PublicKey,
@@ -12,14 +31,6 @@ export function getIpLeasePda(
   leaseIpV6: IpV6Bytes,
   leaseIpV6CidrMask: number,
 ) {
-  const leaseIpV6Seed = Buffer.alloc(32)
-  leaseIpV6.forEach((hex, index) => {
-    // turn u16 hex to u8
-    const byteArray = new BN(hex).toArray('le', 2)
-    leaseIpV6Seed.writeUInt8(byteArray[0], index * 2)
-    leaseIpV6Seed.writeUInt8(byteArray[1], index * 2 + 1)
-  })
-
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from('ip_lease'),
@@ -27,7 +38,7 @@ export function getIpLeasePda(
       Buffer.from(ipPoolPda.toBytes()),
       Buffer.from(leaseIpV4),
       Buffer.from([leaseIpV4CidrMask]),
-      leaseIpV6Seed,
+      Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
       Buffer.from([leaseIpV6CidrMask]),
     ],
     program.programId,
