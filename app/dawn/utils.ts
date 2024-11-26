@@ -80,11 +80,22 @@ export function getMock(): Mock {
     medallionFee: new BN(mock.medallionFee),
     // PDAs
     configPda: new PublicKey(mock.configPda),
+    ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     devicePda: new PublicKey(mock.devicePda),
+    ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
+    // ip pool
+    poolIpV4: mock.poolIpV4,
+    poolIpV4CidrMask: mock.poolIpV4CidrMask,
+    poolIpV6: mock.poolIpV6,
+    poolIpV6CidrMask: mock.poolIpV6CidrMask,
+    leaseIpV4: mock.leaseIpV4,
+    leaseIpV4CidrMask: mock.leaseIpV4CidrMask,
+    leaseIpV6: mock.leaseIpV6,
+    leaseIpV6CidrMask: mock.leaseIpV6CidrMask,
     // device
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,

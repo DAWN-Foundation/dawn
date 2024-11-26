@@ -16,7 +16,7 @@ pub struct Device {
     pub latitude: u64,
     /// device geographical coordinates - `longitude`
     pub longitude: u64,
-    /// Device PDA bump seed
+    /// PDA bump seed
     pub bump: u8,
 }
 

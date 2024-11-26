@@ -332,6 +332,13 @@ export const claimTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
+      // make sure event was emitted
+      const event = await getEvent<Claimed>(program, txDetails, 'Claimed')
+      expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
+      expect(event.plan.equals(mock.planPda)).toBeTruthy()
+      expect(event.swapPrice.gte(price)).toBeTruthy()
+      expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
+
       // make sure the service provider DAWN account was credited with the claimable DAWN amount (1 day)
       const serviceProviderDawnBalanceAfter = await getBalance(
         provider.connection,

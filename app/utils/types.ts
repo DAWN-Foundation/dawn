@@ -1,6 +1,7 @@
 import { BN, IdlTypes } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
+import { IpV4Bytes, IpV6Bytes } from './helpers'
 
 export interface Mock {
   dao: Keypair
@@ -37,13 +38,24 @@ export interface Mock {
   medallionFee: BN
   // PDAs
   configPda: PublicKey
+  ipPoolPda: PublicKey
   deviceModelPda: PublicKey
   devicePda: PublicKey
+  ipLeasePda: PublicKey
   deviceLocationPda: PublicKey
   planPda: PublicKey
   planBump: number
+  // ip pool
+  poolIpV4: IpV4Bytes
+  poolIpV4CidrMask: number
+  poolIpV6: IpV6Bytes
+  poolIpV6CidrMask: number
+  leaseIpV4: IpV4Bytes
+  leaseIpV4CidrMask: number
+  leaseIpV6: IpV6Bytes
+  leaseIpV6CidrMask: number
   // device
-  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: BN
@@ -99,13 +111,24 @@ export interface RawMock {
   medallionFee: string
   // PDAs
   configPda: string
+  ipPoolPda: string
   deviceModelPda: string
   devicePda: string
+  ipLeasePda: string
   deviceLocationPda: string
   planPda: string
   planBump: number
+  // ip pool
+  poolIpV4: IpV4Bytes
+  poolIpV4CidrMask: number
+  poolIpV6: IpV6Bytes
+  poolIpV6CidrMask: number
+  leaseIpV4: IpV4Bytes
+  leaseIpV4CidrMask: number
+  leaseIpV6: IpV6Bytes
+  leaseIpV6CidrMask: number
   // device
-  deviceType: IdlTypes<Dawn>["DeviceType"];
+  deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: number

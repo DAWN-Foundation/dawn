@@ -226,17 +226,6 @@ export const planTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      // make sure plan was created
-      const plan = await program.account.plan.fetch(mock.planPda)
-      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(plan.device.equals(mock.devicePda))
-      assert.ok(plan.price.eq(mock.planPrice))
-      assert.equal(plan.duration, mock.planDuration)
-      assert.equal(plan.speed, mock.planSpeed)
-      assert.ok(plan.capacity.eq(mock.planCapacity))
-      assert.ok(plan.slaId.eq(mock.planSlaId))
-      assert.equal(plan.bump, mock.planBump)
-
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
@@ -246,6 +235,17 @@ export const planTests = () =>
       assert.equal(event.speed, mock.planSpeed)
       assert.ok(event.capacity.eq(mock.planCapacity))
       assert.ok(event.slaId.eq(mock.planSlaId))
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(mock.planPda)
+      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
+      assert.ok(plan.device.equals(mock.devicePda))
+      assert.ok(plan.price.eq(mock.planPrice))
+      assert.equal(plan.duration, mock.planDuration)
+      assert.equal(plan.speed, mock.planSpeed)
+      assert.ok(plan.capacity.eq(mock.planCapacity))
+      assert.ok(plan.slaId.eq(mock.planSlaId))
+      assert.equal(plan.bump, mock.planBump)
     })
 
     test('cannot add a plan with the same parameters', async () => {
@@ -310,17 +310,6 @@ export const planTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const plan = await program.account.plan.fetch(planPda)
-
-      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
-      assert.ok(plan.device.equals(mock.devicePda))
-      assert.ok(plan.price.eq(price))
-      assert.equal(plan.duration, duration)
-      assert.equal(plan.speed, speed)
-      assert.ok(plan.capacity.eq(capacity))
-      assert.ok(plan.slaId.eq(slaId))
-      assert.equal(plan.bump, planBump)
-
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
@@ -330,6 +319,17 @@ export const planTests = () =>
       assert.equal(event.speed, speed)
       assert.ok(event.capacity.eq(capacity))
       assert.ok(event.slaId.eq(slaId))
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
+      assert.ok(plan.device.equals(mock.devicePda))
+      assert.ok(plan.price.eq(price))
+      assert.equal(plan.duration, duration)
+      assert.equal(plan.speed, speed)
+      assert.ok(plan.capacity.eq(capacity))
+      assert.ok(plan.slaId.eq(slaId))
+      assert.equal(plan.bump, planBump)
     })
 
     // REMOVE
