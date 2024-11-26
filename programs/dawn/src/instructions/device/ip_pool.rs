@@ -212,7 +212,7 @@ impl DawnApp {
 
         let ip_pool = &ctx.accounts.ip_pool;
 
-        // Check if the provided IP is within the pool's range
+        // Validate provided IP v4 is within the pool's range
         // For IPv4, we compare the network portions by masking both IPs
         let network_bits = ip_pool.ip_v4_cidr_mask;
         let mask = !((1u32 << (32 - network_bits)) - 1);
