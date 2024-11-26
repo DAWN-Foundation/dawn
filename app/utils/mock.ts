@@ -375,9 +375,9 @@ export async function setup(
       Buffer.from(devicePda.toBytes()),
       Buffer.from(ipPoolPda.toBytes()),
       Buffer.from(leaseIpV4),
-      Buffer.from([leaseIpV4CidrMask]),
-      Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([leaseIpV6CidrMask]),
+      // Buffer.from([leaseIpV4CidrMask]),
+      // Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
+      // Buffer.from([leaseIpV6CidrMask]),
     ],
     program.programId,
   )

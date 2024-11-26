@@ -260,14 +260,18 @@ export const leaseIpTests = () =>
     let provider: BankrunProvider
     let program: Program<Dawn>
 
-    // beforeAll(async () => {
-    //   provider = await getProvider()
-    //   provider.wallet = wallet
+    beforeAll(async () => {
+      provider = await getProvider()
+      provider.wallet = wallet
 
-    //   anchor.setProvider(provider)
+      anchor.setProvider(provider)
 
-    //   program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-    // })
+      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+    })
+
+    test('mock setup', () => {
+      expect(mock).toBeDefined()
+    })
 
     // test('cannot lease ip by non-authority', async () => {
     //   provider.wallet = new Wallet(mock.serviceProvider)
@@ -299,42 +303,38 @@ export const leaseIpTests = () =>
     //   }
     // })
 
-    // test('leases the ip', async () => {
-    //   const tx = program.methods
-    //     .leaseIp(
-    //       mock.devicePda,
-    //       mock.leaseIpV4,
-    //       mock.leaseIpV4CidrMask,
-    //       mock.leaseIpV6,
-    //       mock.leaseIpV6CidrMask,
-    //     )
-    //     .accounts({
-    //       caller: wallet.publicKey,
-    //       config: mock.configPda,
-    //       device: mock.devicePda,
-    //       ipPool: mock.ipPoolPda,
-    //       ipLease: mock.ipLeasePda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .rpc()
-    //     .catch((error) => {
-    //       console.log(error)
-    //     })
+    test('leases the ip', async () => {
+      const tx = await program.methods
+        .leaseIp(
+          mock.leaseIpV4,
+          mock.leaseIpV4CidrMask,
+          mock.leaseIpV6,
+          mock.leaseIpV6CidrMask,
+        )
+        .accounts({
+          caller: wallet.payer.publicKey,
+          config: mock.configPda,
+          device: mock.devicePda,
+          ipPool: mock.ipPoolPda,
+          ipLease: mock.ipLeasePda,
+        })
+        .signers([wallet.payer])
+        .transaction()
 
-    //   // const txDetails = await confirmTx(provider, tx)
+      const txDetails = await confirmTx(provider, tx)
 
-    //   // // make sure event was emitted
-    //   // const event = await getEvent<IpLeased>(program, txDetails, 'IpLeased')
-    //   // expect(event.ipV4).toStrictEqual(mock.leaseIpV4)
-    //   // expect(event.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
-    //   // expect(event.ipV6).toStrictEqual(mock.leaseIpV6)
-    //   // expect(event.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
+      // make sure event was emitted
+      const event = await getEvent<IpLeased>(program, txDetails, 'IpLeased')
+      expect(event.ipV4).toStrictEqual(mock.leaseIpV4)
+      expect(event.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
+      expect(event.ipV6).toStrictEqual(mock.leaseIpV6)
+      expect(event.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
 
-    //   // // make sure account was created
-    //   // const ipLease = await program.account.ipLease.fetch(mock.ipLeasePda)
-    //   // expect(ipLease.ipV4).toStrictEqual(mock.leaseIpV4)
-    //   // expect(ipLease.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
-    //   // expect(ipLease.ipV6).toStrictEqual(mock.leaseIpV6)
-    //   // expect(ipLease.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
-    // })
+      // make sure account was created
+      const ipLease = await program.account.ipLease.fetch(mock.ipLeasePda)
+      expect(ipLease.ipV4).toStrictEqual(mock.leaseIpV4)
+      expect(ipLease.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
+      expect(ipLease.ipV6).toStrictEqual(mock.leaseIpV6)
+      expect(ipLease.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
+    })
   })

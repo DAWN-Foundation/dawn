@@ -45,7 +45,8 @@ pub struct IpLease {
     pub bump: u8,
 }
 
-const IP_LEASE_SIZE: usize = 32 // pool
+const IP_LEASE_SIZE: usize = 8 // id
+    + 32 // ip pool
     + 32 // device
     + 4  // ip v4
     + 1  // ip v4 cidr mask
@@ -124,9 +125,9 @@ pub struct LeaseIp<'info> {
             device.key().as_ref(),
             ip_pool.key().as_ref(),
             &ip_v4[..],
-            &[ip_v4_cidr_mask],
-            &ip_v6.iter().flat_map(|&x| x.to_le_bytes()).collect::<Vec<u8>>(),
-            &[ip_v6_cidr_mask],
+            // &[ip_v4_cidr_mask],
+            // &ip_v6.iter().flat_map(|&x| x.to_le_bytes()).collect::<Vec<u8>>(),
+            // &[ip_v6_cidr_mask],
         ],
         bump
     )]
@@ -194,7 +195,6 @@ impl DawnApp {
     /// Can only be called by the DAWN authority
     pub fn lease_ip(
         ctx: Context<LeaseIp>,
-        device: Pubkey,
         ip_v4: [u8; 4],
         ip_v4_cidr_mask: u8,
         ip_v6: [u16; 16],
@@ -222,7 +222,7 @@ impl DawnApp {
         let ip_lease = &mut ctx.accounts.ip_lease;
 
         ip_lease.ip_pool = ip_pool.key();
-        ip_lease.device = device;
+        ip_lease.device = ctx.accounts.device.key();
         ip_lease.ip_v4 = ip_v4;
         ip_lease.ip_v4_cidr_mask = ip_v4_cidr_mask;
         ip_lease.ip_v6 = ip_v6;

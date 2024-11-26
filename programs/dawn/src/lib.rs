@@ -50,13 +50,12 @@ pub mod dawn {
 
     pub fn lease_ip(
         ctx: Context<LeaseIp>,
-        device: Pubkey,
         ip_v4: [u8; 4],
         ip_v4_cidr_mask: u8,
         ip_v6: [u16; 16],
         ip_v6_cidr_mask: u8,
     ) -> Result<()> {
-        DawnApp::lease_ip(ctx, device, ip_v4, ip_v4_cidr_mask, ip_v6, ip_v6_cidr_mask)
+        DawnApp::lease_ip(ctx, ip_v4, ip_v4_cidr_mask, ip_v6, ip_v6_cidr_mask)
     }
 
     pub fn verify_device_location(ctx: Context<VerifyDeviceLocation>) -> Result<()> {
