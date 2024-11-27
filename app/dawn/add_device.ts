@@ -4,18 +4,20 @@ import { PublicKey } from '@solana/web3.js'
 import { connect, getFlag, submitTx } from './utils'
 import { COORD_DENOMINATOR } from '../utils'
 
-
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
-const MODEL = "GG69420"
+const MODEL = 'GG69420'
 const LATITUDE = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 const LONGITUDE = new BN(0.0000000001).mul(COORD_DENOMINATOR)
 
 async function main() {
   const manufacturer = getFlag('--manufacturer') || MANUFACTURER
   const model = getFlag('--model') || MODEL
-  const latitude = new BN(parseFloat(getFlag('--latitude'))).mul(COORD_DENOMINATOR) || LATITUDE
-  const longitude = new BN(parseFloat(getFlag('--longitude'))).mul(COORD_DENOMINATOR) || LONGITUDE
+  const latitude =
+    new BN(parseFloat(getFlag('--latitude'))).mul(COORD_DENOMINATOR) || LATITUDE
+  const longitude =
+    new BN(parseFloat(getFlag('--longitude'))).mul(COORD_DENOMINATOR) ||
+    LONGITUDE
 
   const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
@@ -34,12 +36,7 @@ async function main() {
   console.log({ devicePda: devicePda.toBase58() })
 
   const itx = await program.methods
-    .addDevice(
-      manufacturer,
-      model,
-      latitude,
-      longitude,
-    )
+    .addDevice(latitude, longitude)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,

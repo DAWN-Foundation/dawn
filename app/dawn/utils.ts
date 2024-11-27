@@ -1,5 +1,5 @@
 const fs = require('fs')
-import { AnchorProvider, BN, Program, Wallet, web3 } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, Program, setProvider, Wallet, web3 } from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -140,8 +140,8 @@ export async function connect(): Promise<{
   console.log({ signer: wallet.payer.publicKey.toBase58() })
 
   const connection = new Connection('http://127.0.0.1:8899')
-  const provider = new anchor.AnchorProvider(connection, wallet, {})
-  anchor.setProvider(provider)
+  const provider = new AnchorProvider(connection, wallet, {})
+  setProvider(provider)
   const program = getDawnProgram(provider)
 
   return { wallet, program, connection: provider.connection }
@@ -151,7 +151,7 @@ export async function connect(): Promise<{
 function configWallet(accountName: 'customer' | 'serviceProvider'): Wallet {
   const mock = getMock()
   const secretKey = mock[accountName].secretKey
-  return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
+  return new Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)))
 }
 
 // helper function to get the wallet based on the flag
