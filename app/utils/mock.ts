@@ -11,16 +11,18 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import { deviceTypeSeed, getPlanPda, IpV4Bytes, IpV6Bytes } from './helpers'
+import {
+  deviceTypeSeed,
+  getPlanPda,
+  IpV4Bytes,
+  IpV6Bytes,
+  PROGRAM_ID,
+} from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { getIpLeasePda, getIpPoolPda } from './pda'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
-
-export const PROGRAM_ID = new PublicKey(
-  'GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact',
-)
 
 export const RAYDIUM_PROGRAM_ID = new PublicKey(
   'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
@@ -342,8 +344,8 @@ export async function setup(
 
   // Pool IP V6 (2001:db8::/64 - a documentation prefix)
   const poolIpV6: IpV6Bytes = [
-    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
   ]
   const poolIpV6CidrMask = 64
 
@@ -361,8 +363,8 @@ export async function setup(
 
   // Lease IP V6 (2001:db8::1 - a valid address within the pool)
   const leaseIpV6: IpV6Bytes = [
-    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001,
+    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001,
   ]
   const leaseIpV6CidrMask = 128 // Single address
 

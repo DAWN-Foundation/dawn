@@ -9,11 +9,15 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { COORD_DENOMINATOR, loadWallet, Mock, RawMock } from '../utils'
+import {
+  COORD_DENOMINATOR,
+  loadWallet,
+  Mock,
+  PROGRAM_ID,
+  RawMock,
+} from '../utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
-
-const PROGRAM_ID = new PublicKey('GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact')
 
 // parse command line arguments
 // find value of the --flag
