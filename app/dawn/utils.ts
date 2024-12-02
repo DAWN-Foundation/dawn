@@ -243,3 +243,51 @@ export async function getBalance(
   const balance = (await getAccount(connection, account)).amount.toString()
   return new BN(balance)
 }
+
+export function rndMacAddress() {
+  return "XX:XX:XX:XX:XX:XX".replace(/X/g, () =>
+    "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
+  )
+}
+
+export class DeviceGenerator {
+  static rnd(): number {
+    return Math.random() - 0.5
+  }
+  static lon(): number {
+    return this.rnd() * 360
+  }
+  static lat(): number {
+    return this.rnd() * 180
+  }
+
+  static coordInBBBOX(bbox: number[]): [number, number] {
+    return [
+      Math.random() * (bbox[2] - bbox[0]) + bbox[0],
+      Math.random() * (bbox[3] - bbox[1]) + bbox[1],
+    ]
+  }
+  static flatPosition(bbox: number[]): [number, number] {
+    if (bbox) return this.coordInBBBOX(bbox)
+    else return [this.lon(), this.lat()]
+  }
+
+  static flatPoint(coordinates?: [number, number]): [number, number] {
+    return coordinates || [this.lon(), this.lat()]
+  }
+
+  static genearate(count: number, bbox?: number[]): { coord: [number, number], mac: string }[] {
+    const devices = []
+
+    for (let i = 0; i < count; i++) {
+      const device = {
+        coord: bbox ? this.flatPoint(this.flatPosition(bbox)) : this.flatPoint(),
+        mac: rndMacAddress(),
+      }
+
+      devices.push(device)
+    }
+
+    return devices
+  }
+}

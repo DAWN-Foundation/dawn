@@ -12,6 +12,7 @@ import {
 
 import { Mock } from './types'
 import {
+  COORD_DENOMINATOR,
   deviceTypeSeed,
   getPlanPda,
   IpV4Bytes,
@@ -321,8 +322,8 @@ export async function setup(
     program.programId,
   )
 
-  const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
-  const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
+  const deviceLatitude = new BN(1.0).mul(COORD_DENOMINATOR)
+  const deviceLongitude = new BN(1.0).mul(COORD_DENOMINATOR)
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [

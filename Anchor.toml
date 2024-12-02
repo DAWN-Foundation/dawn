@@ -5,14 +5,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dawn = "GtVh6exdiedD7cXXUxJz3Wgj3d6o3nhXqCM2uYPNfact"
+dawn = "F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+wallet = "/home/singula/.config/solana/id.json"
 
 [scripts]
 test = "yarn test"

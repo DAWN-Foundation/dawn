@@ -13,6 +13,8 @@
     "dawn:init": "yarn build && node dist/app/dawn/init.js",
     "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
     "dawn:add_device": "yarn build && node dist/app/dawn/add_device.js",
+    "dawn:add_devices": "yarn build && node dist/app/dawn/add_devices.js",
+    "dawn:add_device_model": "yarn build && node dist/app/dawn/add_device_model.js",
     "dawn:get_devices": "yarn build && node dist/app/dawn/get_devices.js",
     "dawn:add_plan": "yarn build && node dist/app/dawn/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/app/dawn/get_plans.js",
