@@ -1,14 +1,15 @@
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
-import { connect, DeviceGenerator, getFlag, submitTx } from './utils'
-import { COORD_DENOMINATOR, deviceTypeSeed } from '../utils'
+import { connect, getFlag, submitTx } from './utils'
+import { COORD_DENOMINATOR } from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
 const LATITUDE = new BN(37.16427727029177).mul(COORD_DENOMINATOR)
 const LONGITUDE = new BN(-121.93092442368452).mul(COORD_DENOMINATOR)
+const MAC_ADDRESS = [0, 0, 0, 0, 0, 0]
 
 async function main() {
   const latitude =
@@ -35,6 +36,7 @@ async function main() {
       Buffer.from('device'),
       Buffer.from(wallet.payer.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
+      // Buffer.from(device.mac),
     ],
     program.programId,
   )
@@ -52,7 +54,7 @@ async function main() {
   console.log({ deviceModelPda: deviceModelPda.toBase58() })
 
   const itx = await program.methods
-    .addDevice(LATITUDE, LONGITUDE)
+    .addDevice(latitude, longitude, MAC_ADDRESS)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,

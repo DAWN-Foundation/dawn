@@ -13,7 +13,7 @@ pub struct Device {
     /// Reference to the DeviceModel account
     pub model: Pubkey,
     /// Unique hardware identifier (MAC address)
-    pub mac_address: [u8; 6],
+    // pub mac_address: [u8; 6],
     /// PDA bump seed
     pub bump: u8,
 }
@@ -21,11 +21,11 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // model
-    + 6 // mac_address
+    // + 6 // mac_address
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(latitude: u64, longitude: u64)]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -51,7 +51,7 @@ pub struct AddDevice<'info> {
             b"device",
             caller.key().as_ref(),
             device_model.key().as_ref(),
-            &mac_address,
+            // &mac_address,
         ],
         bump
     )]
@@ -74,10 +74,10 @@ pub struct AddDevice<'info> {
 }
 
 impl DawnApp {
-    pub fn add_device(ctx: Context<AddDevice>, latitude: i128, longitude: i128, mac_address: [u8; 6]) -> Result<()> {
+    pub fn add_device(ctx: Context<AddDevice>, latitude: u64, longitude: u64) -> Result<()> {
         // Make sure the latitude and longitude are not eq 0
-        require!(!latitude.eq(&0i128), DawnError::InvalidLatitude);
-        require!(!longitude.eq(&0i128), DawnError::InvalidLongitude);
+        require!(!latitude.eq(&0u64), DawnError::InvalidLatitude);
+        require!(!longitude.eq(&0u64), DawnError::InvalidLongitude);
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
@@ -85,7 +85,7 @@ impl DawnApp {
         // Set device info
         device.owner = ctx.accounts.caller.key();
         device.model = ctx.accounts.device_model.key();
-        device.mac_address = mac_address;
+        // device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
 
         // Set device location info
@@ -100,7 +100,7 @@ impl DawnApp {
             device: device.key(),
             owner: device.owner,
             model: device.model,
-            mac_address: device.mac_address,
+            // mac_address: device.mac_address,
             latitude,
             longitude,
         });

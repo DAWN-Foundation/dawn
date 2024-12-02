@@ -96,8 +96,9 @@ pub struct LeaseIp<'info> {
         mut,
         seeds = [
             b"device",
-            &device.owner.as_ref(),
-            &device.model.as_ref(),
+            device.owner.as_ref(),
+            device.model.as_ref(),
+            // &device.mac_address,
         ],
         bump = device.bump
     )]

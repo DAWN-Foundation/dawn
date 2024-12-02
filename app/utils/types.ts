@@ -58,6 +58,7 @@ export interface Mock {
   deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
+  deviceMacAddress: number[]
   deviceLatitude: BN
   deviceLongitude: BN
   // plan
@@ -133,6 +134,7 @@ export interface RawMock {
   deviceModel: string
   deviceLatitude: number
   deviceLongitude: number
+  deviceMacAddress: number[]
   // plan
   planPrice: string
   planDuration: number

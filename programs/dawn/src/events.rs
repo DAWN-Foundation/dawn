@@ -50,16 +50,16 @@ pub struct DeviceAdded {
     pub owner: Pubkey,
     pub device: Pubkey,
     pub model: Pubkey,
-    pub longitude: i128,
-    pub latitude: i128,
-    pub mac_address: [u8; 6],
+    pub longitude: u64,
+    pub latitude: u64,
+    // pub mac_address: [u8; 6],
 }
 
 #[event]
 pub struct DeviceLocationVerified {
     pub device: Pubkey,
-    pub latitude: i128,
-    pub longitude: i128,
+    pub latitude: u64,
+    pub longitude: u64,
 }
 
 #[event]

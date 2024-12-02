@@ -311,6 +311,7 @@ export async function setup(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
+  const deviceMacAddress = [0, 0, 0, 0, 0, 0,]
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
@@ -330,6 +331,7 @@ export async function setup(
       Buffer.from('device'),
       Buffer.from(serviceProvider.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
+      Buffer.from(deviceMacAddress),
     ],
     program.programId,
   )
@@ -479,6 +481,7 @@ export async function setup(
     deviceModel,
     deviceLatitude,
     deviceLongitude,
+    deviceMacAddress,
     // plan
     planPrice,
     planDuration,

@@ -47,12 +47,9 @@ async function main() {
             program.programId,
         )
 
-        Uint8Array.from(Buffer.from(device.mac))
-
         try {
             await program.methods
-                // @ts-ignore
-                .addDevice(latitude, longitude, Uint8Array.from(Buffer.from(device.mac)))
+                .addDevice(latitude, longitude, Array.from(Buffer.from(device.mac)))
                 .signers([wallet.payer])
                 .accounts({
                     caller: wallet.payer.publicKey,

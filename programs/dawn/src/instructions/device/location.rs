@@ -10,9 +10,9 @@ pub struct DeviceLocation {
     /// The device account
     pub device: Pubkey,
     /// Geographic position - latitude
-    pub latitude: i128,
+    pub latitude: u64,
     /// Geographic position - longitude
-    pub longitude: i128,
+    pub longitude: u64,
     /// Verified by the DAWN authority
     pub verified: bool,
     /// PDA bump seed
@@ -21,8 +21,8 @@ pub struct DeviceLocation {
 
 pub const DEVICE_LOCATION_SIZE: usize = 8 // id
     + 32 // device
-    + 16 // latitude
-    + 16 // longitude
+    + 8 // latitude
+    + 8 // longitude
     + 1 // verified
     + 1; // bump
 
@@ -42,7 +42,7 @@ pub struct VerifyDeviceLocation<'info> {
             b"device".as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.mac_address,
+            // &device.mac_address,
         ],
         bump = device.bump,
     )]

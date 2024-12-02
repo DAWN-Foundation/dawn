@@ -106,6 +106,7 @@ export function getMock(): Mock {
     deviceModel: mock.deviceModel,
     deviceLatitude: new BN(mock.deviceLatitude).mul(COORD_DENOMINATOR),
     deviceLongitude: new BN(mock.deviceLongitude).mul(COORD_DENOMINATOR),
+    deviceMacAddress: mock.deviceMacAddress,
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
@@ -244,10 +245,10 @@ export async function getBalance(
   return new BN(balance)
 }
 
-export function rndMacAddress() {
-  return "XX:XX:XX:XX:XX:XX".replace(/X/g, () =>
+export function generateMacAddress(): number[] {
+  return "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
     "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
-  )
+  ).split(":").map(el => parseInt(el, 16))
 }
 
 export class DeviceGenerator {
@@ -276,13 +277,13 @@ export class DeviceGenerator {
     return coordinates || [this.lon(), this.lat()]
   }
 
-  static genearate(count: number, bbox?: number[]): { coord: [number, number], mac: string }[] {
+  static genearate(count: number, bbox?: number[]): { coord: [number, number], mac: number[] }[] {
     const devices = []
 
     for (let i = 0; i < count; i++) {
       const device = {
         coord: bbox ? this.flatPoint(this.flatPosition(bbox)) : this.flatPoint(),
-        mac: rndMacAddress(),
+        mac: generateMacAddress(),
       }
 
       devices.push(device)
