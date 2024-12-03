@@ -72,7 +72,7 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with latitude eq 0', async () => {
-      const latitude = new BN(0.0).mul(COORD_DENOMINATOR)
+      const latitude = new BN(0.0 * COORD_DENOMINATOR)
 
       const [devicePda] = PublicKey.findProgramAddressSync(
         [
@@ -107,7 +107,7 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with longitude eq 0', async () => {
-      const longitude = new BN(0.0).mul(COORD_DENOMINATOR)
+      const longitude = new BN(0.0 * COORD_DENOMINATOR)
 
       const [devicePda] = PublicKey.findProgramAddressSync(
         [

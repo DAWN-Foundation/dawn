@@ -7,7 +7,7 @@ import { BanksTransactionMeta } from 'solana-bankrun'
 
 export const PROGRAM_ID = new PublicKey('F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH')
 
-export const COORD_DENOMINATOR = new BN(10).pow(new BN(14))
+export const COORD_DENOMINATOR = 10e10
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 

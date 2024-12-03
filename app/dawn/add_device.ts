@@ -7,15 +7,15 @@ import { COORD_DENOMINATOR } from '../utils'
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
-const LATITUDE = new BN(37.16427727029177).mul(COORD_DENOMINATOR)
-const LONGITUDE = new BN(-121.93092442368452).mul(COORD_DENOMINATOR)
+const LATITUDE = new BN(37.16427727029177 * COORD_DENOMINATOR)
+const LONGITUDE = new BN(-121.93092442368452 * COORD_DENOMINATOR)
 const MAC_ADDRESS = [0, 0, 0, 0, 0, 0]
 
 async function main() {
   const latitude =
-    new BN(parseFloat(getFlag('--latitude'))).mul(COORD_DENOMINATOR) || LATITUDE
+    new BN(parseFloat(getFlag('--latitude')) * COORD_DENOMINATOR) || LATITUDE
   const longitude =
-    new BN(parseFloat(getFlag('--longitude'))).mul(COORD_DENOMINATOR) ||
+    new BN(parseFloat(getFlag('--longitude')) * COORD_DENOMINATOR) ||
     LONGITUDE
 
   const { wallet, connection, program } = await connect()
@@ -36,7 +36,7 @@ async function main() {
       Buffer.from('device'),
       Buffer.from(wallet.payer.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
-      // Buffer.from(device.mac),
+      Buffer.from(MAC_ADDRESS),
     ],
     program.programId,
   )

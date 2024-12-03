@@ -233,8 +233,8 @@ export async function prepare(
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
-  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
-  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
+  const deviceLatitude = new BN(0.0000000001 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.0000000001 * COORD_DENOMINATOR)
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [

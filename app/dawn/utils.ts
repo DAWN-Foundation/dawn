@@ -106,8 +106,8 @@ export function getMock(): Mock {
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,
     deviceModel: mock.deviceModel,
-    deviceLatitude: new BN(mock.deviceLatitude).mul(COORD_DENOMINATOR),
-    deviceLongitude: new BN(mock.deviceLongitude).mul(COORD_DENOMINATOR),
+    deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
+    deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
     deviceMacAddress: mock.deviceMacAddress,
     // plan
     planPrice: new BN(mock.planPrice),

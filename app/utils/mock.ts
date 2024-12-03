@@ -324,8 +324,8 @@ export async function setup(
     program.programId,
   )
 
-  const deviceLatitude = new BN(1.0).mul(COORD_DENOMINATOR)
-  const deviceLongitude = new BN(1.0).mul(COORD_DENOMINATOR)
+  const deviceLatitude = new BN(1.0 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN(1.0 * COORD_DENOMINATOR)
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
