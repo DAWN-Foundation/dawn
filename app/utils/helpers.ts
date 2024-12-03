@@ -15,6 +15,11 @@ export type IpV4Bytes = [number, number, number, number]
 
 export type MacAddress = [number, number, number, number, number, number]
 
+export interface GenerateDevice {
+  coord: [number, number],
+  mac: MacAddress
+}
+
 export type IpV6Bytes = number[]
 
 // Helper to fund an account with SOL

@@ -11,7 +11,9 @@ import {
 import { Dawn } from '../../target/types/dawn'
 import {
   COORD_DENOMINATOR,
+  GenerateDevice,
   loadWallet,
+  MacAddress,
   Mock,
   PROGRAM_ID,
   RawMock,
@@ -245,10 +247,12 @@ export async function getBalance(
   return new BN(balance)
 }
 
-export function generateMacAddress(): number[] {
-  return "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
+export function generateMacAddress(): MacAddress {
+  const mac = "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
     "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
   ).split(":").map(el => parseInt(el, 16))
+
+  return [mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]]
 }
 
 export class DeviceGenerator {
@@ -277,7 +281,7 @@ export class DeviceGenerator {
     return coordinates || [this.lon(), this.lat()]
   }
 
-  static genearate(count: number, bbox?: number[]): { coord: [number, number], mac: number[] }[] {
+  static genearate(count: number, bbox?: number[]): GenerateDevice[] {
     const devices = []
 
     for (let i = 0; i < count; i++) {

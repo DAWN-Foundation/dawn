@@ -145,7 +145,7 @@ export const deviceTests = () =>
           Buffer.from('device'),
           Buffer.from(mock.serviceProvider.publicKey.toBytes()),
           Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from([0,0,0,0,0,0]),
+          Buffer.from(mock.deviceMacAddress),
         ],
         program.programId,
       )
@@ -153,7 +153,7 @@ export const deviceTests = () =>
       console.log(mock.devicePda, devicePda)
 
       const tx = await program.methods
-        .addDevice(mock.deviceLatitude, mock.deviceLongitude, [0,0,0,0,0,0])
+        .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
         .accounts({
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,

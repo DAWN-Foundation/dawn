@@ -162,6 +162,8 @@ yarn dawn:init --root
 yarn dawn:add_device --service-provider
 yarn dawn:subscribe --customer
 
+# Add a devices to the plan contract
+yarn dawn:add_devices
 
 # Add a device to the plan contract (as --service-provider)
 yarn dawn:add_device \
