@@ -260,16 +260,16 @@ export class DeviceGenerator {
     return Math.random() - 0.5
   }
   static lon(): number {
-    return this.rnd() * 360
+    return parseFloat((this.rnd() * 360).toFixed(6))
   }
   static lat(): number {
-    return this.rnd() * 180
+    return parseFloat((this.rnd() * 180).toFixed(6))
   }
 
   static coordInBBBOX(bbox: number[]): [number, number] {
     return [
-      Math.random() * (bbox[2] - bbox[0]) + bbox[0],
-      Math.random() * (bbox[3] - bbox[1]) + bbox[1],
+      parseFloat((Math.random() * (bbox[2] - bbox[0]) + bbox[0]).toFixed(6)),
+      parseFloat((Math.random() * (bbox[3] - bbox[1]) + bbox[1]).toFixed(6)),
     ]
   }
   static flatPosition(bbox: number[]): [number, number] {

@@ -1,17 +1,17 @@
 import { PublicKey } from '@solana/web3.js'
 
-import { connect, getFlag, submitTx } from './utils'
+import { connect, getFlag, getMock, submitTx } from './utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
-const CONFIG_PDA = new PublicKey("HM2B43epynbe3nkdBC3A3Qj86eKdkQh4CzQXYH9YkGqN");
 
 async function main() {
   const manufacturer = getFlag('--manufacturer') || MANUFACTURER
   const model = getFlag('--model') || MODEL
 
   const { wallet, connection, program } = await connect()
+  const mock = getMock()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
@@ -29,7 +29,7 @@ async function main() {
   const itx = await program.methods
     .addDeviceModel({ router: {} }, manufacturer, model)
     .accounts({
-      config: CONFIG_PDA,
+      config: mock.configPda,
       caller: wallet.payer.publicKey,
       deviceModel: deviceModelPda,
     })

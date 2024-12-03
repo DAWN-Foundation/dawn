@@ -5,9 +5,9 @@ import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
 
-export const PROGRAM_ID = new PublicKey('F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH')
+export const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
 
-export const COORD_DENOMINATOR = 10e10
+export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 
