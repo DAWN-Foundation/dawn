@@ -13,7 +13,7 @@ pub struct Device {
     /// Reference to the DeviceModel account
     pub model: Pubkey,
     /// Unique hardware identifier (MAC address)
-    // pub mac_address: [u8; 6],
+    pub mac_address: [u8; 6],
     /// PDA bump seed
     pub bump: u8,
 }
@@ -21,7 +21,7 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // model
-    // + 6 // mac_address
+    + 6 // mac_address
     + 1; // bump
 
 #[derive(Accounts)]
