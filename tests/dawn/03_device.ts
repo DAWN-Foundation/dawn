@@ -47,96 +47,96 @@ export const deviceTests = () =>
       expect(mock).toBeDefined()
     })
 
-    // test('cannot add device with invalid model', async () => {
-    //   const invalidModel = Keypair.generate()
+    test('cannot add device with invalid model', async () => {
+      const invalidModel = Keypair.generate()
 
-    //   try {
-    //     await program.methods
-    //       .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         deviceModel: invalidModel.publicKey,
-    //         device: mock.devicePda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     expect(err.error.errorMessage).toBe(
-    //       'The program expected this account to be already initialized',
-    //     )
-    //   }
-    // })
+      try {
+        await program.methods
+          .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: invalidModel.publicKey,
+            device: mock.devicePda,
+            deviceLocation: mock.deviceLocationPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe(
+          'The program expected this account to be already initialized',
+        )
+      }
+    })
 
-    // test('cannot add device with latitude eq 0', async () => {
-    //   const latitude = new BN(0.0).mul(COORD_DENOMINATOR)
+    test('cannot add device with latitude eq 0', async () => {
+      const latitude = new BN(0.0).mul(COORD_DENOMINATOR)
 
-    //   const [devicePda] = PublicKey.findProgramAddressSync(
-    //     [
-    //       Buffer.from('device'),
-    //       Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-    //       Buffer.from(mock.deviceModelPda.toBytes()),
-    //       Buffer.from(mock.deviceMacAddress),
-    //     ],
-    //     program.programId,
-    //   )
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from(mock.deviceMacAddress),
+        ],
+        program.programId,
+      )
 
-    //   console.log(devicePda.toBase58(), mock.devicePda.toBase58())
+      console.log(devicePda.toBase58(), mock.devicePda.toBase58())
 
-    //   try {
-    //     await program.methods
-    //       .addDevice(latitude, mock.deviceLongitude, mock.deviceMacAddress)
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         deviceModel: mock.deviceModelPda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //         device: devicePda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     console.log(error)
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     expect(err.error.errorMessage).toBe('Latitude coordinate is invalid')
-    //   }
-    // })
+      try {
+        await program.methods
+          .addDevice(latitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            deviceLocation: mock.deviceLocationPda,
+            device: devicePda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        console.log(error)
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Latitude coordinate is invalid')
+      }
+    })
 
-    // test('cannot add device with longitude eq 0', async () => {
-    //   const longitude = new BN(0.0).mul(COORD_DENOMINATOR)
+    test('cannot add device with longitude eq 0', async () => {
+      const longitude = new BN(0.0).mul(COORD_DENOMINATOR)
 
-    //   const [devicePda] = PublicKey.findProgramAddressSync(
-    //     [
-    //       Buffer.from('device'),
-    //       Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-    //       Buffer.from(mock.deviceModelPda.toBytes()),
-    //       Buffer.from(mock.deviceMacAddress),
-    //     ],
-    //     program.programId,
-    //   )
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from(mock.deviceMacAddress),
+        ],
+        program.programId,
+      )
 
-    //   try {
-    //     await program.methods
-    //       .addDevice(mock.deviceLatitude, longitude, mock.deviceMacAddress)
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         deviceModel: mock.deviceModelPda,
-    //         device: devicePda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     expect(err.error.errorMessage).toBe('Longitude coordinate is invalid')
-    //   }
-    // })
+      try {
+        await program.methods
+          .addDevice(mock.deviceLatitude, longitude, mock.deviceMacAddress)
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            deviceLocation: mock.deviceLocationPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Longitude coordinate is invalid')
+      }
+    })
 
     test('adds the device', async () => {
 
@@ -145,7 +145,7 @@ export const deviceTests = () =>
           Buffer.from('device'),
           Buffer.from(mock.serviceProvider.publicKey.toBytes()),
           Buffer.from(mock.deviceModelPda.toBytes()),
-          // Buffer.from([0,0,0,0,0,0]),
+          Buffer.from([0,0,0,0,0,0]),
         ],
         program.programId,
       )
@@ -153,7 +153,7 @@ export const deviceTests = () =>
       console.log(mock.devicePda, devicePda)
 
       const tx = await program.methods
-        .addDevice(mock.deviceLatitude, mock.deviceLongitude)
+        .addDevice(mock.deviceLatitude, mock.deviceLongitude, [0,0,0,0,0,0])
         .accounts({
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
@@ -196,96 +196,96 @@ export const deviceTests = () =>
       expect(deviceLocation.verified).toBeFalsy()
     })
 
-    // test('cannot verify device location as non-authority', async () => {
-    //   try {
-    //     await program.methods
-    //       .verifyDeviceLocation()
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         config: mock.configPda,
-    //         device: mock.devicePda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     const txError = err.logs.find((log) =>
-    //       log.includes('A raw constraint was violated'),
-    //     )
-    //     expect(txError).toBeDefined()
-    //     expect(
-    //       txError.includes('AnchorError caused by account: caller.'),
-    //     ).toBeTruthy()
-    //   }
-    // })
+    test('cannot verify device location as non-authority', async () => {
+      try {
+        await program.methods
+          .verifyDeviceLocation()
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            config: mock.configPda,
+            device: mock.devicePda,
+            deviceLocation: mock.deviceLocationPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        const txError = err.logs.find((log) =>
+          log.includes('A raw constraint was violated'),
+        )
+        expect(txError).toBeDefined()
+        expect(
+          txError.includes('AnchorError caused by account: caller.'),
+        ).toBeTruthy()
+      }
+    })
 
-    // test('verifies device location as authority', async () => {
-    //   const wallet = loadWallet()
-    //   provider.wallet = wallet
+    test('verifies device location as authority', async () => {
+      const wallet = loadWallet()
+      provider.wallet = wallet
 
-    //   const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-    //   const tx = await program2.methods
-    //     .verifyDeviceLocation()
-    //     .accounts({
-    //       caller: wallet.publicKey,
-    //       config: mock.configPda,
-    //       device: mock.devicePda,
-    //       deviceLocation: mock.deviceLocationPda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .transaction()
+      const tx = await program2.methods
+        .verifyDeviceLocation()
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          device: mock.devicePda,
+          deviceLocation: mock.deviceLocationPda,
+        })
+        .signers([wallet.payer])
+        .transaction()
 
-    //   const txDetails = await confirmTx(provider, tx)
+      const txDetails = await confirmTx(provider, tx)
 
-    //   // make sure event was emitted
-    //   const event = await getEvent<DeviceLocationVerified>(
-    //     program2,
-    //     txDetails,
-    //     'DeviceLocationVerified',
-    //   )
-    //   expect(event.device.equals(mock.devicePda)).toBeTruthy()
-    //   expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
-    //   expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
+      // make sure event was emitted
+      const event = await getEvent<DeviceLocationVerified>(
+        program2,
+        txDetails,
+        'DeviceLocationVerified',
+      )
+      expect(event.device.equals(mock.devicePda)).toBeTruthy()
+      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
 
-    //   // make sure device location was updated
-    //   const deviceLocation = await program2.account.deviceLocation.fetch(
-    //     mock.deviceLocationPda,
-    //   )
-    //   expect(deviceLocation.verified).toBeTruthy()
+      // make sure device location was updated
+      const deviceLocation = await program2.account.deviceLocation.fetch(
+        mock.deviceLocationPda,
+      )
+      expect(deviceLocation.verified).toBeTruthy()
 
-    //   provider.wallet = new Wallet(mock.serviceProvider)
-    // })
+      provider.wallet = new Wallet(mock.serviceProvider)
+    })
 
-    // // given previous case created this device
-    // test('cannot add the same device twice', async () => {
-    //   // small wait to ensure previous tx is processed
-    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    // given previous case created this device
+    test('cannot add the same device twice', async () => {
+      // small wait to ensure previous tx is processed
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
-    //   try {
-    //     await program.methods
-    //       .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         deviceModel: mock.deviceModelPda,
-    //         device: mock.devicePda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
+      try {
+        await program.methods
+          .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: mock.devicePda,
+            deviceLocation: mock.deviceLocationPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
 
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     expect(error instanceof SendTransactionError).toBeTruthy()
-    //     const err: SendTransactionError = error
-    //     const txError = err.logs.find((log) => log.includes('already in use'))
-    //     expect(txError).toBeDefined()
-    //     expect(txError).toBe(
-    //       `Allocate: account Address { address: ${mock.devicePda.toBase58()}, base: None } already in use`,
-    //     )
-    //   }
-    // })
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof SendTransactionError).toBeTruthy()
+        const err: SendTransactionError = error
+        const txError = err.logs.find((log) => log.includes('already in use'))
+        expect(txError).toBeDefined()
+        expect(txError).toBe(
+          `Allocate: account Address { address: ${mock.devicePda.toBase58()}, base: None } already in use`,
+        )
+      }
+    })
   })

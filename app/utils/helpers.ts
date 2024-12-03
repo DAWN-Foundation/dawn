@@ -13,6 +13,8 @@ export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 
 export type IpV4Bytes = [number, number, number, number]
 
+export type MacAddress = [number, number, number, number, number, number]
+
 export type IpV6Bytes = number[]
 
 // Helper to fund an account with SOL

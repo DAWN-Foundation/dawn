@@ -17,6 +17,7 @@ import {
   getPlanPda,
   IpV4Bytes,
   IpV6Bytes,
+  MacAddress,
   PROGRAM_ID,
 } from './helpers'
 import { setupRaydium } from './raydium'
@@ -311,7 +312,7 @@ export async function setup(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
-  const deviceMacAddress = [0, 0, 0, 0, 0, 0,]
+  const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
