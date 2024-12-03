@@ -44,8 +44,8 @@ pub mod dawn {
         DawnApp::add_device_model(ctx, device_type, manufacturer, model)
     }
 
-    pub fn add_device(ctx: Context<AddDevice>, latitude: u64, longitude: u64) -> Result<()> {
-        DawnApp::add_device(ctx, latitude, longitude)
+    pub fn add_device(ctx: Context<AddDevice>, latitude: u64, longitude: u64, mac_address: [u8; 6]) -> Result<()> {
+        DawnApp::add_device(ctx, latitude, longitude, mac_address)
     }
 
     pub fn lease_ip(

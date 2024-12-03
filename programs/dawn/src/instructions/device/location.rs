@@ -42,7 +42,7 @@ pub struct VerifyDeviceLocation<'info> {
             b"device".as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            // &device.mac_address,
+            &device.mac_address,
         ],
         bump = device.bump,
     )]
