@@ -11,7 +11,9 @@ import {
 import { Dawn } from '../../target/types/dawn'
 import {
   COORD_DENOMINATOR,
+  GenerateDevice,
   loadWallet,
+  MacAddress,
   Mock,
   PROGRAM_ID,
   RawMock,
@@ -104,8 +106,9 @@ export function getMock(): Mock {
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,
     deviceModel: mock.deviceModel,
-    deviceLatitude: new BN(mock.deviceLatitude).mul(COORD_DENOMINATOR),
-    deviceLongitude: new BN(mock.deviceLongitude).mul(COORD_DENOMINATOR),
+    deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
+    deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
+    deviceMacAddress: mock.deviceMacAddress,
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
@@ -242,4 +245,54 @@ export async function getBalance(
 ): Promise<BN> {
   const balance = (await getAccount(connection, account)).amount.toString()
   return new BN(balance)
+}
+
+export function generateMacAddress(): MacAddress {
+  const mac = "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
+    "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
+  ).split(":").map(el => parseInt(el, 16))
+
+  return [mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]]
+}
+
+export class DeviceGenerator {
+  static rnd(): number {
+    return Math.random() - 0.5
+  }
+  static lon(): number {
+    return parseFloat((this.rnd() * 360).toFixed(6))
+  }
+  static lat(): number {
+    return parseFloat((this.rnd() * 180).toFixed(6))
+  }
+
+  static coordInBBBOX(bbox: number[]): [number, number] {
+    return [
+      parseFloat((Math.random() * (bbox[2] - bbox[0]) + bbox[0]).toFixed(6)),
+      parseFloat((Math.random() * (bbox[3] - bbox[1]) + bbox[1]).toFixed(6)),
+    ]
+  }
+  static flatPosition(bbox: number[]): [number, number] {
+    if (bbox) return this.coordInBBBOX(bbox)
+    else return [this.lon(), this.lat()]
+  }
+
+  static flatPoint(coordinates?: [number, number]): [number, number] {
+    return coordinates || [this.lon(), this.lat()]
+  }
+
+  static genearate(count: number, bbox?: number[]): GenerateDevice[] {
+    const devices = []
+
+    for (let i = 0; i < count; i++) {
+      const device = {
+        coord: bbox ? this.flatPoint(this.flatPosition(bbox)) : this.flatPoint(),
+        mac: generateMacAddress(),
+      }
+
+      devices.push(device)
+    }
+
+    return devices
+  }
 }

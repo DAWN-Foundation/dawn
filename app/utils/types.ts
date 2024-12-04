@@ -1,7 +1,7 @@
 import { BN, IdlTypes } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
-import { IpV4Bytes, IpV6Bytes } from './helpers'
+import { IpV4Bytes, IpV6Bytes, MacAddress } from './helpers'
 
 export interface Mock {
   dao: Keypair
@@ -58,6 +58,7 @@ export interface Mock {
   deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
   deviceModel: string
+  deviceMacAddress: MacAddress
   deviceLatitude: BN
   deviceLongitude: BN
   // plan
@@ -133,6 +134,7 @@ export interface RawMock {
   deviceModel: string
   deviceLatitude: number
   deviceLongitude: number
+  deviceMacAddress: MacAddress
   // plan
   planPrice: string
   planDuration: number

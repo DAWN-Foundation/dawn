@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { AnchorProvider, BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import {
@@ -16,6 +15,7 @@ import {
   getPlanPda,
   IpV4Bytes,
   IpV6Bytes,
+  MacAddress,
 } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
@@ -232,6 +232,9 @@ export async function prepare(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
+  const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
+  const deviceLatitude = new BN(0.000001 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
@@ -243,14 +246,12 @@ export async function prepare(
     program.programId,
   )
 
-  const deviceLatitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
-  const deviceLongitude = new BN(0.0000000001).mul(COORD_DENOMINATOR)
-
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
       Buffer.from(serviceProvider.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
+      Buffer.from(deviceMacAddress),
     ],
     program.programId,
   )
@@ -383,6 +384,7 @@ export async function prepare(
     deviceModel,
     deviceLatitude,
     deviceLongitude,
+    deviceMacAddress,
     // plan
     planPrice,
     planDuration,

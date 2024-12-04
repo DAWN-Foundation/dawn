@@ -12,10 +12,12 @@ import {
 
 import { Mock } from './types'
 import {
+  COORD_DENOMINATOR,
   deviceTypeSeed,
   getPlanPda,
   IpV4Bytes,
   IpV6Bytes,
+  MacAddress,
   PROGRAM_ID,
 } from './helpers'
 import { setupRaydium } from './raydium'
@@ -310,6 +312,7 @@ export async function setup(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
+  const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
@@ -321,14 +324,15 @@ export async function setup(
     program.programId,
   )
 
-  const deviceLatitude = new BN(1).mul(new BN(10).pow(new BN(10)))
-  const deviceLongitude = new BN(1).mul(new BN(10).pow(new BN(10)))
+  const deviceLatitude = new BN(1.0 * COORD_DENOMINATOR)
+  const deviceLongitude = new BN(1.0 * COORD_DENOMINATOR)
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
       Buffer.from(serviceProvider.publicKey.toBytes()),
       Buffer.from(deviceModelPda.toBytes()),
+      Buffer.from(deviceMacAddress),
     ],
     program.programId,
   )
@@ -478,6 +482,7 @@ export async function setup(
     deviceModel,
     deviceLatitude,
     deviceLongitude,
+    deviceMacAddress,
     // plan
     planPrice,
     planDuration,
