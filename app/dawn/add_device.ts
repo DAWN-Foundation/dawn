@@ -10,6 +10,9 @@ const LONGITUDE = new BN(-121.930924)
 const MAC_ADDRESS = [0, 0, 0, 0, 0, 0]
 
 async function main() {
+  const mock = getMock()
+
+  const deviceModelFlag = getFlag('--device-model')
   const longitudeFlag = getFlag('--longitude')
   const latitudeFlag = getFlag('--latitude')
 
@@ -19,18 +22,21 @@ async function main() {
   const latitude = latitudeFlag
     ? new BN(parseFloat(latitudeFlag) * COORD_DENOMINATOR)
     : LATITUDE
+  const deviceModel = deviceModelFlag
+    ? new PublicKey(deviceModelFlag)
+    : mock.deviceModelPda
 
   console.log({ latitude, longitude })
 
   const { wallet, connection, program } = await connect()
-  const mock = getMock()
+
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
       Buffer.from(wallet.payer.publicKey.toBytes()),
-      Buffer.from(mock.deviceModelPda.toBytes()),
+      Buffer.from(deviceModel.toBytes()),
       Buffer.from(MAC_ADDRESS),
     ],
     program.programId,
@@ -43,14 +49,14 @@ async function main() {
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })
-  console.log({ deviceModelPda: mock.deviceModelPda.toBase58() })
+  console.log({ deviceModelPda: deviceModel.toBase58() })
 
   const itx = await program.methods
     .addDevice(latitude, longitude, MAC_ADDRESS)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,
-      deviceModel: mock.deviceModelPda,
+      deviceModel,
       deviceLocation: deviceLocationPda,
     })
     .instruction()
