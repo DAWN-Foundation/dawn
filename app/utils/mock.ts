@@ -407,22 +407,22 @@ export async function setup(
     program.programId,
   )
 
-  // Create USDC vault token account for subscription escrow
-  console.log('Creating USDC vault token account for subscription escrow...')
+  // Create USDC vault token account for plan escrow
+  console.log('Creating USDC vault token account for plan escrow...')
   const escrowUsdcVault = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
     usdcMint,
-    subscriptionPda,
+    planPda,
   )
 
-  // Create DAWN vault token account for subscription escrow
-  console.log('Creating DAWN vault token account for subscription escrow...')
+  // Create DAWN vault token account for plan escrow
+  console.log('Creating DAWN vault token account for plan escrow...')
   const escrowDawnVault = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
     dawnMint,
-    subscriptionPda,
+    planPda,
   )
 
   mock = {

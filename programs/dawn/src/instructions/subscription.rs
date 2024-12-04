@@ -167,7 +167,7 @@ pub struct Subscribe<'info> {
         init_if_needed,
         payer = caller,
         associated_token::mint = usdc_mint,
-        associated_token::authority = subscription,
+        associated_token::authority = plan,
     )]
     pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
 
@@ -176,7 +176,7 @@ pub struct Subscribe<'info> {
         init_if_needed,
         payer = caller,
         associated_token::mint = dawn_mint,
-        associated_token::authority = subscription,
+        associated_token::authority = plan,
     )]
     pub escrow_dawn_vault: Box<Account<'info, TokenAccount>>,
 
