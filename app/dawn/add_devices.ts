@@ -13,7 +13,7 @@ async function main() {
   const { program, wallet, connection } = await connect()
 
   const devices = DeviceGenerator.genearate(
-    5,
+    20,
     [-121.115323, 37.3985593, -122.3253238, 37.1615593],
   )
 
