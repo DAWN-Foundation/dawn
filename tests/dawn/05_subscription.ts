@@ -371,20 +371,6 @@ export const subscriptionTests = () =>
         program.programId,
       )
 
-      const escrowUsdcVault = await createAssociatedTokenAccount(
-        provider.context.banksClient,
-        mock.serviceProvider,
-        mock.usdcMint,
-        subscriptionPda,
-      )
-
-      const escrowDawnVault = await createAssociatedTokenAccount(
-        provider.context.banksClient,
-        mock.serviceProvider,
-        mock.dawnMint,
-        subscriptionPda,
-      )
-
       provider.wallet = new Wallet(wallet.payer)
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
@@ -396,8 +382,8 @@ export const subscriptionTests = () =>
           subscription: subscriptionPda,
           userDawnAccount: mock.walletDawnAccount,
           userUsdcAccount: mock.walletUsdcAccount,
-          escrowUsdcVault,
-          escrowDawnVault,
+          escrowUsdcVault: mock.escrowUsdcVault,
+          escrowDawnVault: mock.escrowDawnVault,
         })
         .signers([wallet.payer])
         .transaction()
