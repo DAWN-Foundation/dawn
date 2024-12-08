@@ -173,6 +173,15 @@ yarn dawn:add_device \
     --latitude '0.0000000001' \
     --longitude '0.0000000001' \
 
+# Add a device model
+yarn dawn:add_device_model
+
+# Add a shared ip pool
+yarn dawn:add_ip_pool
+
+# Lease ip to device with device pda
+yarn dawn:lease_ip --device-pda 2sX4ELysjMTonTCTSLCjktDEfZhEGfcG696W6weyLrva
+
 # Get all devices
 yarn dawn:get_devices
 
