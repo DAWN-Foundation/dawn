@@ -139,39 +139,48 @@ pbcopy < ~/andrena/dawn/target/idl/dawn.json
 ### Testnet Setup
 
 ```bash
-# Run the testnet script
+# Run the testnet script (this takes a while)
 yarn testnet
 ```
 
 ### Local Testnet
 
-These command allow interaction with the plan contract deployed on local testnet
+These command allow interaction with the DAWN contract deployed on local testnet
 
 ```bash
-# Initialize the plan contract (as local identity )
-yarn dawn:init
-
 # [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
 # these can be applied to all transaction commands below
 # for example:
-# --root was used to mint tokens, might be used for init, but not necessary
+# empty means the local wallet is used and is usually the root wallet
 # --service-provider is usually used to add a device and create plans
 # --customer should have some USDC and can be used to pay for plan subscription
-yarn dawn:init --root
-yarn dawn:add_device --service-provider
-yarn dawn:subscribe --customer
+# yarn dawn:init
+# yarn dawn:add_device_model
+# yarn dawn:add_device --service-provider
+# yarn dawn:add_plan --service-provider
+# yarn dawn:subscribe --customer
 
-# Add a devices to the plan contract
-yarn dawn:add_devices
+# Initialize the DAWN contract (as local identity)
+yarn dawn:init
 
-# Add a device to the plan contract (as --service-provider)
+# Add a device model (note Device Mode PDA from output)
+yarn dawn:add_device_model \
+    --manufacturer 'MikroTik' \
+    --model 'GG69420'
+
+# Add a device to the DAWN contract (as --service-provider)
 yarn dawn:add_device \
     --service-provider \
-    --manufacturer 'MikroTik' \
-    --model 'GG69420' \
-    --latitude '0.0000000001' \
-    --longitude '0.0000000001' \
+    --device-model <device-model> \
+    --latitude '37.774929' \
+    --longitude '-122.419418'
+
+# Add devices to the DAWN contract
+yarn dawn:add_devices \
+    --service-provider \
+    --device-model <device-model> \
+    --count 10
 
 # Add a device model
 yarn dawn:add_device_model

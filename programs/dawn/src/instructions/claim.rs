@@ -27,6 +27,16 @@ pub struct Claim<'info> {
     #[account(
         address = subscription.plan,
         constraint = caller.key() == plan.owner,
+        seeds = [
+            b"plan",
+            plan.device.as_ref(),
+            &plan.price.to_le_bytes(),
+            &plan.duration.to_le_bytes(),
+            &plan.speed.to_le_bytes(),
+            &plan.capacity.to_le_bytes(),
+            &plan.sla_id.to_le_bytes(),
+        ],
+        bump = plan.bump,
     )]
     pub plan: Box<Account<'info, Plan>>,
 
@@ -51,19 +61,19 @@ pub struct Claim<'info> {
     pub usdc_mint: Box<Account<'info, Mint>>,
 
     // TOKEN ACCOUNTS
-    /// The device owner escrow USDC token vault
+    /// The plan owner escrow USDC token vault
     #[account(
         mut,
         associated_token::mint = usdc_mint,
-        associated_token::authority = subscription,
+        associated_token::authority = plan,
     )]
     pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The device owner escrow DAWN token vault
+    /// The plan owner escrow DAWN token vault
     #[account(
         mut,
         associated_token::mint = dawn_mint,
-        associated_token::authority = subscription,
+        associated_token::authority = plan,
     )]
     pub escrow_dawn_vault: Box<Account<'info, TokenAccount>>,
 
@@ -124,9 +134,9 @@ pub struct Claim<'info> {
 impl DawnApp {
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         let subscription_account = ctx.accounts.subscription.to_account_info();
+        let plan_account = ctx.accounts.plan.to_account_info();
         let subscription_key = subscription_account.key();
-        let plan_key = ctx.accounts.plan.key();
-        let subscriber = ctx.accounts.subscription.subscriber;
+        let plan_key = plan_account.key();
         let last_claim = ctx.accounts.subscription.last_claim;
         let claimable_dawn = ctx.accounts.subscription.claimable_dawn;
         let daily_usdc = ctx.accounts.subscription.daily_usdc;
@@ -145,10 +155,14 @@ impl DawnApp {
 
         // Signer seeds for the subscription account
         let seeds = &[
-            b"subscription".as_ref(),
-            plan_key.as_ref(),
-            subscriber.as_ref(),
-            &[ctx.accounts.subscription.bump],
+            b"plan".as_ref(),
+            ctx.accounts.plan.device.as_ref(),
+            &ctx.accounts.plan.price.to_le_bytes(),
+            &ctx.accounts.plan.duration.to_le_bytes(),
+            &ctx.accounts.plan.speed.to_le_bytes(),
+            &ctx.accounts.plan.capacity.to_le_bytes(),
+            &ctx.accounts.plan.sla_id.to_le_bytes(),
+            &[ctx.accounts.plan.bump],
         ];
         let signer_seeds = &[&seeds[..]];
 
@@ -162,7 +176,7 @@ impl DawnApp {
                 token::Transfer {
                     from: ctx.accounts.escrow_dawn_vault.to_account_info(),
                     to: ctx.accounts.service_provider_dawn_account.to_account_info(),
-                    authority: subscription_account.clone(),
+                    authority: plan_account.clone(),
                 },
                 signer_seeds,
             );
@@ -229,7 +243,7 @@ impl DawnApp {
 
                 // Create CPI accounts for the swap
                 let swap_cpi = cpi::accounts::Swap {
-                    payer: subscription_account,
+                    payer: plan_account,
                     authority: ctx.accounts.raydium_authority.to_account_info(),
                     amm_config: ctx.accounts.raydium_config.to_account_info(),
                     pool_state: ctx.accounts.raydium_pool.to_account_info(),

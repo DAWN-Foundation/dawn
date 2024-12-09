@@ -15,6 +15,7 @@ import {
   getProvider,
   PROGRAM_ID,
   confirmTx,
+  getPlanPda,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { Clock } from 'solana-bankrun'
@@ -120,21 +121,32 @@ export const claimTests = () =>
       }
     })
 
-    test('cannot claim to a subscription that doesnt exist', async () => {
-      const badSubscriptionPda = PublicKey.findProgramAddressSync(
+    test('cannot claim from escrow of a plan that doesnt exist', async () => {
+      const [badPlanPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        new BN(3),
+      )
+
+      const [badSubscriptionPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('subscription'),
-          Buffer.from(mock.planPda.toBytes()),
+          Buffer.from(badPlanPda.toBytes()),
           Buffer.from(mock.serviceProvider.publicKey.toBytes()),
         ],
         program.programId,
-      )[0]
+      )
 
       try {
         await program.methods
           .claim()
           .accounts({
             ...accounts,
+            plan: badPlanPda,
             subscription: badSubscriptionPda,
           })
           .signers([mock.serviceProvider])
@@ -150,7 +162,7 @@ export const claimTests = () =>
       }
     })
 
-    test('cannot claim to a subscription that is not owned by the caller', async () => {
+    test('cannot claim from escrow of a plan that is not owned by the caller', async () => {
       provider.wallet = new Wallet(mock.customer)
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 

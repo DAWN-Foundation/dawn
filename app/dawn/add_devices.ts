@@ -12,8 +12,11 @@ async function main() {
   const mock = getMock()
   const { program, wallet, connection } = await connect()
 
+  const deviceCountFlag = getFlag('--count')
+  const deviceCount = deviceCountFlag ? parseInt(deviceCountFlag) : 5
+
   const devices = DeviceGenerator.genearate(
-    20,
+    deviceCount,
     [-121.115323, 37.3985593, -122.3253238, 37.1615593],
   )
 
