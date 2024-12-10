@@ -66,9 +66,7 @@ pub fn sort_accounts<'info>(
                 false,
             ))
         }
-        _ => {
-            return Err(DawnError::InvalidMint.into());
-        }
+        _ => Err(DawnError::InvalidMint.into()),
     }
 }
 

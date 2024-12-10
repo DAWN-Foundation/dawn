@@ -165,11 +165,11 @@ impl DawnApp {
 
         // Make sure the IP V4 and V6 subnet masks are valid
         require!(
-            ip_v4_cidr_mask >= 8 && ip_v4_cidr_mask <= 32,
+            (8..=32).contains(&ip_v4_cidr_mask),
             DawnError::InvalidSubnetMask
         );
         require!(
-            ip_v6_cidr_mask >= 8 && ip_v6_cidr_mask <= 128,
+            (8..=128).contains(&ip_v6_cidr_mask),
             DawnError::InvalidSubnetMask
         );
 
@@ -203,11 +203,11 @@ impl DawnApp {
     ) -> Result<()> {
         // Validate subnet masks
         require!(
-            ip_v4_cidr_mask >= 8 && ip_v4_cidr_mask <= 32,
+            (8..=32).contains(&ip_v4_cidr_mask),
             DawnError::InvalidSubnetMask
         );
         require!(
-            ip_v6_cidr_mask >= 8 && ip_v6_cidr_mask <= 128,
+            (8..=128).contains(&ip_v6_cidr_mask),
             DawnError::InvalidSubnetMask
         );
 

@@ -1,13 +1,13 @@
 mod claim;
+mod device;
 mod init;
 mod plan;
 mod subscription;
-mod device;
 
 pub use claim::*;
+pub use device::*;
 pub use init::*;
 pub use plan::*;
 pub use subscription::*;
-pub use device::*;
 
 pub struct DawnApp;
