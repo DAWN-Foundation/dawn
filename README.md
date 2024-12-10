@@ -182,6 +182,12 @@ yarn dawn:add_devices \
     --device-model <device-model> \
     --count 10
 
+# Add a shared ip pool
+yarn dawn:add_ip_pool
+
+# Lease ip to device with device pda
+yarn dawn:lease_ip --device-pda <device>
+
 # Get all devices
 yarn dawn:get_devices
 

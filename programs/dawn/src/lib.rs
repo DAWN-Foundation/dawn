@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
+declare_id!("F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH");
 
 mod constants;
 mod error;
@@ -44,7 +44,12 @@ pub mod dawn {
         DawnApp::add_device_model(ctx, device_type, manufacturer, model)
     }
 
-    pub fn add_device(ctx: Context<AddDevice>, latitude: i64, longitude: i64, mac_address: [u8; 6]) -> Result<()> {
+    pub fn add_device(
+        ctx: Context<AddDevice>,
+        latitude: i64,
+        longitude: i64,
+        mac_address: [u8; 6],
+    ) -> Result<()> {
         DawnApp::add_device(ctx, latitude, longitude, mac_address)
     }
 
@@ -77,9 +82,7 @@ pub mod dawn {
         DawnApp::remove_plan(ctx)
     }
 
-    pub fn subscribe<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, Subscribe<'info>>,
-    ) -> Result<()> {
+    pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
         DawnApp::subscribe(ctx)
     }
 

@@ -87,7 +87,7 @@ impl DawnApp {
 
         emit!(DeviceModelAdded {
             device_model: device_model.key(),
-            device_type: device_type,
+            device_type,
             manufacturer: manufacturer.trim().to_owned(),
             model: model.trim().to_owned(),
         });

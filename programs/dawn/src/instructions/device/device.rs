@@ -74,7 +74,12 @@ pub struct AddDevice<'info> {
 }
 
 impl DawnApp {
-    pub fn add_device(ctx: Context<AddDevice>, latitude: i64, longitude: i64, mac_address: [u8; 6]) -> Result<()> {
+    pub fn add_device(
+        ctx: Context<AddDevice>,
+        latitude: i64,
+        longitude: i64,
+        mac_address: [u8; 6],
+    ) -> Result<()> {
         // Make sure the latitude and longitude are not eq 0
         require!(!latitude.eq(&0i64), DawnError::InvalidLatitude);
         require!(!longitude.eq(&0i64), DawnError::InvalidLongitude);

@@ -221,8 +221,8 @@ impl DawnApp {
                 ) = sort_accounts(
                     pool_mint_0,
                     pool_mint_1,
-                    pool_vault_0.clone(),
-                    pool_vault_1.clone(),
+                    pool_vault_0,
+                    pool_vault_1,
                     ctx.accounts.usdc_mint.to_account_info(),
                     ctx.accounts.dawn_mint.to_account_info(),
                     ctx.accounts.raydium_usdc_vault.to_account_info(),
