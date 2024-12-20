@@ -186,7 +186,7 @@ yarn dawn:add_devices \
 yarn dawn:add_ip_pool
 
 # Lease ip to device with device pda
-yarn dawn:lease_ip --device-pda <device>
+yarn dawn:lease_ip --device <device>
 
 # Get all devices
 yarn dawn:get_devices
