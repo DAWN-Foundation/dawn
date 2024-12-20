@@ -2,16 +2,14 @@ import { connect, getFlag, getMock, submitTx } from './utils'
 import { getIpLeasePda, getIpPoolPda, IpV4Bytes, IpV6Bytes } from '../utils'
 import { PublicKey } from '@solana/web3.js'
 
-
 async function main() {
-  const devicePdaRaw = getFlag('--device-pda')
-
-  if (!devicePdaRaw) throw "--device-pda is required"
+  const device = getFlag('--device')
+  if (!device) throw new Error('--device is required')
+  const devicePda = new PublicKey(device)
 
   const mock = getMock()
   const { program, wallet, connection } = await connect()
 
-  const devicePda = new PublicKey(devicePdaRaw);
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId,
@@ -36,6 +34,8 @@ async function main() {
     poolIpV6CidrMask,
   )
 
+  console.log({ ipPoolPda: ipPoolPda.toBase58() })
+
   // Lease IP V4
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 2]
   const leaseIpV4CidrMask = 32
@@ -59,12 +59,7 @@ async function main() {
 
   try {
     const itx = await program.methods
-      .leaseIp(
-        leaseIpV4,
-        leaseIpV4CidrMask,
-        leaseIpV6,
-        leaseIpV6CidrMask,
-      )
+      .leaseIp(leaseIpV4, leaseIpV4CidrMask, leaseIpV6, leaseIpV6CidrMask)
       .accounts({
         caller: wallet.publicKey,
         config: configPda,

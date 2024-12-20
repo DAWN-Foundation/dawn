@@ -84,8 +84,6 @@ export const deviceTests = () =>
         program.programId,
       )
 
-      console.log(devicePda.toBase58(), mock.devicePda.toBase58())
-
       try {
         await program.methods
           .addDevice(latitude, mock.deviceLongitude, mock.deviceMacAddress)
@@ -99,7 +97,6 @@ export const deviceTests = () =>
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
-        console.log(error)
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Latitude coordinate is invalid')
@@ -149,8 +146,6 @@ export const deviceTests = () =>
         ],
         program.programId,
       )
-
-      console.log(mock.devicePda, devicePda)
 
       const tx = await program.methods
         .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)

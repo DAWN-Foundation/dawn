@@ -21,9 +21,7 @@ const SLA = 1
 
 async function main() {
   const device = getFlag('--device')
-  if (!device) {
-    throw new Error('--device is required')
-  }
+  if (!device) throw new Error('--device is required')
   const devicePda = new PublicKey(device)
 
   const price = new BN(getFlag('--price') || PRICE)

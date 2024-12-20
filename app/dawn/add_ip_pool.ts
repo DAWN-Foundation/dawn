@@ -1,7 +1,6 @@
 import { connect, getMock, submitTx } from './utils'
 import { getIpPoolPda, IpV4Bytes, IpV6Bytes } from '../utils'
 
-
 async function main() {
   const mock = getMock()
   const { program, wallet, connection } = await connect()
@@ -25,14 +24,11 @@ async function main() {
     poolIpV6CidrMask,
   )
 
+  console.log({ ipPoolPda: ipPoolPda.toBase58() })
+
   try {
     const itx = await program.methods
-      .addIpPool(
-        poolIpV4,
-        poolIpV4CidrMask,
-        poolIpV6,
-        poolIpV6CidrMask,
-      )
+      .addIpPool(poolIpV4, poolIpV4CidrMask, poolIpV6, poolIpV6CidrMask)
       .accounts({
         caller: wallet.publicKey,
         config: mock.configPda,
