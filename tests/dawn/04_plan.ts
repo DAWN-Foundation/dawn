@@ -616,6 +616,126 @@ export const parentPlanTests = () =>
       }
     })
 
+    test('cannot add plan that exceeds duration of parent plan', async () => {
+      const duration = mock.planDuration + 1
+
+      const [planPda] = getPlanPda(
+        program,
+        devicePda,
+        mock.planPda,
+        mock.planPrice,
+        duration,
+        mock.planSpeed,
+        mock.planCapacity,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            duration,
+            mock.planSpeed,
+            mock.planCapacity,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.customer.publicKey,
+            device: devicePda,
+            subscription: mock.subscriptionPda,
+            parentPlan: mock.planPda,
+            plan: planPda,
+          })
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Outside parent bounds')
+      }
+    })
+
+    test('cannot add plan that exceeds speed of parent plan', async () => {
+      const speed = mock.planSpeed + 1
+
+      const [planPda] = getPlanPda(
+        program,
+        devicePda,
+        mock.planPda,
+        mock.planPrice,
+        mock.planDuration,
+        speed,
+        mock.planCapacity,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            speed,
+            mock.planCapacity,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.customer.publicKey,
+            device: devicePda,
+            subscription: mock.subscriptionPda,
+            parentPlan: mock.planPda,
+            plan: planPda,
+          })
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Outside parent bounds')
+      }
+    })
+
+    test('cannot add plan that exceeds capacity of parent plan', async () => {
+      const capacity = mock.planCapacity.add(new BN(1))
+
+      const [planPda] = getPlanPda(
+        program,
+        devicePda,
+        mock.planPda,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        capacity,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            capacity,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.customer.publicKey,
+            device: devicePda,
+            subscription: mock.subscriptionPda,
+            parentPlan: mock.planPda,
+            plan: planPda,
+          })
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Outside parent bounds')
+      }
+    })
+
     test('adds plan to resell the parent plan (customer is subscribed)', async () => {
       // use mock.planPda as parent plan, customer is subscribed to it
 
