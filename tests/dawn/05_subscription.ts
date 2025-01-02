@@ -129,6 +129,7 @@ export const subscriptionTests = () =>
         100,
         new BN(1000),
         new BN(1),
+        null,
       )
 
       const badSubscriptionPda = PublicKey.findProgramAddressSync(

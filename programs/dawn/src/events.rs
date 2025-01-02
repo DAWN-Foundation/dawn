@@ -7,6 +7,7 @@ pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
     pub device: Pubkey,
+    pub parent_plan: Option<Pubkey>,
     pub price: u64,
     pub duration: u16,
     pub speed: u32,

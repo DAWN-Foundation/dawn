@@ -296,6 +296,7 @@ export async function prepare(
     planSpeed,
     planCapacity,
     planSlaId,
+    null,
   )
 
   const [subscriptionPda, subscriptionBump] = PublicKey.findProgramAddressSync(

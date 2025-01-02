@@ -60,4 +60,10 @@ pub enum DawnError {
 
     #[msg("Longitude coordinate is invalid")]
     InvalidLongitude,
+
+    #[msg("Parent plan needs subscription")]
+    ParentPlanNeedSubscription,
+
+    #[msg("Outside parent bounds")]
+    OutsideParentBounds,
 }

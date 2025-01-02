@@ -12,7 +12,7 @@ use raydium_cp_swap::{
 use super::{Config, DawnApp, Plan};
 use crate::{
     constants::BPS_DENOMINATOR,
-    utils::{sort_accounts, swap_amounts},
+    utils::{optional_seed, sort_accounts, swap_amounts},
     DawnError, Subscribed,
 };
 
@@ -66,6 +66,7 @@ pub struct Subscribe<'info> {
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.sla_id.to_le_bytes(),
+            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned()))
         ],
         bump = plan.bump
     )]

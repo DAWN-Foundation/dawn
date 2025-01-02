@@ -7,7 +7,7 @@ use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
-    utils::{sort_accounts, swap_amounts},
+    utils::{optional_seed, sort_accounts, swap_amounts},
     Claimed, DawnError,
 };
 
@@ -35,6 +35,7 @@ pub struct Claim<'info> {
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.sla_id.to_le_bytes(),
+            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned()))
         ],
         bump = plan.bump,
     )]
@@ -45,7 +46,7 @@ pub struct Claim<'info> {
         mut,
         seeds = [
             b"subscription",
-            subscription.plan.as_ref(),
+            plan.key().as_ref(),
             subscription.subscriber.as_ref(),
         ],
         bump = subscription.bump,
@@ -162,6 +163,7 @@ impl DawnApp {
             &ctx.accounts.plan.speed.to_le_bytes(),
             &ctx.accounts.plan.capacity.to_le_bytes(),
             &ctx.accounts.plan.sla_id.to_le_bytes(),
+            &optional_seed(ctx.accounts.plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &[ctx.accounts.plan.bump],
         ];
         let signer_seeds = &[&seeds[..]];

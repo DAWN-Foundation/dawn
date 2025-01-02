@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
-use super::{DawnApp, Device};
-use crate::{DawnError, PlanAdded, PlanRemoved};
+use super::{DawnApp, Device, Subscription};
+use crate::{utils::optional_seed, DawnError, PlanAdded, PlanRemoved};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -10,6 +10,8 @@ pub struct Plan {
     pub owner: Pubkey,
     /// Associated device
     pub device: Pubkey,
+    /// The parent plan (for resale)
+    pub parent_plan: Option<Pubkey>,
     /// The plan price per `duration` days (in USDC with 6 decimals)
     pub price: u64,
     /// The plan duration in days
@@ -28,6 +30,7 @@ pub struct Plan {
 const PLAN_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // device
+    + 33 // parent plan
     + 8 // price
     + 2 // duration
     + 4 // speed
@@ -55,6 +58,22 @@ pub struct AddPlan<'info> {
     )]
     pub device: Account<'info, Device>,
 
+    /// The parent plan account (if exists)
+    #[account(
+        seeds = [
+            b"plan",
+            parent_plan.device.as_ref(),
+            &parent_plan.price.to_le_bytes(),
+            &parent_plan.duration.to_le_bytes(),
+            &parent_plan.speed.to_le_bytes(),
+            &parent_plan.capacity.to_le_bytes(),
+            &parent_plan.sla_id.to_le_bytes(),
+            &optional_seed(parent_plan.parent_plan.as_ref().map(|p| p.to_owned())),
+        ],
+        bump = parent_plan.bump,
+    )]
+    pub parent_plan: Option<Account<'info, Plan>>,
+
     /// The plan account
     #[account(
         init,
@@ -68,50 +87,63 @@ pub struct AddPlan<'info> {
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
             &sla_id.to_le_bytes(),
+            &optional_seed(parent_plan.as_ref().map(|p| p.key()))
         ],
         bump
     )]
     pub plan: Account<'info, Plan>,
 
+    /// The subscription account of parent plan (if exists)
+    #[account(
+        seeds = [
+            b"subscription",
+            parent_plan.as_ref().map(|p| p.key()).unwrap_or(Pubkey::default()).as_ref(),
+            caller.key().as_ref(),
+        ],
+        bump = subscription.bump,
+    )]
+    pub subscription: Option<Account<'info, Subscription>>,
+
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct RemovePlan<'info> {
-    #[account(mut)]
-    pub caller: Signer<'info>,
+// #[derive(Accounts)]
+// pub struct RemovePlan<'info> {
+//     #[account(mut)]
+//     pub caller: Signer<'info>,
 
-    #[account(
-        mut,
-        constraint = device.owner == caller.key(),
-        seeds = [
-            b"device",
-            device.owner.as_ref(),
-            device.model.as_ref(),
-            &device.mac_address
-        ],
-        bump = device.bump
-    )]
-    pub device: Account<'info, Device>,
+//     #[account(
+//         mut,
+//         constraint = device.owner == caller.key(),
+//         seeds = [
+//             b"device",
+//             device.owner.as_ref(),
+//             device.model.as_ref(),
+//             &device.mac_address
+//         ],
+//         bump = device.bump
+//     )]
+//     pub device: Account<'info, Device>,
 
-    /// The plan account
-    #[account(
-        mut,
-        constraint = plan.owner == caller.key(),
-        close = caller,
-        seeds = [
-            b"plan",
-            device.key().as_ref(),
-            &plan.price.to_le_bytes(),
-            &plan.duration.to_le_bytes(),
-            &plan.speed.to_le_bytes(),
-            &plan.capacity.to_le_bytes(),
-            &plan.sla_id.to_le_bytes(),
-        ],
-        bump = plan.bump
-    )]
-    pub plan: Account<'info, Plan>,
-}
+//     /// The plan account
+//     #[account(
+//         mut,
+//         constraint = plan.owner == caller.key(),
+//         close = caller,
+//         seeds = [
+//             b"plan",
+//             device.key().as_ref(),
+//             &plan.price.to_le_bytes(),
+//             &plan.duration.to_le_bytes(),
+//             &plan.speed.to_le_bytes(),
+//             &plan.capacity.to_le_bytes(),
+//             &plan.sla_id.to_le_bytes(),
+//             optional_seed(plan.parent_plan.as_ref().map(|p| p.key())).as_ref(),
+//         ],
+//         bump = plan.bump
+//     )]
+//     pub plan: Account<'info, Plan>,
+// }
 
 impl DawnApp {
     pub fn add_plan(
@@ -131,10 +163,33 @@ impl DawnApp {
         // Make sure the plan speed is not zero
         require!(speed > 0, DawnError::ZeroPlanSpeed);
 
+        let parent_plan = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref() {
+            require!(
+                ctx.accounts.subscription.is_some(),
+                DawnError::ParentPlanNeedSubscription
+            );
+
+            // make sure the resold plan is within parent plan
+            require!(
+                duration <= parent_plan.duration,
+                DawnError::OutsideParentBounds,
+            );
+            require!(speed <= parent_plan.speed, DawnError::OutsideParentBounds);
+            require!(
+                capacity <= parent_plan.capacity,
+                DawnError::OutsideParentBounds
+            );
+
+            Some(parent_plan.key())
+        } else {
+            None
+        };
+
         let plan = &mut ctx.accounts.plan;
 
         plan.owner = ctx.accounts.caller.key();
         plan.device = ctx.accounts.device.key();
+        plan.parent_plan = parent_plan;
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;
@@ -145,6 +200,7 @@ impl DawnApp {
         emit!(PlanAdded {
             plan: plan.key(),
             owner: plan.owner,
+            parent_plan: plan.parent_plan,
             device: plan.device,
             price: plan.price,
             duration: plan.duration,
@@ -156,14 +212,14 @@ impl DawnApp {
         Ok(())
     }
 
-    pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
-        // TODO >> Make sure plan doesnt have any active subscriptions
+    // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+    //     // TODO >> Make sure plan doesnt have any active subscriptions
 
-        emit!(PlanRemoved {
-            plan: ctx.accounts.plan.key(),
-            device: ctx.accounts.device.key(),
-        });
+    //     emit!(PlanRemoved {
+    //         plan: ctx.accounts.plan.key(),
+    //         device: ctx.accounts.device.key(),
+    //     });
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }

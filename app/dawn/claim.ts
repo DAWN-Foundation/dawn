@@ -3,15 +3,8 @@ import { BN } from '@coral-xyz/anchor'
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import {
-  connect,
-  getMock,
-  getFlag,
-  getIDL,
-  getPlanPda,
-  getWallet,
-  submitTx,
-} from './utils'
+import { connect, getMock, getFlag, getIDL, getWallet, submitTx } from './utils'
+import { getPlanPda } from '../utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,

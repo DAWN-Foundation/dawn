@@ -20,6 +20,7 @@ import { beforeAll, expect } from '@jest/globals'
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
+  parentPlan: PublicKey | null
   price: BN
   duration: number
   speed: number
@@ -73,6 +74,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         mock.planSlaId,
+        null,
       )
 
       try {
@@ -87,6 +89,8 @@ export const planTests = () =>
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: mock.devicePda,
+            parentPlan: null,
+            subscription: null,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -110,6 +114,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         mock.planSlaId,
+        null,
       )
 
       try {
@@ -124,6 +129,8 @@ export const planTests = () =>
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: mock.devicePda,
+            parentPlan: null,
+            subscription: null,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -147,6 +154,7 @@ export const planTests = () =>
         speed,
         mock.planCapacity,
         mock.planSlaId,
+        null,
       )
 
       try {
@@ -161,6 +169,8 @@ export const planTests = () =>
           .accounts({
             caller: mock.serviceProvider.publicKey,
             device: mock.devicePda,
+            parentPlan: null,
+            subscription: null,
             plan: planPda,
           })
           .signers([mock.serviceProvider])
@@ -189,6 +199,8 @@ export const planTests = () =>
           .accounts({
             caller: wallet.publicKey,
             device: mock.devicePda,
+            parentPlan: null,
+            subscription: null,
             plan: mock.planPda,
           })
           .signers([wallet.payer])
@@ -220,6 +232,8 @@ export const planTests = () =>
           caller: mock.serviceProvider.publicKey,
           device: mock.devicePda,
           plan: mock.planPda,
+          parentPlan: null,
+          subscription: null,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -230,6 +244,7 @@ export const planTests = () =>
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.device.equals(mock.devicePda))
+      assert.ok(event.parentPlan === null)
       assert.ok(event.price.eq(mock.planPrice))
       assert.equal(event.duration, mock.planDuration)
       assert.equal(event.speed, mock.planSpeed)
@@ -240,6 +255,7 @@ export const planTests = () =>
       const plan = await program.account.plan.fetch(mock.planPda)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.device.equals(mock.devicePda))
+      assert.ok(plan.parentPlan === null)
       assert.ok(plan.price.eq(mock.planPrice))
       assert.equal(plan.duration, mock.planDuration)
       assert.equal(plan.speed, mock.planSpeed)
@@ -265,6 +281,8 @@ export const planTests = () =>
             caller: mock.serviceProvider.publicKey,
             device: mock.devicePda,
             plan: mock.planPda,
+            parentPlan: null,
+            subscription: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -296,6 +314,7 @@ export const planTests = () =>
         speed,
         capacity,
         slaId,
+        null,
       )
 
       const tx = await program.methods
@@ -304,6 +323,8 @@ export const planTests = () =>
           caller: mock.serviceProvider.publicKey,
           device: mock.devicePda,
           plan: planPda,
+          parentPlan: null,
+          subscription: null,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -334,112 +355,244 @@ export const planTests = () =>
 
     // REMOVE
 
-    test('cannot remove a plan that does not exist', async () => {
-      const badPlan = Keypair.generate()
+    // test('cannot remove a plan that does not exist', async () => {
+    //   const badPlan = Keypair.generate()
 
-      try {
-        await program.methods
-          .removePlan()
-          .accounts({
-            caller: mock.serviceProvider.publicKey,
-            device: mock.devicePda,
-            plan: badPlan.publicKey,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
-        assert.ok(false)
-      } catch (error) {
-        assert.ok(error instanceof AnchorError)
-        const err: AnchorError = error
-        assert.strictEqual(
-          err.error.errorMessage,
-          'The program expected this account to be already initialized',
+    //   try {
+    //     await program.methods
+    //       .removePlan()
+    //       .accounts({
+    //         caller: mock.serviceProvider.publicKey,
+    //         device: mock.devicePda,
+    //         plan: badPlan.publicKey,
+    //       })
+    //       .signers([mock.serviceProvider])
+    //       .rpc()
+    //     assert.ok(false)
+    //   } catch (error) {
+    //     assert.ok(error instanceof AnchorError)
+    //     const err: AnchorError = error
+    //     assert.strictEqual(
+    //       err.error.errorMessage,
+    //       'The program expected this account to be already initialized',
+    //     )
+    //     assert.strictEqual(err.error.errorCode.number, 3012)
+    //   }
+    // })
+
+    // test('cannot remove a plan that is not owned by the caller', async () => {
+    //   const price = new BN(100).mul(USDC_DECIMALS)
+    //   const duration = 30
+    //   const speed = 1_000
+    //   const capacity = new BN(1000)
+    //   const slaId = new BN(1)
+
+    //   const [planPda] = getPlanPda(
+    //     program,
+    //     mock.devicePda,
+    //     price,
+    //     duration,
+    //     speed,
+    //     capacity,
+    //     slaId,
+    //     null,
+    //   )
+
+    //   try {
+    //     await program.methods
+    //       .removePlan()
+    //       .accounts({
+    //         caller: wallet.publicKey,
+    //         device: mock.devicePda,
+    //         plan: planPda,
+    //       })
+    //       .signers([wallet.payer])
+    //       .rpc()
+    //     assert.ok(false)
+    //   } catch (error) {
+    //     expect(error instanceof AnchorError).toBeTruthy()
+    //     const err: AnchorError = error
+    //     expect(err.error.errorMessage).toBe('A raw constraint was violated')
+    //     expect(err.error.errorCode.number).toBe(2003)
+    //   }
+    // })
+
+    // test('removes the plan', async () => {
+    //   const price = new BN(10).mul(USDC_DECIMALS)
+    //   const duration = 60
+    //   const speed = 2_000
+    //   const capacity = new BN(2000)
+    //   const slaId = new BN(2)
+
+    //   const [planPda] = getPlanPda(
+    //     program,
+    //     mock.devicePda,
+    //     price,
+    //     duration,
+    //     speed,
+    //     capacity,
+    //     slaId,
+    //     null,
+    //   )
+
+    //   const tx = await program.methods
+    //     .removePlan()
+    //     .accounts({
+    //       caller: mock.serviceProvider.publicKey,
+    //       device: mock.devicePda,
+    //       plan: planPda,
+    //     })
+    //     .signers([mock.serviceProvider])
+    //     .transaction()
+
+    //   const txDetails = await confirmTx(provider, tx)
+
+    //   try {
+    //     await program.account.plan.fetch(planPda)
+    //     assert.ok(false)
+    //   } catch (error) {
+    //     assert.ok(error instanceof Error)
+    //     const err: Error = error
+    //     assert.strictEqual(err.message, 'Could not find ' + planPda.toString())
+    //   }
+
+    //   // make sure event was emitted
+    //   const event = await getEvent<PlanRemoved>(
+    //     program,
+    //     txDetails,
+    //     'PlanRemoved',
+    //   )
+    //   assert.ok(event.plan.equals(planPda))
+    //   assert.ok(event.device.equals(mock.devicePda))
+    // })
+  })
+
+export const parentPlanTests = () =>
+  describe('dawn::parent_plan', () => {
+    let program: Program<Dawn>
+    let provider: BankrunProvider
+    let parentPlan: Awaited<ReturnType<typeof program.account.plan.fetch>>
+    let subscription: Awaited<
+      ReturnType<typeof program.account.subscription.fetch>
+    >
+
+    const wallet = loadWallet()
+
+    beforeAll(async () => {
+      provider = await getProvider()
+      provider.wallet = new Wallet(mock.customer)
+      anchor.setProvider(provider)
+
+      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+
+      const planAccount = await provider.context.banksClient.getAccount(
+        mock.planPda,
+      )
+      parentPlan = program.coder.accounts.decode(
+        'plan',
+        Buffer.from(planAccount.data),
+      )
+
+      const subscriptionAccount = await provider.context.banksClient.getAccount(
+        mock.subscriptionPda,
+      )
+      subscription = program.coder.accounts.decode(
+        'subscription',
+        Buffer.from(subscriptionAccount.data),
+      )
+    })
+
+    test('mock setup', () => {
+      assert.exists(mock)
+      assert.exists(parentPlan)
+      assert.exists(subscription)
+    })
+
+    test('adds plan to resell the parent plan (customer is subscribed)', async () => {
+      // use mock.planPda as parent plan, customer is subscribed to it
+      // create new device (as customer)
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(mock.customer.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from([0, 0, 0, 0, 0, 1]),
+        ],
+        program.programId,
+      )
+
+      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
+        program.programId,
+      )
+
+      await program.methods
+        .addDevice(
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          [0, 0, 0, 0, 0, 1],
         )
-        assert.strictEqual(err.error.errorCode.number, 3012)
-      }
-    })
-
-    test('cannot remove a plan that is not owned by the caller', async () => {
-      const price = new BN(100).mul(USDC_DECIMALS)
-      const duration = 30
-      const speed = 1_000
-      const capacity = new BN(1000)
-      const slaId = new BN(1)
-
-      const [planPda] = getPlanPda(
-        program,
-        mock.devicePda,
-        price,
-        duration,
-        speed,
-        capacity,
-        slaId,
-      )
-
-      try {
-        await program.methods
-          .removePlan()
-          .accounts({
-            caller: wallet.publicKey,
-            device: mock.devicePda,
-            plan: planPda,
-          })
-          .signers([wallet.payer])
-          .rpc()
-        assert.ok(false)
-      } catch (error) {
-        expect(error instanceof AnchorError).toBeTruthy()
-        const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('A raw constraint was violated')
-        expect(err.error.errorCode.number).toBe(2003)
-      }
-    })
-
-    test('removes the plan', async () => {
-      const price = new BN(10).mul(USDC_DECIMALS)
-      const duration = 60
-      const speed = 2_000
-      const capacity = new BN(2000)
-      const slaId = new BN(2)
-
-      const [planPda] = getPlanPda(
-        program,
-        mock.devicePda,
-        price,
-        duration,
-        speed,
-        capacity,
-        slaId,
-      )
-
-      const tx = await program.methods
-        .removePlan()
         .accounts({
-          caller: mock.serviceProvider.publicKey,
-          device: mock.devicePda,
+          caller: mock.customer.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+        })
+        .signers([mock.customer])
+        .rpc()
+
+      const [planPda, planBump] = getPlanPda(
+        program,
+        devicePda,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        mock.planSlaId,
+        mock.planPda, // parent plan
+      )
+
+      const addPlanTx = await program.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          mock.planSlaId,
+        )
+        .accounts({
+          caller: mock.customer.publicKey,
+          device: devicePda,
+          subscription: mock.subscriptionPda,
+          parentPlan: mock.planPda,
           plan: planPda,
         })
-        .signers([mock.serviceProvider])
+        .signers([mock.customer])
         .transaction()
 
-      const txDetails = await confirmTx(provider, tx)
-
-      try {
-        await program.account.plan.fetch(planPda)
-        assert.ok(false)
-      } catch (error) {
-        assert.ok(error instanceof Error)
-        const err: Error = error
-        assert.strictEqual(err.message, 'Could not find ' + planPda.toString())
-      }
+      const txDetails = await confirmTx(provider, addPlanTx)
 
       // make sure event was emitted
-      const event = await getEvent<PlanRemoved>(
-        program,
-        txDetails,
-        'PlanRemoved',
-      )
-      assert.ok(event.plan.equals(planPda))
-      assert.ok(event.device.equals(mock.devicePda))
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      assert.ok(event.owner.equals(mock.customer.publicKey))
+      assert.ok(event.device.equals(devicePda))
+      assert.ok(event.parentPlan.equals(mock.planPda))
+      assert.ok(event.price.eq(mock.planPrice))
+      assert.equal(event.duration, mock.planDuration)
+      assert.equal(event.speed, mock.planSpeed)
+      assert.ok(event.capacity.eq(mock.planCapacity))
+      assert.ok(event.slaId.eq(mock.planSlaId))
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      assert.ok(plan.owner.equals(mock.customer.publicKey))
+      assert.ok(plan.device.equals(devicePda))
+      assert.ok(plan.parentPlan.equals(mock.planPda))
+      assert.ok(plan.price.eq(mock.planPrice))
+      assert.equal(plan.duration, mock.planDuration)
+      assert.equal(plan.speed, mock.planSpeed)
+      assert.ok(plan.capacity.eq(mock.planCapacity))
+      assert.ok(plan.slaId.eq(mock.planSlaId))
+      assert.equal(plan.bump, planBump)
     })
   })

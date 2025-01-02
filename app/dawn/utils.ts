@@ -17,6 +17,7 @@ import {
   Mock,
   PROGRAM_ID,
   RawMock,
+  getPlanPda,
 } from '../utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
@@ -205,38 +206,6 @@ export async function submitTx(
   }
 
   return confirmationResult
-}
-
-// Helper function to get the PDA for a plan given plan parameters
-export function getPlanPda(
-  program: Program<Dawn>,
-  device: PublicKey,
-  price: BN,
-  duration: number,
-  speed: number,
-  capacity: BN,
-  slaId: BN,
-): [PublicKey, number] {
-  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  durationBuffer.writeUInt16LE(duration)
-
-  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-  speedBuffer.writeUInt32LE(speed)
-
-  const [planPda, planBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('plan'),
-      Buffer.from(device.toBytes()),
-      Buffer.from(price.toArray('le', 8)),
-      durationBuffer,
-      speedBuffer,
-      Buffer.from(capacity.toArray('le', 8)),
-      Buffer.from(slaId.toArray('le', 8)),
-    ],
-    program.programId,
-  )
-
-  return [planPda, planBump]
 }
 
 export async function getBalance(
