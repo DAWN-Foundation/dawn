@@ -539,7 +539,7 @@ export const parentPlanTests = () =>
       assert.exists(subscription)
     })
 
-    test('cannot add plan to resell the parent plan if customer is not subscribed', async () => {
+    test('cannot add plan that resells the parent plan if caller is not subscribed to parent plan', async () => {
       provider.wallet = new Wallet(mock.serviceProvider)
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       // create new plan
