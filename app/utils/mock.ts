@@ -391,6 +391,7 @@ export async function setup(
   const [planPda, planBump] = getPlanPda(
     program,
     devicePda,
+    null,
     planPrice,
     planDuration,
     planSpeed,

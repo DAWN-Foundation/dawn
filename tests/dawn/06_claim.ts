@@ -125,6 +125,7 @@ export const claimTests = () =>
       const [badPlanPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         mock.planPrice,
         mock.planDuration,
         mock.planSpeed,
@@ -179,6 +180,7 @@ export const claimTests = () =>
         expect(err.error.errorMessage).toBe('A raw constraint was violated')
       } finally {
         provider.wallet = new Wallet(mock.serviceProvider)
+        program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       }
     })
 

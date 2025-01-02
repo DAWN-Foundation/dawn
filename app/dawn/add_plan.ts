@@ -3,14 +3,8 @@ import { BN } from '@coral-xyz/anchor'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import {
-  connect,
-  getFlag,
-  getIDL,
-  getPlanPda,
-  getWallet,
-  submitTx,
-} from './utils'
+import { connect, getFlag, getIDL, getWallet, submitTx } from './utils'
+import { getPlanPda } from '../utils'
 
 // CONSTANTS
 const PRICE = 100_000_000
@@ -36,6 +30,7 @@ async function main() {
   const [planPda] = getPlanPda(
     program,
     devicePda,
+    null,
     price,
     duration,
     speed,

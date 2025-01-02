@@ -1,5 +1,12 @@
 const fs = require('fs')
-import { AnchorProvider, BN, Program, setProvider, Wallet, web3 } from '@coral-xyz/anchor'
+import {
+  AnchorProvider,
+  BN,
+  Program,
+  setProvider,
+  Wallet,
+  web3,
+} from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -207,38 +214,6 @@ export async function submitTx(
   return confirmationResult
 }
 
-// Helper function to get the PDA for a plan given plan parameters
-export function getPlanPda(
-  program: Program<Dawn>,
-  device: PublicKey,
-  price: BN,
-  duration: number,
-  speed: number,
-  capacity: BN,
-  slaId: BN,
-): [PublicKey, number] {
-  const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
-  durationBuffer.writeUInt16LE(duration)
-
-  const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
-  speedBuffer.writeUInt32LE(speed)
-
-  const [planPda, planBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('plan'),
-      Buffer.from(device.toBytes()),
-      Buffer.from(price.toArray('le', 8)),
-      durationBuffer,
-      speedBuffer,
-      Buffer.from(capacity.toArray('le', 8)),
-      Buffer.from(slaId.toArray('le', 8)),
-    ],
-    program.programId,
-  )
-
-  return [planPda, planBump]
-}
-
 export async function getBalance(
   connection: Connection,
   account: PublicKey,
@@ -248,9 +223,12 @@ export async function getBalance(
 }
 
 export function generateMacAddress(): MacAddress {
-  const mac = "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
-    "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
-  ).split(":").map(el => parseInt(el, 16))
+  const mac = '0xXX:0xXX:0xXX:0xXX:0xXX:0xXX'
+    .replace(/X/g, () =>
+      '0123456789ABCDEF'.charAt(Math.floor(Math.random() * 16)),
+    )
+    .split(':')
+    .map((el) => parseInt(el, 16))
 
   return [mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]]
 }
@@ -286,7 +264,9 @@ export class DeviceGenerator {
 
     for (let i = 0; i < count; i++) {
       const device = {
-        coord: bbox ? this.flatPoint(this.flatPosition(bbox)) : this.flatPoint(),
+        coord: bbox
+          ? this.flatPoint(this.flatPosition(bbox))
+          : this.flatPoint(),
         mac: generateMacAddress(),
       }
 

@@ -12,7 +12,7 @@ use raydium_cp_swap::{
 use super::{Config, DawnApp, Plan};
 use crate::{
     constants::BPS_DENOMINATOR,
-    utils::{sort_accounts, swap_amounts},
+    utils::{optional_seed, sort_accounts, swap_amounts},
     DawnError, Subscribed,
 };
 
@@ -61,6 +61,7 @@ pub struct Subscribe<'info> {
         seeds = [
             b"plan",
             plan.device.as_ref(),
+            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),

@@ -5,7 +5,9 @@ import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
 
-export const PROGRAM_ID = new PublicKey('BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S')
+export const PROGRAM_ID = new PublicKey(
+  'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
+)
 
 export const COORD_DENOMINATOR = 1e6
 
@@ -16,7 +18,7 @@ export type IpV4Bytes = [number, number, number, number]
 export type MacAddress = [number, number, number, number, number, number]
 
 export interface GenerateDevice {
-  coord: [number, number],
+  coord: [number, number]
   mac: MacAddress
 }
 
@@ -70,6 +72,7 @@ export function deviceTypeSeed(deviceType: DeviceType) {
 export function getPlanPda(
   program: Program<Dawn>,
   device: PublicKey,
+  parentPlan: PublicKey | null,
   price: BN,
   duration: number,
   speed: number,
@@ -82,10 +85,15 @@ export function getPlanPda(
   const speedBuffer = Buffer.alloc(4) // 4 bytes for a 32-bit integer
   speedBuffer.writeUInt32LE(speed)
 
+  const parentPlanBuffer = parentPlan
+    ? Buffer.from(parentPlan.toBytes())
+    : Buffer.from(PublicKey.default.toBytes())
+
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
       Buffer.from(device.toBytes()),
+      parentPlanBuffer,
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,

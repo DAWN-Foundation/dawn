@@ -124,6 +124,7 @@ export const subscriptionTests = () =>
       const [planPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         new BN(1000),
         30,
         100,

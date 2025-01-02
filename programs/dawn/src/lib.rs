@@ -78,9 +78,9 @@ pub mod dawn {
         DawnApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
     }
 
-    pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
-        DawnApp::remove_plan(ctx)
-    }
+    // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
+    //     DawnApp::remove_plan(ctx)
+    // }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
         DawnApp::subscribe(ctx)

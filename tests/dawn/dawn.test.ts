@@ -3,7 +3,7 @@ import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
 import { deviceTests } from './03_device'
 
-import { planTests } from './04_plan'
+import { parentPlanTests, planTests } from './04_plan'
 import { subscriptionTests } from './05_subscription'
 import { claimTests } from './06_claim'
 
@@ -24,4 +24,5 @@ deviceTests()
 leaseIpTests()
 planTests()
 subscriptionTests()
+parentPlanTests()
 claimTests()
