@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use super::{DawnApp, Device, Subscription};
-use crate::{utils::optional_seed, DawnError, PlanAdded, PlanRemoved};
+use crate::{utils::optional_seed, DawnError, PlanAdded};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]

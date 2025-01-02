@@ -1,5 +1,4 @@
 use anchor_lang::prelude::Pubkey;
-use solana_program::msg;
 
 mod swap;
 
