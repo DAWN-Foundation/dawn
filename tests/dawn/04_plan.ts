@@ -69,12 +69,12 @@ export const planTests = () =>
       const [planPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         price,
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
         mock.planSlaId,
-        null,
       )
 
       try {
@@ -109,12 +109,12 @@ export const planTests = () =>
       const [planPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         mock.planPrice,
         duration,
         mock.planSpeed,
         mock.planCapacity,
         mock.planSlaId,
-        null,
       )
 
       try {
@@ -149,12 +149,12 @@ export const planTests = () =>
       const [planPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         mock.planPrice,
         mock.planDuration,
         speed,
         mock.planCapacity,
         mock.planSlaId,
-        null,
       )
 
       try {
@@ -309,12 +309,12 @@ export const planTests = () =>
       const [planPda, planBump] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         price,
         duration,
         speed,
         capacity,
         slaId,
-        null,
       )
 
       const tx = await program.methods
@@ -389,13 +389,13 @@ export const planTests = () =>
 
     //   const [planPda] = getPlanPda(
     //     program,
+    //     null,
     //     mock.devicePda,
     //     price,
     //     duration,
     //     speed,
     //     capacity,
     //     slaId,
-    //     null,
     //   )
 
     //   try {
@@ -426,13 +426,13 @@ export const planTests = () =>
 
     //   const [planPda] = getPlanPda(
     //     program,
+    //     null,
     //     mock.devicePda,
     //     price,
     //     duration,
     //     speed,
     //     capacity,
     //     slaId,
-    //     null,
     //   )
 
     //   const tx = await program.methods
@@ -475,8 +475,8 @@ export const parentPlanTests = () =>
     let subscription: Awaited<
       ReturnType<typeof program.account.subscription.fetch>
     >
-
-    const wallet = loadWallet()
+    let devicePda: PublicKey
+    let deviceLocationPda: PublicKey
 
     beforeAll(async () => {
       provider = await getProvider()
@@ -500,18 +500,9 @@ export const parentPlanTests = () =>
         'subscription',
         Buffer.from(subscriptionAccount.data),
       )
-    })
 
-    test('mock setup', () => {
-      assert.exists(mock)
-      assert.exists(parentPlan)
-      assert.exists(subscription)
-    })
-
-    test('adds plan to resell the parent plan (customer is subscribed)', async () => {
-      // use mock.planPda as parent plan, customer is subscribed to it
       // create new device (as customer)
-      const [devicePda] = PublicKey.findProgramAddressSync(
+      devicePda = PublicKey.findProgramAddressSync(
         [
           Buffer.from('device'),
           Buffer.from(mock.customer.publicKey.toBytes()),
@@ -519,12 +510,12 @@ export const parentPlanTests = () =>
           Buffer.from([0, 0, 0, 0, 0, 1]),
         ],
         program.programId,
-      )
+      )[0]
 
-      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+      deviceLocationPda = PublicKey.findProgramAddressSync(
         [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
         program.programId,
-      )
+      )[0]
 
       await program.methods
         .addDevice(
@@ -540,16 +531,103 @@ export const parentPlanTests = () =>
         })
         .signers([mock.customer])
         .rpc()
+    })
 
-      const [planPda, planBump] = getPlanPda(
+    test('mock setup', () => {
+      assert.exists(mock)
+      assert.exists(parentPlan)
+      assert.exists(subscription)
+    })
+
+    test('cannot add plan to resell the parent plan if customer is not subscribed', async () => {
+      provider.wallet = new Wallet(mock.serviceProvider)
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      // create new plan
+      const sla2Id = mock.planSlaId.add(new BN(1))
+      const [plan2Pda] = getPlanPda(
+        program2,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        sla2Id,
+      )
+
+      await program2.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          sla2Id,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          plan: plan2Pda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      provider.wallet = new Wallet(mock.customer)
+      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+
+      const [resellPlanPda] = getPlanPda(
         program,
         devicePda,
+        plan2Pda,
         mock.planPrice,
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
         mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.customer.publicKey,
+            device: devicePda,
+            plan: resellPlanPda,
+            parentPlan: plan2Pda,
+            subscription: null,
+          })
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        assert.strictEqual(
+          err.error.errorMessage,
+          'Parent plan needs subscription',
+        )
+      }
+    })
+
+    test('adds plan to resell the parent plan (customer is subscribed)', async () => {
+      // use mock.planPda as parent plan, customer is subscribed to it
+
+      const [planPda, planBump] = getPlanPda(
+        program,
+        devicePda,
         mock.planPda, // parent plan
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        mock.planSlaId,
       )
 
       const addPlanTx = await program.methods

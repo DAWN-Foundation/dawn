@@ -125,12 +125,12 @@ export const claimTests = () =>
       const [badPlanPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         mock.planPrice,
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
         new BN(3),
-        null,
       )
 
       const [badSubscriptionPda] = PublicKey.findProgramAddressSync(

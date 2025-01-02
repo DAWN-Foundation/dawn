@@ -30,12 +30,12 @@ async function main() {
   const [planPda] = getPlanPda(
     program,
     devicePda,
+    null,
     price,
     duration,
     speed,
     capacity,
     sla,
-    null,
   )
 
   console.log({ planPda: planPda.toBase58() })

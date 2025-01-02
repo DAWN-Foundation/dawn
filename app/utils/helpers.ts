@@ -72,12 +72,12 @@ export function deviceTypeSeed(deviceType: DeviceType) {
 export function getPlanPda(
   program: Program<Dawn>,
   device: PublicKey,
+  parentPlan: PublicKey | null,
   price: BN,
   duration: number,
   speed: number,
   capacity: BN,
   slaId: BN,
-  parentPlan: PublicKey | null,
 ): [PublicKey, number] {
   const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
   durationBuffer.writeUInt16LE(duration)
@@ -93,12 +93,12 @@ export function getPlanPda(
     [
       Buffer.from('plan'),
       Buffer.from(device.toBytes()),
+      parentPlanBuffer,
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,
       Buffer.from(capacity.toArray('le', 8)),
       Buffer.from(slaId.toArray('le', 8)),
-      parentPlanBuffer,
     ],
     program.programId,
   )

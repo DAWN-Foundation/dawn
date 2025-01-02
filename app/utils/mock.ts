@@ -391,12 +391,12 @@ export async function setup(
   const [planPda, planBump] = getPlanPda(
     program,
     devicePda,
+    null,
     planPrice,
     planDuration,
     planSpeed,
     planCapacity,
     planSlaId,
-    null,
   )
 
   const [subscriptionPda, subscriptionBump] = PublicKey.findProgramAddressSync(

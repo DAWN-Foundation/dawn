@@ -124,12 +124,12 @@ export const subscriptionTests = () =>
       const [planPda] = getPlanPda(
         program,
         mock.devicePda,
+        null,
         new BN(1000),
         30,
         100,
         new BN(1000),
         new BN(1),
-        null,
       )
 
       const badSubscriptionPda = PublicKey.findProgramAddressSync(

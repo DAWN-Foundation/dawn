@@ -30,12 +30,12 @@ pub struct Claim<'info> {
         seeds = [
             b"plan",
             plan.device.as_ref(),
+            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.sla_id.to_le_bytes(),
-            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned()))
         ],
         bump = plan.bump,
     )]
@@ -158,12 +158,12 @@ impl DawnApp {
         let seeds = &[
             b"plan".as_ref(),
             ctx.accounts.plan.device.as_ref(),
+            &optional_seed(ctx.accounts.plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &ctx.accounts.plan.price.to_le_bytes(),
             &ctx.accounts.plan.duration.to_le_bytes(),
             &ctx.accounts.plan.speed.to_le_bytes(),
             &ctx.accounts.plan.capacity.to_le_bytes(),
             &ctx.accounts.plan.sla_id.to_le_bytes(),
-            &optional_seed(ctx.accounts.plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &[ctx.accounts.plan.bump],
         ];
         let signer_seeds = &[&seeds[..]];

@@ -63,12 +63,12 @@ pub struct AddPlan<'info> {
         seeds = [
             b"plan",
             parent_plan.device.as_ref(),
+            &optional_seed(parent_plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
             &parent_plan.capacity.to_le_bytes(),
             &parent_plan.sla_id.to_le_bytes(),
-            &optional_seed(parent_plan.parent_plan.as_ref().map(|p| p.to_owned())),
         ],
         bump = parent_plan.bump,
     )]
@@ -82,12 +82,12 @@ pub struct AddPlan<'info> {
         seeds = [
             b"plan",
             device.key().as_ref(),
+            &optional_seed(parent_plan.as_ref().map(|p| p.key())),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
             &sla_id.to_le_bytes(),
-            &optional_seed(parent_plan.as_ref().map(|p| p.key()))
         ],
         bump
     )]
@@ -97,7 +97,7 @@ pub struct AddPlan<'info> {
     #[account(
         seeds = [
             b"subscription",
-            parent_plan.as_ref().map(|p| p.key()).unwrap_or(Pubkey::default()).as_ref(),
+            subscription.plan.as_ref(),
             caller.key().as_ref(),
         ],
         bump = subscription.bump,

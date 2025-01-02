@@ -61,12 +61,12 @@ pub struct Subscribe<'info> {
         seeds = [
             b"plan",
             plan.device.as_ref(),
+            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned())),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.sla_id.to_le_bytes(),
-            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned()))
         ],
         bump = plan.bump
     )]

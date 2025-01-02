@@ -1,5 +1,12 @@
 const fs = require('fs')
-import { AnchorProvider, BN, Program, setProvider, Wallet, web3 } from '@coral-xyz/anchor'
+import {
+  AnchorProvider,
+  BN,
+  Program,
+  setProvider,
+  Wallet,
+  web3,
+} from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -17,7 +24,6 @@ import {
   Mock,
   PROGRAM_ID,
   RawMock,
-  getPlanPda,
 } from '../utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
@@ -217,9 +223,12 @@ export async function getBalance(
 }
 
 export function generateMacAddress(): MacAddress {
-  const mac = "0xXX:0xXX:0xXX:0xXX:0xXX:0xXX".replace(/X/g, () =>
-    "0123456789ABCDEF".charAt(Math.floor(Math.random() * 16))
-  ).split(":").map(el => parseInt(el, 16))
+  const mac = '0xXX:0xXX:0xXX:0xXX:0xXX:0xXX'
+    .replace(/X/g, () =>
+      '0123456789ABCDEF'.charAt(Math.floor(Math.random() * 16)),
+    )
+    .split(':')
+    .map((el) => parseInt(el, 16))
 
   return [mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]]
 }
@@ -255,7 +264,9 @@ export class DeviceGenerator {
 
     for (let i = 0; i < count; i++) {
       const device = {
-        coord: bbox ? this.flatPoint(this.flatPosition(bbox)) : this.flatPoint(),
+        coord: bbox
+          ? this.flatPoint(this.flatPosition(bbox))
+          : this.flatPoint(),
         mac: generateMacAddress(),
       }
 
