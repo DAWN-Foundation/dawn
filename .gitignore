@@ -10,3 +10,6 @@ dist
 testnet.json
 
 tests/fixtures/dawn.so
+/dawn**.json
+/dvwn**.json
+/test**.json
