@@ -1,7 +1,13 @@
 import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
 import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
-import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
 import { AddedAccount, startAnchor } from 'solana-bankrun'
 import {
@@ -23,6 +29,11 @@ import {
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { getIpLeasePda, getIpPoolPda } from './pda'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -171,20 +182,47 @@ export async function setup(
     null, // Freeze authority
     6, // Decimals (6 decimals for USDC)
   )
-  // Mint test DAWN token
-  console.log('Minting test DAWN token...')
-  const dawnMint = await createMint(
-    provider.context.banksClient, // Banks client
-    wallet, // Payer for transaction
-    wallet.publicKey, // Mint authority
-    null, // Freeze authority
-    6, // Decimals (6 decimals for DAWN)
-  )
+  // Get DAWN token PDA
+  console.log('Getting DAWN token PDA...')
+  const dawnMint = PublicKey.findProgramAddressSync(
+    [Buffer.from('dawn')],
+    PROGRAM_ID,
+  )[0]
 
   console.log({
     usdc_mint: usdcMint.toBase58(),
     dawn_mint: dawnMint.toBase58(),
   })
+
+  provider.wallet = new Wallet(wallet)
+  const program = getDawnProgram(provider)
+
+  const [tokenConfigPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('token')],
+    PROGRAM_ID,
+  )
+
+  // derive associated DAWN token account for wallet
+  const walletDawnAccount = await getAssociatedTokenAddress(
+    dawnMint,
+    wallet.publicKey,
+    false,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )
+
+  // Initialize DAWN token
+  console.log('Initializing DAWN token...')
+  await program.methods
+    .initToken()
+    .accounts({
+      caller: wallet.publicKey,
+      tokenConfig: tokenConfigPda,
+      dawnMint: dawnMint,
+      callerDawnAccount: walletDawnAccount,
+    })
+    .signers([wallet])
+    .rpc()
 
   // Create DAWN account for DAWN DAO
   console.log('Creating DAWN account for DAWN DAO...')
@@ -249,15 +287,6 @@ export async function setup(
     customer.publicKey,
   )
 
-  // Create DAWN token account for wallet
-  console.log('Creating DAWN token account for wallet...')
-  const walletDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
-    wallet,
-    dawnMint,
-    wallet.publicKey,
-  )
-
   // Create USDC token account for wallet
   console.log('Creating USDC token account for wallet...')
   const walletUsdcAccount = await createAssociatedTokenAccount(
@@ -278,17 +307,6 @@ export async function setup(
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
-  // Mint 1_000_000 DAWN to wallet
-  console.log('Minting 1_000_000 DAWN to wallet...')
-  await mintTo(
-    provider.context.banksClient, // Banks client
-    wallet, // Payer for transaction
-    dawnMint, // Mint
-    walletDawnAccount, // Token account
-    wallet.publicKey, // Mint authority
-    BigInt(1_000_000_000_000), // 6 decimals
-  )
-
   const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
     await setupRaydium(
       provider,
@@ -303,7 +321,6 @@ export async function setup(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const program = getDawnProgram(provider)
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId,
@@ -460,6 +477,7 @@ export async function setup(
     validatorFee,
     medallionFee,
     // PDAs
+    tokenConfigPda,
     configPda,
     ipPoolPda,
     deviceModelPda,

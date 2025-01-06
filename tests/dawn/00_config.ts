@@ -16,8 +16,8 @@ import {
   confirmTx,
 } from '../../app/utils'
 
-export const initTests = () =>
-  describe('dawn::initialize', () => {
+export const configTests = () =>
+  describe('dawn::configure', () => {
     let program: Program<Dawn>
     let provider: BankrunProvider
     let wallet: NodeWallet
@@ -44,12 +44,13 @@ export const initTests = () =>
       assert.exists(mock)
     })
 
-    test('initializes the program', async () => {
+    test('configures the program', async () => {
       const tx = await program.methods
-        .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
+        .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accounts({
           caller: wallet.payer.publicKey,
           config: configPda,
+          tokenConfig: mock.tokenConfigPda,
           usdcMint: mock.usdcMint,
           dawnMint: mock.dawnMint,
           daoDawnAccount: mock.daoDawnAccount,
@@ -97,10 +98,11 @@ export const initTests = () =>
 
       try {
         await program.methods
-          .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
+          .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
           .accounts({
             caller: wallet.payer.publicKey,
             config: configPda,
+            tokenConfig: mock.tokenConfigPda,
             usdcMint: mock.usdcMint,
             dawnMint: mock.dawnMint,
             daoDawnAccount: mock.daoDawnAccount,
