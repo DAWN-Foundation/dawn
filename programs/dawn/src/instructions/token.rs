@@ -6,8 +6,8 @@ use anchor_spl::{
 
 use super::DawnApp;
 
-const DECIMALS: u32 = 6;
-const DENOMINATOR: u64 = 10_u64.pow(DECIMALS);
+const DECIMALS: u8 = 6;
+const DENOMINATOR: u64 = 10_u64.pow(DECIMALS as u32);
 const MINT_AMOUNT: u64 = 1_000_000_000 * DENOMINATOR;
 
 #[account]
@@ -44,7 +44,7 @@ pub struct InitializeToken<'info> {
     #[account(
         init,
         payer = caller,
-        mint::decimals = 6,
+        mint::decimals = DECIMALS,
         mint::authority = token_config,
         seeds = [b"dawn"],
         bump
