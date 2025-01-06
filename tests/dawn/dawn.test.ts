@@ -1,4 +1,4 @@
-import { initTests } from './00_init'
+import { configTests } from './00_config'
 import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
 import { deviceTests } from './03_device'
@@ -17,7 +17,7 @@ import { claimTests } from './06_claim'
 // - plan (adds plan)
 // - subscription (subscribes to plan)
 // - claim (claims DAWN from subscription escrow)
-initTests()
+configTests()
 ipPoolTests()
 deviceModelTests()
 deviceTests()

@@ -37,6 +37,7 @@ export interface Mock {
   validatorFee: BN
   medallionFee: BN
   // PDAs
+  tokenConfigPda: PublicKey
   configPda: PublicKey
   ipPoolPda: PublicKey
   deviceModelPda: PublicKey
@@ -111,6 +112,7 @@ export interface RawMock {
   validatorFee: string
   medallionFee: string
   // PDAs
+  tokenConfigPda: string
   configPda: string
   ipPoolPda: string
   deviceModelPda: string

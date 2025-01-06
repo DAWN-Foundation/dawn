@@ -20,13 +20,17 @@ use instructions::*;
 pub mod dawn {
     use super::*;
 
-    pub fn initialize(
-        ctx: Context<Initialize>,
+    pub fn init_token(ctx: Context<InitializeToken>) -> Result<()> {
+        DawnApp::init_token(ctx)
+    }
+
+    pub fn configure(
+        ctx: Context<Configure>,
         dawn_fee: u64,
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        DawnApp::initialize(ctx, dawn_fee, validator_fee, medallion_fee)
+        DawnApp::configure(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
     pub fn add_ip_pool(

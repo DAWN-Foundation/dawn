@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use super::DawnApp;
+use super::{DawnApp, TokenConfig};
 
 #[account]
 pub struct Config {
@@ -19,6 +19,8 @@ pub struct Config {
     pub medallion_fee: u64,
 
     // MINTS
+    /// The token config account that owns the DAWN mint
+    pub token_config: Pubkey,
     /// The USDC mint account
     pub usdc_mint: Pubkey,
     /// The DAWN mint account
@@ -50,6 +52,7 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 8 // dao_fee
     + 8 // validator_fee
     + 8 // medallion_fee
+    + 32 // token_config
     + 32 // usdc_mint
     + 32 // dawn_mint
     + 32 // dao_dawn_account
@@ -63,7 +66,7 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-pub struct Initialize<'info> {
+pub struct Configure<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
@@ -77,11 +80,22 @@ pub struct Initialize<'info> {
     )]
     pub config: Account<'info, Config>,
 
+    /// The token config account that owns the DAWN mint
+    #[account(
+        seeds = [b"token"],
+        bump = token_config.bump,
+    )]
+    pub token_config: Account<'info, TokenConfig>,
+
     /// The USDC mint account
     #[account()]
     pub usdc_mint: Account<'info, Mint>,
+
     /// The DAWN mint account
-    #[account()]
+    #[account(
+        seeds = [b"dawn"],
+        bump = token_config.mint_bump,
+    )]
     pub dawn_mint: Account<'info, Mint>,
 
     /// The DAWN DAO DAWN token account
@@ -120,8 +134,8 @@ pub struct Initialize<'info> {
 }
 
 impl DawnApp {
-    pub fn initialize(
-        ctx: Context<Initialize>,
+    pub fn configure(
+        ctx: Context<Configure>,
         dao_fee: u64,
         validator_fee: u64,
         medallion_fee: u64,
@@ -140,6 +154,7 @@ impl DawnApp {
         config.medallion_fee = medallion_fee;
 
         // mints
+        config.token_config = ctx.accounts.token_config.key();
         config.usdc_mint = ctx.accounts.usdc_mint.key();
         config.dawn_mint = ctx.accounts.dawn_mint.key();
 

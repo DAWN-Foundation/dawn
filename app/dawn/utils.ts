@@ -92,6 +92,7 @@ export function getMock(): Mock {
     validatorFee: new BN(mock.validatorFee),
     medallionFee: new BN(mock.medallionFee),
     // PDAs
+    tokenConfigPda: new PublicKey(mock.tokenConfigPda),
     configPda: new PublicKey(mock.configPda),
     ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
