@@ -176,11 +176,12 @@ yarn dawn:add_device \
     --latitude '37.774929' \
     --longitude '-122.419418'
 
-# Add devices to the DAWN contract
+# Add devices to the DAWN contract (--with-plans to generate and associate 1-3 random plans)
 yarn dawn:add_devices \
     --service-provider \
     --device-model <device-model> \
-    --count 10
+    --count 10 \
+    --with-plans
 
 # Add a shared ip pool
 yarn dawn:add_ip_pool
