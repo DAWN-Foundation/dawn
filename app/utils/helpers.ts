@@ -16,7 +16,6 @@ function getProgramId(): PublicKey {
 }
 
 export const PROGRAM_ID = getProgramId();
-
 export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
