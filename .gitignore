@@ -13,3 +13,6 @@ tests/fixtures/dawn.so
 /dawn**.json
 /dvwn**.json
 /test**.json
+
+# Ignore Anchor files
+Anchor.toml

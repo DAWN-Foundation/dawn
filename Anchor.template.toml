@@ -8,7 +8,7 @@ skip-lint = false
 dawn = "BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S"
 
 [programs.devnet]
-dawn = "dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ"
+dawn = "11111111111111111111111111111111"  # Placeholder program ID
 
 [registry]
 url = "https://api.apr.dev"
