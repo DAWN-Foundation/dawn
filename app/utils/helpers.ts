@@ -11,7 +11,17 @@ function getProgramId(): PublicKey {
     const anchorToml = toml.parse(
         readFileSync('./Anchor.toml', 'utf-8')
     );
-    const programId = anchorToml.programs.devnet.dawn;
+
+    // Get cluster from provider or default to devnet
+    const cluster = process.env.CLUSTER || 'devnet';
+
+    let programId: string;
+    if (cluster === 'localnet') {
+        programId = anchorToml.programs.localnet.dawn;
+    } else {
+        programId = anchorToml.programs.devnet.dawn;
+    }
+
     return new PublicKey(programId);
 }
 

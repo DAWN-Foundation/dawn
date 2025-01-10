@@ -3,7 +3,6 @@ name = "dawn"
 version = "0.1.0"
 description = "DAWN Protocol Program"
 edition = "2021"
-build = "build.rs"
 
 [lib]
 crate-type = ["cdylib", "lib"]
