@@ -1,10 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[cfg(not(feature = "devnet"))]
-declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
-
-#[cfg(feature = "devnet")]
-declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
+include!(concat!(env!("OUT_DIR"), "/program_id.rs"));
 
 mod constants;
 mod error;

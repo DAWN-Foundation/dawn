@@ -3,6 +3,7 @@ name = "dawn"
 version = "0.1.0"
 description = "DAWN Protocol Program"
 edition = "2021"
+build = "build.rs"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -25,3 +26,6 @@ raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", featu
 ] }
 solana-program = ">=1.16, <1.18"
 spl-memo = "4.0.0"
+
+[build-dependencies]
+toml = "0.7"
