@@ -75,7 +75,6 @@ jobs:
           path: target
           key: ${{ runner.os }}-anchor-build-${{ hashFiles('**/Cargo.lock') }}
 
-      # Add these steps before the build step
       - name: Create Anchor.toml
         run: cp Anchor.template.toml Anchor.toml
 

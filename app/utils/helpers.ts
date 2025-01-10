@@ -16,10 +16,10 @@ function getProgramId(): PublicKey {
     const cluster = process.env.CLUSTER || 'devnet';
 
     let programId: string;
-    if (cluster === 'localnet') {
-        programId = anchorToml.programs.localnet.dawn;
-    } else {
+    if (cluster === 'devnet') {
         programId = anchorToml.programs.devnet.dawn;
+    } else {
+        programId = anchorToml.programs.localnet.dawn;
     }
 
     return new PublicKey(programId);
