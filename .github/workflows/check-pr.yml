@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [dev, master]
 
+env:
+  CLUSTER: localnet
+
 jobs:
   check:
     runs-on: ubuntu-latest
