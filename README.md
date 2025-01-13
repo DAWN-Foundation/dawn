@@ -105,7 +105,7 @@ anchor build
 
 ```bash
 # Run the tests
-anchor test -- --features "devnet"
+anchor test
 ```
 
 ### Run local validator
