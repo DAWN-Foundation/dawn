@@ -7,7 +7,7 @@ async function main() {
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const itx = await program.methods
-    .initialize(mock.daoFee, mock.validatorFee, mock.medallionFee)
+    .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
     .accounts({
       caller: wallet.payer.publicKey,
       config: mock.configPda,

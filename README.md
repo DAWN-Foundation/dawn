@@ -155,14 +155,14 @@ These command allow interaction with the DAWN contract deployed on local testnet
 # empty means the local wallet is used and is usually the root wallet
 # --service-provider is usually used to add a device and create plans
 # --customer should have some USDC and can be used to pay for plan subscription
-# yarn dawn:init
+# yarn dawn:config
 # yarn dawn:add_device_model
 # yarn dawn:add_device --service-provider
 # yarn dawn:add_plan --service-provider
 # yarn dawn:subscribe --customer
 
 # Initialize the DAWN contract (as local identity)
-yarn dawn:init
+yarn dawn:config
 
 # Add a device model (note Device Mode PDA from output)
 yarn dawn:add_device_model \
