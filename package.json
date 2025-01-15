@@ -10,7 +10,7 @@
     "pretestnet": "yarn build",
     "testnet": "node dist/app/testnet.js",
     "mint:usdc": "yarn build && node dist/app/dawn/mint_usdc.js",
-    "dawn:init": "yarn build && node dist/app/dawn/init.js",
+    "dawn:config": "yarn build && node dist/app/dawn/config.js",
     "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
     "dawn:add_device": "yarn build && node dist/app/dawn/add_device.js",
     "dawn:add_devices": "yarn build && node dist/app/dawn/add_devices.js",

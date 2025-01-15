@@ -10,8 +10,8 @@ async function main() {
     .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
     .accounts({
       caller: wallet.payer.publicKey,
-      config: mock.configPda,
       tokenConfig: mock.tokenConfigPda,
+      config: mock.configPda,
       usdcMint: mock.usdcMint,
       dawnMint: mock.dawnMint,
       daoDawnAccount: mock.daoDawnAccount,
