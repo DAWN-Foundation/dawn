@@ -10,8 +10,10 @@ pub struct Plan {
     pub owner: Pubkey,
     /// Associated device
     pub device: Pubkey,
+    /// Whether the plan is a resale plan
+    pub is_resale: bool,
     /// The parent plan (for resale)
-    pub parent_plan: Option<Pubkey>,
+    pub parent_plan: Pubkey,
     /// The plan price per `duration` days (in USDC with 6 decimals)
     pub price: u64,
     /// The plan duration in days
@@ -30,7 +32,8 @@ pub struct Plan {
 const PLAN_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // device
-    + 33 // parent plan
+    + 1 // is_resale
+    + 32 // parent plan
     + 8 // price
     + 2 // duration
     + 4 // speed
@@ -63,7 +66,7 @@ pub struct AddPlan<'info> {
         seeds = [
             b"plan",
             parent_plan.device.as_ref(),
-            &optional_seed(parent_plan.parent_plan.as_ref().map(|p| p.to_owned())),
+            &optional_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
@@ -163,7 +166,8 @@ impl DawnApp {
         // Make sure the plan speed is not zero
         require!(speed > 0, DawnError::ZeroPlanSpeed);
 
-        let parent_plan = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref() {
+        let (is_resale, parent_plan) = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref()
+        {
             require!(
                 ctx.accounts.subscription.is_some(),
                 DawnError::ParentPlanNeedSubscription
@@ -180,15 +184,16 @@ impl DawnApp {
                 DawnError::OutsideParentBounds
             );
 
-            Some(parent_plan.key())
+            (true, parent_plan.key())
         } else {
-            None
+            (false, Pubkey::new_from_array([0; 32]))
         };
 
         let plan = &mut ctx.accounts.plan;
 
         plan.owner = ctx.accounts.caller.key();
         plan.device = ctx.accounts.device.key();
+        plan.is_resale = is_resale;
         plan.parent_plan = parent_plan;
         plan.price = price;
         plan.duration = duration;
@@ -200,6 +205,7 @@ impl DawnApp {
         emit!(PlanAdded {
             plan: plan.key(),
             owner: plan.owner,
+            is_resale: plan.is_resale,
             parent_plan: plan.parent_plan,
             device: plan.device,
             price: plan.price,

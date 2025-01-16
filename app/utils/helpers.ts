@@ -94,7 +94,7 @@ export function getPlanPda(
 
   const parentPlanBuffer = parentPlan
     ? Buffer.from(parentPlan.toBytes())
-    : Buffer.from(PublicKey.default.toBytes())
+    : Buffer.from(Array(32).fill(0))
 
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
