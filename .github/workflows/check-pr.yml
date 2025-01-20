@@ -75,15 +75,6 @@ jobs:
           path: target
           key: ${{ runner.os }}-anchor-build-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Create Anchor.toml
-        run: cp Anchor.template.toml Anchor.toml
-
-      - name: Sync Anchor keys (first time)
-        run: anchor keys sync
-
-      - name: Sync Anchor keys (second time)
-        run: anchor keys sync
-
       # BUILD
       - name: Build
         run: anchor build
