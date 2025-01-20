@@ -75,9 +75,6 @@ jobs:
           path: target
           key: ${{ runner.os }}-anchor-build-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Sync Anchor keys
-        run: anchor keys sync --provider.cluster localnet
-
       # BUILD
       - name: Build
         run: anchor build
