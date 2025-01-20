@@ -1,14 +1,21 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
+import { readFileSync } from 'fs';
+import * as toml from 'toml';
 
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
 
-export const PROGRAM_ID = new PublicKey(
-  'BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S',
-)
+function getProgramId(): PublicKey {
+    const anchorToml = toml.parse(
+        readFileSync('./Anchor.toml', 'utf-8')
+    );
 
+    return new PublicKey(anchorToml.programs.localnet.dawn);
+}
+
+export const PROGRAM_ID = getProgramId();
 export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
