@@ -82,6 +82,9 @@ solana address --keypair ~/.config/solana/id.json
 ### Build
 
 ```bash
+# Use `dev` branch
+git checkout dev
+
 # Build the program
 anchor build
 ```
@@ -121,7 +124,7 @@ solana-test-validator \
 # omit the --reset flag to keep existing data
 
 # Airdrop 500 SOL to specified address
-solana airdrop --url l 500 <address>
+solana airdrop --keypair ~/.config/solana/id.json --url l 10000
 ```
 
 ### Deploy
