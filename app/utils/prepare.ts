@@ -243,6 +243,7 @@ export async function prepare(
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
   const deviceLatitude = new BN(0.000001 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
+  const deviceHeight = 1
 
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
@@ -394,6 +395,7 @@ export async function prepare(
     deviceModel,
     deviceLatitude,
     deviceLongitude,
+    deviceHeight,
     deviceMacAddress,
     // plan
     planPrice,

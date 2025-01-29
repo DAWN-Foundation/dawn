@@ -21,11 +21,11 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // model
-    + 6 // mac_address
+    + 6  // mac_address
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(height: i8, latitude: u64, longitude: u64, mac_address: [u8; 6])]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -76,13 +76,16 @@ pub struct AddDevice<'info> {
 impl DawnApp {
     pub fn add_device(
         ctx: Context<AddDevice>,
+        height: i8,
         latitude: i64,
         longitude: i64,
         mac_address: [u8; 6],
     ) -> Result<()> {
-        // Make sure the latitude and longitude are not eq 0
+        // Make sure the latitude, longitude and height are not eq 0
         require!(!latitude.eq(&0i64), DawnError::InvalidLatitude);
         require!(!longitude.eq(&0i64), DawnError::InvalidLongitude);
+        require!(!height.eq(&0i8), DawnError::InvalidHeight);
+        require!(!height.lt(&0i8), DawnError::InvalidHeight);
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
@@ -95,6 +98,7 @@ impl DawnApp {
 
         // Set device location info
         device_location.device = device.key();
+        device_location.height = height;
         device_location.longitude = longitude;
         device_location.latitude = latitude;
         device_location.verified = false;
@@ -107,6 +111,7 @@ impl DawnApp {
             model: device.model,
             latitude,
             longitude,
+            height,
             mac_address,
         });
 

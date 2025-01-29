@@ -116,6 +116,7 @@ export function getMock(): Mock {
     deviceModel: mock.deviceModel,
     deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
     deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
+    deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
     // plan
     planPrice: new BN(mock.planPrice),
@@ -244,6 +245,9 @@ export class DeviceGenerator {
   static lat(): number {
     return parseFloat((this.rnd() * 180).toFixed(6))
   }
+  static getRandomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
   static coordInBBBOX(bbox: number[]): [number, number] {
     return [
@@ -269,6 +273,7 @@ export class DeviceGenerator {
           ? this.flatPoint(this.flatPosition(bbox))
           : this.flatPoint(),
         mac: generateMacAddress(),
+        height: this.getRandomInt(1, 20),
       }
 
       devices.push(device)

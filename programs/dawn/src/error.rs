@@ -55,6 +55,9 @@ pub enum DawnError {
     #[msg("Claim too early")]
     ClaimTooEarly,
 
+    #[msg("Device height is invalid")]
+    InvalidHeight,
+
     #[msg("Latitude coordinate is invalid")]
     InvalidLatitude,
 

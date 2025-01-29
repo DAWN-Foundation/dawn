@@ -4,10 +4,6 @@ import { Keypair, PublicKey } from '@solana/web3.js'
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
 import { COORD_DENOMINATOR, deviceTypeSeed, fund } from '../utils'
 
-// CONSTANTS
-const MANUFACTURER = 'MikroTik'
-const MODEL = 'GG69420'
-
 async function main() {
   const mock = getMock()
   const { program, wallet, connection } = await connect()
@@ -58,7 +54,7 @@ async function main() {
 
     try {
       const itx = await program.methods
-        .addDevice(latitude, longitude, Array.from(Buffer.from(device.mac)))
+        .addDevice(device.height, latitude, longitude, Array.from(Buffer.from(device.mac)))
         .accounts({
           caller: wallet.publicKey,
           device: devicePda,
