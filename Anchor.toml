@@ -4,9 +4,6 @@
 seeds = false
 skip-lint = false
 
-[programs.devnet]
-dawn = "F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH"
-
 [programs.localnet]
 dawn = "F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH"
 

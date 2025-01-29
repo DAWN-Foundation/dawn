@@ -9,8 +9,8 @@ use super::Device;
 pub struct DeviceLocation {
     /// The device account
     pub device: Pubkey,
-    /// Device antena height - metres
-    pub height: i8,
+    /// Device antenna height (meters)
+    pub height: u16,
     /// Geographic position - latitude
     pub latitude: i64,
     /// Geographic position - longitude
@@ -23,7 +23,7 @@ pub struct DeviceLocation {
 
 pub const DEVICE_LOCATION_SIZE: usize = 8 // id
     + 32 // device
-    + 1  // height
+    + 2  // height
     + 8  // latitude
     + 8  // longitude
     + 1  // verified

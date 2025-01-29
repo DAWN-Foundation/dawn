@@ -25,7 +25,7 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(height: i8, latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(height: u16, latitude: u64, longitude: u64, mac_address: [u8; 6])]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -76,7 +76,7 @@ pub struct AddDevice<'info> {
 impl DawnApp {
     pub fn add_device(
         ctx: Context<AddDevice>,
-        height: i8,
+        height: u16,
         latitude: i64,
         longitude: i64,
         mac_address: [u8; 6],
@@ -84,8 +84,8 @@ impl DawnApp {
         // Make sure the latitude, longitude and height are not eq 0
         require!(!latitude.eq(&0i64), DawnError::InvalidLatitude);
         require!(!longitude.eq(&0i64), DawnError::InvalidLongitude);
-        require!(!height.eq(&0i8), DawnError::InvalidHeight);
-        require!(!height.lt(&0i8), DawnError::InvalidHeight);
+        require!(!height.eq(&0u16), DawnError::InvalidHeight);
+        require!(!height.lt(&0u16), DawnError::InvalidHeight);
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;

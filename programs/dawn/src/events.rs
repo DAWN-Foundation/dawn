@@ -54,7 +54,7 @@ pub struct DeviceAdded {
     pub model: Pubkey,
     pub longitude: i64,
     pub latitude: i64,
-    pub height: i8,
+    pub height: u16,
     pub mac_address: [u8; 6],
 }
 

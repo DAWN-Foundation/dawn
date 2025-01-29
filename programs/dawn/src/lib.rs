@@ -3,6 +3,9 @@ use anchor_lang::prelude::*;
 #[cfg(not(feature = "devnet"))]
 declare_id!("F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH");
 
+#[cfg(feature = "devnet")]
+declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
+
 mod constants;
 mod error;
 mod events;
@@ -51,7 +54,7 @@ pub mod dawn {
 
     pub fn add_device(
         ctx: Context<AddDevice>,
-        height: i8,
+        height: u16,
         latitude: i64,
         longitude: i64,
         mac_address: [u8; 6],
