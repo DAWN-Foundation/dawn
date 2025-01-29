@@ -82,6 +82,9 @@ solana address --keypair ~/.config/solana/id.json
 ### Build
 
 ```bash
+# Use `dev` branch
+git checkout dev
+
 # Build the program
 anchor build
 ```
@@ -121,7 +124,7 @@ solana-test-validator \
 # omit the --reset flag to keep existing data
 
 # Airdrop 500 SOL to specified address
-solana airdrop --url l 500 <address>
+solana airdrop --keypair ~/.config/solana/id.json --url l 10000
 ```
 
 ### Deploy
@@ -155,14 +158,14 @@ These command allow interaction with the DAWN contract deployed on local testnet
 # empty means the local wallet is used and is usually the root wallet
 # --service-provider is usually used to add a device and create plans
 # --customer should have some USDC and can be used to pay for plan subscription
-# yarn dawn:init
+# yarn dawn:config
 # yarn dawn:add_device_model
 # yarn dawn:add_device --service-provider
 # yarn dawn:add_plan --service-provider
 # yarn dawn:subscribe --customer
 
 # Initialize the DAWN contract (as local identity)
-yarn dawn:init
+yarn dawn:config
 
 # Add a device model (note Device Mode PDA from output)
 yarn dawn:add_device_model \
@@ -176,11 +179,12 @@ yarn dawn:add_device \
     --latitude '37.774929' \
     --longitude '-122.419418'
 
-# Add devices to the DAWN contract
+# Add devices to the DAWN contract (--with-plans to generate and associate 1-3 random plans)
 yarn dawn:add_devices \
     --service-provider \
     --device-model <device-model> \
-    --count 10
+    --count 10 \
+    --with-plans
 
 # Add a shared ip pool
 yarn dawn:add_ip_pool

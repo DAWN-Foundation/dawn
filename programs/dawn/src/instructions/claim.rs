@@ -30,7 +30,7 @@ pub struct Claim<'info> {
         seeds = [
             b"plan",
             plan.device.as_ref(),
-            &optional_seed(plan.parent_plan.as_ref().map(|p| p.to_owned())),
+            &optional_seed(plan.is_resale.then_some(plan.parent_plan)),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -158,7 +158,12 @@ impl DawnApp {
         let seeds = &[
             b"plan".as_ref(),
             ctx.accounts.plan.device.as_ref(),
-            &optional_seed(ctx.accounts.plan.parent_plan.as_ref().map(|p| p.to_owned())),
+            &optional_seed(
+                ctx.accounts
+                    .plan
+                    .is_resale
+                    .then_some(ctx.accounts.plan.parent_plan),
+            ),
             &ctx.accounts.plan.price.to_le_bytes(),
             &ctx.accounts.plan.duration.to_le_bytes(),
             &ctx.accounts.plan.speed.to_le_bytes(),

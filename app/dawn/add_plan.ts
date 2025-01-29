@@ -46,6 +46,8 @@ async function main() {
       caller: wallet.payer.publicKey,
       device: devicePda,
       plan: planPda,
+      parentPlan: null,
+      subscription: null,
     } as {})
     .signers([wallet.payer])
     .instruction()

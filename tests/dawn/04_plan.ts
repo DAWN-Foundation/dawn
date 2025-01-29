@@ -20,7 +20,8 @@ import { beforeAll, expect } from '@jest/globals'
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
-  parentPlan: PublicKey | null
+  isResale: boolean
+  parentPlan: PublicKey
   price: BN
   duration: number
   speed: number
@@ -244,7 +245,8 @@ export const planTests = () =>
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.device.equals(mock.devicePda))
-      assert.ok(event.parentPlan === null)
+      assert.ok(event.isResale === false)
+      assert.ok(event.parentPlan.toBytes().every((byte) => byte === 0))
       assert.ok(event.price.eq(mock.planPrice))
       assert.equal(event.duration, mock.planDuration)
       assert.equal(event.speed, mock.planSpeed)
@@ -255,7 +257,8 @@ export const planTests = () =>
       const plan = await program.account.plan.fetch(mock.planPda)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.device.equals(mock.devicePda))
-      assert.ok(plan.parentPlan === null)
+      assert.ok(plan.isResale === false)
+      assert.ok(plan.parentPlan.toBytes().every((byte) => byte === 0))
       assert.ok(plan.price.eq(mock.planPrice))
       assert.equal(plan.duration, mock.planDuration)
       assert.equal(plan.speed, mock.planSpeed)

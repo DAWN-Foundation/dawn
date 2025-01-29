@@ -10,11 +10,12 @@
     "pretestnet": "yarn build",
     "testnet": "node dist/app/testnet.js",
     "mint:usdc": "yarn build && node dist/app/dawn/mint_usdc.js",
-    "dawn:init": "yarn build && node dist/app/dawn/init.js",
+    "dawn:config": "yarn build && node dist/app/dawn/config.js",
     "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
     "dawn:add_device": "yarn build && node dist/app/dawn/add_device.js",
     "dawn:add_devices": "yarn build && node dist/app/dawn/add_devices.js",
     "dawn:add_device_model": "yarn build && node dist/app/dawn/add_device_model.js",
+    "dawn:get_device_models": "yarn build && node dist/app/dawn/get_device_models.js",
     "dawn:get_devices": "yarn build && node dist/app/dawn/get_devices.js",
     "dawn:add_plan": "yarn build && node dist/app/dawn/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/app/dawn/get_plans.js",
@@ -29,8 +30,10 @@
     "@solana/spl-token": "0.4.0",
     "@solana/web3.js": "^1.90.0",
     "anchor-bankrun": "^0.5.0",
+    "quicktype": "^23.0.171",
     "solana-bankrun": "^0.4.0",
-    "spl-token-bankrun": "^0.2.6"
+    "spl-token-bankrun": "^0.2.6",
+    "toml": "^3.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

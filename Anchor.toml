@@ -8,14 +8,17 @@ skip-lint = false
 dawn = "F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH"
 
 [programs.localnet]
-dawn = "BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S"
+dawn = "F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH"
+
+# [programs.devnet]
+# dawn = "dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "/home/singula/.config/solana/id.json"
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn test"
