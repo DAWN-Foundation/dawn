@@ -8,11 +8,11 @@ import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
 
 function getProgramId(): PublicKey {
-    const anchorToml = toml.parse(
-        readFileSync('./Anchor.toml', 'utf-8')
-    );
+  const anchorToml = toml.parse(
+    readFileSync('./Anchor.toml', 'utf-8')
+  );
 
-    return new PublicKey(anchorToml.programs.localnet.dawn);
+  return new PublicKey(anchorToml.programs.localnet.dawn);
 }
 
 export const PROGRAM_ID = getProgramId();
@@ -27,6 +27,7 @@ export type MacAddress = [number, number, number, number, number, number]
 export interface GenerateDevice {
   coord: [number, number]
   mac: MacAddress
+  height: number
 }
 
 export type IpV6Bytes = number[]

@@ -62,6 +62,7 @@ export interface Mock {
   deviceMacAddress: MacAddress
   deviceLatitude: BN
   deviceLongitude: BN
+  deviceHeight: number
   // plan
   planPrice: BN
   planDuration: number
@@ -136,6 +137,7 @@ export interface RawMock {
   deviceModel: string
   deviceLatitude: number
   deviceLongitude: number
+  deviceHeight: number
   deviceMacAddress: MacAddress
   // plan
   planPrice: string

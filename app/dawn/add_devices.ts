@@ -69,7 +69,7 @@ async function main() {
     try {
       // Add device
       const deviceItx = await program.methods
-        .addDevice(latitude, longitude, Array.from(Buffer.from(device.mac)))
+        .addDevice(device.height, latitude, longitude, Array.from(Buffer.from(device.mac)))
         .accounts({
           caller: wallet.publicKey,
           device: devicePda,

@@ -343,6 +343,7 @@ export async function setup(
 
   const deviceLatitude = new BN(1.0 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(1.0 * COORD_DENOMINATOR)
+  const deviceHeight = 1
 
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
@@ -501,6 +502,7 @@ export async function setup(
     deviceModel,
     deviceLatitude,
     deviceLongitude,
+    deviceHeight,
     deviceMacAddress,
     // plan
     planPrice,

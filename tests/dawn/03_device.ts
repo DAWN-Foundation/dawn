@@ -21,6 +21,7 @@ interface DeviceAdded {
   model: PublicKey
   latitude: BN
   longitude: BN
+  height: number
 }
 
 interface DeviceLocationVerified {
@@ -52,7 +53,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .addDevice(mock.deviceHeight, mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: invalidModel.publicKey,
@@ -86,7 +87,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(latitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .addDevice(mock.deviceHeight, latitude, mock.deviceLongitude, mock.deviceMacAddress)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
@@ -118,7 +119,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceLatitude, longitude, mock.deviceMacAddress)
+          .addDevice(mock.deviceHeight, mock.deviceLatitude, longitude, mock.deviceMacAddress)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
@@ -135,6 +136,41 @@ export const deviceTests = () =>
       }
     })
 
+    test('cannot add device with height eq 0', async () => {
+      const height = 0
+
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from(mock.deviceMacAddress),
+        ],
+        program.programId,
+      )
+
+      try {
+        await program.methods
+          .addDevice(height, mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            deviceLocation: mock.deviceLocationPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        console.log(error)
+
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Device height is invalid')
+      }
+    })
+
+
     test('adds the device', async () => {
 
       const [devicePda] = PublicKey.findProgramAddressSync(
@@ -148,7 +184,7 @@ export const deviceTests = () =>
       )
 
       const tx = await program.methods
-        .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+        .addDevice(mock.deviceHeight, mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
         .accounts({
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
@@ -171,6 +207,7 @@ export const deviceTests = () =>
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
       expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
+      expect(event.height.toString()).toBe(mock.deviceHeight.toString())
 
       // make sure device was created
       const device = await program.account.device.fetch(devicePda)
@@ -187,6 +224,9 @@ export const deviceTests = () =>
       )
       expect(deviceLocation.longitude.toString()).toBe(
         mock.deviceLongitude.toString(),
+      )
+      expect(deviceLocation.height.toString()).toBe(
+        mock.deviceHeight.toString(),
       )
       expect(deviceLocation.verified).toBeFalsy()
     })
@@ -262,7 +302,7 @@ export const deviceTests = () =>
 
       try {
         await program.methods
-          .addDevice(mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
+          .addDevice(mock.deviceHeight, mock.deviceLatitude, mock.deviceLongitude, mock.deviceMacAddress)
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,

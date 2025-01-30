@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
+declare_id!("F8tNrVijjhdD1mLL2WMir6hfQBYLEWHz3pxKWa3fSDHH");
 
 #[cfg(feature = "devnet")]
 declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
@@ -54,11 +54,12 @@ pub mod dawn {
 
     pub fn add_device(
         ctx: Context<AddDevice>,
+        height: u16,
         latitude: i64,
         longitude: i64,
         mac_address: [u8; 6],
     ) -> Result<()> {
-        DawnApp::add_device(ctx, latitude, longitude, mac_address)
+        DawnApp::add_device(ctx, height, latitude, longitude, mac_address)
     }
 
     pub fn lease_ip(

@@ -522,6 +522,7 @@ export const parentPlanTests = () =>
 
       await program.methods
         .addDevice(
+          mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
           [0, 0, 0, 0, 0, 1],
