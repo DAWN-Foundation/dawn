@@ -38,7 +38,6 @@ async function main() {
   const deviceCount = deviceCountFlag ? parseInt(deviceCountFlag) : 5
   const withPlans = getFlag('--with-plans') !== null
 
-
   const devices = DeviceGenerator.genearate(
     deviceCount,
     [-121.115323, 37.3985593, -122.3253238, 37.1615593],

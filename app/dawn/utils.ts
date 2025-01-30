@@ -19,6 +19,8 @@ import { Dawn } from '../../target/types/dawn'
 import {
   COORD_DENOMINATOR,
   GenerateDevice,
+  IpV4Bytes,
+  IpV6Bytes,
   loadWallet,
   MacAddress,
   Mock,
@@ -185,6 +187,7 @@ export async function submitTx(
   connection: Connection,
   wallet: Wallet,
   itx: web3.TransactionInstruction,
+  logs: boolean = true,
 ) {
   const latestBlockHash = await connection.getLatestBlockhash({
     commitment: 'confirmed',
@@ -200,14 +203,15 @@ export async function submitTx(
   let txSignature = await connection.sendRawTransaction(signed.serialize(), {
     skipPreflight: true,
   })
-  console.log({ txSignature })
+
+  logs && console.log({ txSignature })
 
   const confirmationResult = await connection.confirmTransaction(
     { signature: txSignature, ...latestBlockHash },
     'confirmed',
   )
 
-  console.log('confirmationResult', confirmationResult)
+  logs && console.log('confirmationResult', confirmationResult)
 
   if (confirmationResult.value.err) {
     throw new Error(JSON.stringify(confirmationResult.value.err))
@@ -235,6 +239,10 @@ export function generateMacAddress(): MacAddress {
   return [mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]]
 }
 
+export function getRandomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 export class DeviceGenerator {
   static rnd(): number {
     return Math.random() - 0.5
@@ -245,9 +253,6 @@ export class DeviceGenerator {
   static lat(): number {
     return parseFloat((this.rnd() * 180).toFixed(6))
   }
-  static getRandomInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
   static coordInBBBOX(bbox: number[]): [number, number] {
     return [
@@ -273,12 +278,68 @@ export class DeviceGenerator {
           ? this.flatPoint(this.flatPosition(bbox))
           : this.flatPoint(),
         mac: generateMacAddress(),
-        height: this.getRandomInt(1, 20),
+        height: getRandomInt(1, 20),
       }
 
       devices.push(device)
     }
 
     return devices
+  }
+}
+
+export class IpV4Generator {
+  static ipToDecimal(ip: string): number {
+    return ip.split('.').reduce((acc, octet) => (acc << 8) + +octet, 0) >>> 0;
+  }
+
+  static decimalToIp(decimal: number): IpV4Bytes {
+    return [
+      (decimal >>> 24) & 255,
+      (decimal >>> 16) & 255,
+      (decimal >>> 8) & 255,
+      decimal & 255
+    ];
+  }
+
+  static generateIPList(startIP: string, prefixLength: number): IpV4Bytes[] {
+    const start = this.ipToDecimal(startIP);
+    const totalAddresses = Math.pow(2, 32 - prefixLength);
+    const ipList: IpV4Bytes[] = [];
+
+    for (let i = 0; i < totalAddresses; i++) {
+      ipList.push(this.decimalToIp(start + i));
+    }
+
+    return ipList;
+  }
+
+}
+
+export class IpV6Generator {
+  static generateIPList(baseIP: string, prefixLength: number): IpV6Bytes[] {
+    const totalAddresses = Math.pow(2, 128 - prefixLength); // Общее количество адресов
+    const ipList: IpV6Bytes[] = [];
+
+    const baseParts = baseIP.split(':').map(part => parseInt(part, 16));
+
+    for (let i = 0; i < totalAddresses; i++) {
+      const newParts = [...baseParts];
+      let carry = i;
+
+      for (let j = newParts.length - 1; j >= 0 && carry > 0; j--) {
+        newParts[j] += carry;
+        if (newParts[j] > 0xffff) {
+          newParts[j] -= 0x10000;
+          carry = 1;
+        } else {
+          carry = 0;
+        }
+      }
+
+      ipList.push(newParts.map(part => part));
+    }
+
+    return ipList;
   }
 }
