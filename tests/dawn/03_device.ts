@@ -162,8 +162,6 @@ export const deviceTests = () =>
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
-        console.log(error)
-
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Device height is invalid')
