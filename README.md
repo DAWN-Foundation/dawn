@@ -114,6 +114,10 @@ anchor test
 ### Run local validator
 
 ```bash
+# Start local validator with script
+./script/run-local-validator.sh
+
+# Or make this manualy 👇
 # Start local validator (with cloned Raydium)
 solana-test-validator \
   --reset \
@@ -130,7 +134,7 @@ solana airdrop --keypair ~/.config/solana/id.json --url l 10000
 ### Deploy
 
 ```bash
-# Deploy the program locally
+# Deploy the program locally (if not use run-local-validator script)
 anchor deploy --provider.cluster l
 
 # [Optional] If required to import the IDL somewhere
@@ -140,6 +144,16 @@ pbcopy < ~/andrena/dawn/target/idl/dawn.json
 ```
 
 ### Testnet Setup
+
+```bash
+# Run the init script
+./script/testnet-setup.sh
+```
+
+```bash
+# Or make this manualy 👇
+```
+---
 
 ```bash
 # Run the testnet script (this takes a while)
