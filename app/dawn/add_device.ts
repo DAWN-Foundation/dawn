@@ -24,7 +24,7 @@ async function main() {
   const latitude = latitudeFlag
     ? new BN(parseFloat(latitudeFlag) * COORD_DENOMINATOR)
     : LATITUDE
-  const height = latitudeFlag ? parseInt(heightFlag) : HEIGHT
+  const height = heightFlag ? parseInt(heightFlag) : HEIGHT
   const deviceModel = deviceModelFlag
     ? new PublicKey(deviceModelFlag)
     : mock.deviceModelPda
