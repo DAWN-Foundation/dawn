@@ -5,7 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dawn = "4nn8JN7u4mK89zyzojb6jGedunZqGgsiSyhFsqY6UCy4"
+dawn = "BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S"
 
 # [programs.devnet]
 # dawn = "dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ"
@@ -14,7 +14,7 @@ dawn = "4nn8JN7u4mK89zyzojb6jGedunZqGgsiSyhFsqY6UCy4"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
