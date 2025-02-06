@@ -147,7 +147,7 @@ pbcopy < ~/andrena/dawn/target/idl/dawn.json
 
 ```bash
 # Run the init script
-./script/testnet-setup.sh
+./scripts/testnet-setup.sh
 ```
 
 ```bash

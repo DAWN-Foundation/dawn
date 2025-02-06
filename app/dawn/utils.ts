@@ -211,7 +211,7 @@ export async function submitTx(
     'confirmed',
   )
 
-  logs && console.log('confirmationResult', confirmationResult)
+  logs && console.log('confirmationResult', JSON.stringify(confirmationResult, null, 2))
 
   if (confirmationResult.value.err) {
     throw new Error(JSON.stringify(confirmationResult.value.err))
