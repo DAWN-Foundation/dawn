@@ -252,3 +252,14 @@ yarn dawn:claim \
     --service-provider \
     --subscription <subscription>
 ```
+
+
+### Devnet Deployment
+
+```bash
+# Build the program with devnet feature
+anchor build -- --features devnet
+
+# Deploy the program to devnet
+anchor deploy --provider.cluster devnet --program-name dawn --program-keypair dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ.json
+```
