@@ -12,6 +12,8 @@ const MINT_AMOUNT: u64 = 1_000_000_000 * DENOMINATOR;
 
 #[account]
 pub struct TokenConfig {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The DAWN mint account
     pub dawn_mint: Pubkey,
     /// The mint bump seed
@@ -21,6 +23,7 @@ pub struct TokenConfig {
 }
 
 const TOKEN_CONFIG_SIZE: usize = 8 // id
+    + 8 // created_at
     + 32 // dawn_mint
     + 1 // mint_bump
     + 1; // bump
@@ -85,7 +88,8 @@ impl DawnApp {
         // Mint 1 billion DAWN tokens
         token::mint_to(cpi_ctx_mint, MINT_AMOUNT)?;
 
-        // bumps
+        // set the token config
+        token_config.created_at = Clock::get()?.unix_timestamp;
         token_config.dawn_mint = ctx.accounts.dawn_mint.key();
         token_config.mint_bump = ctx.bumps.dawn_mint;
         token_config.bump = ctx.bumps.token_config;

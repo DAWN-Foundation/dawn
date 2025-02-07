@@ -7,6 +7,8 @@ use super::Device;
 /// Device location account
 #[account]
 pub struct DeviceLocation {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The device account
     pub device: Pubkey,
     /// Device antenna height (meters)
@@ -17,16 +19,20 @@ pub struct DeviceLocation {
     pub longitude: i64,
     /// Verified by the DAWN authority
     pub verified: bool,
+    /// The verification timestamp
+    pub verified_at: i64,
     /// PDA bump seed
     pub bump: u8,
 }
 
 pub const DEVICE_LOCATION_SIZE: usize = 8 // id
+    + 8  // created_at
     + 32 // device
     + 2  // height
     + 8  // latitude
     + 8  // longitude
     + 1  // verified
+    + 8  // verified_at
     + 1; // bump
 
 #[derive(Accounts)]
@@ -68,11 +74,13 @@ impl DawnApp {
         let device_location = &mut ctx.accounts.device_location;
 
         device_location.verified = true;
+        device_location.verified_at = Clock::get()?.unix_timestamp;
 
         emit!(DeviceLocationVerified {
             device: device_location.device,
             latitude: device_location.latitude,
             longitude: device_location.longitude,
+            verified_at: device_location.verified_at,
         });
 
         Ok(())

@@ -10,6 +10,8 @@ use super::DeviceType;
 
 #[account]
 pub struct DeviceModel {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The type of device
     pub device_type: DeviceType,
     /// Device manufacturer name
@@ -21,6 +23,7 @@ pub struct DeviceModel {
 }
 
 pub const DEVICE_MODEL_SIZE: usize = 8 // id
+    + 8 // created_at
     + 1 // device_type
     + (4 + MAX_DEVICE_MANUFACTURER_LEN) // manufacturer
     + (4 + MAX_DEVICE_MODEL_LEN) // model
@@ -80,6 +83,7 @@ impl DawnApp {
             DawnError::DeviceModelTooLong
         );
 
+        device_model.created_at = Clock::get()?.unix_timestamp;
         device_model.device_type = device_type.clone();
         device_model.manufacturer = manufacturer.trim().to_owned();
         device_model.model = model.trim().to_owned();
@@ -90,6 +94,7 @@ impl DawnApp {
             device_type,
             manufacturer: manufacturer.trim().to_owned(),
             model: model.trim().to_owned(),
+            created_at: device_model.created_at,
         });
 
         Ok(())

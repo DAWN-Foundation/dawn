@@ -19,6 +19,8 @@ use crate::{
 /// The plan account, representing a subscription plan tied to a device
 #[account]
 pub struct Subscription {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The plan subscriber
     pub subscriber: Pubkey,
     /// Associated subscription plan
@@ -36,6 +38,7 @@ pub struct Subscription {
 }
 
 const SUBSCRIPTION_SIZE: usize = 8 // id
+    + 8 // created_at 
     + 32 // subscriber
     + 32 // plan
     + 8 // expiration
@@ -440,6 +443,7 @@ impl DawnApp {
 
         // Save subscription data
         let subscription = &mut ctx.accounts.subscription;
+        subscription.created_at = Clock::get()?.unix_timestamp;
         subscription.subscriber = ctx.accounts.caller.key();
         subscription.plan = ctx.accounts.plan.key();
         subscription.expiration = expiration;
@@ -454,6 +458,7 @@ impl DawnApp {
             plan: ctx.accounts.plan.key(),
             expiration: subscription.expiration,
             swap_price: price,
+            created_at: subscription.created_at,
         });
 
         Ok(())
