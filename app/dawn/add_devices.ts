@@ -22,11 +22,17 @@ const MAX_SLA = 3
 
 function generateRandomPlanParams() {
   return {
-    price: new BN(Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE)),
-    duration: Math.floor(Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION),
+    price: new BN(
+      Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE),
+    ),
+    duration: Math.floor(
+      Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION,
+    ),
     speed: Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED),
-    capacity: new BN(Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY)),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA))
+    capacity: new BN(
+      Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
+    ),
+    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
 
@@ -68,12 +74,18 @@ async function main() {
     try {
       // Add device
       const deviceItx = await program.methods
-        .addDevice(device.height, latitude, longitude, Array.from(Buffer.from(device.mac)))
+        .addDevice(
+          device.height,
+          latitude,
+          longitude,
+          Array.from(Buffer.from(device.mac)),
+        )
         .accounts({
           caller: wallet.publicKey,
           device: devicePda,
           deviceModel: mock.deviceModelPda,
           deviceLocation: deviceLocationPda,
+          site: null,
         })
         .signers([wallet.payer])
         .instruction()
@@ -105,7 +117,7 @@ async function main() {
               planParams.duration,
               planParams.speed,
               planParams.capacity,
-              planParams.sla
+              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,
@@ -122,7 +134,7 @@ async function main() {
             txResult: planTxResult,
             devicePda: devicePda.toBase58(),
             planPda: planPda.toBase58(),
-            ...planParams
+            ...planParams,
           })
         }
       }

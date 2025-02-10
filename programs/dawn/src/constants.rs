@@ -6,3 +6,6 @@ pub const MAX_DEVICE_MODEL_LEN: usize = 32;
 
 /// Maximum length of a device manufacturer
 pub const MAX_DEVICE_MANUFACTURER_LEN: usize = 64;
+
+/// Maximum length of a site name
+pub const MAX_SITE_NAME_LEN: usize = 64;
