@@ -8,6 +8,8 @@ use super::{DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The owner's public key who registered this device
     pub owner: Pubkey,
     /// Reference to the DeviceModel account
@@ -19,6 +21,7 @@ pub struct Device {
 }
 
 pub const DEVICE_SIZE: usize = 8 // id
+    + 8 // created_at
     + 32 // owner
     + 32 // model
     + 6  // mac_address
@@ -90,13 +93,17 @@ impl DawnApp {
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
 
+        let created_at = Clock::get()?.unix_timestamp;
+
         // Set device info
+        device.created_at = created_at;
         device.owner = ctx.accounts.caller.key();
         device.model = ctx.accounts.device_model.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
 
         // Set device location info
+        device_location.created_at = created_at;
         device_location.device = device.key();
         device_location.height = height;
         device_location.longitude = longitude;
@@ -113,6 +120,7 @@ impl DawnApp {
             longitude,
             height,
             mac_address,
+            created_at,
         });
 
         Ok(())

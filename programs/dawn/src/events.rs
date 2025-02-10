@@ -14,6 +14,7 @@ pub struct PlanAdded {
     pub speed: u32,
     pub capacity: u64,
     pub sla_id: u64,
+    pub created_at: i64,
 }
 
 #[event]
@@ -29,6 +30,7 @@ pub struct Subscribed {
     pub plan: Pubkey,
     pub expiration: i64,
     pub swap_price: u128,
+    pub created_at: i64,
 }
 
 #[event]
@@ -45,6 +47,7 @@ pub struct DeviceModelAdded {
     pub device_type: DeviceType,
     pub manufacturer: String,
     pub model: String,
+    pub created_at: i64,
 }
 
 #[event]
@@ -56,6 +59,7 @@ pub struct DeviceAdded {
     pub latitude: i64,
     pub height: u16,
     pub mac_address: [u8; 6],
+    pub created_at: i64,
 }
 
 #[event]
@@ -63,6 +67,7 @@ pub struct DeviceLocationVerified {
     pub device: Pubkey,
     pub latitude: i64,
     pub longitude: i64,
+    pub verified_at: i64,
 }
 
 #[event]
@@ -72,6 +77,7 @@ pub struct IpPoolAdded {
     pub ip_v4_cidr_mask: u8,
     pub ip_v6: [u16; 16],
     pub ip_v6_cidr_mask: u8,
+    pub created_at: i64,
 }
 
 #[event]
@@ -83,4 +89,5 @@ pub struct IpLeased {
     pub ip_v4_cidr_mask: u8,
     pub ip_v6: [u16; 16],
     pub ip_v6_cidr_mask: u8,
+    pub created_at: i64,
 }

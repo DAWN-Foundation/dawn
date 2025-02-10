@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program, AnchorError, Wallet } from '@coral-xyz/anchor'
+import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
 import {
   MAX_SEED_LENGTH,
   PublicKey,
@@ -32,6 +32,7 @@ interface DeviceModelAdded {
   deviceType: DeviceType
   manufacturer: string
   model: string
+  createdAt: number
 }
 
 export const deviceModelTests = () =>
@@ -288,6 +289,7 @@ export const deviceModelTests = () =>
       const deviceModel = await program.account.deviceModel.fetch(
         mock.deviceModelPda,
       )
+      expect(new BN(deviceModel.createdAt).gt(new BN(0))).toBeTruthy()
       expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
       expect(deviceModel.model).toBe(mock.deviceModel)
 
@@ -300,6 +302,7 @@ export const deviceModelTests = () =>
 
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
       expect(event.model).toBe(mock.deviceModel)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
     })
 
     // given previous case created this device
@@ -368,11 +371,13 @@ export const deviceModelTests = () =>
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
       expect(event.model).toBe(mock.deviceModel)
       expect(event.deviceType).toStrictEqual(deviceType)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const deviceModel = await program.account.deviceModel.fetch(
         deviceModelPda,
       )
+      expect(new BN(deviceModel.createdAt).gt(new BN(0))).toBeTruthy()
       expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
       expect(deviceModel.model).toBe(mock.deviceModel)
       expect(deviceModel.deviceType).toStrictEqual(deviceType)

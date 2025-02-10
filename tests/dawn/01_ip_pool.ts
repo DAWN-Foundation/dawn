@@ -38,6 +38,7 @@ interface IpPoolAdded {
   ipV4CidrMask: number
   ipV6: IpV6Bytes
   ipV6CidrMask: number
+  createdAt: number
 }
 
 interface IpLeased {
@@ -48,6 +49,7 @@ interface IpLeased {
   ipV4CidrMask: number
   ipV6: IpV6Bytes
   ipV6CidrMask: number
+  createdAt: number
 }
 
 export const ipPoolTests = () =>
@@ -213,9 +215,11 @@ export const ipPoolTests = () =>
       expect(event.ipV4CidrMask).toStrictEqual(mock.poolIpV4CidrMask)
       expect(event.ipV6).toStrictEqual(mock.poolIpV6)
       expect(event.ipV6CidrMask).toStrictEqual(mock.poolIpV6CidrMask)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const ipPool = await program.account.ipPool.fetch(mock.ipPoolPda)
+      expect(new BN(ipPool.createdAt).gt(new BN(0))).toBeTruthy()
       expect(ipPool.ipV4).toStrictEqual(mock.poolIpV4)
       expect(ipPool.ipV4CidrMask).toStrictEqual(mock.poolIpV4CidrMask)
       expect(ipPool.ipV6).toStrictEqual(mock.poolIpV6)
@@ -804,9 +808,11 @@ export const leaseIpTests = () =>
       expect(event.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
       expect(event.ipV6).toStrictEqual(mock.leaseIpV6)
       expect(event.ipV6CidrMask).toStrictEqual(mock.leaseIpV6CidrMask)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const ipLease = await program.account.ipLease.fetch(mock.ipLeasePda)
+      expect(new BN(ipLease.createdAt).gt(new BN(0))).toBeTruthy()
       expect(ipLease.ipV4).toStrictEqual(mock.leaseIpV4)
       expect(ipLease.ipV4CidrMask).toStrictEqual(mock.leaseIpV4CidrMask)
       expect(ipLease.ipV6).toStrictEqual(mock.leaseIpV6)

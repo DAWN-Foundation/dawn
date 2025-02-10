@@ -20,7 +20,7 @@ import {
   loadWallet,
   confirmTx,
 } from '../../app/utils'
-import { beforeAll } from '@jest/globals'
+import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
 import { getBalance } from '../../app/dawn/utils'
 
@@ -36,6 +36,7 @@ interface Subscribed {
   plan: PublicKey
   expiration: number
   swapPrice: BN
+  createdAt: number
 }
 
 export const subscriptionTests = () =>
@@ -250,6 +251,7 @@ export const subscriptionTests = () =>
       assert.ok(event.plan.equals(mock.planPda))
       assert.ok(event.expiration > 0)
       assert.ok(event.swapPrice.eq(price))
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure the customer USDC account was debited
       const testerUsdcBalanceAfter = await getBalance(
@@ -328,7 +330,7 @@ export const subscriptionTests = () =>
           .eq(medallionFee),
       )
 
-      // TODO >> fix this
+      // TODO >> DAWN-121: Refactor
       // get block time, and calculate expected expiration
       // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
 
@@ -336,6 +338,7 @@ export const subscriptionTests = () =>
       let subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
+      expect(new BN(subscription.createdAt).gt(new BN(0))).toBeTruthy()
       assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
       assert.ok(subscription.plan.equals(mock.planPda))
       // assert.equal(subscription.expiration.toNumber(), expiration)
@@ -397,5 +400,6 @@ export const subscriptionTests = () =>
       assert.ok(event.subscriber.equals(wallet.publicKey))
       assert.ok(event.plan.equals(mock.planPda))
       assert.ok(event.expiration > 0)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
     })
   })
