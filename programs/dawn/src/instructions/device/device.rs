@@ -4,7 +4,7 @@ use std::cmp::min;
 
 use crate::{DawnApp, DawnError, DeviceAdded};
 
-use super::{DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
+use super::{DeviceLocation, DeviceModel, Site, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
@@ -16,6 +16,8 @@ pub struct Device {
     pub model: Pubkey,
     /// MAC address
     pub mac_address: [u8; 6],
+    /// Reference to the Site account
+    pub site: Option<Pubkey>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -25,6 +27,7 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + 32 // model
     + 6  // mac_address
+    + (1 + 32) // site + optional
     + 1; // bump
 
 #[derive(Accounts)]
@@ -72,6 +75,18 @@ pub struct AddDevice<'info> {
         bump
     )]
     pub device_location: Account<'info, DeviceLocation>,
+
+    /// The site account
+    #[account(
+        seeds = [
+            b"site",
+            site.owner.as_ref(),
+            &site.name.as_bytes()[..min(site.name.len(), MAX_SEED_LEN)],
+        ],
+        bump = site.bump,
+        constraint = site.owner == caller.key(),
+    )]
+    pub site: Option<Account<'info, Site>>,
 
     pub system_program: Program<'info, System>,
 }

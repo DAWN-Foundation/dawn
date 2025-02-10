@@ -66,6 +66,7 @@ export const deviceTests = () =>
             deviceModel: invalidModel.publicKey,
             device: mock.devicePda,
             deviceLocation: mock.deviceLocationPda,
+            site: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -95,6 +96,7 @@ export const deviceTests = () =>
             deviceModel: mock.deviceModelPda,
             deviceLocation: mock.deviceLocationPda,
             device: mock.devicePda,
+            site: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -132,6 +134,7 @@ export const deviceTests = () =>
             deviceModel: mock.deviceModelPda,
             device: devicePda,
             deviceLocation: mock.deviceLocationPda,
+            site: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -169,6 +172,7 @@ export const deviceTests = () =>
             deviceModel: mock.deviceModelPda,
             device: devicePda,
             deviceLocation: mock.deviceLocationPda,
+            site: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -203,6 +207,7 @@ export const deviceTests = () =>
           deviceModel: mock.deviceModelPda,
           device: mock.devicePda,
           deviceLocation: mock.deviceLocationPda,
+          site: null,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -331,6 +336,7 @@ export const deviceTests = () =>
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
             deviceLocation: mock.deviceLocationPda,
+            site: null,
           })
           .signers([mock.serviceProvider])
           .rpc()

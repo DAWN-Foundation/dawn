@@ -22,6 +22,13 @@ pub enum DawnError {
     #[msg("Invalid subnet mask")]
     InvalidSubnetMask,
 
+    // SITE
+    #[msg("Invalid site name")]
+    InvalidSiteName,
+
+    #[msg("Invalid site owner")]
+    InvalidSiteOwner,
+
     // DEVICE
     #[msg("Device manufacturer is empty")]
     EmptyDeviceManufacturer,
