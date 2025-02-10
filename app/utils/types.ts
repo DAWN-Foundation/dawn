@@ -41,6 +41,7 @@ export interface Mock {
   configPda: PublicKey
   ipPoolPda: PublicKey
   deviceModelPda: PublicKey
+  sitePda: PublicKey
   devicePda: PublicKey
   ipLeasePda: PublicKey
   deviceLocationPda: PublicKey
@@ -55,6 +56,8 @@ export interface Mock {
   leaseIpV4CidrMask: number
   leaseIpV6: IpV6Bytes
   leaseIpV6CidrMask: number
+  // site
+  siteName: string
   // device
   deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
@@ -117,6 +120,7 @@ export interface RawMock {
   configPda: string
   ipPoolPda: string
   deviceModelPda: string
+  sitePda: string
   devicePda: string
   ipLeasePda: string
   deviceLocationPda: string
@@ -131,6 +135,8 @@ export interface RawMock {
   leaseIpV4CidrMask: number
   leaseIpV6: IpV6Bytes
   leaseIpV6CidrMask: number
+  // site
+  siteName: string
   // device
   deviceType: IdlTypes<Dawn>['DeviceType']
   deviceManufacturer: string
