@@ -6,6 +6,8 @@ use crate::{utils::optional_seed, DawnError, PlanAdded};
 /// The plan account, representing a subscription plan tied to a device
 #[account]
 pub struct Plan {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The plan owner
     pub owner: Pubkey,
     /// Associated device
@@ -30,6 +32,7 @@ pub struct Plan {
 }
 
 const PLAN_SIZE: usize = 8 // id
+    + 8 // created_at
     + 32 // owner
     + 32 // device
     + 1 // is_resale
@@ -191,6 +194,7 @@ impl DawnApp {
 
         let plan = &mut ctx.accounts.plan;
 
+        plan.created_at = Clock::get()?.unix_timestamp;
         plan.owner = ctx.accounts.caller.key();
         plan.device = ctx.accounts.device.key();
         plan.is_resale = is_resale;
@@ -213,6 +217,7 @@ impl DawnApp {
             speed: plan.speed,
             capacity: plan.capacity,
             sla_id: plan.sla_id,
+            created_at: plan.created_at,
         });
 
         Ok(())

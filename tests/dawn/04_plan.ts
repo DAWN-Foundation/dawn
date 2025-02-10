@@ -27,6 +27,7 @@ interface PlanAdded {
   speed: number
   capacity: BN
   slaId: BN
+  createdAt: number
 }
 
 interface PlanRemoved {
@@ -252,6 +253,7 @@ export const planTests = () =>
       assert.equal(event.speed, mock.planSpeed)
       assert.ok(event.capacity.eq(mock.planCapacity))
       assert.ok(event.slaId.eq(mock.planSlaId))
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(mock.planPda)
@@ -265,6 +267,7 @@ export const planTests = () =>
       assert.ok(plan.capacity.eq(mock.planCapacity))
       assert.ok(plan.slaId.eq(mock.planSlaId))
       assert.equal(plan.bump, mock.planBump)
+      expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
     })
 
     test('cannot add a plan with the same parameters', async () => {
@@ -343,9 +346,11 @@ export const planTests = () =>
       assert.equal(event.speed, speed)
       assert.ok(event.capacity.eq(capacity))
       assert.ok(event.slaId.eq(slaId))
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)
+      expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.device.equals(mock.devicePda))
       assert.ok(plan.price.eq(price))
@@ -784,9 +789,11 @@ export const parentPlanTests = () =>
       assert.equal(event.speed, mock.planSpeed)
       assert.ok(event.capacity.eq(mock.planCapacity))
       assert.ok(event.slaId.eq(mock.planSlaId))
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)
+      expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       assert.ok(plan.owner.equals(mock.customer.publicKey))
       assert.ok(plan.device.equals(devicePda))
       assert.ok(plan.parentPlan.equals(mock.planPda))

@@ -7,6 +7,8 @@ use super::Device;
 /// IP address pool owned by an authority
 #[account]
 pub struct IpPool {
+    /// The creation timestamp
+    pub created_at: i64,
     /// IP V4 address of range
     pub ip_v4: [u8; 4],
     /// The CIDR mask for the IP V4 range
@@ -20,6 +22,7 @@ pub struct IpPool {
 }
 
 const IP_POOL_SIZE: usize = 8 // id
+    + 8 // created_at
     + 4 // ip v4
     + 1 // ip v4 cidr mask
     + 32 // ip v6
@@ -29,6 +32,8 @@ const IP_POOL_SIZE: usize = 8 // id
 /// Individual IP lease assignment
 #[account]
 pub struct IpLease {
+    /// The creation timestamp
+    pub created_at: i64,
     /// Reference to the belonging IP Pool
     pub ip_pool: Pubkey,
     /// Device this IP is leased to
@@ -46,6 +51,7 @@ pub struct IpLease {
 }
 
 const IP_LEASE_SIZE: usize = 8 // id
+    + 8 // created_at
     + 32 // ip pool
     + 32 // device
     + 4  // ip v4
@@ -147,11 +153,6 @@ impl DawnApp {
         ip_v6: [u16; 16],
         ip_v6_cidr_mask: u8,
     ) -> Result<()> {
-        msg!("ip_v4: {:?}", ip_v4);
-        msg!("ip_v4_cidr_mask: {:?}", ip_v4_cidr_mask);
-        msg!("ip_v6: {:?}", ip_v6);
-        msg!("ip_v6_cidr_mask: {:?}", ip_v6_cidr_mask);
-
         // Make sure the IP V4 and V6 addresses are not zero
         require!(!ip_v4.iter().all(|&b| b == 0), DawnError::InvalidIpRange);
         require!(!ip_v6.iter().all(|&b| b == 0), DawnError::InvalidIpRange);
@@ -175,6 +176,7 @@ impl DawnApp {
 
         let ip_pool = &mut ctx.accounts.ip_pool;
 
+        ip_pool.created_at = Clock::get()?.unix_timestamp;
         ip_pool.ip_v4 = ip_v4;
         ip_pool.ip_v4_cidr_mask = ip_v4_cidr_mask;
         ip_pool.ip_v6 = ip_v6;
@@ -187,6 +189,7 @@ impl DawnApp {
             ip_v4_cidr_mask: ip_pool.ip_v4_cidr_mask,
             ip_v6: ip_pool.ip_v6,
             ip_v6_cidr_mask: ip_pool.ip_v6_cidr_mask,
+            created_at: ip_pool.created_at,
         });
 
         Ok(())
@@ -258,6 +261,7 @@ impl DawnApp {
 
         let ip_lease = &mut ctx.accounts.ip_lease;
 
+        ip_lease.created_at = Clock::get()?.unix_timestamp;
         ip_lease.ip_pool = ip_pool.key();
         ip_lease.device = ctx.accounts.device.key();
         ip_lease.ip_v4 = ip_v4;
@@ -273,6 +277,7 @@ impl DawnApp {
             ip_v4_cidr_mask: ip_lease.ip_v4_cidr_mask,
             ip_v6: ip_lease.ip_v6,
             ip_v6_cidr_mask: ip_lease.ip_v6_cidr_mask,
+            created_at: ip_lease.created_at,
         });
 
         Ok(())
