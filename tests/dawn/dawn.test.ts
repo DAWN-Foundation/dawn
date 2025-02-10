@@ -2,7 +2,7 @@ import { configTests } from './00_config'
 import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
 import { siteTests } from './03_site'
-import { deviceTests } from './04_device'
+import { deviceTests, deviceSiteTests } from './04_device'
 
 import { parentPlanTests, planTests } from './05_plan'
 import { subscriptionTests } from './06_subscription'
@@ -24,6 +24,7 @@ ipPoolTests()
 deviceModelTests()
 siteTests()
 deviceTests()
+deviceSiteTests()
 leaseIpTests()
 planTests()
 subscriptionTests()

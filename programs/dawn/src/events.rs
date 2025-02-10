@@ -69,6 +69,7 @@ pub struct DeviceModelAdded {
 pub struct DeviceAdded {
     pub owner: Pubkey,
     pub device: Pubkey,
+    pub site: Option<Pubkey>,
     pub model: Pubkey,
     pub longitude: i64,
     pub latitude: i64,

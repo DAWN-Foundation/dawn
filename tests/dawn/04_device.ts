@@ -18,10 +18,12 @@ import { BankrunProvider } from 'anchor-bankrun'
 interface DeviceAdded {
   owner: PublicKey
   device: PublicKey
+  site: PublicKey
   model: PublicKey
   latitude: BN
   longitude: BN
   height: number
+  macAddress: number[]
   createdAt: number
 }
 
@@ -30,6 +32,12 @@ interface DeviceLocationVerified {
   latitude: BN
   longitude: BN
   verifiedAt: number
+}
+
+interface DeviceAssignedToSite {
+  device: PublicKey
+  site: PublicKey
+  createdAt: number
 }
 
 export const deviceTests = () =>
@@ -351,5 +359,163 @@ export const deviceTests = () =>
           `Allocate: account Address { address: ${mock.devicePda.toBase58()}, base: None } already in use`,
         )
       }
+    })
+  })
+
+export const deviceSiteTests = () =>
+  describe('dawn::device_site', () => {
+    let program: Program<Dawn>
+    let provider: BankrunProvider
+
+    beforeAll(async () => {
+      provider = await getProvider()
+      provider.wallet = new Wallet(mock.serviceProvider)
+
+      anchor.setProvider(provider)
+
+      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+    })
+
+    test('mock setup', () => {
+      expect(mock).toBeDefined()
+    })
+
+    test('cannot assign device to site if site is not owned by caller', async () => {
+      const wallet = loadWallet()
+      provider.wallet = wallet
+
+      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(wallet.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from(mock.deviceMacAddress)
+        ],
+        program2.programId,
+      )
+
+      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
+        program2.programId,
+      )
+
+      // add device
+      await program2.methods
+        .addDevice(
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.deviceMacAddress,
+        )
+        .accounts({
+          caller: wallet.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          site: null,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // cannot assign to the site owned by serviceProvider
+      try {
+        await program2.methods
+          .assignDeviceToSite()
+          .accounts({
+            caller: wallet.publicKey,
+            device: devicePda,
+            site: mock.sitePda,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('A raw constraint was violated')
+      } finally {
+        provider.wallet = new Wallet(mock.serviceProvider)
+      }
+    })
+
+    test('can assign device to site', async () => {
+      const tx = await program.methods
+        .assignDeviceToSite()
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          site: mock.sitePda,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<DeviceAssignedToSite>(
+        program,
+        txDetails,
+        'DeviceAssignedToSite',
+      )
+      expect(event.device.equals(mock.devicePda)).toBeTruthy()
+      expect(event.site.equals(mock.sitePda)).toBeTruthy()
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // make sure device was updated
+      const device = await program.account.device.fetch(mock.devicePda)
+      expect(device.site.equals(mock.sitePda)).toBeTruthy()
+    })
+
+    test('can add device with site', async () => {
+      const macAddress = [0, 0, 0, 0, 0, 1]
+
+      const [devicePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('device'),
+          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
+          Buffer.from(mock.deviceModelPda.toBytes()),
+          Buffer.from(macAddress),
+        ],
+        program.programId,
+      )
+
+      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
+        program.programId,
+      )
+
+      const tx = await program.methods
+        .addDevice(
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          macAddress,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          site: mock.sitePda,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<DeviceAdded>(
+        program,
+        txDetails,
+        'DeviceAdded',
+      )
+      expect(event.device.equals(devicePda)).toBeTruthy()
+      expect(event.site.equals(mock.sitePda)).toBeTruthy()
+      expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
+      expect(event.macAddress).toEqual(macAddress)
     })
   })
