@@ -2,7 +2,7 @@ import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
-import { COORD_DENOMINATOR, getPlanPda } from '../utils'
+import { COORD_DENOMINATOR, getDeviceLocationPda, getDevicePda, getPlanPda } from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
@@ -22,11 +22,17 @@ const MAX_SLA = 3
 
 function generateRandomPlanParams() {
   return {
-    price: new BN(Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE)),
-    duration: Math.floor(Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION),
+    price: new BN(
+      Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE),
+    ),
+    duration: Math.floor(
+      Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION,
+    ),
     speed: Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED),
-    capacity: new BN(Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY)),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA))
+    capacity: new BN(
+      Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
+    ),
+    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
 
@@ -50,25 +56,24 @@ async function main() {
     const longitude = new BN(lngFixed * COORD_DENOMINATOR)
     const latitude = new BN(latFixed * COORD_DENOMINATOR)
 
-    const [devicePda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('device'),
-        Buffer.from(wallet.publicKey.toBytes()),
-        Buffer.from(mock.deviceModelPda.toBytes()),
-        Buffer.from(device.mac),
-      ],
-      program.programId,
+    const devicePda = getDevicePda(
+      program,
+      wallet.payer,
+      mock.deviceModelPda,
+      mock.deviceMacAddress,
     )
 
-    const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-      program.programId,
-    )
+    const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     try {
       // Add device
       const deviceItx = await program.methods
-        .addDevice(device.height, latitude, longitude, Array.from(Buffer.from(device.mac)))
+        .addDevice(
+          device.height,
+          latitude,
+          longitude,
+          Array.from(Buffer.from(device.mac)),
+        )
         .accounts({
           caller: wallet.publicKey,
           device: devicePda,
@@ -105,7 +110,7 @@ async function main() {
               planParams.duration,
               planParams.speed,
               planParams.capacity,
-              planParams.sla
+              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,
@@ -122,7 +127,7 @@ async function main() {
             txResult: planTxResult,
             devicePda: devicePda.toBase58(),
             planPda: planPda.toBase58(),
-            ...planParams
+            ...planParams,
           })
         }
       }

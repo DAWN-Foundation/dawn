@@ -1,6 +1,5 @@
-import { PublicKey } from '@solana/web3.js'
-
 import { connect, getFlag, getMock, submitTx } from './utils'
+import { getDeviceModelPda } from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
@@ -14,14 +13,11 @@ async function main() {
   const mock = getMock()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  const [deviceModelPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device_model'),
-      Buffer.from([0]),
-      Buffer.from(manufacturer),
-      Buffer.from(model),
-    ],
-    program.programId,
+  const deviceModelPda = getDeviceModelPda(
+    program,
+    { router: {} },
+    manufacturer,
+    model,
   )
 
   console.log({ deviceModelPda: deviceModelPda.toBase58() })
