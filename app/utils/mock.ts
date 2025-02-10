@@ -20,7 +20,6 @@ import { Mock } from './types'
 import {
   COORD_DENOMINATOR,
   deviceTypeSeed,
-  getPlanPda,
   IpV4Bytes,
   IpV6Bytes,
   MacAddress,
@@ -28,7 +27,17 @@ import {
 } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
-import { getIpLeasePda, getIpPoolPda } from './pda'
+import {
+  getConfigPda,
+  getDeviceLocationPda,
+  getDeviceModelPda,
+  getDevicePda,
+  getIpLeasePda,
+  getIpPoolPda,
+  getPlanPda,
+  getSubscriptionPda,
+  getTokenConfigPda,
+} from './pda'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
@@ -197,10 +206,7 @@ export async function setup(
   provider.wallet = new Wallet(wallet)
   const program = getDawnProgram(provider)
 
-  const [tokenConfigPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('token')],
-    PROGRAM_ID,
-  )
+  const tokenConfigPda = getTokenConfigPda(program)
 
   // derive associated DAWN token account for wallet
   const walletDawnAccount = await getAssociatedTokenAddress(
@@ -321,44 +327,32 @@ export async function setup(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const [configPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('config')],
-    program.programId,
-  )
+  const configPda = getConfigPda(program)
 
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
 
-  const [deviceModelPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device_model'),
-      deviceTypeSeed(deviceType),
-      Buffer.from(deviceManufacturer),
-      Buffer.from(deviceModel),
-    ],
-    program.programId,
+  const deviceModelPda = getDeviceModelPda(
+    program,
+    deviceType,
+    deviceManufacturer,
+    deviceModel,
   )
 
   const deviceLatitude = new BN(1.0 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(1.0 * COORD_DENOMINATOR)
   const deviceHeight = 1
 
-  const [devicePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(deviceModelPda.toBytes()),
-      Buffer.from(deviceMacAddress),
-    ],
-    program.programId,
+  const devicePda = getDevicePda(
+    program,
+    serviceProvider,
+    deviceModelPda,
+    deviceMacAddress,
   )
 
-  const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-    program.programId,
-  )
+  const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 0]
@@ -417,13 +411,10 @@ export async function setup(
     planSlaId,
   )
 
-  const [subscriptionPda, subscriptionBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('subscription'),
-      Buffer.from(planPda.toBytes()),
-      Buffer.from(customer.publicKey.toBytes()),
-    ],
-    program.programId,
+  const [subscriptionPda, subscriptionBump] = getSubscriptionPda(
+    program,
+    planPda,
+    customer,
   )
 
   // Create USDC vault token account for plan escrow
