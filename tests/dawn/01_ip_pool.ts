@@ -143,20 +143,15 @@ export const ipPoolTests = () =>
     })
 
     test('cannot add ip pool with ip v4 with 255.255.255.255', async () => {
-      const poolIpV4 = [255, 255, 255, 255]
+      const poolIpV4: IpV4Bytes = [255, 255, 255, 255]
       const poolIpV4CidrMask = 24
 
-      const [ipPoolPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('ip_pool'),
-          Buffer.from(poolIpV4),
-          Buffer.from([poolIpV4CidrMask]),
-          Buffer.from(
-            mock.poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2)),
-          ),
-          Buffer.from([mock.poolIpV6CidrMask]),
-        ],
-        program.programId,
+      const [ipPoolPda] = getIpPoolPda(
+        program,
+        poolIpV4,
+        poolIpV4CidrMask,
+        mock.poolIpV6,
+        mock.poolIpV6CidrMask,
       )
 
       try {

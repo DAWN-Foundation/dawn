@@ -11,6 +11,9 @@ import {
 import { BN } from '@coral-xyz/anchor'
 import {
   COORD_DENOMINATOR,
+  getDeviceLocationPda,
+  getDeviceModelPda,
+  getDevicePda,
   getIpLeasePda,
   getIpPoolPda,
   getPlanPda,
@@ -73,15 +76,7 @@ async function main() {
     const manufacturer = `${getRandomInt(0, 1000)}_MikroTik`
     const model = `${getRandomInt(0, 1000)}_GG69420`
 
-    const [deviceModelPda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('device_model'),
-        Buffer.from([0]),
-        Buffer.from(manufacturer),
-        Buffer.from(model),
-      ],
-      program.programId,
-    )
+    const deviceModelPda = getDeviceModelPda(program, [0], manufacturer, model)
 
     console.log({ deviceModelPda: deviceModelPda.toBase58() })
 
@@ -116,22 +111,16 @@ async function main() {
       const longitude = new BN(lngFixed * COORD_DENOMINATOR)
       const latitude = new BN(latFixed * COORD_DENOMINATOR)
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(wallet.publicKey.toBytes()),
-          Buffer.from(deviceModelPda.toBytes()),
-          Buffer.from(device.mac),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        wallet.payer,
+        deviceModelPda,
+        device.mac,
       )
 
       devicesPda.push(devicePda)
 
-      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-        program.programId,
-      )
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
         // Add device

@@ -1,5 +1,11 @@
 import { connect, getFlag, getMock, submitTx } from './utils'
-import { getIpLeasePda, getIpPoolPda, IpV4Bytes, IpV6Bytes } from '../utils'
+import {
+  getConfigPda,
+  getIpLeasePda,
+  getIpPoolPda,
+  IpV4Bytes,
+  IpV6Bytes,
+} from '../utils'
 import { PublicKey } from '@solana/web3.js'
 
 async function main() {
@@ -10,10 +16,7 @@ async function main() {
   const mock = getMock()
   const { program, wallet, connection } = await connect()
 
-  const [configPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('config')],
-    program.programId,
-  )
+  const [configPda] = getConfigPda(program)
 
   // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 0]
