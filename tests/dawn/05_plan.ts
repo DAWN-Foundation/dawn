@@ -30,6 +30,7 @@ interface PlanAdded {
   capacity: BN
   slaId: BN
   createdAt: number
+  startAt: number | null
 }
 
 interface PlanRemoved {
@@ -800,27 +801,29 @@ export const parentPlanTests = () =>
 
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
-      assert.ok(event.owner.equals(mock.customer.publicKey))
-      assert.ok(event.device.equals(devicePda))
-      assert.ok(event.parentPlan.equals(mock.planPda))
-      assert.ok(event.price.eq(mock.planPrice))
-      assert.equal(event.duration, mock.planDuration)
-      assert.equal(event.speed, mock.planSpeed)
-      assert.ok(event.capacity.eq(mock.planCapacity))
-      assert.ok(event.slaId.eq(mock.planSlaId))
+      expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(event.device.equals(devicePda)).toBeTruthy()
+      expect(event.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(event.price.eq(mock.planPrice)).toBeTruthy()
+      expect(event.duration).toBe(mock.planDuration)
+      expect(event.speed).toBe(mock.planSpeed)
+      expect(event.capacity.eq(mock.planCapacity)).toBeTruthy()
+      expect(event.startAt === null).toBeTruthy()
+      expect(event.slaId.eq(mock.planSlaId)).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
-      assert.ok(plan.owner.equals(mock.customer.publicKey))
-      assert.ok(plan.device.equals(devicePda))
-      assert.ok(plan.parentPlan.equals(mock.planPda))
-      assert.ok(plan.price.eq(mock.planPrice))
-      assert.equal(plan.duration, mock.planDuration)
-      assert.equal(plan.speed, mock.planSpeed)
-      assert.ok(plan.capacity.eq(mock.planCapacity))
-      assert.ok(plan.slaId.eq(mock.planSlaId))
-      assert.equal(plan.bump, planBump)
+      expect(plan.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(plan.device.equals(devicePda)).toBeTruthy()
+      expect(plan.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(plan.price.eq(mock.planPrice)).toBeTruthy()
+      expect(plan.duration).toBe(mock.planDuration)
+      expect(plan.speed).toBe(mock.planSpeed)
+      expect(plan.capacity.eq(mock.planCapacity)).toBeTruthy()
+      expect(plan.startAt === null).toBeTruthy()
+      expect(plan.slaId.eq(mock.planSlaId)).toBeTruthy()
+      expect(plan.bump).toBe(planBump)
     })
   })

@@ -46,7 +46,7 @@ const PLAN_SIZE: usize = 8 // id
     + 2 // duration
     + 4 // speed
     + 8 // capacity
-    + 8 // start_at
+    + (8 + 1) // start_at (optional)
     + 8 // sla_id
     + 1; // bump
 
