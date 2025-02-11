@@ -14,6 +14,7 @@ import {
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
+import { getSitePda } from '../../app/utils/pda/site'
 
 interface SiteAdded {
   owner: PublicKey
@@ -43,14 +44,7 @@ export const siteTests = () =>
     test('cannot add site without name', async () => {
       const name = ''
 
-      const [sitePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('site'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(name),
-        ],
-        program.programId,
-      )
+      const sitePda = getSitePda(program, mock.serviceProvider, name)
 
       try {
         await program.methods

@@ -34,6 +34,7 @@ import {
   getSubscriptionPda,
   getTokenConfigPda,
 } from './pda'
+import { getSitePda } from './pda/site'
 
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens
@@ -224,13 +225,10 @@ export async function prepare(
   const [configPda] = getConfigPda(program)
 
   const siteName = 'Test Site'
-  const [sitePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('site'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(siteName),
-    ],
-    program.programId,
+  const sitePda = getSitePda(
+    program,
+    serviceProvider,
+    siteName,
   )
 
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
