@@ -58,19 +58,6 @@ async function main() {
   const { wallet, connection, program } = await connect()
 
   try {
-    // --------------------------------------------------------------------
-    // const poolIpV6: IpV6Bytes = [
-    //   +getRandomInt(1, 255).toString(16), +getRandomInt(1, 255).toString(16), 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    //   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    // ]
-    // const poolIpV6CidrMask = 108 // For less ips
-    // const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(poolIpV6.join(':'), poolIpV6CidrMask)
-
-    // console.log({ ipV6List })
-
-    // throw "Some"
-
-    // --------------------------------------------------------------------
     console.log('Add device model')
 
     const manufacturer = `${getRandomInt(0, 1000)}_MikroTik`
@@ -136,6 +123,7 @@ async function main() {
             device: devicePda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
+            site: null,
           })
           .signers([wallet.payer])
           .instruction()
