@@ -5,14 +5,16 @@ import { Dawn } from '../../../target/types/dawn'
 
 export function getDeviceModelPda(
   program: Program<Dawn>,
-  deviceType: DeviceType,
+  deviceType: DeviceType | number[],
   deviceManufacturer: string,
   deviceModel: string,
 ): PublicKey {
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device_model'),
-      deviceTypeSeed(deviceType),
+      deviceType instanceof Array
+        ? Buffer.from(deviceType)
+        : deviceTypeSeed(deviceType),
       Buffer.from(deviceManufacturer),
       Buffer.from(deviceModel),
     ],

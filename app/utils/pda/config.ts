@@ -11,11 +11,24 @@ export function getTokenConfigPda(program: Program<Dawn>): PublicKey {
   return tokenConfigPda
 }
 
-export function getConfigPda(program: Program<Dawn>): PublicKey {
-  const [configPda] = PublicKey.findProgramAddressSync(
+export function getConfigPda(program: Program<Dawn>): [PublicKey, number] {
+  console.log({ program })
+
+  const [configPda, configBump] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId,
   )
 
-  return configPda
+  return [configPda, configBump]
+}
+
+export function getConfigPdaWithProgramId(
+  programId: PublicKey,
+): [PublicKey, number] {
+  const [configPda, configBump] = PublicKey.findProgramAddressSync(
+    [Buffer.from('config')],
+    programId,
+  )
+
+  return [configPda, configBump]
 }

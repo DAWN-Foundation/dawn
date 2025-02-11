@@ -327,7 +327,7 @@ export async function setup(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const configPda = getConfigPda(program)
+  const [configPda] = getConfigPda(program)
 
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'

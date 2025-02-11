@@ -11,6 +11,7 @@ import {
   confirmTx,
   COORD_DENOMINATOR,
   loadWallet,
+  getDevicePda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -109,14 +110,11 @@ export const deviceTests = () =>
     test('cannot add device with longitude eq 0', async () => {
       const longitude = new BN(0.0 * COORD_DENOMINATOR)
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       try {
@@ -146,14 +144,11 @@ export const deviceTests = () =>
     test('cannot add device with height eq 0', async () => {
       const height = 0
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       try {
@@ -181,14 +176,11 @@ export const deviceTests = () =>
     })
 
     test('adds the device', async () => {
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       const tx = await program.methods

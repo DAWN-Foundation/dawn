@@ -221,7 +221,7 @@ export async function prepare(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const configPda = getConfigPda(program)
+  const [configPda] = getConfigPda(program)
 
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
   const poolIpV4CidrMask = 24
