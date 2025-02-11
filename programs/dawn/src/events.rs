@@ -28,6 +28,7 @@ pub struct PlanAdded {
     pub duration: u16,
     pub speed: u32,
     pub capacity: u64,
+    pub start_at: Option<i64>,
     pub sla_id: u64,
     pub created_at: i64,
 }

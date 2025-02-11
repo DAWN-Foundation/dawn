@@ -131,6 +131,7 @@ export const subscriptionTests = () =>
         30,
         100,
         new BN(1000),
+        null,
         new BN(1),
       )
 

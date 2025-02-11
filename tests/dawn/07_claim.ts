@@ -131,6 +131,7 @@ export const claimTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         new BN(3),
       )
 

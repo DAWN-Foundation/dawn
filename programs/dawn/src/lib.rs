@@ -90,9 +90,10 @@ pub mod dawn {
         duration: u16,
         speed: u32,
         capacity: u64,
+        start_at: Option<i64>,
         sla_id: u64,
     ) -> Result<()> {
-        DawnApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
+        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at, sla_id)
     }
 
     // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {

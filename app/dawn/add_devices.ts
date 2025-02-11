@@ -107,6 +107,7 @@ async function main() {
             planParams.duration,
             planParams.speed,
             planParams.capacity,
+            null,
             planParams.sla,
           )
 
@@ -116,6 +117,7 @@ async function main() {
               planParams.duration,
               planParams.speed,
               planParams.capacity,
+              null,
               planParams.sla,
             )
             .accounts({

@@ -35,13 +35,14 @@ async function main() {
     duration,
     speed,
     capacity,
+    null,
     sla,
   )
 
   console.log({ planPda: planPda.toBase58() })
 
   const itx = await program.methods
-    .addPlan(price, duration, speed, capacity, sla)
+    .addPlan(price, duration, speed, capacity, null, sla)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,

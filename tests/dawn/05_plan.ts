@@ -78,6 +78,7 @@ export const planTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -88,6 +89,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -118,6 +120,7 @@ export const planTests = () =>
         duration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -128,6 +131,7 @@ export const planTests = () =>
             duration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -158,6 +162,7 @@ export const planTests = () =>
         mock.planDuration,
         speed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -168,6 +173,7 @@ export const planTests = () =>
             mock.planDuration,
             speed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -198,6 +204,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -230,6 +237,7 @@ export const planTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           mock.planSlaId,
         )
         .accounts({
@@ -283,6 +291,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -322,11 +331,12 @@ export const planTests = () =>
         duration,
         speed,
         capacity,
+        null,
         slaId,
       )
 
       const tx = await program.methods
-        .addPlan(price, duration, speed, capacity, slaId)
+        .addPlan(price, duration, speed, capacity, null, slaId)
         .accounts({
           caller: mock.serviceProvider.publicKey,
           device: mock.devicePda,
@@ -558,6 +568,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         sla2Id,
       )
 
@@ -567,6 +578,7 @@ export const parentPlanTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           sla2Id,
         )
         .accounts({
@@ -590,6 +602,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -600,6 +613,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -633,6 +647,7 @@ export const parentPlanTests = () =>
         duration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -643,6 +658,7 @@ export const parentPlanTests = () =>
             duration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -673,6 +689,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         speed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -683,6 +700,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             speed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -713,6 +731,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         capacity,
+        null,
         mock.planSlaId,
       )
 
@@ -723,6 +742,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             mock.planSpeed,
             capacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -753,6 +773,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -762,6 +783,7 @@ export const parentPlanTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           mock.planSlaId,
         )
         .accounts({

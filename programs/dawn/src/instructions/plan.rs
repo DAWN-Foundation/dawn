@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 
 use super::{DawnApp, Device, Subscription};
-use crate::{utils::optional_seed, DawnError, PlanAdded};
+use crate::{
+    utils::{optional_i64_seed, optional_pubkey_seed},
+    DawnError, PlanAdded,
+};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -25,6 +28,8 @@ pub struct Plan {
     /// The plan provided data capacity in MB (megabytes)
     /// per `duration` days, 0 for unlimited
     pub capacity: u64,
+    /// The start time of the plan (Optional)
+    pub start_at: Option<i64>,
     /// TODO >> The Service Level Agreement identifier
     pub sla_id: u64,
     /// PDA bump seed
@@ -41,11 +46,12 @@ const PLAN_SIZE: usize = 8 // id
     + 2 // duration
     + 4 // speed
     + 8 // capacity
+    + 8 // start_at
     + 8 // sla_id
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(price: u64, duration: u16, speed: u32, capacity: u64, sla_id: u64)]
+#[instruction(price: u64, duration: u16, speed: u32, capacity: u64, start_at: Option<i64>, sla_id: u64)]
 pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -69,11 +75,12 @@ pub struct AddPlan<'info> {
         seeds = [
             b"plan",
             parent_plan.device.as_ref(),
-            &optional_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
+            &optional_pubkey_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
             &parent_plan.capacity.to_le_bytes(),
+            &optional_i64_seed(parent_plan.start_at),
             &parent_plan.sla_id.to_le_bytes(),
         ],
         bump = parent_plan.bump,
@@ -88,11 +95,12 @@ pub struct AddPlan<'info> {
         seeds = [
             b"plan",
             device.key().as_ref(),
-            &optional_seed(parent_plan.as_ref().map(|p| p.key())),
+            &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
+            &optional_i64_seed(start_at),
             &sla_id.to_le_bytes(),
         ],
         bump
@@ -144,7 +152,7 @@ pub struct AddPlan<'info> {
 //             &plan.speed.to_le_bytes(),
 //             &plan.capacity.to_le_bytes(),
 //             &plan.sla_id.to_le_bytes(),
-//             optional_seed(plan.parent_plan.as_ref().map(|p| p.key())).as_ref(),
+//             optional_pubkey_seed(plan.parent_plan.as_ref().map(|p| p.key())).as_ref(),
 //         ],
 //         bump = plan.bump
 //     )]
@@ -158,6 +166,7 @@ impl DawnApp {
         duration: u16,
         speed: u32,
         capacity: u64,
+        start_at: Option<i64>,
         sla_id: u64,
     ) -> Result<()> {
         // Make sure the plan price is not zero
@@ -203,6 +212,7 @@ impl DawnApp {
         plan.duration = duration;
         plan.speed = speed;
         plan.capacity = capacity; // 0 for unlimited
+        plan.start_at = start_at;
         plan.sla_id = sla_id;
         plan.bump = ctx.bumps.plan;
 
@@ -216,6 +226,7 @@ impl DawnApp {
             duration: plan.duration,
             speed: plan.speed,
             capacity: plan.capacity,
+            start_at: plan.start_at,
             sla_id: plan.sla_id,
             created_at: plan.created_at,
         });

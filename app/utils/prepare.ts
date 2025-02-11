@@ -320,6 +320,7 @@ export async function prepare(
     planDuration,
     planSpeed,
     planCapacity,
+    null,
     planSlaId,
   )
 
