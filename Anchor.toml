@@ -5,7 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dawn = "4nn8JN7u4mK89zyzojb6jGedunZqGgsiSyhFsqY6UCy4"
+dawn = "BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S"
 
 [registry]
 url = "https://api.apr.dev"
