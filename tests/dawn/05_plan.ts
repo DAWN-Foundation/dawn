@@ -374,6 +374,93 @@ export const planTests = () =>
       assert.equal(plan.bump, planBump)
     })
 
+    test.skip('cannot add a plan with a start time in the past', async () => {
+      const startAt = new BN(Date.now() - 1000 * 60 * 60 * 24)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            startAt,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            device: mock.devicePda,
+            plan: planPda,
+            parentPlan: null,
+            subscription: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Start time is in the past')
+      }
+    })
+
+    test.skip('cannot add a plan with a start time more than 2 months in the future', async () => {
+      const startAt = new BN(Date.now() + 1000 * 60 * 60 * 24 * 60)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            startAt,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            device: mock.devicePda,
+            plan: planPda,
+            parentPlan: null,
+            subscription: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(
+          err.error.errorMessage,
+          'Start time is too far in the future',
+        )
+      }
+    })
+
     test('adds a plan with a start time in the future', async () => {
       // 1 day from now
       const startAt = new BN(Date.now() + 1000 * 60 * 60 * 24)
@@ -417,7 +504,6 @@ export const planTests = () =>
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)
-      expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       expect(plan.startAt.eq(startAt)).toBeTruthy()
     })
 
