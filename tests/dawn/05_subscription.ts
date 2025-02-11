@@ -19,6 +19,7 @@ import {
   PROGRAM_ID,
   loadWallet,
   confirmTx,
+  getSubscriptionPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -133,14 +134,11 @@ export const subscriptionTests = () =>
         new BN(1),
       )
 
-      const badSubscriptionPda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(mock.planPda.toBytes()),
-          Buffer.from(mock.customer.publicKey.toBytes()),
-        ],
-        program.programId,
-      )[0]
+      const [badSubscriptionPda] = getSubscriptionPda(
+        program,
+        mock.planPda,
+        mock.customer,
+      )
 
       try {
         await program.methods
@@ -366,13 +364,10 @@ export const subscriptionTests = () =>
     })
 
     test('subscribes to the same plan by another user', async () => {
-      const [subscriptionPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(mock.planPda.toBytes()),
-          Buffer.from(wallet.publicKey.toBytes()),
-        ],
-        program.programId,
+      const [subscriptionPda] = getSubscriptionPda(
+        program,
+        mock.planPda,
+        wallet.payer,
       )
 
       provider.wallet = new Wallet(wallet.payer)

@@ -2,7 +2,12 @@ import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
-import { COORD_DENOMINATOR, getDeviceLocationPda, getDevicePda, getPlanPda } from '../utils'
+import {
+  COORD_DENOMINATOR,
+  getDeviceLocationPda,
+  getDevicePda,
+  getPlanPda,
+} from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'

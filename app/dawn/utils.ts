@@ -211,7 +211,11 @@ export async function submitTx(
     'confirmed',
   )
 
-  logs && console.log('confirmationResult', JSON.stringify(confirmationResult, null, 2))
+  logs &&
+    console.log(
+      'confirmationResult',
+      JSON.stringify(confirmationResult, null, 2),
+    )
 
   if (confirmationResult.value.err) {
     throw new Error(JSON.stringify(confirmationResult.value.err))
@@ -240,7 +244,7 @@ export function generateMacAddress(): MacAddress {
 }
 
 export function getRandomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 export class DeviceGenerator {
@@ -290,7 +294,7 @@ export class DeviceGenerator {
 
 export class IpV4Generator {
   static ipToDecimal(ip: string): number {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + +octet, 0) >>> 0;
+    return ip.split('.').reduce((acc, octet) => (acc << 8) + +octet, 0) >>> 0
   }
 
   static decimalToIp(decimal: number): IpV4Bytes {
@@ -298,48 +302,47 @@ export class IpV4Generator {
       (decimal >>> 24) & 255,
       (decimal >>> 16) & 255,
       (decimal >>> 8) & 255,
-      decimal & 255
-    ];
+      decimal & 255,
+    ]
   }
 
   static generateIPList(startIP: string, prefixLength: number): IpV4Bytes[] {
-    const start = this.ipToDecimal(startIP);
-    const totalAddresses = Math.pow(2, 32 - prefixLength);
-    const ipList: IpV4Bytes[] = [];
+    const start = this.ipToDecimal(startIP)
+    const totalAddresses = Math.pow(2, 32 - prefixLength)
+    const ipList: IpV4Bytes[] = []
 
     for (let i = 0; i < totalAddresses; i++) {
-      ipList.push(this.decimalToIp(start + i));
+      ipList.push(this.decimalToIp(start + i))
     }
 
-    return ipList;
+    return ipList
   }
-
 }
 
 export class IpV6Generator {
   static generateIPList(baseIP: string, prefixLength: number): IpV6Bytes[] {
-    const totalAddresses = Math.pow(2, 128 - prefixLength); // Общее количество адресов
-    const ipList: IpV6Bytes[] = [];
+    const totalAddresses = Math.pow(2, 128 - prefixLength) // Общее количество адресов
+    const ipList: IpV6Bytes[] = []
 
-    const baseParts = baseIP.split(':').map(part => parseInt(part, 16));
+    const baseParts = baseIP.split(':').map((part) => parseInt(part, 16))
 
     for (let i = 0; i < totalAddresses; i++) {
-      const newParts = [...baseParts];
-      let carry = i;
+      const newParts = [...baseParts]
+      let carry = i
 
       for (let j = newParts.length - 1; j >= 0 && carry > 0; j--) {
-        newParts[j] += carry;
+        newParts[j] += carry
         if (newParts[j] > 0xffff) {
-          newParts[j] -= 0x10000;
-          carry = 1;
+          newParts[j] -= 0x10000
+          carry = 1
         } else {
-          carry = 0;
+          carry = 0
         }
       }
 
-      ipList.push(newParts.map(part => part));
+      ipList.push(newParts.map((part) => part))
     }
 
-    return ipList;
+    return ipList
   }
 }

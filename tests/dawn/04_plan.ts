@@ -14,6 +14,8 @@ import {
   confirmTx,
   USDC_DECIMALS,
   loadWallet,
+  getDevicePda,
+  getDeviceLocationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
@@ -510,20 +512,14 @@ export const parentPlanTests = () =>
       )
 
       // create new device (as customer)
-      devicePda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.customer.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from([0, 0, 0, 0, 0, 1]),
-        ],
-        program.programId,
-      )[0]
+      devicePda = getDevicePda(
+        program,
+        mock.customer,
+        mock.deviceModelPda,
+        [0, 0, 0, 0, 0, 1],
+      )
 
-      deviceLocationPda = PublicKey.findProgramAddressSync(
-        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-        program.programId,
-      )[0]
+      deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       await program.methods
         .addDevice(
