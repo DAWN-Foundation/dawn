@@ -30,7 +30,7 @@ interface PlanAdded {
   capacity: BN
   slaId: BN
   createdAt: number
-  startAt: number | null
+  startAt: BN | null
 }
 
 interface PlanRemoved {
@@ -372,6 +372,53 @@ export const planTests = () =>
       assert.ok(plan.capacity.eq(capacity))
       assert.ok(plan.slaId.eq(slaId))
       assert.equal(plan.bump, planBump)
+    })
+
+    test('adds a plan with a start time in the future', async () => {
+      // 1 day from now
+      const startAt = new BN(Date.now() + 1000 * 60 * 60 * 24)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      const tx = await program.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          startAt,
+          mock.planSlaId,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          plan: planPda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      expect(event.startAt.eq(startAt)).toBeTruthy()
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
+      expect(plan.startAt.eq(startAt)).toBeTruthy()
     })
 
     // REMOVE
