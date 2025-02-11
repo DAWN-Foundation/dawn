@@ -98,6 +98,7 @@ export function getMock(): Mock {
     configPda: new PublicKey(mock.configPda),
     ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
+    sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
@@ -112,6 +113,8 @@ export function getMock(): Mock {
     leaseIpV4CidrMask: mock.leaseIpV4CidrMask,
     leaseIpV6: mock.leaseIpV6,
     leaseIpV6CidrMask: mock.leaseIpV6CidrMask,
+    // site
+    siteName: mock.siteName,
     // device
     deviceType: mock.deviceType,
     deviceManufacturer: mock.deviceManufacturer,

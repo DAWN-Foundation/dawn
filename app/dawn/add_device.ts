@@ -60,6 +60,7 @@ async function main() {
       device: devicePda,
       deviceModel,
       deviceLocation: deviceLocationPda,
+      site: null,
     })
     .instruction()
 

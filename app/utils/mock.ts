@@ -329,6 +329,16 @@ export async function setup(
 
   const [configPda] = getConfigPda(program)
 
+  const siteName = 'Test Site'
+  const [sitePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('site'),
+      Buffer.from(serviceProvider.publicKey.toBytes()),
+      Buffer.from(siteName),
+    ],
+    program.programId,
+  )
+
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -473,6 +483,7 @@ export async function setup(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    sitePda,
     devicePda,
     ipLeasePda,
     deviceLocationPda,
@@ -487,6 +498,8 @@ export async function setup(
     leaseIpV4CidrMask,
     leaseIpV6,
     leaseIpV6CidrMask,
+    // site
+    siteName,
     // device
     deviceType,
     deviceManufacturer,

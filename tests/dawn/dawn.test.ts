@@ -1,11 +1,12 @@
 import { configTests } from './00_config'
 import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
-import { deviceTests } from './03_device'
+import { siteTests } from './03_site'
+import { deviceTests, deviceSiteTests } from './04_device'
 
-import { parentPlanTests, planTests } from './04_plan'
-import { subscriptionTests } from './05_subscription'
-import { claimTests } from './06_claim'
+import { parentPlanTests, planTests } from './05_plan'
+import { subscriptionTests } from './06_subscription'
+import { claimTests } from './07_claim'
 
 // order is important here
 // because tests are dependent on the previous ones
@@ -13,6 +14,7 @@ import { claimTests } from './06_claim'
 // - init (creates config)
 // - ip_pool (adds IP pool)
 // - device_model (adds device model)
+// - site (adds site)
 // - device (adds device)
 // - plan (adds plan)
 // - subscription (subscribes to plan)
@@ -20,7 +22,9 @@ import { claimTests } from './06_claim'
 configTests()
 ipPoolTests()
 deviceModelTests()
+siteTests()
 deviceTests()
+deviceSiteTests()
 leaseIpTests()
 planTests()
 subscriptionTests()

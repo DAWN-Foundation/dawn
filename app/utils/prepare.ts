@@ -223,6 +223,16 @@ export async function prepare(
 
   const [configPda] = getConfigPda(program)
 
+  const siteName = 'Test Site'
+  const [sitePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('site'),
+      Buffer.from(serviceProvider.publicKey.toBytes()),
+      Buffer.from(siteName),
+    ],
+    program.programId,
+  )
+
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
   const poolIpV4CidrMask = 24
   const poolIpV6: IpV6Bytes = [
@@ -360,6 +370,7 @@ export async function prepare(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    sitePda,
     devicePda,
     ipLeasePda,
     deviceLocationPda,
@@ -374,6 +385,8 @@ export async function prepare(
     leaseIpV4CidrMask,
     leaseIpV6,
     leaseIpV6CidrMask,
+    // site
+    siteName,
     // device
     deviceType,
     deviceManufacturer,

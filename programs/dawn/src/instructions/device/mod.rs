@@ -4,11 +4,13 @@ mod device;
 mod ip_pool;
 mod location;
 mod model;
+mod site;
 
 pub use device::*;
 pub use ip_pool::*;
 pub use location::*;
 pub use model::*;
+pub use site::*;
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum DeviceType {

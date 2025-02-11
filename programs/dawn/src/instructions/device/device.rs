@@ -4,7 +4,7 @@ use std::cmp::min;
 
 use crate::{DawnApp, DawnError, DeviceAdded};
 
-use super::{DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
+use super::{DeviceLocation, DeviceModel, Site, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
@@ -12,6 +12,8 @@ pub struct Device {
     pub created_at: i64,
     /// The owner's public key who registered this device
     pub owner: Pubkey,
+    /// Reference to the Site account
+    pub site: Option<Pubkey>,
     /// Reference to the DeviceModel account
     pub model: Pubkey,
     /// MAC address
@@ -23,6 +25,7 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
+    + (1 + 32) // site + optional
     + 32 // model
     + 6  // mac_address
     + 1; // bump
@@ -73,6 +76,18 @@ pub struct AddDevice<'info> {
     )]
     pub device_location: Account<'info, DeviceLocation>,
 
+    /// The site account
+    #[account(
+        seeds = [
+            b"site",
+            site.owner.as_ref(),
+            &site.name.as_bytes()[..min(site.name.len(), MAX_SEED_LEN)],
+        ],
+        bump = site.bump,
+        constraint = site.owner == caller.key(),
+    )]
+    pub site: Option<Account<'info, Site>>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -94,10 +109,16 @@ impl DawnApp {
         let device_location = &mut ctx.accounts.device_location;
 
         let created_at = Clock::get()?.unix_timestamp;
+        let site = if let Some(site) = &ctx.accounts.site {
+            Some(site.key())
+        } else {
+            None
+        };
 
         // Set device info
         device.created_at = created_at;
         device.owner = ctx.accounts.caller.key();
+        device.site = site;
         device.model = ctx.accounts.device_model.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
@@ -115,6 +136,7 @@ impl DawnApp {
         emit!(DeviceAdded {
             device: device.key(),
             owner: device.owner,
+            site: site,
             model: device.model,
             latitude,
             longitude,

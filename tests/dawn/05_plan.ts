@@ -533,6 +533,7 @@ export const parentPlanTests = () =>
           deviceModel: mock.deviceModelPda,
           device: devicePda,
           deviceLocation: deviceLocationPda,
+          site: null,
         })
         .signers([mock.customer])
         .rpc()

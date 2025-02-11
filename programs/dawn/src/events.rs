@@ -3,6 +3,21 @@ use anchor_lang::prelude::*;
 use crate::DeviceType;
 
 #[event]
+pub struct SiteAdded {
+    pub site: Pubkey,
+    pub owner: Pubkey,
+    pub name: String,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct DeviceAssignedToSite {
+    pub device: Pubkey,
+    pub site: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
@@ -54,6 +69,7 @@ pub struct DeviceModelAdded {
 pub struct DeviceAdded {
     pub owner: Pubkey,
     pub device: Pubkey,
+    pub site: Option<Pubkey>,
     pub model: Pubkey,
     pub longitude: i64,
     pub latitude: i64,

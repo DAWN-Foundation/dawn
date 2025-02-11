@@ -52,6 +52,10 @@ pub mod dawn {
         DawnApp::add_device_model(ctx, device_type, manufacturer, model)
     }
 
+    pub fn add_site(ctx: Context<AddSite>, name: String) -> Result<()> {
+        DawnApp::add_site(ctx, name)
+    }
+
     pub fn add_device(
         ctx: Context<AddDevice>,
         height: u16,
@@ -60,6 +64,10 @@ pub mod dawn {
         mac_address: [u8; 6],
     ) -> Result<()> {
         DawnApp::add_device(ctx, height, latitude, longitude, mac_address)
+    }
+
+    pub fn assign_device_to_site(ctx: Context<AssignDeviceToSite>) -> Result<()> {
+        DawnApp::assign_device_to_site(ctx)
     }
 
     pub fn lease_ip(
