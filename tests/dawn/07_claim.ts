@@ -16,6 +16,7 @@ import {
   PROGRAM_ID,
   confirmTx,
   getPlanPda,
+  getSubscriptionPda,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { Clock } from 'solana-bankrun'
@@ -133,13 +134,10 @@ export const claimTests = () =>
         new BN(3),
       )
 
-      const [badSubscriptionPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('subscription'),
-          Buffer.from(badPlanPda.toBytes()),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-        ],
-        program.programId,
+      const [badSubscriptionPda] = getSubscriptionPda(
+        program,
+        badPlanPda,
+        mock.serviceProvider,
       )
 
       try {

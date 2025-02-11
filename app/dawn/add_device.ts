@@ -2,13 +2,18 @@ import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { connect, getFlag, getMock, submitTx } from './utils'
-import { COORD_DENOMINATOR } from '../utils'
+import {
+  COORD_DENOMINATOR,
+  getDeviceLocationPda,
+  getDevicePda,
+  MacAddress,
+} from '../utils'
 
 // CONSTANTS
 const LATITUDE = new BN(37.164277)
 const LONGITUDE = new BN(-121.930924)
 const HEIGHT = 1
-const MAC_ADDRESS = [0, 0, 0, 0, 0, 0]
+const MAC_ADDRESS: MacAddress = [0, 0, 0, 0, 0, 0]
 
 async function main() {
   const mock = getMock()
@@ -35,20 +40,14 @@ async function main() {
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  const [devicePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device'),
-      Buffer.from(wallet.payer.publicKey.toBytes()),
-      Buffer.from(deviceModel.toBytes()),
-      Buffer.from(MAC_ADDRESS),
-    ],
-    program.programId,
+  const devicePda = getDevicePda(
+    program,
+    wallet.payer,
+    deviceModel,
+    MAC_ADDRESS,
   )
 
-  const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-    program.programId,
-  )
+  const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })

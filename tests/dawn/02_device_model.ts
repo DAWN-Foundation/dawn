@@ -16,6 +16,7 @@ import {
   loadWallet,
   DeviceType,
   deviceTypeSeed,
+  getDeviceModelPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BanksClient } from 'solana-bankrun'
@@ -92,14 +93,11 @@ export const deviceModelTests = () =>
     test('cannot add device model with non-existing device type', async () => {
       const deviceType = { other: {} }
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          Buffer.from([2]),
-          Buffer.from(mock.deviceManufacturer),
-          Buffer.from(mock.deviceModel),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        [2],
+        mock.deviceManufacturer,
+        mock.deviceModel,
       )
 
       try {
@@ -148,14 +146,11 @@ export const deviceModelTests = () =>
     test('cannot add device model with an empty manufacturer', async () => {
       const manufacturer = '  '
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          deviceTypeSeed(mock.deviceType),
-          Buffer.from(manufacturer.trim()),
-          Buffer.from(mock.deviceModel),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer.trim(),
+        mock.deviceModel,
       )
 
       try {
@@ -179,14 +174,11 @@ export const deviceModelTests = () =>
     test('cannot add device model with an empty model', async () => {
       const model = '  '
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          deviceTypeSeed(mock.deviceType),
-          Buffer.from(mock.deviceManufacturer),
-          Buffer.from(model.trim()),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        mock.deviceManufacturer,
+        model.trim(),
       )
 
       try {
@@ -210,14 +202,11 @@ export const deviceModelTests = () =>
     test('cannot add device model with manufacturer exceeding MAX_DEVICE_MANUFACTURER_LEN', async () => {
       const manufacturer = 'a'.repeat(MAX_DEVICE_MANUFACTURER_LEN + 1)
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          deviceTypeSeed(mock.deviceType),
-          Buffer.from(manufacturer.substring(0, MAX_SEED_LENGTH)),
-          Buffer.from(mock.deviceModel),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer.substring(0, MAX_SEED_LENGTH),
+        mock.deviceModel,
       )
 
       try {
@@ -241,14 +230,11 @@ export const deviceModelTests = () =>
     test('cannot add device model with model exceeding MAX_DEVICE_MODEL_LEN', async () => {
       const model = 'a'.repeat(MAX_DEVICE_MODEL_LEN + 1)
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          deviceTypeSeed(mock.deviceType),
-          Buffer.from(mock.deviceManufacturer),
-          Buffer.from(model.substring(0, MAX_SEED_LENGTH)),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        mock.deviceManufacturer,
+        model.substring(0, MAX_SEED_LENGTH),
       )
 
       try {
@@ -340,14 +326,11 @@ export const deviceModelTests = () =>
     test('can add device model with same manufacturer and model but different device type', async () => {
       const deviceType = { wirelessRadio: {} }
 
-      const [deviceModelPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device_model'),
-          deviceTypeSeed(deviceType),
-          Buffer.from(mock.deviceManufacturer),
-          Buffer.from(mock.deviceModel),
-        ],
-        program.programId,
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        deviceType,
+        mock.deviceManufacturer,
+        mock.deviceModel,
       )
 
       const tx = await program.methods

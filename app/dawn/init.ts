@@ -1,7 +1,25 @@
 import { PublicKey } from '@solana/web3.js'
-import { connect, getMock, submitTx, DeviceGenerator, getRandomInt, IpV4Generator, IpV6Generator } from './utils'
+import {
+  connect,
+  getMock,
+  submitTx,
+  DeviceGenerator,
+  getRandomInt,
+  IpV4Generator,
+  IpV6Generator,
+} from './utils'
 import { BN } from '@coral-xyz/anchor'
-import { COORD_DENOMINATOR, getIpLeasePda, getIpPoolPda, getPlanPda, IpV4Bytes, IpV6Bytes } from '../utils'
+import {
+  COORD_DENOMINATOR,
+  getDeviceLocationPda,
+  getDeviceModelPda,
+  getDevicePda,
+  getIpLeasePda,
+  getIpPoolPda,
+  getPlanPda,
+  IpV4Bytes,
+  IpV6Bytes,
+} from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
@@ -21,14 +39,19 @@ const MAX_SLA = 3
 
 function generateRandomPlanParams() {
   return {
-    price: new BN(Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE)),
-    duration: Math.floor(Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION),
+    price: new BN(
+      Math.floor(Math.random() * (MAX_PRICE - MIN_PRICE) + MIN_PRICE),
+    ),
+    duration: Math.floor(
+      Math.random() * (MAX_DURATION - MIN_DURATION) + MIN_DURATION,
+    ),
     speed: Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED),
-    capacity: new BN(Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY)),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA))
+    capacity: new BN(
+      Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
+    ),
+    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
-
 
 async function main() {
   const mock = getMock()
@@ -47,21 +70,13 @@ async function main() {
 
     // throw "Some"
 
-    // --------------------------------------------------------------------    
-    console.log("Add device model")
+    // --------------------------------------------------------------------
+    console.log('Add device model')
 
     const manufacturer = `${getRandomInt(0, 1000)}_MikroTik`
     const model = `${getRandomInt(0, 1000)}_GG69420`
 
-    const [deviceModelPda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('device_model'),
-        Buffer.from([0]),
-        Buffer.from(manufacturer),
-        Buffer.from(model),
-      ],
-      program.programId,
-    )
+    const deviceModelPda = getDeviceModelPda(program, [0], manufacturer, model)
 
     console.log({ deviceModelPda: deviceModelPda.toBase58() })
 
@@ -75,17 +90,19 @@ async function main() {
       .instruction()
 
     await submitTx(connection, wallet, itx, false)
-    console.log('Device model added', { deviceModelPda: deviceModelPda.toBase58() })
+    console.log('Device model added', {
+      deviceModelPda: deviceModelPda.toBase58(),
+    })
 
     // --------------------------------------------------------------------
-    console.log("Add devices")
+    console.log('Add devices')
 
     const devices = DeviceGenerator.genearate(
       5,
       [-121.115323, 37.3985593, -122.3253238, 37.1615593],
     )
 
-    const devicesPda: PublicKey[] = [];
+    const devicesPda: PublicKey[] = []
 
     for (const device of devices) {
       const lngFixed = Number(device.coord.at(0).toFixed(6))
@@ -94,27 +111,26 @@ async function main() {
       const longitude = new BN(lngFixed * COORD_DENOMINATOR)
       const latitude = new BN(latFixed * COORD_DENOMINATOR)
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(wallet.publicKey.toBytes()),
-          Buffer.from(deviceModelPda.toBytes()),
-          Buffer.from(device.mac),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        wallet.payer,
+        deviceModelPda,
+        device.mac,
       )
 
       devicesPda.push(devicePda)
 
-      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-        program.programId,
-      )
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
         // Add device
         const deviceItx = await program.methods
-          .addDevice(device.height, latitude, longitude, Array.from(Buffer.from(device.mac)))
+          .addDevice(
+            device.height,
+            latitude,
+            longitude,
+            Array.from(Buffer.from(device.mac)),
+          )
           .accounts({
             caller: wallet.publicKey,
             device: devicePda,
@@ -150,7 +166,7 @@ async function main() {
               planParams.duration,
               planParams.speed,
               planParams.capacity,
-              planParams.sla
+              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,
@@ -171,20 +187,40 @@ async function main() {
     }
 
     // --------------------------------------------------------------------
-    console.log("Add ip pool")
+    console.log('Add ip pool')
 
     // Pool IP V4
     const poolIpV4: IpV4Bytes = [11, 11, getRandomInt(1, 255), 0]
     const poolIpV4CidrMask = 24
-    const ipV4List: IpV4Bytes[] = IpV4Generator.generateIPList(poolIpV4.join('.'), poolIpV4CidrMask)
+    const ipV4List: IpV4Bytes[] = IpV4Generator.generateIPList(
+      poolIpV4.join('.'),
+      poolIpV4CidrMask,
+    )
 
     // Pool IP V6 (2001:db8::/64 - a documentation prefix)
     const poolIpV6: IpV6Bytes = [
-      +getRandomInt(1, 255).toString(16), +getRandomInt(1, 255).toString(16), 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+      +getRandomInt(1, 255).toString(16),
+      +getRandomInt(1, 255).toString(16),
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
+      0x0000,
     ]
     const poolIpV6CidrMask = 108 // For less ips
-    const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(poolIpV6.join(':'), poolIpV6CidrMask)
+    const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(
+      poolIpV6.join(':'),
+      poolIpV6CidrMask,
+    )
 
     const [ipPoolPda] = getIpPoolPda(
       program,
@@ -208,7 +244,7 @@ async function main() {
     console.log('Ip pool added', { ipPoolPda: ipPoolPda.toBase58() })
 
     // --------------------------------------------------------------------
-    console.log("Lease ip")
+    console.log('Lease ip')
 
     for (let i = 0; i < devicesPda.length; i++) {
       // Lease IP V4
@@ -243,7 +279,6 @@ async function main() {
 
       console.log('Leased ip', { ipLeasePda: ipLeasePda.toBase58() })
     }
-
   } catch (error) {
     console.error(error)
   }

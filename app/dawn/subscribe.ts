@@ -9,6 +9,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import { getSubscriptionPda } from '../utils'
 
 async function main() {
   const plan = getFlag('--plan')
@@ -27,14 +28,8 @@ async function main() {
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  const [subscriptionPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('subscription'),
-      Buffer.from(planPda.toBytes()),
-      Buffer.from(wallet.publicKey.toBytes()),
-    ],
-    program.programId,
-  )
+  const [subscriptionPda] = getSubscriptionPda(program, planPda, wallet.payer)
+
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
 
   const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(

@@ -11,6 +11,9 @@ import {
   confirmTx,
   COORD_DENOMINATOR,
   loadWallet,
+  getDevicePda,
+  getDeviceLocationPda,
+  MacAddress,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -119,14 +122,11 @@ export const deviceTests = () =>
     test('cannot add device with longitude eq 0', async () => {
       const longitude = new BN(0.0 * COORD_DENOMINATOR)
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       try {
@@ -157,14 +157,11 @@ export const deviceTests = () =>
     test('cannot add device with height eq 0', async () => {
       const height = 0
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       try {
@@ -193,14 +190,11 @@ export const deviceTests = () =>
     })
 
     test('adds the device', async () => {
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
       const tx = await program.methods
@@ -386,20 +380,14 @@ export const deviceSiteTests = () =>
 
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(wallet.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(mock.deviceMacAddress)
-        ],
-        program2.programId,
+      const devicePda = getDevicePda(
+        program2,
+        wallet.payer,
+        mock.deviceModelPda,
+        mock.deviceMacAddress,
       )
 
-      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-        program2.programId,
-      )
+      const deviceLocationPda = getDeviceLocationPda(program2, devicePda)
 
       // add device
       await program2.methods
@@ -469,22 +457,16 @@ export const deviceSiteTests = () =>
     })
 
     test('can add device with site', async () => {
-      const macAddress = [0, 0, 0, 0, 0, 1]
+      const macAddress: MacAddress = [0, 0, 0, 0, 0, 1]
 
-      const [devicePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('device'),
-          Buffer.from(mock.serviceProvider.publicKey.toBytes()),
-          Buffer.from(mock.deviceModelPda.toBytes()),
-          Buffer.from(macAddress),
-        ],
-        program.programId,
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        macAddress,
       )
 
-      const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-        program.programId,
-      )
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       const tx = await program.methods
         .addDevice(

@@ -15,7 +15,6 @@ import {
   COORD_DENOMINATOR,
   deviceTypeSeed,
   fund,
-  getPlanPda,
   IpV4Bytes,
   IpV6Bytes,
   MacAddress,
@@ -24,6 +23,18 @@ import {
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
+import {
+  getConfigPda,
+  getDeviceLocationPda,
+  getDeviceModelPda,
+  getDevicePda,
+  getIpLeasePda,
+  getIpPoolPda,
+  getPlanPda,
+  getSubscriptionPda,
+  getTokenConfigPda,
+} from './pda'
+import { getSitePda } from './pda/site'
 
 // Prepares the local validator for testnet simulation
 // Creates all necessary accounts and mints tokens
@@ -90,10 +101,7 @@ export async function prepare(
 
   const program = getDawnProgram(provider)
 
-  const [tokenConfigPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('token')],
-    PROGRAM_ID,
-  )
+  const tokenConfigPda = getTokenConfigPda(program)
 
   // derive associated DAWN token account for wallet
   const walletDawnAccount = await getAssociatedTokenAddress(
@@ -214,19 +222,13 @@ export async function prepare(
   const validatorFee = new BN(300) // 3% fee (validator_fee)
   const medallionFee = new BN(900) // 9% fee (medallion_fee)
 
-  const [configPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('config')],
-    program.programId,
-  )
+  const [configPda] = getConfigPda(program)
 
   const siteName = 'Test Site'
-  const [sitePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('site'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(siteName),
-    ],
-    program.programId,
+  const sitePda = getSitePda(
+    program,
+    serviceProvider,
+    siteName,
   )
 
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
@@ -236,15 +238,12 @@ export async function prepare(
   ]
   const poolIpV6CidrMask = 64
 
-  const [ipPoolPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_pool'),
-      Buffer.from(poolIpV4),
-      Buffer.from([poolIpV4CidrMask]),
-      Buffer.from(poolIpV6.map((byte) => new BN(byte).toArray('le', 2)).flat()),
-      Buffer.from([poolIpV6CidrMask]),
-    ],
-    program.programId,
+  const [ipPoolPda] = getIpPoolPda(
+    program,
+    poolIpV4,
+    poolIpV4CidrMask,
+    poolIpV6,
+    poolIpV6CidrMask,
   )
 
   const deviceType = { router: {} }
@@ -255,30 +254,21 @@ export async function prepare(
   const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
   const deviceHeight = 1
 
-  const [deviceModelPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device_model'),
-      deviceTypeSeed(deviceType),
-      Buffer.from(deviceManufacturer),
-      Buffer.from(deviceModel),
-    ],
-    program.programId,
+  const deviceModelPda = getDeviceModelPda(
+    program,
+    deviceType,
+    deviceManufacturer,
+    deviceModel,
   )
 
-  const [devicePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('device'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(deviceModelPda.toBytes()),
-      Buffer.from(deviceMacAddress),
-    ],
-    program.programId,
+  const devicePda = getDevicePda(
+    program,
+    serviceProvider,
+    deviceModelPda,
+    deviceMacAddress,
   )
 
-  const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-    program.programId,
-  )
+  const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
   const leaseIpV4CidrMask = 32
@@ -287,18 +277,14 @@ export async function prepare(
   ]
   const leaseIpV6CidrMask = 64
 
-  const [ipLeasePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_lease'),
-      Buffer.from(devicePda.toBytes()),
-      Buffer.from(leaseIpV4),
-      Buffer.from([leaseIpV4CidrMask]),
-      Buffer.from(
-        leaseIpV6.map((byte) => new BN(byte).toArray('le', 2)).flat(),
-      ),
-      Buffer.from([leaseIpV6CidrMask]),
-    ],
-    program.programId,
+  const [ipLeasePda] = getIpLeasePda(
+    program,
+    devicePda,
+    ipPoolPda,
+    leaseIpV4,
+    leaseIpV4CidrMask,
+    leaseIpV6,
+    leaseIpV6CidrMask,
   )
 
   const planPrice = new BN(100).mul(USDC_DECIMALS)
@@ -318,13 +304,10 @@ export async function prepare(
     planSlaId,
   )
 
-  const [subscriptionPda, subscriptionBump] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('subscription'),
-      Buffer.from(planPda.toBytes()),
-      Buffer.from(customer.publicKey.toBytes()),
-    ],
-    program.programId,
+  const [subscriptionPda, subscriptionBump] = getSubscriptionPda(
+    program,
+    planPda,
+    customer,
   )
 
   // Create USDC vault token account for plan escrow

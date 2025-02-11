@@ -2,7 +2,12 @@ import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
-import { COORD_DENOMINATOR, getPlanPda } from '../utils'
+import {
+  COORD_DENOMINATOR,
+  getDeviceLocationPda,
+  getDevicePda,
+  getPlanPda,
+} from '../utils'
 
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
@@ -56,20 +61,14 @@ async function main() {
     const longitude = new BN(lngFixed * COORD_DENOMINATOR)
     const latitude = new BN(latFixed * COORD_DENOMINATOR)
 
-    const [devicePda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('device'),
-        Buffer.from(wallet.publicKey.toBytes()),
-        Buffer.from(mock.deviceModelPda.toBytes()),
-        Buffer.from(device.mac),
-      ],
-      program.programId,
+    const devicePda = getDevicePda(
+      program,
+      wallet.payer,
+      mock.deviceModelPda,
+      mock.deviceMacAddress,
     )
 
-    const [deviceLocationPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('device_location'), Buffer.from(devicePda.toBytes())],
-      program.programId,
-    )
+    const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     try {
       // Add device
