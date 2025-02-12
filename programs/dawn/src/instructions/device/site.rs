@@ -5,10 +5,10 @@ use std::cmp::min;
 use crate::{
     constants::MAX_SITE_NAME_LEN,
     events::{DeviceAssignedToSite, SiteAdded},
-    DawnApp, DawnError, DeviceAdded,
+    DawnApp, DawnError,
 };
 
-use super::{Device, DeviceLocation, DeviceModel, DEVICE_LOCATION_SIZE};
+use super::Device;
 
 #[account]
 pub struct Site {
