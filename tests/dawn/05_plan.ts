@@ -518,7 +518,7 @@ export const planTests = () =>
     test('adds a plan with a start time 6 months in the future', async () => {
       const sixMonthsLater = new Date()
       sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 5)
-      sixMonthsLater.setDate(sixMonthsLater.getDate() + 30)
+      sixMonthsLater.setDate(sixMonthsLater.getDate() + 29)
       const startAt = new BN(sixMonthsLater.getTime() / 1000)
 
       const speed = 600 // to have new PDA
