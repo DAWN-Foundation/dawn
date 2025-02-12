@@ -73,6 +73,8 @@ async function main() {
       .signers([mock.serviceProvider])
       .instruction()
 
+    console.log({ ipLeasePda: ipLeasePda.toBase58() })
+
     try {
       const txResult = await submitTx(connection, wallet, itx)
       console.log('Tx submitted', { txResult })
