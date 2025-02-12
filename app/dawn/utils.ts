@@ -318,7 +318,7 @@ export class IpV4Generator {
       ipList.push(this.decimalToIp(start + i))
     }
 
-    return ipList
+    return ipList.slice(1, totalAddresses)
   }
 }
 
@@ -326,8 +326,7 @@ export class IpV6Generator {
   static generateIPList(baseIP: string, prefixLength: number): IpV6Bytes[] {
     const totalAddresses = Math.pow(2, 128 - prefixLength) // Общее количество адресов
     const ipList: IpV6Bytes[] = []
-
-    const baseParts = baseIP.split(':').map((part) => parseInt(part, 16))
+    const baseParts = baseIP.split(':').map((part) => parseInt(part))
 
     for (let i = 0; i < totalAddresses; i++) {
       const newParts = [...baseParts]
@@ -346,6 +345,6 @@ export class IpV6Generator {
       ipList.push(newParts.map((part) => part))
     }
 
-    return ipList
+    return ipList.slice(1, totalAddresses)
   }
 }
