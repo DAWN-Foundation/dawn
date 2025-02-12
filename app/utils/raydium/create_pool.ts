@@ -17,6 +17,7 @@ import {
   getPoolLpMintAddress,
   getPoolVaultAddress,
 } from './pda'
+import { RAYDIUM_POOL_FEE_RECEIVER } from '.'
 
 export async function createPool(
   program: Program<RaydiumCpSwap>,
@@ -29,15 +30,11 @@ export async function createPool(
   dawnIsBase: boolean,
 ) {
   // initial price 2 USDC per 1 DAWN
-  const dawnAmount = new BN(10_000_000_000)
-  const usdcAmount = new BN(20_000_000_000)
+  const dawnAmount = new BN(100_000_000_000)
+  const usdcAmount = new BN(200_000_000_000)
 
   const mint0Amount = dawnIsBase ? dawnAmount : usdcAmount
   const mint1Amount = dawnIsBase ? usdcAmount : dawnAmount
-
-  const createPoolFee = new PublicKey(
-    'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
-  )
 
   const [auth] = getAuthAddress(program.programId)
   const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)
@@ -69,7 +66,7 @@ export async function createPool(
       creatorLpToken: creatorLpTokenAddress,
       token0Vault: vault0,
       token1Vault: vault1,
-      createPoolFee,
+      createPoolFee: RAYDIUM_POOL_FEE_RECEIVER,
       observationState: obs,
       tokenProgram: TOKEN_PROGRAM_ID,
       token0Program: TOKEN_PROGRAM_ID,

@@ -47,7 +47,12 @@ export function hasFlag(flag: string): boolean {
 
 // helper function to get the mock config
 export function getMock(): Mock {
-  const configData = fs.readFileSync('testnet.json', 'utf8')
+  const isDevnet = hasFlag('--devnet')
+
+  const configData = fs.readFileSync(
+    isDevnet ? 'devnet.json' : 'testnet.json',
+    'utf8',
+  )
   const mock: RawMock = JSON.parse(configData)
 
   return {
@@ -153,10 +158,14 @@ export async function connect(): Promise<{
   program: Program<Dawn>
   connection: Connection
 }> {
+  const isDevnet = hasFlag('--devnet')
+
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
 
-  const connection = new Connection('http://127.0.0.1:8899')
+  const connection = new Connection(
+    isDevnet ? 'https://api.devnet.solana.com' : 'http://127.0.0.1:8899',
+  )
   const provider = new AnchorProvider(connection, wallet, {})
   setProvider(provider)
   const program = getDawnProgram(provider)

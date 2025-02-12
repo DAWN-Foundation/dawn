@@ -13,19 +13,27 @@ import { hasFlag } from '../../dawn/utils'
 
 const isDevnet = hasFlag('--devnet')
 
-const RAYDIUM = new PublicKey(
+export const RAYDIUM_PROGRAM_ID = new PublicKey(
   isDevnet
     ? 'CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW'
     : 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
 )
-const RAYDIUM_CONFIG = new PublicKey(
-  'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
+export const RAYDIUM_CONFIG = new PublicKey(
+  isDevnet
+    ? '9zSzfkYy6awexsHvmggeH36pfVUdDGyCcwmjT3AQPBj6'
+    : 'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
+)
+
+export const RAYDIUM_POOL_FEE_RECEIVER = new PublicKey(
+  isDevnet
+    ? 'G11FKBRaAkHAKuLCgLM6K6NUc9rTjPAznRCjZifrTQe2'
+    : 'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
 )
 
 export function getRaydiumProgram(provider: BankrunProvider | AnchorProvider) {
   const idlPath = path.resolve('raydium/raydium_cp_swap.json')
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
-  return new Program(idl as RaydiumCpSwap, RAYDIUM, provider)
+  return new Program(idl as RaydiumCpSwap, RAYDIUM_PROGRAM_ID, provider)
 }
 
 export async function setupRaydium(
@@ -37,7 +45,6 @@ export async function setupRaydium(
   walletUsdcAccount: PublicKey,
 ) {
   const program = getRaydiumProgram(provider)
-  const isDevnet = hasFlag('--devnet')
 
   // Sort the tokens
   const [mint0, mint1, walletMint0, walletMint1, dawnIsBase] =
@@ -83,7 +90,7 @@ export async function setupRaydium(
   const [usdcVault] = getPoolVaultAddress(pool, usdcMint, program.programId)
 
   return {
-    raydium: RAYDIUM,
+    raydium: RAYDIUM_PROGRAM_ID,
     config: RAYDIUM_CONFIG,
     pool,
     auth,
