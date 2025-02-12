@@ -19,6 +19,9 @@ import {
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
+
+export let oneDayLaterPlanPda: PublicKey
+
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
@@ -479,6 +482,8 @@ export const planTests = () =>
         startAt,
         mock.planSlaId,
       )
+
+      oneDayLaterPlanPda = planPda
 
       const tx = await program.methods
         .addPlan(

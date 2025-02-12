@@ -24,6 +24,7 @@ import {
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
 import { getBalance } from '../../app/dawn/utils'
+import { oneDayLaterPlanPda } from './05_plan'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -47,6 +48,9 @@ export const subscriptionTests = () =>
 
     let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
     let accounts: Record<string, PublicKey>
+
+    let oneDayLaterEscrowUsdcVault: PublicKey
+    let oneDayLaterEscrowDawnVault: PublicKey
 
     const wallet = loadWallet()
 
@@ -76,6 +80,20 @@ export const subscriptionTests = () =>
       plan = program.coder.accounts.decode(
         'plan',
         Buffer.from(planAccount.data),
+      )
+
+      oneDayLaterEscrowUsdcVault = await createAssociatedTokenAccount(
+        provider.context.banksClient,
+        mock.serviceProvider,
+        mock.usdcMint,
+        oneDayLaterPlanPda,
+      )
+
+      oneDayLaterEscrowDawnVault = await createAssociatedTokenAccount(
+        provider.context.banksClient,
+        mock.serviceProvider,
+        mock.dawnMint,
+        oneDayLaterPlanPda,
       )
 
       // accounts for a successful subscription
@@ -397,5 +415,84 @@ export const subscriptionTests = () =>
       assert.ok(event.plan.equals(mock.planPda))
       assert.ok(event.expiration > 0)
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // reset provider wallet
+      provider.wallet = new Wallet(mock.customer)
+    })
+
+    test('cannot subscribe to a plan that has not started yet', async () => {
+      const [subscriptionPda] = getSubscriptionPda(
+        program,
+        oneDayLaterPlanPda,
+        mock.customer,
+      )
+
+      try {
+        await program.methods
+          .subscribe()
+          .accounts({
+            ...accounts,
+            plan: oneDayLaterPlanPda,
+            subscription: subscriptionPda,
+            escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+            escrowDawnVault: oneDayLaterEscrowDawnVault,
+          })
+          .signers([mock.customer])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Invalid start time')
+      }
+    })
+
+    test('can subscribe to a plan that has already started', async () => {
+      const [subscriptionPda] = getSubscriptionPda(
+        program,
+        oneDayLaterPlanPda,
+        mock.customer,
+      )
+
+      // set chain time to 1 day in the future
+      const clock = await provider.context.banksClient.getClock()
+      provider.context.setClock(
+        new Clock(
+          clock.slot,
+          clock.epochStartTimestamp,
+          clock.epoch,
+          clock.leaderScheduleEpoch,
+          clock.unixTimestamp + 86400n,
+        ),
+      )
+
+      const tx = await program.methods
+        .subscribe()
+        .accounts({
+          ...accounts,
+          plan: oneDayLaterPlanPda,
+          subscription: subscriptionPda,
+          escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+          escrowDawnVault: oneDayLaterEscrowDawnVault,
+        })
+        .signers([mock.customer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
+      assert.ok(event.subscription.equals(subscriptionPda))
+      assert.ok(event.subscriber.equals(mock.customer.publicKey))
+      assert.ok(event.plan.equals(oneDayLaterPlanPda))
+      assert.ok(event.expiration > 0)
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // make sure the subscription was created
+      let subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      expect(new BN(subscription.createdAt).gt(new BN(0))).toBeTruthy()
+      assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
     })
   })

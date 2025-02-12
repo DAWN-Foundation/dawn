@@ -283,6 +283,14 @@ impl DawnApp {
     }
 
     pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+        let plan = &ctx.accounts.plan;
+
+        if plan.start_at > 0 {
+            let now = Clock::get()?.unix_timestamp;
+            // Make sure the plan has already started
+            require!(plan.start_at <= now, DawnError::InvalidStartTime);
+        }
+
         let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
             let pool_state = ctx.accounts.raydium_pool.load()?;
             (
@@ -314,8 +322,6 @@ impl DawnApp {
             ctx.accounts.user_usdc_account.to_account_info(),
             ctx.accounts.user_dawn_account.to_account_info(),
         )?;
-
-        let plan = &ctx.accounts.plan;
 
         // calculate the total USDC fee and remainder
         let (total_usdc_fee, escrow_dawn_in_usdc, escrow_usdc_remainder) =
