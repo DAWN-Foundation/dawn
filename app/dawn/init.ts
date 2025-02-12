@@ -187,8 +187,8 @@ async function main() {
 
     // Pool IP V6 (2001:db8::/64 - a documentation prefix)
     const poolIpV6: IpV6Bytes = [
-      +getRandomInt(1, 255).toString(16),
-      +getRandomInt(1, 255).toString(16),
+      +`0x${getRandomInt(1, 255).toString(16)}`,
+      +`0x${getRandomInt(1, 255).toString(16)}`,
       0x0000,
       0x0000,
       0x0000,
@@ -204,6 +204,7 @@ async function main() {
       0x0000,
       0x0000,
     ]
+
     const poolIpV6CidrMask = 108 // For less ips
     const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(
       poolIpV6.join(':'),
@@ -237,11 +238,11 @@ async function main() {
     for (let i = 0; i < devicesPda.length; i++) {
       // Lease IP V4
       const leaseIpV4: IpV4Bytes = ipV4List[i]
-      const leaseIpV4CidrMask = 32
+      const leaseIpV4CidrMask = 24
 
       // Lease IP V6 (2001:db8::1 - a valid address within the pool)
       const leaseIpV6: IpV6Bytes = ipV6List[i]
-      const leaseIpV6CidrMask = 128 // Single address
+      const leaseIpV6CidrMask = 108 // Single address
 
       const [ipLeasePda] = getIpLeasePda(
         program,
@@ -253,7 +254,7 @@ async function main() {
         leaseIpV6CidrMask,
       )
 
-      await program.methods
+      const itx = await program.methods
         .leaseIp(leaseIpV4, leaseIpV4CidrMask, leaseIpV6, leaseIpV6CidrMask)
         .accounts({
           caller: wallet.publicKey,
@@ -265,6 +266,7 @@ async function main() {
         .signers([wallet.payer])
         .instruction()
 
+      await submitTx(connection, wallet, itx, false)
       console.log('Leased ip', { ipLeasePda: ipLeasePda.toBase58() })
     }
   } catch (error) {
