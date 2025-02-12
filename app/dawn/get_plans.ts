@@ -11,7 +11,7 @@ async function main() {
     filters = [
       {
         memcmp: {
-          offset: 8 + 32,
+          offset: 8 + 8 + 32,
           bytes: device,
         },
       },

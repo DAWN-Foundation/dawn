@@ -136,6 +136,7 @@ async function main() {
             device: devicePda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
+            site: null,
           })
           .signers([wallet.payer])
           .instruction()
@@ -157,6 +158,7 @@ async function main() {
             planParams.duration,
             planParams.speed,
             planParams.capacity,
+            null,
             planParams.sla,
           )
 
@@ -166,6 +168,7 @@ async function main() {
               planParams.duration,
               planParams.speed,
               planParams.capacity,
+              null,
               planParams.sla,
             )
             .accounts({

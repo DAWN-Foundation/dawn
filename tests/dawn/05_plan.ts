@@ -30,7 +30,7 @@ interface PlanAdded {
   capacity: BN
   slaId: BN
   createdAt: number
-  startAt: BN | null
+  startAt: BN
 }
 
 interface PlanRemoved {
@@ -374,8 +374,10 @@ export const planTests = () =>
       assert.equal(plan.bump, planBump)
     })
 
-    test.skip('cannot add a plan with a start time in the past', async () => {
-      const startAt = new BN(Date.now() - 1000 * 60 * 60 * 24)
+    test('cannot add a plan with a start time in the past', async () => {
+      const oneDayAgo = new Date()
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+      const startAt = new BN(oneDayAgo.getTime() / 1000)
 
       const [planPda] = getPlanPda(
         program,
@@ -412,12 +414,14 @@ export const planTests = () =>
       } catch (error) {
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Start time is in the past')
+        assert.strictEqual(err.error.errorMessage, 'Invalid start time')
       }
     })
 
-    test.skip('cannot add a plan with a start time more than 2 months in the future', async () => {
-      const startAt = new BN(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    test('cannot add a plan with a start time more than 6 months in the future', async () => {
+      const sixMonthsLater = new Date()
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6)
+      const startAt = new BN(sixMonthsLater.getTime() / 1000)
 
       const [planPda] = getPlanPda(
         program,
@@ -454,16 +458,15 @@ export const planTests = () =>
       } catch (error) {
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
-        assert.strictEqual(
-          err.error.errorMessage,
-          'Start time is too far in the future',
-        )
+        assert.strictEqual(err.error.errorMessage, 'Invalid start time')
       }
     })
 
-    test('adds a plan with a start time in the future', async () => {
+    test('adds a plan with a start time 1 day in the future', async () => {
       // 1 day from now
-      const startAt = new BN(Date.now() + 1000 * 60 * 60 * 24)
+      const oneDayLater = new Date()
+      oneDayLater.setDate(oneDayLater.getDate() + 1)
+      const startAt = new BN(oneDayLater.getTime() / 1000)
 
       const [planPda] = getPlanPda(
         program,
@@ -482,6 +485,56 @@ export const planTests = () =>
           mock.planPrice,
           mock.planDuration,
           mock.planSpeed,
+          mock.planCapacity,
+          startAt,
+          mock.planSlaId,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          plan: planPda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      expect(event.startAt.eq(startAt)).toBeTruthy()
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      expect(plan.startAt.eq(startAt)).toBeTruthy()
+    })
+
+    test('adds a plan with a start time 6 months in the future', async () => {
+      const sixMonthsLater = new Date()
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 5)
+      sixMonthsLater.setDate(sixMonthsLater.getDate() + 30)
+      const startAt = new BN(sixMonthsLater.getTime() / 1000)
+
+      const speed = 600 // to have new PDA
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        speed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      const tx = await program.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          speed,
           mock.planCapacity,
           startAt,
           mock.planSlaId,
@@ -941,7 +994,7 @@ export const parentPlanTests = () =>
       expect(event.duration).toBe(mock.planDuration)
       expect(event.speed).toBe(mock.planSpeed)
       expect(event.capacity.eq(mock.planCapacity)).toBeTruthy()
-      expect(event.startAt === null).toBeTruthy()
+      expect(event.startAt.eq(new BN(0))).toBeTruthy()
       expect(event.slaId.eq(mock.planSlaId)).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
@@ -955,7 +1008,7 @@ export const parentPlanTests = () =>
       expect(plan.duration).toBe(mock.planDuration)
       expect(plan.speed).toBe(mock.planSpeed)
       expect(plan.capacity.eq(mock.planCapacity)).toBeTruthy()
-      expect(plan.startAt === null).toBeTruthy()
+      expect(plan.startAt.eq(new BN(0))).toBeTruthy()
       expect(plan.slaId.eq(mock.planSlaId)).toBeTruthy()
       expect(plan.bump).toBe(planBump)
     })

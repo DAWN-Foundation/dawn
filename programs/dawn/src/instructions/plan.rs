@@ -1,10 +1,7 @@
 use anchor_lang::prelude::*;
 
 use super::{DawnApp, Device, Subscription};
-use crate::{
-    utils::{optional_i64_seed, optional_pubkey_seed},
-    DawnError, PlanAdded,
-};
+use crate::{utils::optional_pubkey_seed, DawnError, PlanAdded};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -28,8 +25,8 @@ pub struct Plan {
     /// The plan provided data capacity in MB (megabytes)
     /// per `duration` days, 0 for unlimited
     pub capacity: u64,
-    /// The start time of the plan (Optional)
-    pub start_at: Option<i64>,
+    /// The start time of the plan (0 for immediate start)
+    pub start_at: i64,
     /// TODO >> The Service Level Agreement identifier
     pub sla_id: u64,
     /// PDA bump seed
@@ -46,7 +43,7 @@ const PLAN_SIZE: usize = 8 // id
     + 2 // duration
     + 4 // speed
     + 8 // capacity
-    + (8 + 1) // start_at (optional)
+    + 8 // start_at
     + 8 // sla_id
     + 1; // bump
 
@@ -80,7 +77,7 @@ pub struct AddPlan<'info> {
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
             &parent_plan.capacity.to_le_bytes(),
-            &optional_i64_seed(parent_plan.start_at),
+            &parent_plan.start_at.to_le_bytes(),
             &parent_plan.sla_id.to_le_bytes(),
         ],
         bump = parent_plan.bump,
@@ -100,7 +97,7 @@ pub struct AddPlan<'info> {
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
-            &optional_i64_seed(start_at),
+            &start_at.unwrap_or(0).to_le_bytes(),
             &sla_id.to_le_bytes(),
         ],
         bump
@@ -201,6 +198,17 @@ impl DawnApp {
             (false, Pubkey::new_from_array([0; 32]))
         };
 
+        if let Some(start_at) = &start_at {
+            let now = Clock::get()?.unix_timestamp;
+            let six_months_later = now + 6 * 30 * 24 * 60 * 60;
+
+            // Make sure the start time is not in the past
+            require!(start_at > &now, DawnError::InvalidStartTime);
+
+            // Make sure the start time is not more than 6 months in the future
+            require!(start_at <= &six_months_later, DawnError::InvalidStartTime);
+        }
+
         let plan = &mut ctx.accounts.plan;
 
         plan.created_at = Clock::get()?.unix_timestamp;
@@ -212,7 +220,7 @@ impl DawnApp {
         plan.duration = duration;
         plan.speed = speed;
         plan.capacity = capacity; // 0 for unlimited
-        plan.start_at = start_at;
+        plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
         plan.sla_id = sla_id;
         plan.bump = ctx.bumps.plan;
 

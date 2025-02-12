@@ -76,4 +76,7 @@ pub enum DawnError {
 
     #[msg("Outside parent bounds")]
     OutsideParentBounds,
+
+    #[msg("Invalid start time")]
+    InvalidStartTime,
 }

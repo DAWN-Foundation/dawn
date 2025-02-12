@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Build the program
+anchor build
+
 # Airdrop 1000 SOL to specified address
 solana airdrop --keypair ~/.config/solana/id.json --url l 1000
 

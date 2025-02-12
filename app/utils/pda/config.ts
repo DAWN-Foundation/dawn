@@ -12,8 +12,6 @@ export function getTokenConfigPda(program: Program<Dawn>): PublicKey {
 }
 
 export function getConfigPda(program: Program<Dawn>): [PublicKey, number] {
-  console.log({ program })
-
   const [configPda, configBump] = PublicKey.findProgramAddressSync(
     [Buffer.from('config')],
     program.programId,
