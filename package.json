@@ -9,6 +9,7 @@
     "build": "tsc --outDir dist --esModuleInterop true --skipLibCheck true app/*.ts app/**/*.ts",
     "pretestnet": "yarn build",
     "testnet": "node dist/app/testnet.js",
+    "devnet": "node dist/app/devnet.js --devnet",
     "mint:usdc": "yarn build && node dist/app/dawn/mint_usdc.js",
     "dawn:init": "yarn build && node dist/app/dawn/init.js",
     "dawn:config": "yarn build && node dist/app/dawn/config.js",

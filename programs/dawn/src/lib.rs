@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("99oSHrFjjdyC6AqivbvfjXFzXgxYFzsDrMt1fEszVs1z");
+declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
 
 #[cfg(feature = "devnet")]
 declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
@@ -90,9 +90,10 @@ pub mod dawn {
         duration: u16,
         speed: u32,
         capacity: u64,
+        start_at: Option<i64>,
         sla_id: u64,
     ) -> Result<()> {
-        DawnApp::add_plan(ctx, price, duration, speed, capacity, sla_id)
+        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at, sla_id)
     }
 
     // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {

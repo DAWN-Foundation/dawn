@@ -36,13 +36,10 @@ import {
 } from './pda'
 import { getSitePda } from './pda/site'
 
-// Prepares the local validator for testnet simulation
-// Creates all necessary accounts and mints tokens
-// Only run once in `testnet` script for validator setup
-export async function prepare(
+async function fundAccounts(
   provider: AnchorProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
-): Promise<Mock> {
+) {
   const {
     wallet,
     dao,
@@ -76,6 +73,28 @@ export async function prepare(
   // we await for the transaction to be finalized to ensure all accounts are funded
   console.log('Funding Customer Account...')
   await fund(provider.connection, customer.publicKey, 1000, 'finalized')
+}
+
+// Prepares the local validator for testnet simulation
+// Creates all necessary accounts and mints tokens
+// Only run once in `testnet` script for validator setup
+export async function prepare(
+  provider: AnchorProvider,
+  accounts: Awaited<ReturnType<typeof createAccounts>>,
+  isDevnet: boolean = false,
+): Promise<Mock> {
+  const {
+    wallet,
+    dao,
+    validatorPool,
+    medallionPool,
+    serviceProvider,
+    customer,
+  } = accounts
+
+  if (!isDevnet) {
+    await fundAccounts(provider, accounts)
+  }
 
   // Mint test USDC token
   console.log('Minting test USDC token...')
@@ -301,6 +320,7 @@ export async function prepare(
     planDuration,
     planSpeed,
     planCapacity,
+    null,
     planSlaId,
   )
 

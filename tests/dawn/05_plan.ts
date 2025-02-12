@@ -19,6 +19,9 @@ import {
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
+
+export let oneDayLaterPlanPda: PublicKey
+
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
@@ -30,6 +33,7 @@ interface PlanAdded {
   capacity: BN
   slaId: BN
   createdAt: number
+  startAt: BN
 }
 
 interface PlanRemoved {
@@ -78,6 +82,7 @@ export const planTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -88,6 +93,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -118,6 +124,7 @@ export const planTests = () =>
         duration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -128,6 +135,7 @@ export const planTests = () =>
             duration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -158,6 +166,7 @@ export const planTests = () =>
         mock.planDuration,
         speed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -168,6 +177,7 @@ export const planTests = () =>
             mock.planDuration,
             speed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -198,6 +208,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -230,6 +241,7 @@ export const planTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           mock.planSlaId,
         )
         .accounts({
@@ -283,6 +295,7 @@ export const planTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -322,11 +335,12 @@ export const planTests = () =>
         duration,
         speed,
         capacity,
+        null,
         slaId,
       )
 
       const tx = await program.methods
-        .addPlan(price, duration, speed, capacity, slaId)
+        .addPlan(price, duration, speed, capacity, null, slaId)
         .accounts({
           caller: mock.serviceProvider.publicKey,
           device: mock.devicePda,
@@ -361,6 +375,194 @@ export const planTests = () =>
       assert.ok(plan.capacity.eq(capacity))
       assert.ok(plan.slaId.eq(slaId))
       assert.equal(plan.bump, planBump)
+    })
+
+    test('cannot add a plan with a start time in the past', async () => {
+      const oneDayAgo = new Date()
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+      const startAt = new BN(oneDayAgo.getTime() / 1000)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            startAt,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            device: mock.devicePda,
+            plan: planPda,
+            parentPlan: null,
+            subscription: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Invalid start time')
+      }
+    })
+
+    test('cannot add a plan with a start time more than 6 months in the future', async () => {
+      const sixMonthsLater = new Date()
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6)
+      const startAt = new BN(sixMonthsLater.getTime() / 1000)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            startAt,
+            mock.planSlaId,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            device: mock.devicePda,
+            plan: planPda,
+            parentPlan: null,
+            subscription: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Invalid start time')
+      }
+    })
+
+    test('adds a plan with a start time 1 day in the future', async () => {
+      // 1 day from now
+      const oneDayLater = new Date()
+      oneDayLater.setDate(oneDayLater.getDate() + 1)
+      const startAt = new BN(oneDayLater.getTime() / 1000)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      oneDayLaterPlanPda = planPda
+
+      const tx = await program.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          startAt,
+          mock.planSlaId,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          plan: planPda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      expect(event.startAt.eq(startAt)).toBeTruthy()
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      expect(plan.startAt.eq(startAt)).toBeTruthy()
+    })
+
+    test('adds a plan with a start time 6 months in the future', async () => {
+      const sixMonthsLater = new Date()
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 5)
+      sixMonthsLater.setDate(sixMonthsLater.getDate() + 29)
+      const startAt = new BN(sixMonthsLater.getTime() / 1000)
+
+      const speed = 600 // to have new PDA
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.devicePda,
+        null,
+        mock.planPrice,
+        mock.planDuration,
+        speed,
+        mock.planCapacity,
+        startAt,
+        mock.planSlaId,
+      )
+
+      const tx = await program.methods
+        .addPlan(
+          mock.planPrice,
+          mock.planDuration,
+          speed,
+          mock.planCapacity,
+          startAt,
+          mock.planSlaId,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          device: mock.devicePda,
+          plan: planPda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      expect(event.startAt.eq(startAt)).toBeTruthy()
+
+      // make sure account was created
+      const plan = await program.account.plan.fetch(planPda)
+      expect(plan.startAt.eq(startAt)).toBeTruthy()
     })
 
     // REMOVE
@@ -558,6 +760,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         sla2Id,
       )
 
@@ -567,6 +770,7 @@ export const parentPlanTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           sla2Id,
         )
         .accounts({
@@ -590,6 +794,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -600,6 +805,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -633,6 +839,7 @@ export const parentPlanTests = () =>
         duration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -643,6 +850,7 @@ export const parentPlanTests = () =>
             duration,
             mock.planSpeed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -673,6 +881,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         speed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -683,6 +892,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             speed,
             mock.planCapacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -713,6 +923,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         capacity,
+        null,
         mock.planSlaId,
       )
 
@@ -723,6 +934,7 @@ export const parentPlanTests = () =>
             mock.planDuration,
             mock.planSpeed,
             capacity,
+            null,
             mock.planSlaId,
           )
           .accounts({
@@ -753,6 +965,7 @@ export const parentPlanTests = () =>
         mock.planDuration,
         mock.planSpeed,
         mock.planCapacity,
+        null,
         mock.planSlaId,
       )
 
@@ -762,6 +975,7 @@ export const parentPlanTests = () =>
           mock.planDuration,
           mock.planSpeed,
           mock.planCapacity,
+          null,
           mock.planSlaId,
         )
         .accounts({
@@ -778,27 +992,29 @@ export const parentPlanTests = () =>
 
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
-      assert.ok(event.owner.equals(mock.customer.publicKey))
-      assert.ok(event.device.equals(devicePda))
-      assert.ok(event.parentPlan.equals(mock.planPda))
-      assert.ok(event.price.eq(mock.planPrice))
-      assert.equal(event.duration, mock.planDuration)
-      assert.equal(event.speed, mock.planSpeed)
-      assert.ok(event.capacity.eq(mock.planCapacity))
-      assert.ok(event.slaId.eq(mock.planSlaId))
+      expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(event.device.equals(devicePda)).toBeTruthy()
+      expect(event.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(event.price.eq(mock.planPrice)).toBeTruthy()
+      expect(event.duration).toBe(mock.planDuration)
+      expect(event.speed).toBe(mock.planSpeed)
+      expect(event.capacity.eq(mock.planCapacity)).toBeTruthy()
+      expect(event.startAt.eq(new BN(0))).toBeTruthy()
+      expect(event.slaId.eq(mock.planSlaId)).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
-      assert.ok(plan.owner.equals(mock.customer.publicKey))
-      assert.ok(plan.device.equals(devicePda))
-      assert.ok(plan.parentPlan.equals(mock.planPda))
-      assert.ok(plan.price.eq(mock.planPrice))
-      assert.equal(plan.duration, mock.planDuration)
-      assert.equal(plan.speed, mock.planSpeed)
-      assert.ok(plan.capacity.eq(mock.planCapacity))
-      assert.ok(plan.slaId.eq(mock.planSlaId))
-      assert.equal(plan.bump, planBump)
+      expect(plan.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(plan.device.equals(devicePda)).toBeTruthy()
+      expect(plan.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(plan.price.eq(mock.planPrice)).toBeTruthy()
+      expect(plan.duration).toBe(mock.planDuration)
+      expect(plan.speed).toBe(mock.planSpeed)
+      expect(plan.capacity.eq(mock.planCapacity)).toBeTruthy()
+      expect(plan.startAt.eq(new BN(0))).toBeTruthy()
+      expect(plan.slaId.eq(mock.planSlaId)).toBeTruthy()
+      expect(plan.bump).toBe(planBump)
     })
   })

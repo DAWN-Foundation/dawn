@@ -12,6 +12,7 @@ export function getPlanPda(
   duration: number,
   speed: number,
   capacity: BN,
+  startAt: BN | null,
   slaId: BN,
 ): [PublicKey, number] {
   const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
@@ -33,6 +34,7 @@ export function getPlanPda(
       durationBuffer,
       speedBuffer,
       Buffer.from(capacity.toArray('le', 8)),
+      Buffer.from(startAt?.toArray('le', 8) ?? Array(8).fill(0)),
       Buffer.from(slaId.toArray('le', 8)),
     ],
     program.programId,

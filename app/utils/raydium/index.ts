@@ -9,8 +9,15 @@ import { deposit } from './deposit'
 import { RaydiumCpSwap } from '../../../raydium/raydium_cp_swap'
 import { getPoolVaultAddress } from './pda'
 import { BankrunProvider } from 'anchor-bankrun'
+import { hasFlag } from '../../dawn/utils'
 
-const RAYDIUM = new PublicKey('CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C')
+const isDevnet = hasFlag('--devnet')
+
+const RAYDIUM = new PublicKey(
+  isDevnet
+    ? 'CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW'
+    : 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
+)
 const RAYDIUM_CONFIG = new PublicKey(
   'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
 )
@@ -30,6 +37,7 @@ export async function setupRaydium(
   walletUsdcAccount: PublicKey,
 ) {
   const program = getRaydiumProgram(provider)
+  const isDevnet = hasFlag('--devnet')
 
   // Sort the tokens
   const [mint0, mint1, walletMint0, walletMint1, dawnIsBase] =

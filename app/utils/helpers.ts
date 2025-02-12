@@ -6,11 +6,18 @@ import * as toml from 'toml'
 
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
+import { getFlag, hasFlag } from '../dawn/utils'
 
 function getProgramId(): PublicKey {
   const anchorToml = toml.parse(readFileSync('./Anchor.toml', 'utf-8'))
 
-  return new PublicKey(anchorToml.programs.localnet.dawn)
+  const isDevnet = hasFlag('--devnet')
+
+  return new PublicKey(
+    isDevnet
+      ? anchorToml.programs.devnet.dawn
+      : anchorToml.programs.localnet.dawn,
+  )
 }
 
 export const PROGRAM_ID = getProgramId()
