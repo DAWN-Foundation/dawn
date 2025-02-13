@@ -146,78 +146,87 @@ export async function prepare(
 
   // Create DAWN account for DAWN DAO
   console.log('Creating DAWN account for DAWN DAO...')
-  const daoDawnAccount = await createAssociatedTokenAccount(
+  const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
-    dao,
+    isDevnet ? wallet : dao,
     dawnMint,
     dao.publicKey,
   )
 
   // Create DAWN account for Validator Pool
   console.log('Creating DAWN account for Validator Pool...')
-  const validatorDawnAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    validatorPool,
-    dawnMint,
-    validatorPool.publicKey,
-  )
+  const { address: validatorDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : validatorPool,
+      dawnMint,
+      validatorPool.publicKey,
+    )
 
   // Create DAWN account for Medallion Pool
   console.log('Creating DAWN account for Medallion Pool...')
-  const medallionDawnAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    medallionPool,
-    dawnMint,
-    medallionPool.publicKey,
-  )
+  const { address: medallionDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : medallionPool,
+      dawnMint,
+      medallionPool.publicKey,
+    )
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
-  const serviceProviderDawnAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    serviceProvider,
-    dawnMint,
-    serviceProvider.publicKey,
-  )
+  const { address: serviceProviderDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : serviceProvider,
+      dawnMint,
+      serviceProvider.publicKey,
+    )
 
   // Create USDC account for Service Provider
   console.log('Creating USDC account for Service Provider...')
-  const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    serviceProvider,
-    usdcMint,
-    serviceProvider.publicKey,
-  )
+  const { address: serviceProviderUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet,
+      usdcMint,
+      serviceProvider.publicKey,
+    )
 
   // Create USDC account for Customer
   console.log('Creating USDC account for Customer...')
-  const customerUsdcAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    customer,
-    usdcMint,
-    customer.publicKey,
-  )
+  const { address: customerUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : customer,
+      usdcMint,
+      customer.publicKey,
+    )
 
   // Create DAWN token account for Customer
   console.log('Creating DAWN token account for Customer...')
-  const customerDawnAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    customer,
-    dawnMint,
-    customer.publicKey,
-  )
+  const { address: customerDawnAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : customer,
+      dawnMint,
+      customer.publicKey,
+    )
 
   // Create USDC token account for wallet
   console.log('Creating USDC token account for wallet...')
-  const walletUsdcAccount = await createAssociatedTokenAccount(
-    provider.connection,
-    wallet,
-    usdcMint,
-    wallet.publicKey,
-  )
+  const { address: walletUsdcAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      isDevnet ? wallet : wallet,
+      usdcMint,
+      wallet.publicKey,
+      true,
+      'finalized',
+    )
 
   // Mint 1_000_000 USDC to wallet
-  console.log('Minting 1_000_000 USDC to wallet...')
+  console.log('Minting 1_000_000 USDC to wallet...') 
   await mintTo(
     provider.connection,
     wallet, // Payer for transaction
@@ -244,11 +253,7 @@ export async function prepare(
   const [configPda] = getConfigPda(program)
 
   const siteName = 'Test Site'
-  const sitePda = getSitePda(
-    program,
-    serviceProvider,
-    siteName,
-  )
+  const sitePda = getSitePda(program, serviceProvider, siteName)
 
   const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
   const poolIpV4CidrMask = 24
@@ -334,7 +339,7 @@ export async function prepare(
   console.log('Creating USDC vault token account for plan escrow...')
   const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
-    serviceProvider,
+    isDevnet ? wallet : serviceProvider,
     usdcMint,
     planPda,
     true,
@@ -344,7 +349,7 @@ export async function prepare(
   console.log('Creating DAWN vault token account for plan escrow...')
   const { address: escrowDawnVault } = await getOrCreateAssociatedTokenAccount(
     provider.connection,
-    serviceProvider,
+    isDevnet ? wallet : serviceProvider,
     dawnMint,
     planPda,
     true,

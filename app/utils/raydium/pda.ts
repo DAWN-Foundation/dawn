@@ -1,5 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
+
 export const AMM_CONFIG_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode('amm_config'),
 )

@@ -13,3 +13,4 @@ tests/fixtures/dawn.so
 /dawn**.json
 /dvwn**.json
 /test**.json
+devnet.json

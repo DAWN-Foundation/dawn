@@ -3,3 +3,6 @@ validator:
 
 setup:
 	./scripts/testnet-setup.sh
+
+devnet:
+	./scripts/devnet-setup.sh

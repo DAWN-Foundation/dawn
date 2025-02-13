@@ -25,7 +25,12 @@ import {
   MacAddress,
   PROGRAM_ID,
 } from './helpers'
-import { setupRaydium } from './raydium'
+import {
+  RAYDIUM_CONFIG,
+  RAYDIUM_POOL_FEE_RECEIVER,
+  RAYDIUM_PROGRAM_ID,
+  setupRaydium,
+} from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import {
   getConfigPda,
@@ -45,18 +50,6 @@ import {
 } from '@solana/spl-token'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
-
-export const RAYDIUM_PROGRAM_ID = new PublicKey(
-  'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
-)
-
-export const RAYDIUM_CONFIG = new PublicKey(
-  'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
-)
-
-export const RAYDIUM_POOL_FEE_RECEIVER = new PublicKey(
-  'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
-)
 
 export let mock: Mock
 let provider: BankrunProvider

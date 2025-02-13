@@ -89,9 +89,6 @@ pub fn swap_amounts<'info>(
         }
     };
 
-    msg!("vault_0: {}", vault_0.amount);
-    msg!("vault_1: {}", vault_1.amount);
-
     // Get current vault amounts and calculate price using pool state's method
     let (token_0_price_x32, token_1_price_x32) =
         pool.token_price_x32(vault_0.amount, vault_1.amount);

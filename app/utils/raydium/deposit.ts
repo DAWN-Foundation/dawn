@@ -39,9 +39,9 @@ export async function deposit(
   // 10 LP tokens were minted when the pool was created
   const lp_token_amount = new BN(10000000000)
 
-  // 10K more of each token
-  const dawn_amount = new BN(10_000_000_000)
-  const usdc_amount = new BN(20_000_000_000)
+  // deposit more of each token
+  const dawn_amount = new BN(100_000_000_000)
+  const usdc_amount = new BN(200_000_000_000)
   const maximum_token_0_amount = dawnIsBase ? dawn_amount : usdc_amount
   const maximum_token_1_amount = dawnIsBase ? usdc_amount : dawn_amount
 
