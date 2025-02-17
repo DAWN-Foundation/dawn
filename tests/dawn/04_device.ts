@@ -195,13 +195,6 @@ export const deviceTests = () =>
     })
 
     test('adds the device', async () => {
-      const devicePda = getDevicePda(
-        program,
-        mock.serviceProvider,
-        mock.deviceModelPda,
-        mock.deviceMacAddress,
-      )
-
       const tx = await program.methods
         .addDevice(
           mock.deviceHeight,
@@ -237,10 +230,18 @@ export const deviceTests = () =>
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure device was created
-      const device = await program.account.device.fetch(devicePda)
+      const device = await program.account.device.fetch(mock.devicePda)
       expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
+
+      // make sure access domain was created
+      const accessDomain = await program.account.accessDomain.fetch(
+        mock.accessDomainPda,
+      )
+      expect(new BN(accessDomain.createdAt).gt(new BN(0))).toBeTruthy()
+      expect(accessDomain.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(accessDomain.device.equals(mock.devicePda)).toBeTruthy()
 
       // make sure device location was created
       const deviceLocation = await program.account.deviceLocation.fetch(

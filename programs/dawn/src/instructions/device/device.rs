@@ -124,11 +124,12 @@ impl DawnApp {
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
         let access_domain = &mut ctx.accounts.access_domain;
+        let caller = ctx.accounts.caller.key();
 
         // if device_type is Router (L3), create access_domain
         if ctx.accounts.device_model.device_type == DeviceType::Router {
             access_domain.created_at = Clock::get()?.unix_timestamp;
-            access_domain.owner = device.owner;
+            access_domain.owner = caller;
             access_domain.device = device.key();
             access_domain.bump = ctx.bumps.access_domain;
         }
@@ -142,7 +143,7 @@ impl DawnApp {
 
         // Set device info
         device.created_at = created_at;
-        device.owner = ctx.accounts.caller.key();
+        device.owner = caller;
         device.access_domain = access_domain.key();
         device.site = site;
         device.model = ctx.accounts.device_model.key();
