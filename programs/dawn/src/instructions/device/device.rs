@@ -15,8 +15,6 @@ pub struct Device {
     pub created_at: i64,
     /// The owner's public key who registered this device
     pub owner: Pubkey,
-    /// Reference to the AccessDomain account
-    pub access_domain: Pubkey,
     /// Reference to the Site account
     pub site: Option<Pubkey>,
     /// Reference to the DeviceModel account
@@ -30,7 +28,6 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
-    + 32 // access_domain
     + (1 + 32) // site + optional
     + 32 // model
     + 6  // mac_address
@@ -90,7 +87,7 @@ pub struct AddDevice<'info> {
         seeds = [b"access_domain", device.key().as_ref()],
         bump
     )]
-    pub access_domain: Account<'info, AccessDomain>,
+    pub access_domain: Option<Account<'info, AccessDomain>>,
 
     /// The site account
     #[account(
@@ -128,10 +125,17 @@ impl DawnApp {
 
         // if device_type is Router (L3), create access_domain
         if ctx.accounts.device_model.device_type == DeviceType::Router {
-            access_domain.created_at = Clock::get()?.unix_timestamp;
-            access_domain.owner = caller;
-            access_domain.device = device.key();
-            access_domain.bump = ctx.bumps.access_domain;
+            match access_domain {
+                Some(access_domain) => {
+                    access_domain.created_at = Clock::get()?.unix_timestamp;
+                    access_domain.owner = caller;
+                    access_domain.device = device.key();
+                    access_domain.bump = ctx.bumps.access_domain;
+                }
+                None => {
+                    return Err(DawnError::AccessDomainRequired.into());
+                }
+            }
         }
 
         let created_at = Clock::get()?.unix_timestamp;
@@ -144,7 +148,6 @@ impl DawnApp {
         // Set device info
         device.created_at = created_at;
         device.owner = caller;
-        device.access_domain = access_domain.key();
         device.site = site;
         device.model = ctx.accounts.device_model.key();
         device.mac_address = mac_address;
