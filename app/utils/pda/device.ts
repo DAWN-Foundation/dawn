@@ -44,6 +44,18 @@ export function getDevicePda(
   return devicePda
 }
 
+export function getAccessDomainPda(
+  program: Program<Dawn>,
+  devicePda: PublicKey,
+): PublicKey {
+  const [accessDomainPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('access_domain'), Buffer.from(devicePda.toBytes())],
+    program.programId,
+  )
+
+  return accessDomainPda
+}
+
 export function getDeviceLocationPda(
   program: Program<Dawn>,
   devicePda: PublicKey,

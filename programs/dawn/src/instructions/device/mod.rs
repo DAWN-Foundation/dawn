@@ -1,18 +1,20 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 
+mod access_domain;
 mod device;
 mod ip_pool;
 mod location;
 mod model;
 mod site;
 
+pub use access_domain::*;
 pub use device::*;
 pub use ip_pool::*;
 pub use location::*;
 pub use model::*;
 pub use site::*;
 
-#[derive(Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Clone, AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Eq)]
 pub enum DeviceType {
     /// router device type
     Router,

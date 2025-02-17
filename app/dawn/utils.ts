@@ -103,6 +103,7 @@ export function getMock(): Mock {
     configPda: new PublicKey(mock.configPda),
     ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
+    accessDomainPda: new PublicKey(mock.accessDomainPda),
     sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     ipLeasePda: new PublicKey(mock.ipLeasePda),

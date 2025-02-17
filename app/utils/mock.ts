@@ -33,6 +33,7 @@ import {
 } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import {
+  getAccessDomainPda,
   getConfigPda,
   getDeviceLocationPda,
   getDeviceModelPda,
@@ -355,6 +356,8 @@ export async function setup(
     deviceMacAddress,
   )
 
+  const accessDomainPda = getAccessDomainPda(program, devicePda)
+
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   // Pool IP V4
@@ -477,6 +480,7 @@ export async function setup(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    accessDomainPda,
     sitePda,
     devicePda,
     ipLeasePda,

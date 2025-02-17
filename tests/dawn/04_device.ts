@@ -13,6 +13,7 @@ import {
   loadWallet,
   getDevicePda,
   getDeviceLocationPda,
+  getAccessDomainPda,
   MacAddress,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
@@ -76,6 +77,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: invalidModel.publicKey,
             device: mock.devicePda,
+            accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -105,8 +107,9 @@ export const deviceTests = () =>
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
-            deviceLocation: mock.deviceLocationPda,
             device: mock.devicePda,
+            accessDomain: mock.accessDomainPda,
+            deviceLocation: mock.deviceLocationPda,
             site: null,
           })
           .signers([mock.serviceProvider])
@@ -141,6 +144,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -176,6 +180,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -208,6 +213,7 @@ export const deviceTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: mock.devicePda,
+          accessDomain: mock.accessDomainPda,
           deviceLocation: mock.deviceLocationPda,
           site: null,
         })
@@ -337,6 +343,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -387,6 +394,8 @@ export const deviceSiteTests = () =>
         mock.deviceMacAddress,
       )
 
+      const accessDomainPda = getAccessDomainPda(program2, devicePda)
+
       const deviceLocationPda = getDeviceLocationPda(program2, devicePda)
 
       // add device
@@ -401,6 +410,7 @@ export const deviceSiteTests = () =>
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
         })
@@ -466,6 +476,8 @@ export const deviceSiteTests = () =>
         macAddress,
       )
 
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       const tx = await program.methods
@@ -479,6 +491,7 @@ export const deviceSiteTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: mock.sitePda,
         })
