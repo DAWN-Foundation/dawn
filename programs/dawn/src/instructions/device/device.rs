@@ -2,9 +2,12 @@ use anchor_lang::prelude::*;
 use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
-use crate::{DawnApp, DawnError, DeviceAdded};
+use crate::{
+    instructions::{DeviceType, ACCESS_DOMAIN_SIZE},
+    DawnApp, DawnError, DeviceAdded,
+};
 
-use super::{DeviceLocation, DeviceModel, Site, DEVICE_LOCATION_SIZE};
+use super::{AccessDomain, DeviceLocation, DeviceModel, Site, DEVICE_LOCATION_SIZE};
 
 #[account]
 pub struct Device {
@@ -76,6 +79,16 @@ pub struct AddDevice<'info> {
     )]
     pub device_location: Account<'info, DeviceLocation>,
 
+    /// The access domain account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = ACCESS_DOMAIN_SIZE,
+        seeds = [b"access_domain", device.key().as_ref()],
+        bump
+    )]
+    pub access_domain: Option<Account<'info, AccessDomain>>,
+
     /// The site account
     #[account(
         seeds = [
@@ -107,6 +120,23 @@ impl DawnApp {
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
+        let access_domain = &mut ctx.accounts.access_domain;
+        let caller = ctx.accounts.caller.key();
+
+        // if device_type is Router (L3), create access_domain
+        if ctx.accounts.device_model.device_type == DeviceType::Router {
+            match access_domain {
+                Some(access_domain) => {
+                    access_domain.created_at = Clock::get()?.unix_timestamp;
+                    access_domain.owner = caller;
+                    access_domain.device = device.key();
+                    access_domain.bump = ctx.bumps.access_domain;
+                }
+                None => {
+                    return Err(DawnError::AccessDomainRequired.into());
+                }
+            }
+        }
 
         let created_at = Clock::get()?.unix_timestamp;
         let site = if let Some(site) = &ctx.accounts.site {
@@ -117,7 +147,7 @@ impl DawnApp {
 
         // Set device info
         device.created_at = created_at;
-        device.owner = ctx.accounts.caller.key();
+        device.owner = caller;
         device.site = site;
         device.model = ctx.accounts.device_model.key();
         device.mac_address = mac_address;

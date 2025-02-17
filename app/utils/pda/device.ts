@@ -7,8 +7,8 @@ import { Dawn } from '../../../target/types/dawn'
 export function getDeviceModelPda(
   program: Program<Dawn>,
   deviceType: DeviceType | number[],
-  deviceManufacturer: string,
-  deviceModel: string,
+  manufacturer: string,
+  model: string,
 ): PublicKey {
   const [deviceModelPda] = PublicKey.findProgramAddressSync(
     [
@@ -16,8 +16,8 @@ export function getDeviceModelPda(
       deviceType instanceof Array
         ? Buffer.from(deviceType)
         : deviceTypeSeed(deviceType),
-      Buffer.from(deviceManufacturer),
-      Buffer.from(deviceModel),
+      Buffer.from(manufacturer),
+      Buffer.from(model),
     ],
     program.programId,
   )
@@ -27,21 +27,33 @@ export function getDeviceModelPda(
 
 export function getDevicePda(
   program: Program<Dawn>,
-  serviceProvider: Keypair,
-  deviceModelPda: PublicKey,
-  deviceMacAddress: MacAddress,
+  owner: Keypair,
+  model: PublicKey,
+  macAddress: MacAddress,
 ): PublicKey {
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(deviceModelPda.toBytes()),
-      Buffer.from(deviceMacAddress),
+      Buffer.from(owner.publicKey.toBytes()),
+      Buffer.from(model.toBytes()),
+      Buffer.from(macAddress),
     ],
     program.programId,
   )
 
   return devicePda
+}
+
+export function getAccessDomainPda(
+  program: Program<Dawn>,
+  devicePda: PublicKey,
+): PublicKey {
+  const [accessDomainPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('access_domain'), Buffer.from(devicePda.toBytes())],
+    program.programId,
+  )
+
+  return accessDomainPda
 }
 
 export function getDeviceLocationPda(

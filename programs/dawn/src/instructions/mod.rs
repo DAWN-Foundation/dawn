@@ -1,14 +1,15 @@
 mod claim;
-mod device;
 mod config;
+mod device;
 mod plan;
 mod subscription;
 mod token;
 
 pub use claim::*;
-pub use device::*;
 pub use config::*;
+pub use device::*;
 pub use plan::*;
 pub use subscription::*;
 pub use token::*;
+
 pub struct DawnApp;

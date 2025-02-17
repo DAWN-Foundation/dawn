@@ -42,6 +42,9 @@ pub enum DawnError {
     #[msg("Device model is too long")]
     DeviceModelTooLong,
 
+    #[msg("Access domain is required")]
+    AccessDomainRequired,
+
     // PLAN
     #[msg("Plan price is zero")]
     ZeroPlanPrice,

@@ -24,6 +24,7 @@ import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
 import {
+  getAccessDomainPda,
   getConfigPda,
   getDeviceLocationPda,
   getDeviceModelPda,
@@ -292,6 +293,8 @@ export async function prepare(
     deviceMacAddress,
   )
 
+  const accessDomainPda = getAccessDomainPda(program, devicePda) 
+
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
@@ -393,6 +396,7 @@ export async function prepare(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    accessDomainPda,
     sitePda,
     devicePda,
     ipLeasePda,
