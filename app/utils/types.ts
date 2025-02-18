@@ -46,6 +46,7 @@ export interface Mock {
   devicePda: PublicKey
   ipLeasePda: PublicKey
   deviceLocationPda: PublicKey
+  serviceAgreementPda: PublicKey
   planPda: PublicKey
   planBump: number
   // ip pool
@@ -67,6 +68,9 @@ export interface Mock {
   deviceLatitude: BN
   deviceLongitude: BN
   deviceHeight: number
+  // service agreement
+  slaThreshold: BN
+  slaPayoutRatio: BN
   // plan
   planPrice: BN
   planDuration: number
@@ -126,6 +130,7 @@ export interface RawMock {
   devicePda: string
   ipLeasePda: string
   deviceLocationPda: string
+  serviceAgreementPda: string
   planPda: string
   planBump: number
   // ip pool
@@ -147,6 +152,9 @@ export interface RawMock {
   deviceLongitude: number
   deviceHeight: number
   deviceMacAddress: MacAddress
+  // service agreement
+  slaThreshold: string
+  slaPayoutRatio: string
   // plan
   planPrice: string
   planDuration: number

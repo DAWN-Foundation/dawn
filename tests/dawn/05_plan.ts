@@ -286,7 +286,7 @@ export const planTests = () =>
       assert.equal(plan.duration, mock.planDuration)
       assert.equal(plan.speed, mock.planSpeed)
       assert.ok(plan.capacity.eq(mock.planCapacity))
-      assert.ok(plan.slaId.eq(mock.planSlaId))
+      assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
       assert.equal(plan.bump, mock.planBump)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
     })

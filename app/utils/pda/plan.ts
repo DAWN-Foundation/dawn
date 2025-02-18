@@ -3,6 +3,21 @@ import { PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../../target/types/dawn'
 
+export function getServiceAgreementPda(
+  program: Program<Dawn>,
+  threshold: BN,
+  payoutRatio: BN,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('service_agreement'),
+      Buffer.from(threshold.toArray('le', 8)),
+      Buffer.from(payoutRatio.toArray('le', 8)),
+    ],
+    program.programId,
+  )
+}
+
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: Program<Dawn>,

@@ -82,4 +82,10 @@ pub enum DawnError {
 
     #[msg("Invalid start time")]
     InvalidStartTime,
+
+    #[msg("Zero payout ratio")]
+    ZeroPayoutRatio,
+
+    #[msg("Zero threshold")]
+    ZeroThreshold,
 }

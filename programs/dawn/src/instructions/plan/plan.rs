@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
-use super::{AccessDomain, DawnApp, Device, Subscription};
-use crate::{utils::optional_pubkey_seed, DawnError, PlanAdded};
+use crate::{
+    utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, PlanAdded, Subscription,
+};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -29,8 +30,8 @@ pub struct Plan {
     pub capacity: u64,
     /// The start time of the plan (0 for immediate start)
     pub start_at: i64,
-    /// TODO >> The Service Level Agreement identifier
-    pub sla_id: u64,
+    /// The Service Level Agreement Account
+    pub service_agreement: Pubkey,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -47,7 +48,7 @@ const PLAN_SIZE: usize = 8 // id
     + 4 // speed
     + 8 // capacity
     + 8 // start_at
-    + 8 // sla_id
+    + 32 // service_agreement
     + 1; // bump
 
 #[derive(Accounts)]
@@ -90,7 +91,7 @@ pub struct AddPlan<'info> {
             &parent_plan.speed.to_le_bytes(),
             &parent_plan.capacity.to_le_bytes(),
             &parent_plan.start_at.to_le_bytes(),
-            &parent_plan.sla_id.to_le_bytes(),
+            &parent_plan.service_agreement.to_bytes(),
         ],
         bump = parent_plan.bump,
     )]
@@ -111,7 +112,7 @@ pub struct AddPlan<'info> {
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
             &start_at.unwrap_or(0).to_le_bytes(),
-            &sla_id.to_le_bytes(),
+            &[0; 32],
         ],
         bump
     )]
@@ -197,21 +198,22 @@ impl DawnApp {
         plan.speed = speed;
         plan.capacity = capacity; // 0 for unlimited
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
-        plan.sla_id = sla_id;
+                                               // plan.service_agreement = ctx.accounts.service_agreement.key();
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
             plan: plan.key(),
             owner: plan.owner,
+            access_domain: plan.access_domain,
+            device: plan.device,
             is_resale: plan.is_resale,
             parent_plan: plan.parent_plan,
-            device: plan.device,
             price: plan.price,
             duration: plan.duration,
             speed: plan.speed,
             capacity: plan.capacity,
             start_at: plan.start_at,
-            sla_id: plan.sla_id,
+            service_agreement: plan.service_agreement,
             created_at: plan.created_at,
         });
 

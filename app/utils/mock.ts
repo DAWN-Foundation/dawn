@@ -41,6 +41,7 @@ import {
   getIpLeasePda,
   getIpPoolPda,
   getPlanPda,
+  getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
 } from './pda'
@@ -398,6 +399,15 @@ export async function setup(
     leaseIpV6CidrMask,
   )
 
+  const slaThreshold = new BN(100).mul(USDC_DECIMALS)
+  const slaPayoutRatio = new BN(100)
+
+  const [serviceAgreementPda] = getServiceAgreementPda(
+    program,
+    slaThreshold,
+    slaPayoutRatio,
+  )
+
   const planPrice = new BN(100).mul(USDC_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
@@ -484,6 +494,7 @@ export async function setup(
     devicePda,
     ipLeasePda,
     deviceLocationPda,
+    serviceAgreementPda,
     planPda,
     planBump,
     // ip pool
@@ -505,6 +516,9 @@ export async function setup(
     deviceLongitude,
     deviceHeight,
     deviceMacAddress,
+    // service agreement
+    slaThreshold,
+    slaPayoutRatio,
     // plan
     planPrice,
     planDuration,

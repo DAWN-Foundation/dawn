@@ -36,7 +36,7 @@ pub struct Claim<'info> {
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.start_at.to_le_bytes(),
-            &plan.sla_id.to_le_bytes(),
+            plan.service_agreement.as_ref(),
         ],
         bump = plan.bump,
     )]
@@ -170,7 +170,7 @@ impl DawnApp {
             &ctx.accounts.plan.speed.to_le_bytes(),
             &ctx.accounts.plan.capacity.to_le_bytes(),
             &ctx.accounts.plan.start_at.to_le_bytes(),
-            &ctx.accounts.plan.sla_id.to_le_bytes(),
+            ctx.accounts.plan.service_agreement.as_ref(),
             &[ctx.accounts.plan.bump],
         ];
         let signer_seeds = &[&seeds[..]];
