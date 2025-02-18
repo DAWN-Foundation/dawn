@@ -6,6 +6,7 @@ import { Dawn } from '../../../target/types/dawn'
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: Program<Dawn>,
+  accessDomain: PublicKey,
   device: PublicKey,
   parentPlan: PublicKey | null,
   price: BN,
@@ -28,6 +29,7 @@ export function getPlanPda(
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
+      Buffer.from(accessDomain.toBytes()),
       Buffer.from(device.toBytes()),
       parentPlanBuffer,
       Buffer.from(price.toArray('le', 8)),

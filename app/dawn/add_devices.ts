@@ -4,6 +4,7 @@ import { PublicKey } from '@solana/web3.js'
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
 import {
   COORD_DENOMINATOR,
+  getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
   getPlanPda,
@@ -67,7 +68,7 @@ async function main() {
       mock.deviceModelPda,
       mock.deviceMacAddress,
     )
-
+    const accessDomainPda = getAccessDomainPda(program, devicePda)
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     try {
@@ -101,6 +102,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
+            accessDomainPda,
             devicePda,
             null,
             planParams.price,

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use super::{DawnApp, Device, Subscription};
+use super::{AccessDomain, DawnApp, Device, Subscription};
 use crate::{utils::optional_pubkey_seed, DawnError, PlanAdded};
 
 /// The plan account, representing a subscription plan tied to a device
@@ -10,7 +10,9 @@ pub struct Plan {
     pub created_at: i64,
     /// The plan owner
     pub owner: Pubkey,
-    /// Associated device
+    /// Associated Access Domain
+    pub access_domain: Pubkey,
+    /// Associated Device
     pub device: Pubkey,
     /// Whether the plan is a resale plan
     pub is_resale: bool,
@@ -36,6 +38,7 @@ pub struct Plan {
 const PLAN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
+    + 32 // access_domain
     + 32 // device
     + 1 // is_resale
     + 32 // parent plan
@@ -52,6 +55,14 @@ const PLAN_SIZE: usize = 8 // id
 pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
+
+    /// The access domain account
+    #[account(
+        mut,
+        seeds = [b"access_domain", access_domain.device.as_ref()],
+        bump = access_domain.bump
+    )]
+    pub access_domain: Account<'info, AccessDomain>,
 
     /// The device account (must be owned by the caller)
     #[account(
@@ -71,6 +82,7 @@ pub struct AddPlan<'info> {
     #[account(
         seeds = [
             b"plan",
+            parent_plan.access_domain.as_ref(),
             parent_plan.device.as_ref(),
             &optional_pubkey_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
             &parent_plan.price.to_le_bytes(),
@@ -91,6 +103,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
+            access_domain.key().as_ref(),
             device.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
             &price.to_le_bytes(),
@@ -117,44 +130,6 @@ pub struct AddPlan<'info> {
 
     pub system_program: Program<'info, System>,
 }
-
-// #[derive(Accounts)]
-// pub struct RemovePlan<'info> {
-//     #[account(mut)]
-//     pub caller: Signer<'info>,
-
-//     #[account(
-//         mut,
-//         constraint = device.owner == caller.key(),
-//         seeds = [
-//             b"device",
-//             device.owner.as_ref(),
-//             device.model.as_ref(),
-//             &device.mac_address
-//         ],
-//         bump = device.bump
-//     )]
-//     pub device: Account<'info, Device>,
-
-//     /// The plan account
-//     #[account(
-//         mut,
-//         constraint = plan.owner == caller.key(),
-//         close = caller,
-//         seeds = [
-//             b"plan",
-//             device.key().as_ref(),
-//             &plan.price.to_le_bytes(),
-//             &plan.duration.to_le_bytes(),
-//             &plan.speed.to_le_bytes(),
-//             &plan.capacity.to_le_bytes(),
-//             &plan.sla_id.to_le_bytes(),
-//             optional_pubkey_seed(plan.parent_plan.as_ref().map(|p| p.key())).as_ref(),
-//         ],
-//         bump = plan.bump
-//     )]
-//     pub plan: Account<'info, Plan>,
-// }
 
 impl DawnApp {
     pub fn add_plan(
@@ -213,6 +188,7 @@ impl DawnApp {
 
         plan.created_at = Clock::get()?.unix_timestamp;
         plan.owner = ctx.accounts.caller.key();
+        plan.access_domain = ctx.accounts.access_domain.key();
         plan.device = ctx.accounts.device.key();
         plan.is_resale = is_resale;
         plan.parent_plan = parent_plan;
@@ -241,15 +217,4 @@ impl DawnApp {
 
         Ok(())
     }
-
-    // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
-    //     // TODO >> Make sure plan doesnt have any active subscriptions
-
-    //     emit!(PlanRemoved {
-    //         plan: ctx.accounts.plan.key(),
-    //         device: ctx.accounts.device.key(),
-    //     });
-
-    //     Ok(())
-    // }
 }

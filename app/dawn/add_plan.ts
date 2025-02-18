@@ -4,7 +4,7 @@ import { Connection, PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
 import { connect, getFlag, getIDL, getWallet, submitTx } from './utils'
-import { getPlanPda } from '../utils'
+import { getAccessDomainPda, getPlanPda } from '../utils'
 
 // CONSTANTS
 const PRICE = 100_000_000
@@ -27,8 +27,11 @@ async function main() {
   const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
+  const accessDomainPda = getAccessDomainPda(program, devicePda)
+
   const [planPda] = getPlanPda(
     program,
+    accessDomainPda,
     devicePda,
     null,
     price,

@@ -143,6 +143,7 @@ export const subscriptionTests = () =>
     test('cannot subscribe to a plan that doesnt exist', async () => {
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         new BN(1000),

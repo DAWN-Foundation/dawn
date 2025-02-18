@@ -292,9 +292,7 @@ export async function prepare(
     deviceModelPda,
     deviceMacAddress,
   )
-
   const accessDomainPda = getAccessDomainPda(program, devicePda) 
-
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
@@ -322,6 +320,7 @@ export async function prepare(
 
   const [planPda, planBump] = getPlanPda(
     program,
+    accessDomainPda,
     devicePda,
     null,
     planPrice,

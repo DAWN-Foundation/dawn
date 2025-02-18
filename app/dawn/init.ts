@@ -11,6 +11,7 @@ import {
 import { BN } from '@coral-xyz/anchor'
 import {
   COORD_DENOMINATOR,
+  getAccessDomainPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
@@ -107,6 +108,7 @@ async function main() {
 
       devicesPda.push(devicePda)
 
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
@@ -139,6 +141,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
+            accessDomainPda,
             devicePda,
             null,
             planParams.price,

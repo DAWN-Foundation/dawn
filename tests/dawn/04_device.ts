@@ -224,7 +224,7 @@ export const deviceTests = () =>
       }
     })
 
-    test('adds the device', async () => {
+    test('adds the L3 (Router) device', async () => {
       const tx = await program.methods
         .addDevice(
           mock.deviceHeight,

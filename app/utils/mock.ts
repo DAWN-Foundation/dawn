@@ -355,9 +355,7 @@ export async function setup(
     deviceModelPda,
     deviceMacAddress,
   )
-
   const accessDomainPda = getAccessDomainPda(program, devicePda)
-
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   // Pool IP V4
@@ -408,6 +406,7 @@ export async function setup(
 
   const [planPda, planBump] = getPlanPda(
     program,
+    accessDomainPda,
     devicePda,
     null,
     planPrice,

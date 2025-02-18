@@ -19,7 +19,6 @@ import {
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
-
 export let oneDayLaterPlanPda: PublicKey
 
 interface PlanAdded {
@@ -76,6 +75,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         price,
@@ -98,6 +98,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             parentPlan: null,
             subscription: null,
@@ -118,6 +119,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -140,6 +142,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             parentPlan: null,
             subscription: null,
@@ -160,6 +163,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -182,6 +186,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             parentPlan: null,
             subscription: null,
@@ -213,6 +218,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: wallet.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             parentPlan: null,
             subscription: null,
@@ -246,6 +252,7 @@ export const planTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
           plan: mock.planPda,
           parentPlan: null,
@@ -300,6 +307,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             plan: mock.planPda,
             parentPlan: null,
@@ -329,6 +337,7 @@ export const planTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         price,
@@ -343,6 +352,7 @@ export const planTests = () =>
         .addPlan(price, duration, speed, capacity, null, slaId)
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
           plan: planPda,
           parentPlan: null,
@@ -384,6 +394,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -406,6 +417,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             plan: planPda,
             parentPlan: null,
@@ -428,6 +440,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -450,6 +463,7 @@ export const planTests = () =>
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
             plan: planPda,
             parentPlan: null,
@@ -473,6 +487,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -496,6 +511,7 @@ export const planTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
           plan: planPda,
           parentPlan: null,
@@ -525,6 +541,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -546,6 +563,7 @@ export const planTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
           plan: planPda,
           parentPlan: null,
@@ -754,6 +772,7 @@ export const parentPlanTests = () =>
       const sla2Id = mock.planSlaId.add(new BN(1))
       const [plan2Pda] = getPlanPda(
         program2,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -775,6 +794,7 @@ export const parentPlanTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
           plan: plan2Pda,
           parentPlan: null,
@@ -788,6 +808,7 @@ export const parentPlanTests = () =>
 
       const [resellPlanPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         plan2Pda,
         mock.planPrice,
@@ -810,6 +831,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
             plan: resellPlanPda,
             parentPlan: plan2Pda,
@@ -833,6 +855,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -855,6 +878,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
@@ -875,6 +899,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -897,6 +922,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
@@ -917,6 +943,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -939,6 +966,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
@@ -959,6 +987,7 @@ export const parentPlanTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda, // parent plan
         mock.planPrice,
@@ -980,6 +1009,7 @@ export const parentPlanTests = () =>
         )
         .accounts({
           caller: mock.customer.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: devicePda,
           subscription: mock.subscriptionPda,
           parentPlan: mock.planPda,
