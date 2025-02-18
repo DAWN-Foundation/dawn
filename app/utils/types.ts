@@ -76,7 +76,6 @@ export interface Mock {
   planDuration: number
   planSpeed: number
   planCapacity: BN
-  planSlaId: BN
   // subscription
   subscriptionPda: PublicKey
   subscriptionBump: number
@@ -160,7 +159,6 @@ export interface RawMock {
   planDuration: number
   planSpeed: number
   planCapacity: string
-  planSlaId: string
   // subscription
   subscriptionPda: string
   subscriptionBump: number

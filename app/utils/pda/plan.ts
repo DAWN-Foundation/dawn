@@ -7,8 +7,8 @@ export function getServiceAgreementPda(
   program: Program<Dawn>,
   threshold: BN,
   payoutRatio: BN,
-): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(
+): PublicKey {
+  const [serviceAgreementPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('service_agreement'),
       Buffer.from(threshold.toArray('le', 8)),
@@ -16,6 +16,8 @@ export function getServiceAgreementPda(
     ],
     program.programId,
   )
+
+  return serviceAgreementPda
 }
 
 // Helper function to get the PDA for a plan given plan parameters
@@ -29,7 +31,7 @@ export function getPlanPda(
   speed: number,
   capacity: BN,
   startAt: BN | null,
-  slaId: BN,
+  serviceAgreement: PublicKey,
 ): [PublicKey, number] {
   const durationBuffer = Buffer.alloc(2) // 2 bytes for a 16-bit integer
   durationBuffer.writeUInt16LE(duration)
@@ -52,7 +54,7 @@ export function getPlanPda(
       speedBuffer,
       Buffer.from(capacity.toArray('le', 8)),
       Buffer.from(startAt?.toArray('le', 8) ?? Array(8).fill(0)),
-      Buffer.from(slaId.toArray('le', 8)),
+      Buffer.from(serviceAgreement.toBytes()),
     ],
     program.programId,
   )

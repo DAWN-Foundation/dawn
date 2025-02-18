@@ -114,7 +114,8 @@ export const claimTests = () =>
           .accounts(accounts)
           .signers([mock.serviceProvider])
           .rpc()
-        assert.ok(false)
+
+        expect(false).toBeTruthy()
       } catch (error) {
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
@@ -125,6 +126,7 @@ export const claimTests = () =>
     test('cannot claim from escrow of a plan that doesnt exist', async () => {
       const [badPlanPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -132,7 +134,7 @@ export const claimTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        new BN(3),
+        mock.serviceAgreementPda,
       )
 
       const [badSubscriptionPda] = getSubscriptionPda(

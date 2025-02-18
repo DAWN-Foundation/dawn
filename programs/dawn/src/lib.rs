@@ -84,6 +84,14 @@ pub mod dawn {
         DawnApp::verify_device_location(ctx)
     }
 
+    pub fn add_service_agreement(
+        ctx: Context<AddServiceAgreement>,
+        threshold: u64,
+        payout_ratio: u64,
+    ) -> Result<()> {
+        DawnApp::add_service_agreement(ctx, threshold, payout_ratio)
+    }
+
     pub fn add_plan(
         ctx: Context<AddPlan>,
         price: u64,
@@ -91,9 +99,8 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        sla_id: u64,
     ) -> Result<()> {
-        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at, sla_id)
+        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at)
     }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {

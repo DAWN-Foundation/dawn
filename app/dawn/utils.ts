@@ -108,6 +108,7 @@ export function getMock(): Mock {
     devicePda: new PublicKey(mock.devicePda),
     ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
+    serviceAgreementPda: new PublicKey(mock.serviceAgreementPda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
     // ip pool
@@ -129,12 +130,14 @@ export function getMock(): Mock {
     deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
     deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
+    // service agreement
+    slaThreshold: new BN(mock.slaThreshold),
+    slaPayoutRatio: new BN(mock.slaPayoutRatio),
     // plan
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
     planSpeed: mock.planSpeed,
     planCapacity: new BN(mock.planCapacity),
-    planSlaId: new BN(mock.planSlaId),
     // subscription
     subscriptionPda: new PublicKey(mock.subscriptionPda),
     subscriptionBump: mock.subscriptionBump,

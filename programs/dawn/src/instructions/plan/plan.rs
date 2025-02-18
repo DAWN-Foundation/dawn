@@ -4,6 +4,8 @@ use crate::{
     utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, PlanAdded, Subscription,
 };
 
+use super::ServiceAgreement;
+
 /// The plan account, representing a subscription plan tied to a device
 #[account]
 pub struct Plan {
@@ -52,7 +54,7 @@ const PLAN_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(price: u64, duration: u16, speed: u32, capacity: u64, start_at: Option<i64>, sla_id: u64)]
+#[instruction(price: u64, duration: u16, speed: u32, capacity: u64, start_at: Option<i64>)]
 pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -79,6 +81,17 @@ pub struct AddPlan<'info> {
     )]
     pub device: Account<'info, Device>,
 
+    /// The service agreement account
+    #[account(
+        seeds = [
+            b"service_agreement", 
+            &service_agreement.threshold.to_le_bytes(),
+            &service_agreement.payout_ratio.to_le_bytes(),
+        ],
+        bump = service_agreement.bump,
+    )]
+    pub service_agreement: Account<'info, ServiceAgreement>,
+
     /// The parent plan account (if exists)
     #[account(
         seeds = [
@@ -91,7 +104,7 @@ pub struct AddPlan<'info> {
             &parent_plan.speed.to_le_bytes(),
             &parent_plan.capacity.to_le_bytes(),
             &parent_plan.start_at.to_le_bytes(),
-            &parent_plan.service_agreement.to_bytes(),
+            parent_plan.service_agreement.as_ref(),
         ],
         bump = parent_plan.bump,
     )]
@@ -112,7 +125,7 @@ pub struct AddPlan<'info> {
             &speed.to_le_bytes(),
             &capacity.to_le_bytes(),
             &start_at.unwrap_or(0).to_le_bytes(),
-            &[0; 32],
+            service_agreement.key().as_ref(),
         ],
         bump
     )]
@@ -140,7 +153,6 @@ impl DawnApp {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        sla_id: u64,
     ) -> Result<()> {
         // Make sure the plan price is not zero
         require!(price > 0, DawnError::ZeroPlanPrice);
@@ -198,7 +210,7 @@ impl DawnApp {
         plan.speed = speed;
         plan.capacity = capacity; // 0 for unlimited
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
-                                               // plan.service_agreement = ctx.accounts.service_agreement.key();
+        plan.service_agreement = ctx.accounts.service_agreement.key();
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {

@@ -402,7 +402,7 @@ export async function setup(
   const slaThreshold = new BN(100).mul(USDC_DECIMALS)
   const slaPayoutRatio = new BN(100)
 
-  const [serviceAgreementPda] = getServiceAgreementPda(
+  const serviceAgreementPda = getServiceAgreementPda(
     program,
     slaThreshold,
     slaPayoutRatio,
@@ -412,7 +412,6 @@ export async function setup(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planSlaId = new BN(1)
 
   const [planPda, planBump] = getPlanPda(
     program,
@@ -424,7 +423,7 @@ export async function setup(
     planSpeed,
     planCapacity,
     null,
-    planSlaId,
+    serviceAgreementPda,
   )
 
   const [subscriptionPda, subscriptionBump] = getSubscriptionPda(
@@ -524,7 +523,6 @@ export async function setup(
     planDuration,
     planSpeed,
     planCapacity,
-    planSlaId,
     // subscription
     subscriptionPda,
     subscriptionBump,

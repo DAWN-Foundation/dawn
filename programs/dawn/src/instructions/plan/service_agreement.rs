@@ -57,11 +57,8 @@ impl DawnApp {
         threshold: u64,
         payout_ratio: u64,
     ) -> Result<()> {
-        // make sure ratio is not 0
+        // make sure payout ratio is not 0
         require!(payout_ratio > 0, DawnError::ZeroPayoutRatio);
-
-        // make sure threshold is not 0
-        require!(threshold > 0, DawnError::ZeroThreshold);
 
         let service_agreement = &mut ctx.accounts.service_agreement;
 
