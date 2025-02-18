@@ -3,7 +3,7 @@ import { BN } from '@coral-xyz/anchor'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import { connect, getFlag, getIDL, getWallet, submitTx } from './utils'
+import { connect, getFlag, getIDL, getMock, getWallet, submitTx } from './utils'
 import { getAccessDomainPda, getPlanPda } from '../utils'
 
 // CONSTANTS
@@ -22,9 +22,9 @@ async function main() {
   const duration = parseInt(getFlag('--duration')) || DURATION
   const speed = parseInt(getFlag('--speed')) || SPEED
   const capacity = new BN(getFlag('--capacity') || CAPACITY)
-  const sla = new BN(getFlag('--sla') || SLA)
 
   const { wallet, connection, program } = await connect()
+  const mock = getMock()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -39,16 +39,18 @@ async function main() {
     speed,
     capacity,
     null,
-    sla,
+    mock.serviceAgreementPda,
   )
 
   console.log({ planPda: planPda.toBase58() })
 
   const itx = await program.methods
-    .addPlan(price, duration, speed, capacity, null, sla)
+    .addPlan(price, duration, speed, capacity, null)
     .accounts({
       caller: wallet.payer.publicKey,
+      accessDomain: accessDomainPda,
       device: devicePda,
+      serviceAgreement: mock.serviceAgreementPda,
       plan: planPda,
       parentPlan: null,
       subscription: null,

@@ -29,7 +29,7 @@ async function main() {
         device: b.account.device.toBase58(),
         price: b.account.price.toString(),
         capacity: b.account.capacity.toString(),
-        slaId: b.account.slaId.toString(),
+        serviceAgreement: b.account.serviceAgreement.toBase58(),
       },
     })),
   )

@@ -38,7 +38,6 @@ function generateRandomPlanParams() {
     capacity: new BN(
       Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
     ),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
 
@@ -110,7 +109,7 @@ async function main() {
             planParams.speed,
             planParams.capacity,
             null,
-            planParams.sla,
+            mock.serviceAgreementPda,
           )
 
           const planItx = await program.methods
@@ -120,7 +119,6 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
-              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,
