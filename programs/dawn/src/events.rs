@@ -18,9 +18,18 @@ pub struct DeviceAssignedToSite {
 }
 
 #[event]
+pub struct ServiceAgreementAdded {
+    pub service_agreement: Pubkey,
+    pub threshold: u64,
+    pub payout_ratio: u64,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
+    pub access_domain: Pubkey,
     pub device: Pubkey,
     pub is_resale: bool,
     pub parent_plan: Pubkey,
@@ -29,7 +38,7 @@ pub struct PlanAdded {
     pub speed: u32,
     pub capacity: u64,
     pub start_at: i64,
-    pub sla_id: u64,
+    pub service_agreement: Pubkey,
     pub created_at: i64,
 }
 

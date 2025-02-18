@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("BNf8E3y61JVMzm65Va5rzacyec8axAx86YvvjZwBvx6S");
+declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
 declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
@@ -84,6 +84,14 @@ pub mod dawn {
         DawnApp::verify_device_location(ctx)
     }
 
+    pub fn add_service_agreement(
+        ctx: Context<AddServiceAgreement>,
+        threshold: u64,
+        payout_ratio: u64,
+    ) -> Result<()> {
+        DawnApp::add_service_agreement(ctx, threshold, payout_ratio)
+    }
+
     pub fn add_plan(
         ctx: Context<AddPlan>,
         price: u64,
@@ -91,14 +99,9 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        sla_id: u64,
     ) -> Result<()> {
-        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at, sla_id)
+        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at)
     }
-
-    // pub fn remove_plan(ctx: Context<RemovePlan>) -> Result<()> {
-    //     DawnApp::remove_plan(ctx)
-    // }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
         DawnApp::subscribe(ctx)

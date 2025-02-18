@@ -4,6 +4,7 @@ import { PublicKey } from '@solana/web3.js'
 import { connect, DeviceGenerator, getFlag, getMock, submitTx } from './utils'
 import {
   COORD_DENOMINATOR,
+  getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
   getPlanPda,
@@ -37,7 +38,6 @@ function generateRandomPlanParams() {
     capacity: new BN(
       Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
     ),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
 
@@ -67,7 +67,7 @@ async function main() {
       mock.deviceModelPda,
       mock.deviceMacAddress,
     )
-
+    const accessDomainPda = getAccessDomainPda(program, devicePda)
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     try {
@@ -101,6 +101,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
+            accessDomainPda,
             devicePda,
             null,
             planParams.price,
@@ -108,7 +109,7 @@ async function main() {
             planParams.speed,
             planParams.capacity,
             null,
-            planParams.sla,
+            mock.serviceAgreementPda,
           )
 
           const planItx = await program.methods
@@ -118,7 +119,6 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
-              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,

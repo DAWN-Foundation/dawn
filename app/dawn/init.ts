@@ -11,12 +11,14 @@ import {
 import { BN } from '@coral-xyz/anchor'
 import {
   COORD_DENOMINATOR,
+  getAccessDomainPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
   getIpLeasePda,
   getIpPoolPda,
   getPlanPda,
+  getServiceAgreementPda,
   IpV4Bytes,
   IpV6Bytes,
 } from '../utils'
@@ -34,8 +36,6 @@ const MIN_SPEED = 50 // 50 Mbps
 const MAX_SPEED = 1000 // 1000 Mbps
 const MIN_CAPACITY = 100 // 100 MB
 const MAX_CAPACITY = 10000 // 10000 MB
-const MIN_SLA = 1
-const MAX_SLA = 3
 
 function generateRandomPlanParams() {
   return {
@@ -49,7 +49,6 @@ function generateRandomPlanParams() {
     capacity: new BN(
       Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
     ),
-    sla: new BN(Math.floor(Math.random() * (MAX_SLA - MIN_SLA) + MIN_SLA)),
   }
 }
 
@@ -82,6 +81,20 @@ async function main() {
     })
 
     // --------------------------------------------------------------------
+    console.log('Add service agreement')
+    const itx2 = await program.methods
+      .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
+      .accounts({
+        caller: wallet.publicKey,
+        config: mock.configPda,
+        serviceAgreement: mock.serviceAgreementPda,
+      })
+      .signers([wallet.payer])
+      .instruction()
+
+    await submitTx(connection, wallet, itx2)
+
+    // --------------------------------------------------------------------
     console.log('Add devices')
 
     const devices = DeviceGenerator.genearate(
@@ -107,6 +120,7 @@ async function main() {
 
       devicesPda.push(devicePda)
 
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
@@ -120,6 +134,7 @@ async function main() {
           )
           .accounts({
             caller: wallet.publicKey,
+            accessDomain: accessDomainPda,
             device: devicePda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
@@ -139,6 +154,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
+            accessDomainPda,
             devicePda,
             null,
             planParams.price,
@@ -146,7 +162,7 @@ async function main() {
             planParams.speed,
             planParams.capacity,
             null,
-            planParams.sla,
+            mock.serviceAgreementPda,
           )
 
           const planItx = await program.methods
@@ -156,11 +172,12 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
-              planParams.sla,
             )
             .accounts({
               caller: wallet.payer.publicKey,
+              accessDomain: accessDomainPda,
               device: devicePda,
+              serviceAgreement: mock.serviceAgreementPda,
               plan: planPda,
               parentPlan: null,
               subscription: null,

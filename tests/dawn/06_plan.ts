@@ -16,9 +16,9 @@ import {
   loadWallet,
   getDevicePda,
   getDeviceLocationPda,
+  getAccessDomainPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
-
 
 export let oneDayLaterPlanPda: PublicKey
 
@@ -31,14 +31,9 @@ interface PlanAdded {
   duration: number
   speed: number
   capacity: BN
-  slaId: BN
+  serviceAgreement: PublicKey
   createdAt: number
   startAt: BN
-}
-
-interface PlanRemoved {
-  plan: PublicKey
-  device: PublicKey
 }
 
 export const planTests = () =>
@@ -76,6 +71,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         price,
@@ -83,7 +79,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -94,11 +90,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
             subscription: null,
             plan: planPda,
@@ -118,6 +115,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -125,7 +123,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -136,11 +134,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
             subscription: null,
             plan: planPda,
@@ -160,6 +159,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -167,7 +167,7 @@ export const planTests = () =>
         speed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -178,11 +178,12 @@ export const planTests = () =>
             speed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
             subscription: null,
             plan: planPda,
@@ -209,11 +210,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: wallet.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
             subscription: null,
             plan: mock.planPda,
@@ -242,11 +244,12 @@ export const planTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           null,
-          mock.planSlaId,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           plan: mock.planPda,
           parentPlan: null,
           subscription: null,
@@ -266,7 +269,7 @@ export const planTests = () =>
       assert.equal(event.duration, mock.planDuration)
       assert.equal(event.speed, mock.planSpeed)
       assert.ok(event.capacity.eq(mock.planCapacity))
-      assert.ok(event.slaId.eq(mock.planSlaId))
+      assert.ok(event.serviceAgreement.equals(mock.serviceAgreementPda))
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -279,7 +282,7 @@ export const planTests = () =>
       assert.equal(plan.duration, mock.planDuration)
       assert.equal(plan.speed, mock.planSpeed)
       assert.ok(plan.capacity.eq(mock.planCapacity))
-      assert.ok(plan.slaId.eq(mock.planSlaId))
+      assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
       assert.equal(plan.bump, mock.planBump)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
     })
@@ -296,11 +299,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             plan: mock.planPda,
             parentPlan: null,
             subscription: null,
@@ -325,10 +329,10 @@ export const planTests = () =>
       const duration = 60
       const speed = 2_000
       const capacity = new BN(2000)
-      const slaId = new BN(2)
 
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         price,
@@ -336,14 +340,16 @@ export const planTests = () =>
         speed,
         capacity,
         null,
-        slaId,
+        mock.serviceAgreementPda,
       )
 
       const tx = await program.methods
-        .addPlan(price, duration, speed, capacity, null, slaId)
+        .addPlan(price, duration, speed, capacity, null)
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           plan: planPda,
           parentPlan: null,
           subscription: null,
@@ -361,7 +367,7 @@ export const planTests = () =>
       assert.equal(event.duration, duration)
       assert.equal(event.speed, speed)
       assert.ok(event.capacity.eq(capacity))
-      assert.ok(event.slaId.eq(slaId))
+      assert.ok(event.serviceAgreement.equals(mock.serviceAgreementPda))
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -373,7 +379,7 @@ export const planTests = () =>
       assert.equal(plan.duration, duration)
       assert.equal(plan.speed, speed)
       assert.ok(plan.capacity.eq(capacity))
-      assert.ok(plan.slaId.eq(slaId))
+      assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
       assert.equal(plan.bump, planBump)
     })
 
@@ -384,6 +390,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -391,7 +398,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         startAt,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -402,11 +409,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             startAt,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             plan: planPda,
             parentPlan: null,
             subscription: null,
@@ -428,6 +436,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -435,7 +444,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         startAt,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -446,11 +455,12 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             startAt,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             plan: planPda,
             parentPlan: null,
             subscription: null,
@@ -473,6 +483,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -480,7 +491,7 @@ export const planTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         startAt,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       oneDayLaterPlanPda = planPda
@@ -492,11 +503,12 @@ export const planTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           startAt,
-          mock.planSlaId,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           plan: planPda,
           parentPlan: null,
           subscription: null,
@@ -525,6 +537,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
@@ -532,7 +545,7 @@ export const planTests = () =>
         speed,
         mock.planCapacity,
         startAt,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       const tx = await program.methods
@@ -542,11 +555,12 @@ export const planTests = () =>
           speed,
           mock.planCapacity,
           startAt,
-          mock.planSlaId,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           plan: planPda,
           parentPlan: null,
           subscription: null,
@@ -564,119 +578,6 @@ export const planTests = () =>
       const plan = await program.account.plan.fetch(planPda)
       expect(plan.startAt.eq(startAt)).toBeTruthy()
     })
-
-    // REMOVE
-
-    // test('cannot remove a plan that does not exist', async () => {
-    //   const badPlan = Keypair.generate()
-
-    //   try {
-    //     await program.methods
-    //       .removePlan()
-    //       .accounts({
-    //         caller: mock.serviceProvider.publicKey,
-    //         device: mock.devicePda,
-    //         plan: badPlan.publicKey,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     assert.ok(false)
-    //   } catch (error) {
-    //     assert.ok(error instanceof AnchorError)
-    //     const err: AnchorError = error
-    //     assert.strictEqual(
-    //       err.error.errorMessage,
-    //       'The program expected this account to be already initialized',
-    //     )
-    //     assert.strictEqual(err.error.errorCode.number, 3012)
-    //   }
-    // })
-
-    // test('cannot remove a plan that is not owned by the caller', async () => {
-    //   const price = new BN(100).mul(USDC_DECIMALS)
-    //   const duration = 30
-    //   const speed = 1_000
-    //   const capacity = new BN(1000)
-    //   const slaId = new BN(1)
-
-    //   const [planPda] = getPlanPda(
-    //     program,
-    //     null,
-    //     mock.devicePda,
-    //     price,
-    //     duration,
-    //     speed,
-    //     capacity,
-    //     slaId,
-    //   )
-
-    //   try {
-    //     await program.methods
-    //       .removePlan()
-    //       .accounts({
-    //         caller: wallet.publicKey,
-    //         device: mock.devicePda,
-    //         plan: planPda,
-    //       })
-    //       .signers([wallet.payer])
-    //       .rpc()
-    //     assert.ok(false)
-    //   } catch (error) {
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     expect(err.error.errorMessage).toBe('A raw constraint was violated')
-    //     expect(err.error.errorCode.number).toBe(2003)
-    //   }
-    // })
-
-    // test('removes the plan', async () => {
-    //   const price = new BN(10).mul(USDC_DECIMALS)
-    //   const duration = 60
-    //   const speed = 2_000
-    //   const capacity = new BN(2000)
-    //   const slaId = new BN(2)
-
-    //   const [planPda] = getPlanPda(
-    //     program,
-    //     null,
-    //     mock.devicePda,
-    //     price,
-    //     duration,
-    //     speed,
-    //     capacity,
-    //     slaId,
-    //   )
-
-    //   const tx = await program.methods
-    //     .removePlan()
-    //     .accounts({
-    //       caller: mock.serviceProvider.publicKey,
-    //       device: mock.devicePda,
-    //       plan: planPda,
-    //     })
-    //     .signers([mock.serviceProvider])
-    //     .transaction()
-
-    //   const txDetails = await confirmTx(provider, tx)
-
-    //   try {
-    //     await program.account.plan.fetch(planPda)
-    //     assert.ok(false)
-    //   } catch (error) {
-    //     assert.ok(error instanceof Error)
-    //     const err: Error = error
-    //     assert.strictEqual(err.message, 'Could not find ' + planPda.toString())
-    //   }
-
-    //   // make sure event was emitted
-    //   const event = await getEvent<PlanRemoved>(
-    //     program,
-    //     txDetails,
-    //     'PlanRemoved',
-    //   )
-    //   assert.ok(event.plan.equals(planPda))
-    //   assert.ok(event.device.equals(mock.devicePda))
-    // })
   })
 
 export const parentPlanTests = () =>
@@ -688,6 +589,7 @@ export const parentPlanTests = () =>
       ReturnType<typeof program.account.subscription.fetch>
     >
     let devicePda: PublicKey
+    let accessDomainPda: PublicKey
     let deviceLocationPda: PublicKey
 
     beforeAll(async () => {
@@ -720,7 +622,7 @@ export const parentPlanTests = () =>
         mock.deviceModelPda,
         [0, 0, 0, 0, 0, 1],
       )
-
+      accessDomainPda = getAccessDomainPda(program, devicePda)
       deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       await program.methods
@@ -734,6 +636,7 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
         })
@@ -751,31 +654,33 @@ export const parentPlanTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       // create new plan
-      const sla2Id = mock.planSlaId.add(new BN(1))
+      const speed = 240
       const [plan2Pda] = getPlanPda(
         program2,
+        mock.accessDomainPda,
         mock.devicePda,
         null,
         mock.planPrice,
         mock.planDuration,
-        mock.planSpeed,
+        speed,
         mock.planCapacity,
         null,
-        sla2Id,
+        mock.serviceAgreementPda,
       )
 
       await program2.methods
         .addPlan(
           mock.planPrice,
           mock.planDuration,
-          mock.planSpeed,
+          speed,
           mock.planCapacity,
           null,
-          sla2Id,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           plan: plan2Pda,
           parentPlan: null,
           subscription: null,
@@ -788,6 +693,7 @@ export const parentPlanTests = () =>
 
       const [resellPlanPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         plan2Pda,
         mock.planPrice,
@@ -795,7 +701,7 @@ export const parentPlanTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -806,11 +712,12 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             plan: resellPlanPda,
             parentPlan: plan2Pda,
             subscription: null,
@@ -833,6 +740,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -840,7 +748,7 @@ export const parentPlanTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -851,11 +759,12 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
@@ -875,6 +784,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -882,7 +792,7 @@ export const parentPlanTests = () =>
         speed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -893,11 +803,12 @@ export const parentPlanTests = () =>
             speed,
             mock.planCapacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
@@ -917,6 +828,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planPrice,
@@ -924,7 +836,7 @@ export const parentPlanTests = () =>
         mock.planSpeed,
         capacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       try {
@@ -935,11 +847,12 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             capacity,
             null,
-            mock.planSlaId,
           )
           .accounts({
             caller: mock.customer.publicKey,
+            accessDomain: mock.accessDomainPda,
             device: devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
@@ -959,6 +872,7 @@ export const parentPlanTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.accessDomainPda,
         devicePda,
         mock.planPda, // parent plan
         mock.planPrice,
@@ -966,7 +880,7 @@ export const parentPlanTests = () =>
         mock.planSpeed,
         mock.planCapacity,
         null,
-        mock.planSlaId,
+        mock.serviceAgreementPda,
       )
 
       const addPlanTx = await program.methods
@@ -976,11 +890,12 @@ export const parentPlanTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           null,
-          mock.planSlaId,
         )
         .accounts({
           caller: mock.customer.publicKey,
+          accessDomain: mock.accessDomainPda,
           device: devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
           subscription: mock.subscriptionPda,
           parentPlan: mock.planPda,
           plan: planPda,
@@ -1000,7 +915,9 @@ export const parentPlanTests = () =>
       expect(event.speed).toBe(mock.planSpeed)
       expect(event.capacity.eq(mock.planCapacity)).toBeTruthy()
       expect(event.startAt.eq(new BN(0))).toBeTruthy()
-      expect(event.slaId.eq(mock.planSlaId)).toBeTruthy()
+      expect(
+        event.serviceAgreement.equals(mock.serviceAgreementPda),
+      ).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -1014,7 +931,9 @@ export const parentPlanTests = () =>
       expect(plan.speed).toBe(mock.planSpeed)
       expect(plan.capacity.eq(mock.planCapacity)).toBeTruthy()
       expect(plan.startAt.eq(new BN(0))).toBeTruthy()
-      expect(plan.slaId.eq(mock.planSlaId)).toBeTruthy()
+      expect(
+        plan.serviceAgreement.equals(mock.serviceAgreementPda),
+      ).toBeTruthy()
       expect(plan.bump).toBe(planBump)
     })
   })

@@ -32,6 +32,7 @@ import {
   getIpLeasePda,
   getIpPoolPda,
   getPlanPda,
+  getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
 } from './pda'
@@ -292,9 +293,7 @@ export async function prepare(
     deviceModelPda,
     deviceMacAddress,
   )
-
   const accessDomainPda = getAccessDomainPda(program, devicePda) 
-
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
@@ -314,14 +313,23 @@ export async function prepare(
     leaseIpV6CidrMask,
   )
 
+  const slaThreshold = new BN(100).mul(USDC_DECIMALS)
+  const slaPayoutRatio = new BN(100)
+
+  const serviceAgreementPda = getServiceAgreementPda(
+    program,
+    slaThreshold,
+    slaPayoutRatio,
+  )
+
   const planPrice = new BN(100).mul(USDC_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planSlaId = new BN(1)
 
   const [planPda, planBump] = getPlanPda(
     program,
+    accessDomainPda,
     devicePda,
     null,
     planPrice,
@@ -329,7 +337,7 @@ export async function prepare(
     planSpeed,
     planCapacity,
     null,
-    planSlaId,
+    serviceAgreementPda,
   )
 
   const [subscriptionPda, subscriptionBump] = getSubscriptionPda(
@@ -401,6 +409,7 @@ export async function prepare(
     devicePda,
     ipLeasePda,
     deviceLocationPda,
+    serviceAgreementPda,
     planPda,
     planBump,
     // ip pool
@@ -422,12 +431,14 @@ export async function prepare(
     deviceLongitude,
     deviceHeight,
     deviceMacAddress,
+    // service agreement
+    slaThreshold,
+    slaPayoutRatio,
     // plan
     planPrice,
     planDuration,
     planSpeed,
     planCapacity,
-    planSlaId,
     // subscription
     subscriptionPda,
     subscriptionBump,

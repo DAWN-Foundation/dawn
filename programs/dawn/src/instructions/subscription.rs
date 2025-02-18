@@ -63,6 +63,7 @@ pub struct Subscribe<'info> {
     #[account(
         seeds = [
             b"plan",
+            plan.access_domain.as_ref(),
             plan.device.as_ref(),
             &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
             &plan.price.to_le_bytes(),
@@ -70,7 +71,7 @@ pub struct Subscribe<'info> {
             &plan.speed.to_le_bytes(),
             &plan.capacity.to_le_bytes(),
             &plan.start_at.to_le_bytes(),
-            &plan.sla_id.to_le_bytes(),
+            plan.service_agreement.as_ref(),
         ],
         bump = plan.bump
     )]
