@@ -134,6 +134,7 @@ async function main() {
           )
           .accounts({
             caller: wallet.publicKey,
+            accessDomain: accessDomainPda,
             device: devicePda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
