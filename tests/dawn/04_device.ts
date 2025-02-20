@@ -432,8 +432,7 @@ export const deviceTests = () =>
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
-      provider.wallet = wallet
-      const tx = await program.methods
+      await program.methods
         .addDevice(
           mock.deviceHeight,
           lattitude,
