@@ -18,6 +18,9 @@ async function main() {
   }
   const planPda = new PublicKey(plan)
 
+  const device = getFlag('--device')
+  const devicePda = device ? new PublicKey(device) : null
+
   const { wallet, connection, program } = await connect()
   const mock = getMock()
 
@@ -73,6 +76,7 @@ async function main() {
       caller: wallet.publicKey,
       config: mock.configPda,
       plan: planPda,
+      device: devicePda,
       subscription: subscriptionPda,
       // mints
       usdcMint: mock.usdcMint,
