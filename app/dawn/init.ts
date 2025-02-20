@@ -81,18 +81,22 @@ async function main() {
     })
 
     // --------------------------------------------------------------------
-    console.log('Add service agreement')
-    const itx2 = await program.methods
-      .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-      .accounts({
-        caller: wallet.publicKey,
-        config: mock.configPda,
-        serviceAgreement: mock.serviceAgreementPda,
-      })
-      .signers([wallet.payer])
-      .instruction()
-
-    await submitTx(connection, wallet, itx2)
+    try {
+      await program.account.serviceAgreement.fetch(mock.serviceAgreementPda)
+      console.log('Service agreement already exists')
+    } catch (error) {
+      console.log('Add service agreement')
+      const itx2 = await program.methods
+        .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          serviceAgreement: mock.serviceAgreementPda,
+        })
+        .signers([wallet.payer])
+        .instruction()
+      await submitTx(connection, wallet, itx2)
+    }
 
     // --------------------------------------------------------------------
     console.log('Add devices')
@@ -172,6 +176,7 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
+              mock.planAuthMethods,
             )
             .accounts({
               caller: wallet.payer.publicKey,

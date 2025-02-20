@@ -151,7 +151,7 @@ export interface RawMock {
   // site
   siteName: string
   // device
-  deviceType: DeviceType
+  deviceType: string
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: number
@@ -166,7 +166,7 @@ export interface RawMock {
   planDuration: number
   planSpeed: number
   planCapacity: string
-  planAuthMethods: AuthMethod[]
+  planAuthMethods: string
   // subscription
   subscriptionPda: string
   subscriptionBump: number

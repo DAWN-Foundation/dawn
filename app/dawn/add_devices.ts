@@ -119,6 +119,7 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
+              mock.planAuthMethods,
             )
             .accounts({
               caller: wallet.payer.publicKey,
@@ -126,6 +127,7 @@ async function main() {
               plan: planPda,
               parentPlan: null,
               subscription: null,
+              serviceAgreement: mock.serviceAgreementPda,
             } as {})
             .signers([wallet.payer])
             .instruction()
