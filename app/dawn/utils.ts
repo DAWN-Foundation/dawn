@@ -123,7 +123,7 @@ export function getMock(): Mock {
     // site
     siteName: mock.siteName,
     // device
-    deviceType: mock.deviceType,
+    deviceType: JSON.parse(mock.deviceType),
     deviceManufacturer: mock.deviceManufacturer,
     deviceModel: mock.deviceModel,
     deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
@@ -138,6 +138,7 @@ export function getMock(): Mock {
     planDuration: mock.planDuration,
     planSpeed: mock.planSpeed,
     planCapacity: new BN(mock.planCapacity),
+    planAuthMethods: JSON.parse(mock.planAuthMethods),
     // subscription
     subscriptionPda: new PublicKey(mock.subscriptionPda),
     subscriptionBump: mock.subscriptionBump,

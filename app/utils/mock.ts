@@ -1,6 +1,6 @@
 import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
-import { AnchorProvider, BN, Wallet } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, IdlTypes, Wallet } from '@coral-xyz/anchor'
 import {
   Connection,
   Keypair,
@@ -19,11 +19,11 @@ import {
 import { Mock } from './types'
 import {
   COORD_DENOMINATOR,
-  deviceTypeSeed,
   IpV4Bytes,
   IpV6Bytes,
   MacAddress,
   PROGRAM_ID,
+  AuthMethod,
 } from './helpers'
 import {
   RAYDIUM_CONFIG,
@@ -50,6 +50,7 @@ import {
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import { Dawn } from '../../target/types/dawn'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -412,6 +413,7 @@ export async function setup(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
+  const planAuthMethods: AuthMethod[] = [{ mpsk: {} }]
 
   const [planPda, planBump] = getPlanPda(
     program,
@@ -523,6 +525,7 @@ export async function setup(
     planDuration,
     planSpeed,
     planCapacity,
+    planAuthMethods,
     // subscription
     subscriptionPda,
     subscriptionBump,

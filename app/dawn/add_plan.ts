@@ -11,7 +11,6 @@ const PRICE = 100_000_000
 const DURATION = 30
 const SPEED = 100
 const CAPACITY = 0
-const SLA = 1
 
 async function main() {
   const device = getFlag('--device')
@@ -45,7 +44,7 @@ async function main() {
   console.log({ planPda: planPda.toBase58() })
 
   const itx = await program.methods
-    .addPlan(price, duration, speed, capacity, null)
+    .addPlan(price, duration, speed, capacity, null, mock.planAuthMethods)
     .accounts({
       caller: wallet.payer.publicKey,
       accessDomain: accessDomainPda,

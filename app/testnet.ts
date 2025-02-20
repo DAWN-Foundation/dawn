@@ -32,6 +32,8 @@ async function main() {
           }
         : value instanceof PublicKey
         ? value.toBase58()
+        : ['deviceType', 'planAuthMethods'].includes(key)
+        ? JSON.stringify(value)
         : value.toString()
   })
   console.log(parsed)
