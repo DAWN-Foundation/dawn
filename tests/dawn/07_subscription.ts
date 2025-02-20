@@ -101,6 +101,7 @@ export const subscriptionTests = () =>
         caller: mock.customer.publicKey,
         config: mock.configPda,
         plan: mock.planPda,
+        device: null,
         subscription: mock.subscriptionPda,
         // mints
         usdcMint: mock.usdcMint,
