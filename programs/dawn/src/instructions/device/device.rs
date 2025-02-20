@@ -28,7 +28,7 @@ pub struct Device {
 pub const DEVICE_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
-    + (1 + 32) // site + optional
+    + (1 + 32) // optional + site
     + 32 // model
     + 6  // mac_address
     + 1; // bump

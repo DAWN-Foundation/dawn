@@ -20,6 +20,10 @@ import {
   loadWallet,
   confirmTx,
   getSubscriptionPda,
+  getDevicePda,
+  MacAddress,
+  getAccessDomainPda,
+  getDeviceLocationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -34,8 +38,9 @@ const Q32 = new BN(2).pow(new BN(32))
 
 interface Subscribed {
   subscription: PublicKey
-  subscriber: PublicKey
   plan: PublicKey
+  subscriber: PublicKey
+  device: PublicKey | null
   expiration: number
   swapPrice: BN
   createdAt: number
@@ -101,6 +106,7 @@ export const subscriptionTests = () =>
         caller: mock.customer.publicKey,
         config: mock.configPda,
         plan: mock.planPda,
+        device: null,
         subscription: mock.subscriptionPda,
         // mints
         usdcMint: mock.usdcMint,
@@ -343,8 +349,9 @@ export const subscriptionTests = () =>
       // make sure event was emitted
       const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
       assert.ok(event.subscription.equals(mock.subscriptionPda))
-      assert.ok(event.subscriber.equals(mock.customer.publicKey))
       assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.subscriber.equals(mock.customer.publicKey))
+      expect(event.device).toBeNull()
       assert.ok(event.expiration > 0)
       assert.ok(event.swapPrice.gt(price))
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
@@ -435,8 +442,9 @@ export const subscriptionTests = () =>
         mock.subscriptionPda,
       )
       expect(new BN(subscription.createdAt).gt(new BN(0))).toBeTruthy()
-      assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
       assert.ok(subscription.plan.equals(mock.planPda))
+      assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
+      expect(subscription.device).toBeNull()
       // assert.equal(subscription.expiration.toNumber(), expiration)
       // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
       assert.ok(subscription.claimableDawn.eq(dailyDawn))
@@ -471,11 +479,41 @@ export const subscriptionTests = () =>
       provider.wallet = new Wallet(wallet.payer)
       const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
+      // add device
+      const macAddress = [1, 0, 1, 0, 1, 0] as MacAddress
+      const devicePda = getDevicePda(
+        program,
+        wallet.payer,
+        mock.deviceModelPda,
+        macAddress,
+      )
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+
+      await program2.methods
+        .addDevice(
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          macAddress,
+        )
+        .accounts({
+          caller: wallet.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          accessDomain: accessDomainPda,
+          deviceLocation: deviceLocationPda,
+          site: null,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
       const tx = await program2.methods
         .subscribe()
         .accounts({
           ...accounts,
           caller: wallet.publicKey,
+          device: devicePda,
           subscription: subscriptionPda,
           userDawnAccount: mock.walletDawnAccount,
           userUsdcAccount: mock.walletUsdcAccount,
@@ -490,10 +528,17 @@ export const subscriptionTests = () =>
       // make sure event was emitted
       const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
       assert.ok(event.subscription.equals(subscriptionPda))
-      assert.ok(event.subscriber.equals(wallet.publicKey))
       assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.subscriber.equals(wallet.publicKey))
+      expect(event.device).toStrictEqual(devicePda)
       assert.ok(event.expiration > 0)
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // make sure the device was assigned to the subscription
+      let subscription = await program.account.subscription.fetch(
+        subscriptionPda,
+      )
+      expect(subscription.device).toStrictEqual(devicePda)
 
       // reset provider wallet
       provider.wallet = new Wallet(mock.customer)

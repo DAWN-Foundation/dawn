@@ -1,9 +1,6 @@
-import * as anchor from '@coral-xyz/anchor'
-import { BN } from '@coral-xyz/anchor'
-import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
 
-import { Dawn } from '../../target/types/dawn'
-import { connect, getMock, getFlag, getIDL, getWallet, submitTx } from './utils'
+import { connect, getMock, getFlag, submitTx } from './utils'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
@@ -18,13 +15,11 @@ async function main() {
   }
   const planPda = new PublicKey(plan)
 
+  const device = getFlag('--device')
+  const devicePda = device ? new PublicKey(device) : null
+
   const { wallet, connection, program } = await connect()
   const mock = getMock()
-
-  // // for now ensure wallet is customer
-  // if (wallet.publicKey.toBase58() !== mock.customer.publicKey.toBase58()) {
-  //   throw new Error('Wallet must be customer [for now]')
-  // }
 
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
@@ -36,7 +31,7 @@ async function main() {
     connection,
     wallet.payer,
     mock.usdcMint,
-    subscriptionPda,
+    planPda,
     true,
   )
 
@@ -44,7 +39,7 @@ async function main() {
     connection,
     wallet.payer,
     mock.dawnMint,
-    subscriptionPda,
+    planPda,
     true,
   )
 
@@ -55,8 +50,10 @@ async function main() {
       wallet.payer,
       mock.usdcMint,
       wallet.publicKey,
-      true,
+      false,
     )
+
+  console.log({ walletUsdcAccount: walletUsdcAccount.toBase58() })
 
   const { address: walletDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
@@ -64,7 +61,7 @@ async function main() {
       wallet.payer,
       mock.dawnMint,
       wallet.publicKey,
-      true,
+      false,
     )
 
   const itx = await program.methods
@@ -73,6 +70,7 @@ async function main() {
       caller: wallet.publicKey,
       config: mock.configPda,
       plan: planPda,
+      device: devicePda,
       subscription: subscriptionPda,
       // mints
       usdcMint: mock.usdcMint,

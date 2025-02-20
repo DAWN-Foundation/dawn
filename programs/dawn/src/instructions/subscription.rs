@@ -9,7 +9,7 @@ use raydium_cp_swap::{
     states::{PoolState, Q32},
 };
 
-use super::{Config, DawnApp, Plan};
+use super::{Config, DawnApp, Device, Plan};
 use crate::{
     constants::BPS_DENOMINATOR,
     utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
@@ -21,10 +21,12 @@ use crate::{
 pub struct Subscription {
     /// The creation timestamp
     pub created_at: i64,
-    /// The plan subscriber
-    pub subscriber: Pubkey,
     /// Associated subscription plan
     pub plan: Pubkey,
+    /// The plan subscriber
+    pub subscriber: Pubkey,
+    /// The device that is subscribed to the plan (optional for mobile subscribers without devices)
+    pub device: Option<Pubkey>,
     /// Subscription expiration time (UNIX timestamp in seconds)
     pub expiration: i64,
     /// Last claim timestamp for DAWN tokens
@@ -39,8 +41,9 @@ pub struct Subscription {
 
 const SUBSCRIPTION_SIZE: usize = 8 // id
     + 8 // created_at 
-    + 32 // subscriber
     + 32 // plan
+    + 32 // subscriber
+    + (1 + 32) // optional + device
     + 8 // expiration
     + 8 // last_claim
     + 8 // claimable_dawn
@@ -76,6 +79,19 @@ pub struct Subscribe<'info> {
         bump = plan.bump
     )]
     pub plan: Box<Account<'info, Plan>>,
+
+    /// The device account
+    #[account(
+        constraint = device.owner == caller.key(),
+        seeds = [
+            b"device",
+            device.owner.as_ref(),
+            device.model.as_ref(),
+            &device.mac_address,
+        ],
+        bump = device.bump
+    )]
+    pub device: Option<Box<Account<'info, Device>>>,
 
     /// The subscription account
     #[account(
@@ -452,8 +468,9 @@ impl DawnApp {
         // Save subscription data
         let subscription = &mut ctx.accounts.subscription;
         subscription.created_at = Clock::get()?.unix_timestamp;
-        subscription.subscriber = ctx.accounts.caller.key();
         subscription.plan = ctx.accounts.plan.key();
+        subscription.subscriber = ctx.accounts.caller.key();
+        subscription.device = ctx.accounts.device.as_ref().map(|d| d.key());
         subscription.expiration = expiration;
         subscription.last_claim = current_timestamp;
         subscription.claimable_dawn = escrow_dawn; // Initial DAWN amount is locked for 24h
@@ -462,8 +479,9 @@ impl DawnApp {
 
         emit!(Subscribed {
             subscription: subscription.key(),
-            subscriber: ctx.accounts.caller.key(),
             plan: ctx.accounts.plan.key(),
+            subscriber: ctx.accounts.caller.key(),
+            device: subscription.device,
             expiration: subscription.expiration,
             swap_price: price,
             created_at: subscription.created_at,

@@ -175,16 +175,18 @@ impl DawnApp {
         require!(speed > 0, DawnError::ZeroPlanSpeed);
 
         // Make sure the auth methods are valid
-        // 1. No more than 2 auth methods (check before moving auth_methods)
-        require!(auth_methods.len() <= 2, DawnError::TooManyAuthMethods);
+        // No duplicate auth methods
+        let mut seen = [false; 6]; // Assuming AuthMethod is an enum with 6 variants
+        let mut count = 0;
+        for method in &auth_methods {
+            let idx = method.to_owned() as usize;
+            require!(!seen[idx], DawnError::DuplicateAuthMethods);
+            seen[idx] = true;
+            count += 1;
+        }
 
-        // 2. No duplicate auth methods
-        // let mut seen = [false; 6]; // Assuming AuthMethod is an enum with 6 variants
-        // for method in auth_methods {
-        //     let idx = method as usize;
-        //     require!(!seen[idx], DawnError::DuplicateAuthMethod);
-        //     seen[idx] = true;
-        // }
+        // No more than 2 auth methods (check before moving auth_methods)
+        require!(count <= 2, DawnError::TooManyAuthMethods);
 
         let (is_resale, parent_plan) = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref()
         {

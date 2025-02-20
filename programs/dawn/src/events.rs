@@ -52,8 +52,9 @@ pub struct PlanRemoved {
 #[event]
 pub struct Subscribed {
     pub subscription: Pubkey,
-    pub subscriber: Pubkey,
     pub plan: Pubkey,
+    pub subscriber: Pubkey,
+    pub device: Option<Pubkey>,
     pub expiration: i64,
     pub swap_price: u128,
     pub created_at: i64,
