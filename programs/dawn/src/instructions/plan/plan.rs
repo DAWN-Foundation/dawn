@@ -4,7 +4,7 @@ use crate::{
     utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, PlanAdded, Subscription,
 };
 
-use super::ServiceAgreement;
+use super::{AuthMethod, ServiceAgreement};
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -34,6 +34,8 @@ pub struct Plan {
     pub start_at: i64,
     /// The Service Level Agreement Account
     pub service_agreement: Pubkey,
+    /// The authentication methods for the plan (max 2)
+    pub auth_methods: Vec<AuthMethod>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -51,10 +53,18 @@ const PLAN_SIZE: usize = 8 // id
     + 8 // capacity
     + 8 // start_at
     + 32 // service_agreement
+    + (4 + 2) // auth_methods
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(price: u64, duration: u16, speed: u32, capacity: u64, start_at: Option<i64>)]
+#[instruction(
+    price: u64,
+    duration: u16,
+    speed: u32,
+    capacity: u64,
+    start_at: Option<i64>,
+    auth_methods: Vec<AuthMethod>,
+)]
 pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -153,6 +163,7 @@ impl DawnApp {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
+        auth_methods: Vec<AuthMethod>,
     ) -> Result<()> {
         // Make sure the plan price is not zero
         require!(price > 0, DawnError::ZeroPlanPrice);
@@ -162,6 +173,18 @@ impl DawnApp {
 
         // Make sure the plan speed is not zero
         require!(speed > 0, DawnError::ZeroPlanSpeed);
+
+        // Make sure the auth methods are valid
+        // 1. No more than 2 auth methods (check before moving auth_methods)
+        require!(auth_methods.len() <= 2, DawnError::TooManyAuthMethods);
+
+        // 2. No duplicate auth methods
+        // let mut seen = [false; 6]; // Assuming AuthMethod is an enum with 6 variants
+        // for method in auth_methods {
+        //     let idx = method as usize;
+        //     require!(!seen[idx], DawnError::DuplicateAuthMethod);
+        //     seen[idx] = true;
+        // }
 
         let (is_resale, parent_plan) = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref()
         {
@@ -211,6 +234,7 @@ impl DawnApp {
         plan.capacity = capacity; // 0 for unlimited
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
         plan.service_agreement = ctx.accounts.service_agreement.key();
+        plan.auth_methods = auth_methods.clone();
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -226,6 +250,7 @@ impl DawnApp {
             capacity: plan.capacity,
             start_at: plan.start_at,
             service_agreement: plan.service_agreement,
+            auth_methods: auth_methods,
             created_at: plan.created_at,
         });
 

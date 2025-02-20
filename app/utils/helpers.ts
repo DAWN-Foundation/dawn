@@ -24,6 +24,7 @@ export const PROGRAM_ID = getProgramId()
 export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
+export type AuthMethod = anchor.IdlTypes<Dawn>['AuthMethod']
 
 export type IpV4Bytes = [number, number, number, number]
 

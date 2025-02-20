@@ -138,6 +138,7 @@ export function getMock(): Mock {
     planDuration: mock.planDuration,
     planSpeed: mock.planSpeed,
     planCapacity: new BN(mock.planCapacity),
+    planAuthMethods: mock.planAuthMethods,
     // subscription
     subscriptionPda: new PublicKey(mock.subscriptionPda),
     subscriptionBump: mock.subscriptionBump,

@@ -99,8 +99,17 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
+        auth_methods: Vec<AuthMethod>,
     ) -> Result<()> {
-        DawnApp::add_plan(ctx, price, duration, speed, capacity, start_at)
+        DawnApp::add_plan(
+            ctx,
+            price,
+            duration,
+            speed,
+            capacity,
+            start_at,
+            auth_methods,
+        )
     }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {

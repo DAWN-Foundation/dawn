@@ -17,6 +17,7 @@ import {
   getDevicePda,
   getDeviceLocationPda,
   getAccessDomainPda,
+  AuthMethod,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
@@ -31,8 +32,9 @@ interface PlanAdded {
   duration: number
   speed: number
   capacity: BN
-  serviceAgreement: PublicKey
   createdAt: number
+  serviceAgreement: PublicKey
+  authMethods: AuthMethod[]
   startAt: BN
 }
 
@@ -90,6 +92,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -134,6 +137,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -178,6 +182,7 @@ export const planTests = () =>
             speed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -210,6 +215,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: wallet.publicKey,
@@ -244,6 +250,7 @@ export const planTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           null,
+          mock.planAuthMethods,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -270,6 +277,7 @@ export const planTests = () =>
       assert.equal(event.speed, mock.planSpeed)
       assert.ok(event.capacity.eq(mock.planCapacity))
       assert.ok(event.serviceAgreement.equals(mock.serviceAgreementPda))
+      expect(event.authMethods[0]).toStrictEqual(mock.planAuthMethods[0])
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -283,6 +291,7 @@ export const planTests = () =>
       assert.equal(plan.speed, mock.planSpeed)
       assert.ok(plan.capacity.eq(mock.planCapacity))
       assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
+      expect(plan.authMethods[0]).toStrictEqual(mock.planAuthMethods[0])
       assert.equal(plan.bump, mock.planBump)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
     })
@@ -299,6 +308,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -344,7 +354,10 @@ export const planTests = () =>
       )
 
       const tx = await program.methods
-        .addPlan(price, duration, speed, capacity, null)
+        .addPlan(price, duration, speed, capacity, null, [
+          { wpa2Enterprise: {} },
+          { ipsecAh: {} },
+        ])
         .accounts({
           caller: mock.serviceProvider.publicKey,
           accessDomain: mock.accessDomainPda,
@@ -368,6 +381,8 @@ export const planTests = () =>
       assert.equal(event.speed, speed)
       assert.ok(event.capacity.eq(capacity))
       assert.ok(event.serviceAgreement.equals(mock.serviceAgreementPda))
+      expect(event.authMethods[0]).toStrictEqual({ wpa2Enterprise: {} })
+      expect(event.authMethods[1]).toStrictEqual({ ipsecAh: {} })
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -380,6 +395,8 @@ export const planTests = () =>
       assert.equal(plan.speed, speed)
       assert.ok(plan.capacity.eq(capacity))
       assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
+      expect(plan.authMethods[0]).toStrictEqual({ wpa2Enterprise: {} })
+      expect(plan.authMethods[1]).toStrictEqual({ ipsecAh: {} })
       assert.equal(plan.bump, planBump)
     })
 
@@ -409,6 +426,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             startAt,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -455,6 +473,7 @@ export const planTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             startAt,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -503,6 +522,7 @@ export const planTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           startAt,
+          mock.planAuthMethods,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -555,6 +575,7 @@ export const planTests = () =>
           speed,
           mock.planCapacity,
           startAt,
+          mock.planAuthMethods,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -675,6 +696,7 @@ export const parentPlanTests = () =>
           speed,
           mock.planCapacity,
           null,
+          mock.planAuthMethods,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -712,6 +734,7 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.customer.publicKey,
@@ -759,6 +782,7 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.customer.publicKey,
@@ -803,6 +827,7 @@ export const parentPlanTests = () =>
             speed,
             mock.planCapacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.customer.publicKey,
@@ -847,6 +872,7 @@ export const parentPlanTests = () =>
             mock.planSpeed,
             capacity,
             null,
+            mock.planAuthMethods,
           )
           .accounts({
             caller: mock.customer.publicKey,
@@ -890,6 +916,7 @@ export const parentPlanTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           null,
+          mock.planAuthMethods,
         )
         .accounts({
           caller: mock.customer.publicKey,

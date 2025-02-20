@@ -1,7 +1,13 @@
-import { BN, IdlTypes } from '@coral-xyz/anchor'
+import { BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { Dawn } from '../../target/types/dawn'
-import { IpV4Bytes, IpV6Bytes, MacAddress } from './helpers'
+
+import {
+  AuthMethod,
+  DeviceType,
+  IpV4Bytes,
+  IpV6Bytes,
+  MacAddress,
+} from './helpers'
 
 export interface Mock {
   dao: Keypair
@@ -61,7 +67,7 @@ export interface Mock {
   // site
   siteName: string
   // device
-  deviceType: IdlTypes<Dawn>['DeviceType']
+  deviceType: DeviceType
   deviceManufacturer: string
   deviceModel: string
   deviceMacAddress: MacAddress
@@ -76,6 +82,7 @@ export interface Mock {
   planDuration: number
   planSpeed: number
   planCapacity: BN
+  planAuthMethods: AuthMethod[]
   // subscription
   subscriptionPda: PublicKey
   subscriptionBump: number
@@ -144,7 +151,7 @@ export interface RawMock {
   // site
   siteName: string
   // device
-  deviceType: IdlTypes<Dawn>['DeviceType']
+  deviceType: DeviceType
   deviceManufacturer: string
   deviceModel: string
   deviceLatitude: number
@@ -159,6 +166,7 @@ export interface RawMock {
   planDuration: number
   planSpeed: number
   planCapacity: string
+  planAuthMethods: AuthMethod[]
   // subscription
   subscriptionPda: string
   subscriptionBump: number

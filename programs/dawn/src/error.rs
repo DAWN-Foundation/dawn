@@ -88,4 +88,10 @@ pub enum DawnError {
 
     #[msg("Zero threshold")]
     ZeroThreshold,
+
+    #[msg("Duplicate auth method")]
+    DuplicateAuthMethod,
+
+    #[msg("Too many auth methods")]
+    TooManyAuthMethods,
 }

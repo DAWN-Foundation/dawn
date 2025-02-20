@@ -1,4 +1,4 @@
-import { AnchorProvider, BN } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, IdlTypes } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 import {
   createMint,
@@ -19,6 +19,7 @@ import {
   IpV6Bytes,
   MacAddress,
   PROGRAM_ID,
+  AuthMethod,
 } from './helpers'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
@@ -228,7 +229,7 @@ export async function prepare(
     )
 
   // Mint 1_000_000 USDC to wallet
-  console.log('Minting 1_000_000 USDC to wallet...') 
+  console.log('Minting 1_000_000 USDC to wallet...')
   await mintTo(
     provider.connection,
     wallet, // Payer for transaction
@@ -293,7 +294,7 @@ export async function prepare(
     deviceModelPda,
     deviceMacAddress,
   )
-  const accessDomainPda = getAccessDomainPda(program, devicePda) 
+  const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
@@ -326,6 +327,7 @@ export async function prepare(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
+  const planAuthMethods: AuthMethod[] = [{ mpsk: {} }]
 
   const [planPda, planBump] = getPlanPda(
     program,
@@ -439,6 +441,7 @@ export async function prepare(
     planDuration,
     planSpeed,
     planCapacity,
+    planAuthMethods,
     // subscription
     subscriptionPda,
     subscriptionBump,
