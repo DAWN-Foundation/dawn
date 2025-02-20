@@ -242,6 +242,77 @@ export const planTests = () =>
       }
     })
 
+    test('cannot add more than 2 auth methods', async () => {
+      const authMethods: AuthMethod[] = [
+        { mpsk: {} },
+        { wpa2Enterprise: {} },
+        { wpa3Enterprise: {} },
+      ]
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            null,
+            authMethods,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
+            device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
+            parentPlan: null,
+            subscription: null,
+            plan: mock.planPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Too many auth methods')
+      }
+    })
+
+    test('cannot add duplicate auth methods', async () => {
+      const authMethods: AuthMethod[] = [
+        { wpa2Enterprise: {} },
+        { wpa2Enterprise: {} },
+      ]
+
+      try {
+        await program.methods
+          .addPlan(
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            null,
+            authMethods,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
+            device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
+            parentPlan: null,
+            subscription: null,
+            plan: mock.planPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Duplicate auth methods')
+      }
+    })
+
     test('adds the plan', async () => {
       const tx = await program.methods
         .addPlan(
