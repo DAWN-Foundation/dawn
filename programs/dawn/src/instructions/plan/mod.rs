@@ -1,4 +1,5 @@
 mod auth_method;
+#[allow(clippy::module_inception)]
 mod plan;
 mod service_agreement;
 

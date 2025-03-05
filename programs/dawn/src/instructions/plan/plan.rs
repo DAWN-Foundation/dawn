@@ -162,6 +162,7 @@ pub struct AddPlan<'info> {
 }
 
 impl DawnApp {
+    #[allow(clippy::too_many_arguments)]
     pub fn add_plan(
         ctx: Context<AddPlan>,
         name: String,
@@ -173,7 +174,7 @@ impl DawnApp {
         auth_methods: Vec<AuthMethod>,
     ) -> Result<()> {
         // Make sure the plan name is not empty
-        require!(name.len() > 0, DawnError::EmptyPlanName);
+        require!(!name.is_empty(), DawnError::EmptyPlanName);
 
         // Make sure the plan name is not too long
         require!(name.len() <= 32, DawnError::PlanNameTooLong);
@@ -243,14 +244,14 @@ impl DawnApp {
         plan.device = ctx.accounts.device.key();
         plan.is_resale = is_resale;
         plan.parent_plan = parent_plan;
-        plan.name = name.clone();
+        plan.name.clone_from(&name);
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;
         plan.capacity = capacity; // 0 for unlimited
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
         plan.service_agreement = ctx.accounts.service_agreement.key();
-        plan.auth_methods = auth_methods.clone();
+        plan.auth_methods.clone_from(&auth_methods);
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -267,7 +268,7 @@ impl DawnApp {
             capacity: plan.capacity,
             start_at: plan.start_at,
             service_agreement: plan.service_agreement,
-            auth_methods: auth_methods,
+            auth_methods,
             created_at: plan.created_at,
         });
 
