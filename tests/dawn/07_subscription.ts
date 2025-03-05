@@ -152,6 +152,7 @@ export const subscriptionTests = () =>
         mock.accessDomainPda,
         mock.devicePda,
         null,
+        mock.planName,
         new BN(1000),
         30,
         100,

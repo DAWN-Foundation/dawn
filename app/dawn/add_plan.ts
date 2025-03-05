@@ -6,24 +6,20 @@ import { Dawn } from '../../target/types/dawn'
 import { connect, getFlag, getIDL, getMock, getWallet, submitTx } from './utils'
 import { getAccessDomainPda, getPlanPda } from '../utils'
 
-// CONSTANTS
-const PRICE = 100_000_000
-const DURATION = 30
-const SPEED = 100
-const CAPACITY = 0
-
 async function main() {
+  const mock = getMock()
+
   const device = getFlag('--device')
   if (!device) throw new Error('--device is required')
   const devicePda = new PublicKey(device)
 
-  const price = new BN(getFlag('--price') || PRICE)
-  const duration = parseInt(getFlag('--duration')) || DURATION
-  const speed = parseInt(getFlag('--speed')) || SPEED
-  const capacity = new BN(getFlag('--capacity') || CAPACITY)
+  const name = getFlag('--name') || mock.planName
+  const price = new BN(getFlag('--price') || mock.planPrice)
+  const duration = parseInt(getFlag('--duration')) || mock.planDuration
+  const speed = parseInt(getFlag('--speed')) || mock.planSpeed
+  const capacity = new BN(getFlag('--capacity') || mock.planCapacity)
 
   const { wallet, connection, program } = await connect()
-  const mock = getMock()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -33,6 +29,7 @@ async function main() {
     accessDomainPda,
     devicePda,
     null,
+    name,
     price,
     duration,
     speed,

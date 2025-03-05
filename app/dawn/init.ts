@@ -7,6 +7,7 @@ import {
   getRandomInt,
   IpV4Generator,
   IpV6Generator,
+  planNames,
 } from './utils'
 import { BN } from '@coral-xyz/anchor'
 import {
@@ -49,6 +50,7 @@ function generateRandomPlanParams() {
     capacity: new BN(
       Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
     ),
+    name: planNames[Math.floor(Math.random() * planNames.length)],  
   }
 }
 
@@ -161,6 +163,7 @@ async function main() {
             accessDomainPda,
             devicePda,
             null,
+            planParams.name,
             planParams.price,
             planParams.duration,
             planParams.speed,

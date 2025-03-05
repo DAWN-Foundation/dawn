@@ -11,7 +11,7 @@ pub enum AuthMethod {
 }
 
 impl AuthMethod {
-    pub fn to_seed(&self) -> &[u8] {
+    pub fn as_seed(&self) -> &[u8] {
         match self {
             Self::Psk => &[0],
             Self::Mpsk => &[1],

@@ -1,6 +1,7 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 
 mod access_domain;
+#[allow(clippy::module_inception)]
 mod device;
 mod ip_pool;
 mod location;

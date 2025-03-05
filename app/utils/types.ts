@@ -78,6 +78,7 @@ export interface Mock {
   slaThreshold: BN
   slaPayoutRatio: BN
   // plan
+  planName: string
   planPrice: BN
   planDuration: number
   planSpeed: number
@@ -162,6 +163,7 @@ export interface RawMock {
   slaThreshold: string
   slaPayoutRatio: string
   // plan
+  planName: string
   planPrice: string
   planDuration: number
   planSpeed: number

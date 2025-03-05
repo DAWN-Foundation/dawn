@@ -246,6 +246,7 @@ impl DawnApp {
             let bits_in_chunk = v6_network_bits % 16;
 
             // Check all complete chunks must match exactly
+            #[allow(clippy::needless_range_loop)]
             for i in 0..chunk_idx {
                 require!(ip_v6[i] == ip_pool.ip_v6[i], DawnError::InvalidIpRange);
             }

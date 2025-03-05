@@ -69,6 +69,7 @@ pub struct Subscribe<'info> {
             plan.access_domain.as_ref(),
             plan.device.as_ref(),
             &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
+            &plan.name.as_bytes(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),

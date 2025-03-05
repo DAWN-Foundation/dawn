@@ -4,6 +4,7 @@ use raydium_cp_swap::states::{PoolState, Q32};
 
 use crate::{constants::BPS_DENOMINATOR, DawnError};
 
+#[allow(clippy::too_many_arguments)]
 pub fn sort_accounts<'info>(
     pool_mint_0: Pubkey,
     pool_mint_1: Pubkey,

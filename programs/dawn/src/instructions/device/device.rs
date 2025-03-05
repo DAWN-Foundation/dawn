@@ -139,11 +139,7 @@ impl DawnApp {
         }
 
         let created_at = Clock::get()?.unix_timestamp;
-        let site = if let Some(site) = &ctx.accounts.site {
-            Some(site.key())
-        } else {
-            None
-        };
+        let site = ctx.accounts.site.as_ref().map(|site| site.key());
 
         // Set device info
         device.created_at = created_at;
@@ -166,7 +162,7 @@ impl DawnApp {
         emit!(DeviceAdded {
             device: device.key(),
             owner: device.owner,
-            site: site,
+            site,
             model: device.model,
             latitude,
             longitude,

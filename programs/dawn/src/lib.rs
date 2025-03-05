@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
@@ -94,6 +96,7 @@ pub mod dawn {
 
     pub fn add_plan(
         ctx: Context<AddPlan>,
+        name: String,
         price: u64,
         duration: u16,
         speed: u32,
@@ -103,6 +106,7 @@ pub mod dawn {
     ) -> Result<()> {
         DawnApp::add_plan(
             ctx,
+            name,
             price,
             duration,
             speed,

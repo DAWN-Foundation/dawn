@@ -90,7 +90,7 @@ impl DawnApp {
         // Set site info
         site.created_at = Clock::get()?.unix_timestamp;
         site.owner = ctx.accounts.caller.key();
-        site.name = name.clone();
+        site.name.clone_from(&name);
         site.bump = ctx.bumps.site;
 
         // Emit event
