@@ -94,4 +94,10 @@ pub enum DawnError {
 
     #[msg("Too many auth methods")]
     TooManyAuthMethods,
+
+    #[msg("Plan name is too long")]
+    PlanNameTooLong,
+
+    #[msg("Plan name is empty")]
+    EmptyPlanName,
 }

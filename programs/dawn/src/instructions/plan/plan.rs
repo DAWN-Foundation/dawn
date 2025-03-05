@@ -21,6 +21,8 @@ pub struct Plan {
     pub is_resale: bool,
     /// The parent plan (for resale)
     pub parent_plan: Pubkey,
+    /// The plan name (arbitrary string up to 32 bytes)
+    pub name: String,
     /// The plan price per `duration` days (in USDC with 6 decimals)
     pub price: u64,
     /// The plan duration in days
@@ -47,6 +49,7 @@ const PLAN_SIZE: usize = 8 // id
     + 32 // device
     + 1 // is_resale
     + 32 // parent plan
+    + (4 + 32) // name
     + 8 // price
     + 2 // duration
     + 4 // speed
@@ -58,6 +61,7 @@ const PLAN_SIZE: usize = 8 // id
 
 #[derive(Accounts)]
 #[instruction(
+    name: String,
     price: u64,
     duration: u16,
     speed: u32,
@@ -109,6 +113,7 @@ pub struct AddPlan<'info> {
             parent_plan.access_domain.as_ref(),
             parent_plan.device.as_ref(),
             &optional_pubkey_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
+            &parent_plan.name.as_bytes(),
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
@@ -130,6 +135,7 @@ pub struct AddPlan<'info> {
             access_domain.key().as_ref(),
             device.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
+            &name.as_bytes(),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
@@ -158,6 +164,7 @@ pub struct AddPlan<'info> {
 impl DawnApp {
     pub fn add_plan(
         ctx: Context<AddPlan>,
+        name: String,
         price: u64,
         duration: u16,
         speed: u32,
@@ -165,6 +172,12 @@ impl DawnApp {
         start_at: Option<i64>,
         auth_methods: Vec<AuthMethod>,
     ) -> Result<()> {
+        // Make sure the plan name is not empty
+        require!(name.len() > 0, DawnError::EmptyPlanName);
+
+        // Make sure the plan name is not too long
+        require!(name.len() <= 32, DawnError::PlanNameTooLong);
+
         // Make sure the plan price is not zero
         require!(price > 0, DawnError::ZeroPlanPrice);
 
@@ -230,6 +243,7 @@ impl DawnApp {
         plan.device = ctx.accounts.device.key();
         plan.is_resale = is_resale;
         plan.parent_plan = parent_plan;
+        plan.name = name.clone();
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;
@@ -246,6 +260,7 @@ impl DawnApp {
             device: plan.device,
             is_resale: plan.is_resale,
             parent_plan: plan.parent_plan,
+            name,
             price: plan.price,
             duration: plan.duration,
             speed: plan.speed,

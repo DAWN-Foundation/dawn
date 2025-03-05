@@ -134,6 +134,7 @@ export function getMock(): Mock {
     slaThreshold: new BN(mock.slaThreshold),
     slaPayoutRatio: new BN(mock.slaPayoutRatio),
     // plan
+    planName: mock.planName,
     planPrice: new BN(mock.planPrice),
     planDuration: mock.planDuration,
     planSpeed: mock.planSpeed,
@@ -362,3 +363,26 @@ export class IpV6Generator {
     return ipList.slice(1, totalAddresses)
   }
 }
+
+export const planNames = [
+  'SpeedSurge 100',
+  'BlazeNet Ultra',
+  'TurboStream Pro',
+  'HyperLink Max',
+  'WarpSpeed 500',
+  'Lightning Fiber',
+  'Infinity Connect',
+  'NitroNet Plus',
+  'Velocity Wave',
+  'Quantum Surf',
+  'RocketStream',
+  'HyperFlow 1G',
+  'PulseFiber X',
+  'RapidLink Elite',
+  'MachNet Prime',
+  'StormFiber Ultra',
+  'ZenoSpeed Pro',
+  'NeonNet Infinity',
+  'Eclipse Fiber',
+  'ZenithStream',
+]

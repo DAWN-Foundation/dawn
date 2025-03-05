@@ -129,6 +129,7 @@ export const claimTests = () =>
         mock.accessDomainPda,
         mock.devicePda,
         null,
+        mock.planName,
         mock.planPrice,
         mock.planDuration,
         mock.planSpeed,

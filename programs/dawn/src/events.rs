@@ -33,6 +33,7 @@ pub struct PlanAdded {
     pub device: Pubkey,
     pub is_resale: bool,
     pub parent_plan: Pubkey,
+    pub name: String,
     pub price: u64,
     pub duration: u16,
     pub speed: u32,

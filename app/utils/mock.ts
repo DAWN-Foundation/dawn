@@ -409,6 +409,7 @@ export async function setup(
     slaPayoutRatio,
   )
 
+  const planName = 'RapidLink Elite'
   const planPrice = new BN(100).mul(USDC_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
@@ -420,6 +421,7 @@ export async function setup(
     accessDomainPda,
     devicePda,
     null,
+    planName,
     planPrice,
     planDuration,
     planSpeed,
@@ -521,6 +523,7 @@ export async function setup(
     slaThreshold,
     slaPayoutRatio,
     // plan
+    planName,
     planPrice,
     planDuration,
     planSpeed,
