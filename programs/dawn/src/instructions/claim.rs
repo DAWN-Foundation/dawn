@@ -168,6 +168,7 @@ impl DawnApp {
                     .is_resale
                     .then_some(ctx.accounts.plan.parent_plan),
             ),
+            &ctx.accounts.plan.name.as_bytes(),
             &ctx.accounts.plan.price.to_le_bytes(),
             &ctx.accounts.plan.duration.to_le_bytes(),
             &ctx.accounts.plan.speed.to_le_bytes(),
