@@ -26,6 +26,7 @@ interface DeviceAdded {
   device: PublicKey
   site: PublicKey
   model: PublicKey
+  name: string
   latitude: BN
   longitude: BN
   height: number
@@ -71,6 +72,7 @@ export const deviceTests = () =>
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
@@ -102,6 +104,7 @@ export const deviceTests = () =>
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             mock.deviceHeight,
             latitude,
             mock.deviceLongitude,
@@ -128,16 +131,10 @@ export const deviceTests = () =>
     test('cannot add device with longitude eq 0', async () => {
       const longitude = new BN(0.0 * COORD_DENOMINATOR)
 
-      const devicePda = getDevicePda(
-        program,
-        mock.serviceProvider,
-        mock.deviceModelPda,
-        mock.deviceMacAddress,
-      )
-
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             mock.deviceHeight,
             mock.deviceLatitude,
             longitude,
@@ -146,7 +143,7 @@ export const deviceTests = () =>
           .accounts({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
-            device: devicePda,
+            device: mock.devicePda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -168,12 +165,14 @@ export const deviceTests = () =>
         program,
         mock.serviceProvider,
         mock.deviceModelPda,
+        mock.deviceName,
         mock.deviceMacAddress,
       )
 
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             height,
             mock.deviceLatitude,
             mock.deviceLongitude,
@@ -201,6 +200,7 @@ export const deviceTests = () =>
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
@@ -227,6 +227,7 @@ export const deviceTests = () =>
     test('adds the L3 (Router) device', async () => {
       const tx = await program.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
@@ -254,6 +255,7 @@ export const deviceTests = () =>
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(event.name).toBe(mock.deviceName)
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
       expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
       expect(event.height.toString()).toBe(mock.deviceHeight.toString())
@@ -264,6 +266,7 @@ export const deviceTests = () =>
       expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(device.name).toBe(mock.deviceName)
 
       // make sure access domain was created
       const accessDomain = await program.account.accessDomain.fetch(
@@ -367,6 +370,7 @@ export const deviceTests = () =>
       try {
         await program.methods
           .addDevice(
+            mock.deviceName,
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
@@ -424,6 +428,7 @@ export const deviceTests = () =>
         program,
         mock.serviceProvider,
         deviceModelPda,
+        mock.deviceName,
         mock.deviceMacAddress,
       )
 
@@ -434,6 +439,7 @@ export const deviceTests = () =>
 
       await program.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           lattitude,
           longitude,
@@ -483,6 +489,7 @@ export const deviceSiteTests = () =>
         program2,
         wallet.payer,
         mock.deviceModelPda,
+        mock.deviceName,
         mock.deviceMacAddress,
       )
 
@@ -493,6 +500,7 @@ export const deviceSiteTests = () =>
       // add device
       await program2.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
@@ -565,6 +573,7 @@ export const deviceSiteTests = () =>
         program,
         mock.serviceProvider,
         mock.deviceModelPda,
+        mock.deviceName,
         macAddress,
       )
 
@@ -574,6 +583,7 @@ export const deviceSiteTests = () =>
 
       const tx = await program.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,

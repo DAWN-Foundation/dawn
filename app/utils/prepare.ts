@@ -21,6 +21,7 @@ import {
   PROGRAM_ID,
   AuthMethod,
 } from './helpers'
+import { mock } from './mock'
 import { setupRaydium } from './raydium'
 import { getDawnProgram } from '../dawn/utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
@@ -276,6 +277,7 @@ export async function prepare(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
+  const deviceName = 'PreparedDevice'
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
   const deviceLatitude = new BN(0.000001 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
@@ -292,6 +294,7 @@ export async function prepare(
     program,
     serviceProvider,
     deviceModelPda,
+    deviceName,
     deviceMacAddress,
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -431,6 +434,7 @@ export async function prepare(
     deviceType,
     deviceManufacturer,
     deviceModel,
+    deviceName,
     deviceLatitude,
     deviceLongitude,
     deviceHeight,

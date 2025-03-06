@@ -22,6 +22,7 @@ async function main() {
   const longitudeFlag = getFlag('--longitude')
   const latitudeFlag = getFlag('--latitude')
   const heightFlag = getFlag('--height')
+  const name = getFlag('--name') || mock.deviceName
 
   const longitude = longitudeFlag
     ? new BN(parseFloat(longitudeFlag) * COORD_DENOMINATOR)
@@ -44,6 +45,7 @@ async function main() {
     program,
     wallet.payer,
     deviceModel,
+    name,
     MAC_ADDRESS,
   )
 
@@ -54,7 +56,7 @@ async function main() {
   console.log({ deviceModelPda: deviceModel.toBase58() })
 
   const itx = await program.methods
-    .addDevice(height, latitude, longitude, MAC_ADDRESS)
+    .addDevice(name, height, latitude, longitude, MAC_ADDRESS)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,

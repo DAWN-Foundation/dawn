@@ -738,6 +738,7 @@ export const parentPlanTests = () =>
         program,
         mock.customer,
         mock.deviceModelPda,
+        mock.deviceName,
         [0, 0, 0, 0, 0, 1],
       )
       accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -745,6 +746,7 @@ export const parentPlanTests = () =>
 
       await program.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,

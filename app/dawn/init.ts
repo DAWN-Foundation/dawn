@@ -50,7 +50,7 @@ function generateRandomPlanParams() {
     capacity: new BN(
       Math.floor(Math.random() * (MAX_CAPACITY - MIN_CAPACITY) + MIN_CAPACITY),
     ),
-    name: planNames[Math.floor(Math.random() * planNames.length)],  
+    name: planNames[Math.floor(Math.random() * planNames.length)],
   }
 }
 
@@ -103,14 +103,15 @@ async function main() {
     // --------------------------------------------------------------------
     console.log('Add devices')
 
-    const devices = DeviceGenerator.genearate(
+    const devices = DeviceGenerator.generate(
       5,
       [-121.115323, 37.3985593, -122.3253238, 37.1615593],
     )
 
     const devicesPda: PublicKey[] = []
 
-    for (const device of devices) {
+    for (let index = 0; index < devices.length; index++) {
+      const device = devices[index]
       const lngFixed = Number(device.coord.at(0).toFixed(6))
       const latFixed = Number(device.coord.at(1).toFixed(6))
 
@@ -121,6 +122,7 @@ async function main() {
         program,
         wallet.payer,
         deviceModelPda,
+        device.name,
         device.mac,
       )
 
@@ -133,6 +135,7 @@ async function main() {
         // Add device
         const deviceItx = await program.methods
           .addDevice(
+            device.name,
             device.height,
             latitude,
             longitude,
@@ -174,6 +177,7 @@ async function main() {
 
           const planItx = await program.methods
             .addPlan(
+              planParams.name,
               planParams.price,
               planParams.duration,
               planParams.speed,

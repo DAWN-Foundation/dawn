@@ -19,6 +19,8 @@ pub struct Device {
     pub site: Option<Pubkey>,
     /// Reference to the DeviceModel account
     pub model: Pubkey,
+    /// Name of the device
+    pub name: String,
     /// MAC address
     pub mac_address: [u8; 6],
     /// PDA bump seed
@@ -30,11 +32,12 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + (1 + 32) // optional + site
     + 32 // model
+    + (4 + 32) // name
     + 6  // mac_address
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(height: u16, latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(name: String, height: u16, latitude: u64, longitude: u64, mac_address: [u8; 6])]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -60,6 +63,7 @@ pub struct AddDevice<'info> {
             b"device",
             caller.key().as_ref(),
             device_model.key().as_ref(),
+            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
             &mac_address,
         ],
         bump
@@ -107,6 +111,7 @@ pub struct AddDevice<'info> {
 impl DawnApp {
     pub fn add_device(
         ctx: Context<AddDevice>,
+        name: String,
         height: u16,
         latitude: i64,
         longitude: i64,
@@ -117,6 +122,12 @@ impl DawnApp {
         require!(!longitude.eq(&0i64), DawnError::InvalidLongitude);
         require!(!height.eq(&0u16), DawnError::InvalidHeight);
         require!(!height.lt(&0u16), DawnError::InvalidHeight);
+
+        // Make sure the name is not empty
+        require!(!name.is_empty(), DawnError::EmptyDeviceName);
+
+        // Make sure the name is not too long
+        require!(name.len() <= 32, DawnError::DeviceNameTooLong,);
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
@@ -146,6 +157,7 @@ impl DawnApp {
         device.owner = caller;
         device.site = site;
         device.model = ctx.accounts.device_model.key();
+        device.name.clone_from(&name);
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
 
@@ -164,6 +176,7 @@ impl DawnApp {
             owner: device.owner,
             site,
             model: device.model,
+            name,
             latitude,
             longitude,
             height,

@@ -100,4 +100,10 @@ pub enum DawnError {
 
     #[msg("Plan name is empty")]
     EmptyPlanName,
+
+    #[msg("Device name is too long")]
+    DeviceNameTooLong,
+
+    #[msg("Device name is empty")]
+    EmptyDeviceName,
 }

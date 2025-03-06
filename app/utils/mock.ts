@@ -338,6 +338,7 @@ export async function setup(
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
+  const deviceName = 'DefaultDevice'
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
 
   const deviceModelPda = getDeviceModelPda(
@@ -355,6 +356,7 @@ export async function setup(
     program,
     serviceProvider,
     deviceModelPda,
+    deviceName,
     deviceMacAddress,
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -515,6 +517,7 @@ export async function setup(
     deviceType,
     deviceManufacturer,
     deviceModel,
+    deviceName,
     deviceLatitude,
     deviceLongitude,
     deviceHeight,

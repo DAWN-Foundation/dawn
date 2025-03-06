@@ -1,4 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
+use solana_program::pubkey::MAX_SEED_LEN;
+use std::cmp::min;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, Mint, Token, TokenAccount},
@@ -88,6 +90,7 @@ pub struct Subscribe<'info> {
             b"device",
             device.owner.as_ref(),
             device.model.as_ref(),
+            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
             &device.mac_address,
         ],
         bump = device.bump
