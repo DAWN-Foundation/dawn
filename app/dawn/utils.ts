@@ -302,6 +302,7 @@ export class DeviceGenerator {
           : this.flatPoint(),
         mac: generateMacAddress(),
         height: getRandomInt(1, 20),
+        name: deviceNames[getRandomInt(0, deviceNames.length - 1)],
       }
 
       devices.push(device)
