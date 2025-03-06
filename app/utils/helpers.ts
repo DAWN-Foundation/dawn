@@ -6,7 +6,7 @@ import * as toml from 'toml'
 
 import { Dawn } from '../../target/types/dawn'
 import { BanksTransactionMeta } from 'solana-bankrun'
-import { getFlag, hasFlag } from '../dawn/utils'
+import { hasFlag } from '../dawn/utils'
 
 function getProgramId(): PublicKey {
   const anchorToml = toml.parse(readFileSync('./Anchor.toml', 'utf-8'))
@@ -31,6 +31,7 @@ export type IpV4Bytes = [number, number, number, number]
 export type MacAddress = [number, number, number, number, number, number]
 
 export interface GenerateDevice {
+  name: string
   coord: [number, number]
   mac: MacAddress
   height: number

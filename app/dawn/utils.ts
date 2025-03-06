@@ -123,6 +123,7 @@ export function getMock(): Mock {
     // site
     siteName: mock.siteName,
     // device
+    deviceName: mock.deviceName,
     deviceType: JSON.parse(mock.deviceType),
     deviceManufacturer: mock.deviceManufacturer,
     deviceModel: mock.deviceModel,
@@ -291,7 +292,7 @@ export class DeviceGenerator {
     return coordinates || [this.lon(), this.lat()]
   }
 
-  static genearate(count: number, bbox?: number[]): GenerateDevice[] {
+  static generate(count: number, bbox?: number[]): GenerateDevice[] {
     const devices = []
 
     for (let i = 0; i < count; i++) {
@@ -363,6 +364,29 @@ export class IpV6Generator {
     return ipList.slice(1, totalAddresses)
   }
 }
+
+export const deviceNames = [
+  'Quantum-Stream-Edge',
+  'Cyber-Pulse-Hub',
+  'Digital-Wave-Node',
+  'Nexus-Cloud-Point',
+  'Atomic-Link-Station',
+  'Solar-Net-Bridge',
+  'Hyper-Flow-Gateway',
+  'Rapid-Data-Terminal',
+  'Cosmic-Beam-Router',
+  'Nano-Grid-Portal',
+  'Echo-Force-Beacon',
+  'Fusion-Core-Access',
+  'Vector-Sync-Module',
+  'Orbit-Flux-Center',
+  'Spark-Matrix-Relay',
+  'Global-Surge-Endpoint',
+  'Neutron-Path-Connector',
+  'Pixel-Stream-Junction',
+  'Delta-Chain-Interface',
+  'Apex-Pulse-Network',
+]
 
 export const planNames = [
   'SpeedSurge 100',

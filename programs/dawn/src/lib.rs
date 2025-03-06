@@ -60,12 +60,13 @@ pub mod dawn {
 
     pub fn add_device(
         ctx: Context<AddDevice>,
+        name: String,
         height: u16,
         latitude: i64,
         longitude: i64,
         mac_address: [u8; 6],
     ) -> Result<()> {
-        DawnApp::add_device(ctx, height, latitude, longitude, mac_address)
+        DawnApp::add_device(ctx, name, height, latitude, longitude, mac_address)
     }
 
     pub fn assign_device_to_site(ctx: Context<AssignDeviceToSite>) -> Result<()> {

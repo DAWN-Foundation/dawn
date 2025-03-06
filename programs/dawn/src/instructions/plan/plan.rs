@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use solana_program::pubkey::MAX_SEED_LEN;
+use std::cmp::min;
 
 use crate::{
     utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, PlanAdded, Subscription,
@@ -89,6 +91,7 @@ pub struct AddPlan<'info> {
             b"device",
             device.owner.as_ref(),
             device.model.as_ref(),
+            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
             &device.mac_address,
         ],
         bump = device.bump
@@ -113,7 +116,7 @@ pub struct AddPlan<'info> {
             parent_plan.access_domain.as_ref(),
             parent_plan.device.as_ref(),
             &optional_pubkey_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
-            &parent_plan.name.as_bytes(),
+            &parent_plan.name.as_bytes()[..min(parent_plan.name.len(), MAX_SEED_LEN)],
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
             &parent_plan.speed.to_le_bytes(),
@@ -135,7 +138,7 @@ pub struct AddPlan<'info> {
             access_domain.key().as_ref(),
             device.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
-            &name.as_bytes(),
+            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),

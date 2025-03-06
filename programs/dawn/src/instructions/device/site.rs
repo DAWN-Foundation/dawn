@@ -60,7 +60,10 @@ pub struct AssignDeviceToSite<'info> {
     #[account(
         mut,
         constraint = site.owner == caller.key(),
-        seeds = [b"site", site.owner.as_ref(), &site.name.as_bytes()[..min(site.name.len(), MAX_SEED_LEN)],
+        seeds = [
+            b"site",
+            site.owner.as_ref(),
+            &site.name.as_bytes()[..min(site.name.len(), MAX_SEED_LEN)],
         ],
         bump = site.bump,
     )]
@@ -69,7 +72,13 @@ pub struct AssignDeviceToSite<'info> {
     /// The device account
     #[account(
         mut,
-        seeds = [b"device", device.owner.as_ref(), &device.model.as_ref(), &device.mac_address],
+        seeds = [
+            b"device",
+            device.owner.as_ref(),
+            &device.model.as_ref(),
+            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &device.mac_address,
+        ],
         bump = device.bump,
     )]
     pub device: Account<'info, Device>,

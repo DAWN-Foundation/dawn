@@ -70,6 +70,7 @@ export interface Mock {
   deviceType: DeviceType
   deviceManufacturer: string
   deviceModel: string
+  deviceName: string
   deviceMacAddress: MacAddress
   deviceLatitude: BN
   deviceLongitude: BN
@@ -155,6 +156,7 @@ export interface RawMock {
   deviceType: string
   deviceManufacturer: string
   deviceModel: string
+  deviceName: string
   deviceLatitude: number
   deviceLongitude: number
   deviceHeight: number

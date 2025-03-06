@@ -84,6 +84,7 @@ pub struct DeviceAdded {
     pub device: Pubkey,
     pub site: Option<Pubkey>,
     pub model: Pubkey,
+    pub name: String,
     pub longitude: i64,
     pub latitude: i64,
     pub height: u16,

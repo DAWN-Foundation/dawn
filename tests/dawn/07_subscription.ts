@@ -486,6 +486,7 @@ export const subscriptionTests = () =>
         program,
         wallet.payer,
         mock.deviceModelPda,
+        mock.deviceName,
         macAddress,
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -493,6 +494,7 @@ export const subscriptionTests = () =>
 
       await program2.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,

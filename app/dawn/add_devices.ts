@@ -52,7 +52,7 @@ async function main() {
   const deviceCount = deviceCountFlag ? parseInt(deviceCountFlag) : 5
   const withPlans = getFlag('--with-plans') !== null
 
-  const devices = DeviceGenerator.genearate(
+  const devices = DeviceGenerator.generate(
     deviceCount,
     [-121.115323, 37.3985593, -122.3253238, 37.1615593],
   )
@@ -68,6 +68,7 @@ async function main() {
       program,
       wallet.payer,
       mock.deviceModelPda,
+      mock.deviceName,
       mock.deviceMacAddress,
     )
     const accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -77,6 +78,7 @@ async function main() {
       // Add device
       const deviceItx = await program.methods
         .addDevice(
+          device.name,
           device.height,
           latitude,
           longitude,
@@ -118,6 +120,7 @@ async function main() {
 
           const planItx = await program.methods
             .addPlan(
+              planParams.name,
               planParams.price,
               planParams.duration,
               planParams.speed,

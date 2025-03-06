@@ -323,6 +323,101 @@ export const planTests = () =>
       }
     })
 
+    test('cannot add plan with name length eq 0', async () => {
+      const name = ''
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.accessDomainPda,
+        mock.devicePda,
+        null,
+        name,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            name,
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            null,
+            mock.planAuthMethods,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
+            device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
+            parentPlan: null,
+            subscription: null,
+            plan: planPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Plan name is empty')
+      }
+    })
+
+    test('cannot add plan with name length gt 32', async () => {
+      const name = 'a'.repeat(33)
+
+      const [planPda] = getPlanPda(
+        program,
+        mock.accessDomainPda,
+        mock.devicePda,
+        null,
+        name,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
+      )
+
+      try {
+        await program.methods
+          .addPlan(
+            name,
+            mock.planPrice,
+            mock.planDuration,
+            mock.planSpeed,
+            mock.planCapacity,
+            null,
+            mock.planAuthMethods,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            accessDomain: mock.accessDomainPda,
+            device: mock.devicePda,
+            serviceAgreement: mock.serviceAgreementPda,
+            parentPlan: null,
+            subscription: null,
+            plan: planPda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.ok(false)
+      } catch (error) {
+        console.log(error)
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.strictEqual(err.error.errorMessage, 'Plan name is too long')
+      }
+    })
+
     test('adds the plan', async () => {
       const tx = await program.methods
         .addPlan(
@@ -738,6 +833,7 @@ export const parentPlanTests = () =>
         program,
         mock.customer,
         mock.deviceModelPda,
+        mock.deviceName,
         [0, 0, 0, 0, 0, 1],
       )
       accessDomainPda = getAccessDomainPda(program, devicePda)
@@ -745,6 +841,7 @@ export const parentPlanTests = () =>
 
       await program.methods
         .addDevice(
+          mock.deviceName,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,

@@ -29,6 +29,7 @@ export function getDevicePda(
   program: Program<Dawn>,
   owner: Keypair,
   model: PublicKey,
+  name: string,
   macAddress: MacAddress,
 ): PublicKey {
   const [devicePda] = PublicKey.findProgramAddressSync(
@@ -36,6 +37,7 @@ export function getDevicePda(
       Buffer.from('device'),
       Buffer.from(owner.publicKey.toBytes()),
       Buffer.from(model.toBytes()),
+      Buffer.from(name.slice(0, 32)),
       Buffer.from(macAddress),
     ],
     program.programId,
