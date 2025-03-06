@@ -37,7 +37,7 @@ export function getDevicePda(
       Buffer.from('device'),
       Buffer.from(owner.publicKey.toBytes()),
       Buffer.from(model.toBytes()),
-      Buffer.from(name),
+      Buffer.from(name.slice(0, 32)),
       Buffer.from(macAddress),
     ],
     program.programId,

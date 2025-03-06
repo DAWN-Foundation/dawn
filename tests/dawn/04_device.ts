@@ -196,6 +196,88 @@ export const deviceTests = () =>
       }
     })
 
+    test('cannot add device with name length eq 0', async () => {
+      const name = ''
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        name,
+        mock.deviceMacAddress,
+      )
+
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+
+      try {
+        await program.methods
+          .addDevice(
+            name,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            accessDomain: accessDomainPda,
+            deviceLocation: deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Device name is empty')
+      }
+    })
+
+    test('cannot add device with name length gt 32', async () => {
+      const name = 'a'.repeat(33)
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        name,
+        mock.deviceMacAddress,
+      )
+
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+
+      try {
+        await program.methods
+          .addDevice(
+            name,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            accessDomain: accessDomainPda,
+            deviceLocation: deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Device name is too long')
+      }
+    })
+
     test('cannot add L3 (Router) device without access domain', async () => {
       try {
         await program.methods
