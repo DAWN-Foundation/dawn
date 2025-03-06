@@ -50,7 +50,7 @@ export function getPlanPda(
       Buffer.from(accessDomain.toBytes()),
       Buffer.from(device.toBytes()),
       parentPlanBuffer,
-      Buffer.from(name),
+      Buffer.from(name.slice(0, 32)),
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,
