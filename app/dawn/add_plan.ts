@@ -41,7 +41,7 @@ async function main() {
   console.log({ planPda: planPda.toBase58() })
 
   const itx = await program.methods
-    .addPlan(price, duration, speed, capacity, null, mock.planAuthMethods)
+    .addPlan(name, price, duration, speed, capacity, null, mock.planAuthMethods)
     .accounts({
       caller: wallet.payer.publicKey,
       accessDomain: accessDomainPda,
