@@ -103,18 +103,6 @@ export async function createAccounts() {
   console.log('Loading local wallet...')
   const wallet = loadWallet().payer
 
-  // Create DAWN DAO KeyPair
-  console.log('Creating DAWN DAO KeyPair...')
-  const dao = Keypair.generate()
-
-  // Create Validator Pool KeyPair
-  console.log('Creating Validator Pool KeyPair...')
-  const validatorPool = Keypair.generate()
-
-  // Create Medallion Pool KeyPair
-  console.log('Creating Medallion Pool KeyPair...')
-  const medallionPool = Keypair.generate()
-
   // Create Service Provider KeyPair
   console.log('Creating Service Provider KeyPair...')
   const serviceProvider = Keypair.generate()
@@ -125,9 +113,6 @@ export async function createAccounts() {
 
   const newAccounts = {
     wallet,
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
   }
@@ -173,14 +158,7 @@ export async function setup(
   provider: BankrunProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
 ) {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   // Mint test USDC token
   console.log('Minting test USDC token...')
@@ -230,16 +208,16 @@ export async function setup(
     .signers([wallet])
     .rpc()
 
-  // get fee pool DAWN account PDA
+  // Get fee pool DAWN account PDA
   const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // get DAO DAWN account PDA
+  // Get DAO DAWN account PDA
   const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // get Validator DAWN account PDA
+  // Get Validator DAWN account PDA
   const validatorDawnAccount = getValidatorDawnAccountPda(program)
 
-  // get Medallion DAWN account PDA
+  // Get Medallion DAWN account PDA
   const medallionDawnAccount = getMedallionDawnAccountPda(program)
 
   // Create DAWN account for Service Provider

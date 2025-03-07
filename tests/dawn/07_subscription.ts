@@ -133,9 +133,7 @@ export const subscriptionTests = () =>
         // token accounts
         userUsdcAccount: mock.customerUsdcAccount,
         userDawnAccount: mock.customerDawnAccount,
-        daoDawnAccount: mock.daoDawnAccount,
-        validatorDawnAccount: mock.validatorDawnAccount,
-        medallionDawnAccount: mock.medallionDawnAccount,
+        feePoolDawnAccount: mock.feePoolDawnAccount,
         escrowUsdcVault: mock.escrowUsdcVault,
         escrowDawnVault: mock.escrowDawnVault,
         // programs
@@ -310,19 +308,9 @@ export const subscriptionTests = () =>
         mock.customerUsdcAccount,
       )
 
-      const daoDawnBalanceBefore = await getBalance(
+      const feePoolDawnBalanceBefore = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-
-      const validatorDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
-      )
-
-      const medallionDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
+        mock.feePoolDawnAccount,
       )
 
       const escrowUsdcBalanceBefore = await getBalance(
@@ -411,37 +399,12 @@ export const subscriptionTests = () =>
         .mul(BPS_DENOMINATOR.sub(new BN(100)))
         .div(BPS_DENOMINATOR)
       const totalDawnFee = totalDawnWithSlippage.sub(dailyDawn)
-
-      // make sure the DAO DAWN account was credited with the DAO fee portion
-      const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
-      const daoDawnBalanceAfter = await getBalance(
+      const feePoolDawnBalanceAfter = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-      assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).eq(daoFee))
-
-      // make sure the validator DAWN account was credited with the validator fee portion
-      const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
-      const validatorDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
+        mock.feePoolDawnAccount,
       )
       assert.ok(
-        validatorDawnBalanceAfter
-          .sub(validatorDawnBalanceBefore)
-          .eq(validatorFee),
-      )
-
-      // make sure the medallion DAWN account was credited with the medallion fee portion
-      const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
-      const medallionDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
-      )
-      assert.ok(
-        medallionDawnBalanceAfter
-          .sub(medallionDawnBalanceBefore)
-          .eq(medallionFee),
+        feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).eq(totalDawnFee),
       )
 
       // TODO >> DAWN-121: Refactor
@@ -477,19 +440,9 @@ export const subscriptionTests = () =>
         mock.customerUsdcAccount,
       )
 
-      const daoDawnBalanceBefore = await getBalance(
+      const feePoolDawnBalanceBefore = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-
-      const validatorDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
-      )
-
-      const medallionDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
+        mock.feePoolDawnAccount,
       )
 
       const escrowUsdcBalanceBefore = await getBalance(
@@ -588,35 +541,12 @@ export const subscriptionTests = () =>
       const totalDawnFee = totalDawnWithSlippage.sub(dailyDawn)
 
       // make sure the DAO DAWN account was credited with the DAO fee portion
-      const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
-      const daoDawnBalanceAfter = await getBalance(
+      const feePoolDawnBalanceAfter = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-      assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).eq(daoFee))
-
-      // make sure the validator DAWN account was credited with the validator fee portion
-      const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
-      const validatorDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
+        mock.feePoolDawnAccount,
       )
       assert.ok(
-        validatorDawnBalanceAfter
-          .sub(validatorDawnBalanceBefore)
-          .eq(validatorFee),
-      )
-
-      // make sure the medallion DAWN account was credited with the medallion fee portion
-      const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
-      const medallionDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
-      )
-      assert.ok(
-        medallionDawnBalanceAfter
-          .sub(medallionDawnBalanceBefore)
-          .gte(medallionFee),
+        feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).gte(totalDawnFee),
       )
 
       // TODO >> DAWN-121: Refactor

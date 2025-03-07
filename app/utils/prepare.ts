@@ -48,30 +48,11 @@ async function fundAccounts(
   provider: AnchorProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
 ) {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   // Fund wallet
   console.log('Funding wallet...')
   await fund(provider.connection, wallet.publicKey, 1000)
-
-  // Fund DAWN DAO Account
-  console.log('Funding DAWN DAO Account...')
-  await fund(provider.connection, dao.publicKey, 1000)
-
-  // Fund Validator Pool Account
-  console.log('Funding Validator Pool Account...')
-  await fund(provider.connection, validatorPool.publicKey, 1000)
-
-  // Fund Medallion Pool Account
-  console.log('Funding Medallion Pool Account...')
-  await fund(provider.connection, medallionPool.publicKey, 1000)
 
   // Fund Service Provider Account
   console.log('Funding Service Provider Account...')
@@ -91,14 +72,7 @@ export async function prepare(
   accounts: Awaited<ReturnType<typeof createAccounts>>,
   isDevnet: boolean = false,
 ): Promise<Mock> {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   if (!isDevnet) {
     await fundAccounts(provider, accounts)
@@ -152,16 +126,16 @@ export async function prepare(
     .signers([wallet])
     .rpc()
 
-  // get fee pool DAWN account PDA
+  // Get fee pool DAWN account PDA
   const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // get DAO DAWN account PDA
+  // Get DAO DAWN account PDA
   const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // get Validator DAWN account PDA
+  // Get Validator DAWN account PDA
   const validatorDawnAccount = getValidatorDawnAccountPda(program)
 
-  // get Medallion DAWN account PDA
+  // Get Medallion DAWN account PDA
   const medallionDawnAccount = getMedallionDawnAccountPda(program)
 
   // Create DAWN account for Service Provider
