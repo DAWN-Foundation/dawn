@@ -72,7 +72,7 @@ pub struct Configure<'info> {
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
-        init,
+        init_if_needed,
         payer = caller,
         space = CONFIG_SIZE,
         seeds = [b"config"],

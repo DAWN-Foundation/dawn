@@ -1,6 +1,6 @@
 import { expect, test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
-import { Program, Wallet } from '@coral-xyz/anchor'
+import { BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { SendTransactionError } from '@solana/web3.js'
@@ -14,6 +14,7 @@ import {
   createAccounts,
   PROGRAM_ID,
   getConfigPdaWithProgramId,
+  getConfigPda,
 } from '../../app/utils'
 
 export const configTests = () =>
@@ -42,6 +43,59 @@ export const configTests = () =>
     })
 
     test('configures the program', async () => {
+      const daoFee = new BN(100)
+
+      const tx = await program.methods
+        .configure(daoFee, mock.validatorFee, mock.medallionFee)
+        .accounts({
+          caller: wallet.payer.publicKey,
+          config: configPda,
+          tokenConfig: mock.tokenConfigPda,
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          daoDawnAccount: mock.daoDawnAccount,
+          validatorDawnAccount: mock.validatorDawnAccount,
+          medallionDawnAccount: mock.medallionDawnAccount,
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+        })
+        .rpc()
+
+      assert.ok(tx.length > 0)
+
+      const config = await program.account.config.fetch(configPda)
+
+      // authority
+      assert.ok(config.authority.equals(wallet.payer.publicKey))
+      assert.equal(config.bump, configBump)
+
+      // fees
+      assert.ok(config.daoFee.eq(daoFee))
+      assert.ok(config.validatorFee.eq(mock.validatorFee))
+      assert.ok(config.medallionFee.eq(mock.medallionFee))
+
+      // accounts
+      assert.ok(config.usdcMint.equals(mock.usdcMint))
+      assert.ok(config.dawnMint.equals(mock.dawnMint))
+      assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
+      assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
+      assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
+
+      // raydium
+      assert.ok(config.raydium.equals(mock.raydium))
+      assert.ok(config.raydiumAuthority.equals(mock.raydiumAuthority))
+      assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
+      assert.ok(config.raydiumPool.equals(mock.raydiumPool))
+      assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    })
+
+    test('can be reconfigured', async () => {
+      // small wait to ensure previous tx is processed
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       const tx = await program.methods
         .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accounts({
@@ -87,41 +141,5 @@ export const configTests = () =>
       assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
       assert.ok(config.raydiumPool.equals(mock.raydiumPool))
       assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
-    })
-
-    test('cannot be reinitialized', async () => {
-      // small wait to ensure previous tx is processed
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      try {
-        await program.methods
-          .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
-          .accounts({
-            caller: wallet.payer.publicKey,
-            config: configPda,
-            tokenConfig: mock.tokenConfigPda,
-            usdcMint: mock.usdcMint,
-            dawnMint: mock.dawnMint,
-            daoDawnAccount: mock.daoDawnAccount,
-            validatorDawnAccount: mock.validatorDawnAccount,
-            medallionDawnAccount: mock.medallionDawnAccount,
-            raydium: mock.raydium,
-            raydiumAuthority: mock.raydiumAuthority,
-            raydiumConfig: mock.raydiumConfig,
-            raydiumPool: mock.raydiumPool,
-            raydiumObservation: mock.raydiumObservation,
-          })
-          .rpc()
-
-        assert.ok(false)
-      } catch (error) {
-        expect(error instanceof SendTransactionError).toBeTruthy()
-        const err: SendTransactionError = error
-        const txError = err.logs.find((log) => log.includes('already in use'))
-        expect(txError).toBeDefined()
-        expect(txError).toBe(
-          `Allocate: account Address { address: ${configPda.toBase58()}, base: None } already in use`,
-        )
-      }
     })
   })
