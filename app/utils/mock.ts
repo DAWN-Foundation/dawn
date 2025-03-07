@@ -35,15 +35,19 @@ import { getDawnProgram } from '../dawn/utils'
 import {
   getAccessDomainPda,
   getConfigPda,
+  getDaoDawnAccountPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
+  getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getMedallionDawnAccountPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
+  getValidatorDawnAccountPda,
 } from './pda'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -226,32 +230,17 @@ export async function setup(
     .signers([wallet])
     .rpc()
 
-  // Create DAWN account for DAWN DAO
-  console.log('Creating DAWN account for DAWN DAO...')
-  const daoDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient, // Banks client
-    dao, // Payer for transaction
-    dawnMint, // Mint
-    dao.publicKey, // Token account owner
-  )
+  // get fee pool DAWN account PDA
+  const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // Create DAWN account for Validator Pool
-  console.log('Creating DAWN account for Validator Pool...')
-  const validatorDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
-    validatorPool,
-    dawnMint,
-    validatorPool.publicKey,
-  )
+  // get DAO DAWN account PDA
+  const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // Create DAWN account for Medallion Pool
-  console.log('Creating DAWN account for Medallion Pool...')
-  const medallionDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
-    medallionPool,
-    dawnMint,
-    medallionPool.publicKey,
-  )
+  // get Validator DAWN account PDA
+  const validatorDawnAccount = getValidatorDawnAccountPda(program)
+
+  // get Medallion DAWN account PDA
+  const medallionDawnAccount = getMedallionDawnAccountPda(program)
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
@@ -457,15 +446,13 @@ export async function setup(
   )
 
   mock = {
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
     // mints
     usdcMint,
     dawnMint,
     // token accounts
+    feePoolDawnAccount,
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,

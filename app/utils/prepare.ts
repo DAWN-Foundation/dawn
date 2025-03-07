@@ -28,15 +28,19 @@ import { createAccounts, USDC_DECIMALS } from './mock'
 import {
   getAccessDomainPda,
   getConfigPda,
+  getDaoDawnAccountPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
+  getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getMedallionDawnAccountPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
+  getValidatorDawnAccountPda,
 } from './pda'
 import { getSitePda } from './pda/site'
 
@@ -148,34 +152,17 @@ export async function prepare(
     .signers([wallet])
     .rpc()
 
-  // Create DAWN account for DAWN DAO
-  console.log('Creating DAWN account for DAWN DAO...')
-  const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    isDevnet ? wallet : dao,
-    dawnMint,
-    dao.publicKey,
-  )
+  // get fee pool DAWN account PDA
+  const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // Create DAWN account for Validator Pool
-  console.log('Creating DAWN account for Validator Pool...')
-  const { address: validatorDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : validatorPool,
-      dawnMint,
-      validatorPool.publicKey,
-    )
+  // get DAO DAWN account PDA
+  const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // Create DAWN account for Medallion Pool
-  console.log('Creating DAWN account for Medallion Pool...')
-  const { address: medallionDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : medallionPool,
-      dawnMint,
-      medallionPool.publicKey,
-    )
+  // get Validator DAWN account PDA
+  const validatorDawnAccount = getValidatorDawnAccountPda(program)
+
+  // get Medallion DAWN account PDA
+  const medallionDawnAccount = getMedallionDawnAccountPda(program)
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
@@ -374,15 +361,13 @@ export async function prepare(
   )
 
   return {
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
     // mints
     usdcMint,
     dawnMint,
     // token accounts
+    feePoolDawnAccount,
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,

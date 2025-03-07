@@ -53,6 +53,7 @@ export const configTests = () =>
           tokenConfig: mock.tokenConfigPda,
           usdcMint: mock.usdcMint,
           dawnMint: mock.dawnMint,
+          feePoolDawnAccount: mock.feePoolDawnAccount,
           daoDawnAccount: mock.daoDawnAccount,
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
@@ -80,6 +81,7 @@ export const configTests = () =>
       // accounts
       assert.ok(config.usdcMint.equals(mock.usdcMint))
       assert.ok(config.dawnMint.equals(mock.dawnMint))
+      assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
       assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
       assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
       assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
@@ -104,6 +106,7 @@ export const configTests = () =>
           tokenConfig: mock.tokenConfigPda,
           usdcMint: mock.usdcMint,
           dawnMint: mock.dawnMint,
+          feePoolDawnAccount: mock.feePoolDawnAccount,
           daoDawnAccount: mock.daoDawnAccount,
           validatorDawnAccount: mock.validatorDawnAccount,
           medallionDawnAccount: mock.medallionDawnAccount,
@@ -131,6 +134,7 @@ export const configTests = () =>
       // accounts
       assert.ok(config.usdcMint.equals(mock.usdcMint))
       assert.ok(config.dawnMint.equals(mock.dawnMint))
+      assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
       assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
       assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
       assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
