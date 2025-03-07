@@ -1,14 +1,10 @@
-use crate::error::*;
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{self, Mint, Token, TokenAccount},
-};
+use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use raydium_cp_swap::cpi;
 use raydium_cp_swap::program::RaydiumCpSwap;
 use raydium_cp_swap::states::{PoolState, Q32};
 
-use super::{DawnApp, Subscription};
+use super::DawnApp;
 use crate::{
     constants::BPS_DENOMINATOR,
     error::DawnError,
@@ -19,9 +15,6 @@ use crate::{
 #[derive(Clone)]
 pub struct PaymentAccounts<'info, 'a> {
     pub caller: &'a Signer<'info>,
-    pub config: &'a AccountInfo<'info>,
-    pub plan: &'a Box<Account<'info, Plan>>,
-    pub subscription: &'a Box<Account<'info, Subscription>>,
     pub raydium_pool: &'a AccountLoader<'info, PoolState>,
     pub raydium_authority: &'a UncheckedAccount<'info>,
     pub raydium_config: &'a UncheckedAccount<'info>,
@@ -39,8 +32,6 @@ pub struct PaymentAccounts<'info, 'a> {
     pub escrow_usdc_vault: &'a Box<Account<'info, TokenAccount>>,
     pub escrow_dawn_vault: &'a Box<Account<'info, TokenAccount>>,
     pub token_program: &'a Program<'info, Token>,
-    pub associated_token_program: &'a Program<'info, AssociatedToken>,
-    pub system_program: &'a Program<'info, System>,
 }
 
 impl DawnApp {
@@ -172,14 +163,13 @@ impl DawnApp {
         )?;
 
         // calculate the total USDC fee and remainder
-        let (total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder) =
-            Self::calculate_usdc_fee(
-                plan.price,
-                config.dao_fee,
-                config.validator_fee,
-                config.medallion_fee,
-                plan.duration,
-            )?;
+        let (total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder) = Self::calculate_usdc_fee(
+            plan.price,
+            config.dao_fee,
+            config.validator_fee,
+            config.medallion_fee,
+            plan.duration,
+        )?;
 
         // Calculate swap amounts in USDC
         let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);

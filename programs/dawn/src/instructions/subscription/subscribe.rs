@@ -1,18 +1,14 @@
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, Token, TokenAccount},
+    token::{Mint, Token, TokenAccount},
 };
-use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
+use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
 use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
-use crate::{
-    instructions::PaymentAccounts,
-    utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
-    DawnError, Subscribed,
-};
+use crate::{instructions::PaymentAccounts, utils::optional_pubkey_seed, DawnError, Subscribed};
 
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
@@ -187,9 +183,6 @@ impl DawnApp {
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
-            config: &ctx.accounts.config.to_account_info(),
-            plan: &ctx.accounts.plan,
-            subscription: &ctx.accounts.subscription,
             raydium_pool: &ctx.accounts.raydium_pool,
             raydium_authority: &ctx.accounts.raydium_authority,
             raydium_config: &ctx.accounts.raydium_config,
@@ -207,8 +200,6 @@ impl DawnApp {
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
-            associated_token_program: &ctx.accounts.associated_token_program,
-            system_program: &ctx.accounts.system_program,
         };
 
         let (claimable_dawn, daily_usdc, swap_price) =
