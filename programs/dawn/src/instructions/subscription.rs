@@ -1,6 +1,4 @@
 use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
-use solana_program::pubkey::MAX_SEED_LEN;
-use std::cmp::min;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, Mint, Token, TokenAccount},
@@ -10,10 +8,15 @@ use raydium_cp_swap::{
     program::RaydiumCpSwap,
     states::{PoolState, Q32},
 };
+use solana_program::pubkey::MAX_SEED_LEN;
+use std::cmp::min;
 
 use super::{Config, DawnApp, Device, Plan};
 use crate::{
-    constants::BPS_DENOMINATOR, events::ExtendedSubscribe, utils::{optional_pubkey_seed, sort_accounts, swap_amounts}, DawnError, Subscribed
+    constants::BPS_DENOMINATOR,
+    events::SubscriptionExtended,
+    utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
+    DawnError, Subscribed,
 };
 
 /// The plan account, representing a subscription plan tied to a device
@@ -51,7 +54,7 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-pub struct ExtendSubscribe<'info> {
+pub struct ExtendSubscription<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
@@ -92,7 +95,6 @@ pub struct ExtendSubscribe<'info> {
         bump = subscription.bump
     )]
     pub subscription: Box<Account<'info, Subscription>>,
-
 }
 
 #[derive(Accounts)]
@@ -537,17 +539,17 @@ impl DawnApp {
         Ok(())
     }
 
-    pub fn extend_subscribe(ctx: Context<ExtendSubscribe>) -> Result<()> {
+    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
         let plan = &ctx.accounts.plan;
         let subscription = &mut ctx.accounts.subscription;
-        
+
         // Calculate subscription expiration by adding plan `duration` days to current subscription expiration
         let expiration = subscription.expiration + (plan.duration as i64);
 
         // Save subscription data
         subscription.expiration = expiration;
 
-        emit!(ExtendedSubscribe {
+        emit!(SubscriptionExtended {
             subscription: subscription.key(),
             plan: plan.key(),
             subscriber: ctx.accounts.caller.key(),
@@ -556,7 +558,6 @@ impl DawnApp {
             created_at: subscription.created_at,
         });
 
-        Ok(())   
+        Ok(())
     }
 }
-

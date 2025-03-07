@@ -62,7 +62,7 @@ pub struct Subscribed {
 }
 
 #[event]
-pub struct ExtendedSubscribe {
+pub struct SubscriptionExtended {
     pub subscription: Pubkey,
     pub plan: Pubkey,
     pub subscriber: Pubkey,

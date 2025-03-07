@@ -46,7 +46,7 @@ interface Subscribed {
   createdAt: number
 }
 
-interface ExtendedSubscribe {
+interface SubscriptionExtended {
   subscription: PublicKey
   plan: PublicKey
   subscriber: PublicKey
@@ -474,7 +474,7 @@ export const subscriptionTests = () =>
       )
 
       const tx = await program.methods
-        .extendSubscribe()
+        .extendSubscription()
         .accounts({
           caller: mock.customer.publicKey,
           config: mock.configPda,
@@ -485,10 +485,10 @@ export const subscriptionTests = () =>
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
-      const event = await getEvent<ExtendedSubscribe>(
+      const event = await getEvent<SubscriptionExtended>(
         program,
         txDetails,
-        'ExtendedSubscribe',
+        'SubscriptionExtended',
       )
 
       // make sure the subscription event was generated with new extend subscription
