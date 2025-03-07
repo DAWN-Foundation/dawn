@@ -83,6 +83,7 @@ pub struct ExtendSubscribe<'info> {
 
     /// The subscription account
     #[account(
+        mut,
         seeds = [
             b"subscription",
             plan.key().as_ref(),
