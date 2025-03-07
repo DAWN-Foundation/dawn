@@ -411,7 +411,6 @@ export const planTests = () =>
           .rpc()
         assert.ok(false)
       } catch (error) {
-        console.log(error)
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
         assert.strictEqual(err.error.errorMessage, 'Plan name is too long')

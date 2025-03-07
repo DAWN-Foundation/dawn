@@ -46,6 +46,15 @@ interface Subscribed {
   createdAt: number
 }
 
+interface ExtendedSubscribe {
+  subscription: PublicKey
+  plan: PublicKey
+  subscriber: PublicKey
+  device: PublicKey | null
+  expiration: BN
+  createdAt: number
+}
+
 export const subscriptionTests = () =>
   describe('dawn::subscription', () => {
     let provider: BankrunProvider
@@ -451,6 +460,59 @@ export const subscriptionTests = () =>
       assert.ok(subscription.claimableDawn.eq(dailyDawn))
       assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
       assert.equal(subscription.bump, mock.subscriptionBump)
+    })
+
+    test('extend subscribe', async () => {
+      let subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+
+      const plan = await program.account.plan.fetch(mock.planPda)
+
+      const extendedExpiration = subscription.expiration.add(
+        new BN(plan.duration),
+      )
+
+      const tx = await program.methods
+        .extendSubscribe()
+        .accounts({
+          caller: mock.customer.publicKey,
+          config: mock.configPda,
+          plan: mock.planPda,
+          subscription: mock.subscriptionPda,
+        })
+        .signers([mock.customer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+      const event = await getEvent<ExtendedSubscribe>(
+        program,
+        txDetails,
+        'ExtendedSubscribe',
+      )
+
+      // make sure the subscription event was generated with new extend subscription
+      assert.ok(event.subscription.equals(mock.subscriptionPda))
+      assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.subscriber.equals(mock.customer.publicKey))
+      expect(event.device).toBeNull()
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+      assert.ok(event.expiration.cmp(extendedExpiration) === 0)
+
+      // make sure the subscription was extended
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const extendedSubscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+
+      console.log({ extendedSubscription, extendedExpiration, event })
+
+      expect(new BN(extendedSubscription.createdAt).gt(new BN(0))).toBeTruthy()
+      assert.ok(extendedSubscription.plan.equals(mock.planPda))
+      assert.ok(extendedSubscription.subscriber.equals(mock.customer.publicKey))
+      expect(extendedSubscription.device).toBeNull()
+      assert.equal(extendedSubscription.bump, mock.subscriptionBump)
+      assert.ok(extendedSubscription.expiration.cmp(extendedExpiration) === 0)
     })
 
     test('cannot subscribe to the same plan twice', async () => {

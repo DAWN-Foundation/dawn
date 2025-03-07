@@ -13,9 +13,7 @@ use raydium_cp_swap::{
 
 use super::{Config, DawnApp, Device, Plan};
 use crate::{
-    constants::BPS_DENOMINATOR,
-    utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
-    DawnError, Subscribed,
+    constants::BPS_DENOMINATOR, events::ExtendedSubscribe, utils::{optional_pubkey_seed, sort_accounts, swap_amounts}, DawnError, Subscribed
 };
 
 /// The plan account, representing a subscription plan tied to a device
@@ -51,6 +49,50 @@ const SUBSCRIPTION_SIZE: usize = 8 // id
     + 8 // claimable_dawn
     + 8 // daily_usdc
     + 1; // bump
+
+#[derive(Accounts)]
+pub struct ExtendSubscribe<'info> {
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    /// The config with fees and accounts
+    #[account(
+        seeds = [b"config"],
+        bump = config.bump,
+    )]
+    pub config: Box<Account<'info, Config>>,
+
+    /// The plan account
+    #[account(
+        seeds = [
+            b"plan",
+            plan.access_domain.as_ref(),
+            plan.device.as_ref(),
+            &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
+            &plan.name.as_bytes(),
+            &plan.price.to_le_bytes(),
+            &plan.duration.to_le_bytes(),
+            &plan.speed.to_le_bytes(),
+            &plan.capacity.to_le_bytes(),
+            &plan.start_at.to_le_bytes(),
+            plan.service_agreement.as_ref(),
+        ],
+        bump = plan.bump
+    )]
+    pub plan: Box<Account<'info, Plan>>,
+
+    /// The subscription account
+    #[account(
+        seeds = [
+            b"subscription",
+            plan.key().as_ref(),
+            caller.key().as_ref(),
+        ],
+        bump = subscription.bump
+    )]
+    pub subscription: Box<Account<'info, Subscription>>,
+
+}
 
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
@@ -493,4 +535,27 @@ impl DawnApp {
 
         Ok(())
     }
+
+    pub fn extend_subscribe(ctx: Context<ExtendSubscribe>) -> Result<()> {
+        let plan = &ctx.accounts.plan;
+        let subscription = &mut ctx.accounts.subscription;
+        
+        // Calculate subscription expiration by adding plan `duration` days to current subscription expiration
+        let expiration = subscription.expiration + (plan.duration as i64);
+
+        // Save subscription data
+        subscription.expiration = expiration;
+
+        emit!(ExtendedSubscribe {
+            subscription: subscription.key(),
+            plan: plan.key(),
+            subscriber: ctx.accounts.caller.key(),
+            device: subscription.device,
+            expiration: subscription.expiration,
+            created_at: subscription.created_at,
+        });
+
+        Ok(())   
+    }
 }
+

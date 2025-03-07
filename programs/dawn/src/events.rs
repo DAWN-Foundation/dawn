@@ -62,6 +62,16 @@ pub struct Subscribed {
 }
 
 #[event]
+pub struct ExtendedSubscribe {
+    pub subscription: Pubkey,
+    pub plan: Pubkey,
+    pub subscriber: Pubkey,
+    pub device: Option<Pubkey>,
+    pub expiration: i64,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct Claimed {
     pub subscription: Pubkey,
     pub plan: Pubkey,

@@ -3,7 +3,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+declare_id!("99oSHrFjjdyC6AqivbvfjXFzXgxYFzsDrMt1fEszVs1z");
 
 #[cfg(feature = "devnet")]
 declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
@@ -119,6 +119,10 @@ pub mod dawn {
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
         DawnApp::subscribe(ctx)
+    }
+
+    pub fn extend_subscribe<'info>(ctx: Context<ExtendSubscribe>) -> Result<()> {
+        DawnApp::extend_subscribe(ctx)
     }
 
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
