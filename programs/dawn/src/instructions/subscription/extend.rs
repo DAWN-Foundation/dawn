@@ -161,8 +161,6 @@ impl DawnApp {
         let config = &ctx.accounts.config;
         let plan = &ctx.accounts.plan;
 
-        // TODO: Make sure cannot extend if already expired
-
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
             raydium_pool: &ctx.accounts.raydium_pool,
@@ -193,11 +191,19 @@ impl DawnApp {
             .checked_mul(SECONDS_PER_DAY)
             .ok_or(DawnError::Overflow)?;
 
-        // Calculate subscription expiration by adding plan `duration` days to existing expiration
-        let expiration = subscription
-            .expiration
-            .checked_add(duration_in_seconds as i64)
-            .ok_or(DawnError::Overflow)?;
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+        // if subscription is expired, set expiration starting from now
+        let expiration = if subscription.expiration < current_timestamp {
+            current_timestamp + duration_in_seconds as i64
+        } else {
+            // Calculate subscription expiration by adding plan `duration` days to existing expiration
+            subscription
+                .expiration
+                .checked_add(duration_in_seconds as i64)
+                .ok_or(DawnError::Overflow)?
+        };
 
         // Save subscription data
         subscription.expiration = expiration;
