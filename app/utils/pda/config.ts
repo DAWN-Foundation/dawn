@@ -30,3 +30,39 @@ export function getConfigPdaWithProgramId(
 
   return [configPda, configBump]
 }
+
+export function getFeePoolDawnAccountPda(program: Program<Dawn>): PublicKey {
+  const [feePoolDawnAccountPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('fee_pool_dawn_account')],
+    program.programId,
+  )
+
+  return feePoolDawnAccountPda
+}
+
+export function getDaoDawnAccountPda(program: Program<Dawn>): PublicKey {
+  const [daoDawnAccountPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('dao_dawn_account')],
+    program.programId,
+  )
+
+  return daoDawnAccountPda
+}
+
+export function getValidatorDawnAccountPda(program: Program<Dawn>): PublicKey {
+  const [validatorDawnAccountPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('validator_dawn_account')],
+    program.programId,
+  )
+
+  return validatorDawnAccountPda
+}
+
+export function getMedallionDawnAccountPda(program: Program<Dawn>): PublicKey {
+  const [medallionDawnAccountPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('medallion_dawn_account')],
+    program.programId,
+  )
+
+  return medallionDawnAccountPda
+}

@@ -8,7 +8,7 @@ use solana_program::clock::SECONDS_PER_DAY;
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
-    error::DawnError, events::SubscriptionExtended, instructions::PaymentAccounts,
+    error::DawnError, events::SubscriptionExtended, instructions::{subscription::payment, PaymentAccounts},
     utils::optional_pubkey_seed,
 };
 
@@ -120,17 +120,9 @@ pub struct ExtendSubscription<'info> {
     )]
     pub user_usdc_account: Box<Account<'info, TokenAccount>>,
 
-    /// The DAWN DAO DAWN token account
-    #[account(mut, address = config.dao_dawn_account)]
-    pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    /// The Validator DAWN pool token account
-    #[account(mut,address = config.validator_dawn_account)]
-    pub validator_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    /// The Medallion DAWN pool token account
-    #[account(mut, address = config.medallion_dawn_account)]
-    pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
+    /// The fee pool DAWN token account
+    #[account(mut, address = config.fee_pool_dawn_account)]
+    pub fee_pool_dawn_account: Box<Account<'info, TokenAccount>>,
 
     /// The device owner escrow USDC token vault
     #[account(
@@ -174,15 +166,13 @@ impl DawnApp {
             raydium_dawn_vault: &ctx.accounts.raydium_dawn_vault,
             user_usdc_account: &ctx.accounts.user_usdc_account,
             user_dawn_account: &ctx.accounts.user_dawn_account,
-            dao_dawn_account: &ctx.accounts.dao_dawn_account,
-            validator_dawn_account: &ctx.accounts.validator_dawn_account,
-            medallion_dawn_account: &ctx.accounts.medallion_dawn_account,
+            fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };
 
-        let (_, _, swap_price) = Self::process_payment(payment_accounts, config, plan)?;
+        let (_, _, swap_price) = payment::process_payment(payment_accounts, config, plan)?;
 
         let subscription = &mut ctx.accounts.subscription;
 

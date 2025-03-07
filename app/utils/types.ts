@@ -10,15 +10,13 @@ import {
 } from './helpers'
 
 export interface Mock {
-  dao: Keypair
-  validatorPool: Keypair
-  medallionPool: Keypair
   serviceProvider: Keypair
   customer: Keypair
   // mints
   usdcMint: PublicKey
   dawnMint: PublicKey
   // token accounts
+  feePoolDawnAccount: PublicKey
   daoDawnAccount: PublicKey
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
@@ -96,15 +94,13 @@ interface RawKeypair {
 }
 
 export interface RawMock {
-  dao: RawKeypair
-  validatorPool: RawKeypair
-  medallionPool: RawKeypair
   serviceProvider: RawKeypair
   customer: RawKeypair
   // mints
   usdcMint: string
   dawnMint: string
   // token accounts
+  feePoolDawnAccount: string
   daoDawnAccount: string
   validatorDawnAccount: string
   medallionDawnAccount: string

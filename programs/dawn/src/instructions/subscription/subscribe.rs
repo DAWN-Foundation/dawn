@@ -8,7 +8,11 @@ use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
-use crate::{instructions::PaymentAccounts, utils::optional_pubkey_seed, DawnError, Subscribed};
+use crate::{
+    instructions::{subscription::payment, PaymentAccounts},
+    utils::optional_pubkey_seed,
+    DawnError, Subscribed,
+};
 
 #[derive(Accounts)]
 pub struct Subscribe<'info> {
@@ -134,17 +138,9 @@ pub struct Subscribe<'info> {
     )]
     pub user_usdc_account: Box<Account<'info, TokenAccount>>,
 
-    /// The DAWN DAO DAWN token account
-    #[account(mut, address = config.dao_dawn_account)]
-    pub dao_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    /// The Validator DAWN pool token account
-    #[account(mut,address = config.validator_dawn_account)]
-    pub validator_dawn_account: Box<Account<'info, TokenAccount>>,
-
-    /// The Medallion DAWN pool token account
-    #[account(mut, address = config.medallion_dawn_account)]
-    pub medallion_dawn_account: Box<Account<'info, TokenAccount>>,
+    /// The fee pool DAWN token account
+    #[account(mut, address = config.fee_pool_dawn_account)]
+    pub fee_pool_dawn_account: Box<Account<'info, TokenAccount>>,
 
     /// The device owner escrow USDC token vault
     #[account(
@@ -194,16 +190,14 @@ impl DawnApp {
             raydium_dawn_vault: &ctx.accounts.raydium_dawn_vault,
             user_usdc_account: &ctx.accounts.user_usdc_account,
             user_dawn_account: &ctx.accounts.user_dawn_account,
-            dao_dawn_account: &ctx.accounts.dao_dawn_account,
-            validator_dawn_account: &ctx.accounts.validator_dawn_account,
-            medallion_dawn_account: &ctx.accounts.medallion_dawn_account,
+            fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };
 
         let (claimable_dawn, daily_usdc, swap_price) =
-            Self::process_payment(payment_accounts, config, plan)?;
+            payment::process_payment(payment_accounts, config, plan)?;
 
         // Get the current timestamp from the clock
         let clock = Clock::get()?;

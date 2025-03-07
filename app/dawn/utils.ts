@@ -56,15 +56,6 @@ export function getMock(): Mock {
   const mock: RawMock = JSON.parse(configData)
 
   return {
-    dao: Keypair.fromSecretKey(
-      Uint8Array.from(mock.dao.secretKey.split(',').map(Number)),
-    ),
-    validatorPool: Keypair.fromSecretKey(
-      Uint8Array.from(mock.validatorPool.secretKey.split(',').map(Number)),
-    ),
-    medallionPool: Keypair.fromSecretKey(
-      Uint8Array.from(mock.medallionPool.secretKey.split(',').map(Number)),
-    ),
     serviceProvider: Keypair.fromSecretKey(
       Uint8Array.from(mock.serviceProvider.secretKey.split(',').map(Number)),
     ),
@@ -75,6 +66,7 @@ export function getMock(): Mock {
     usdcMint: new PublicKey(mock.usdcMint),
     dawnMint: new PublicKey(mock.dawnMint),
     // token accounts
+    feePoolDawnAccount: new PublicKey(mock.feePoolDawnAccount),
     daoDawnAccount: new PublicKey(mock.daoDawnAccount),
     validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
     medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),

@@ -27,6 +27,8 @@ pub struct Config {
     pub dawn_mint: Pubkey,
 
     // TOKEN ACCOUNTS
+    /// The fee pool DAWN token account (this holds all the fees until distributed)
+    pub fee_pool_dawn_account: Pubkey,
     /// The DAWN DAO DAWN token account
     pub dao_dawn_account: Pubkey,
     /// The validator DAWN pool token account
@@ -55,6 +57,7 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 32 // token_config
     + 32 // usdc_mint
     + 32 // dawn_mint
+    + 32 // fee_pool_dawn_account
     + 32 // dao_dawn_account
     + 32 // validator_dawn_account
     + 32 // medallion_dawn_account
@@ -72,7 +75,7 @@ pub struct Configure<'info> {
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
-        init,
+        init_if_needed,
         payer = caller,
         space = CONFIG_SIZE,
         seeds = [b"config"],
@@ -98,14 +101,48 @@ pub struct Configure<'info> {
     )]
     pub dawn_mint: Account<'info, Mint>,
 
+    /// The fee pool DAWN token account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        token::mint = dawn_mint,
+        token::authority = config,
+        seeds = [b"fee_pool_dawn_account"],
+        bump,
+    )]
+    pub fee_pool_dawn_account: Account<'info, TokenAccount>,
+
     /// The DAWN DAO DAWN token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        init_if_needed,
+        payer = caller,
+        token::mint = dawn_mint,
+        token::authority = config,
+        seeds = [b"dao_dawn_account"],
+        bump,
+    )]
     pub dao_dawn_account: Account<'info, TokenAccount>,
+
     /// The validator DAWN pool token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        init_if_needed,
+        payer = caller,
+        token::mint = dawn_mint,
+        token::authority = config,
+        seeds = [b"validator_dawn_account"],
+        bump,
+    )]
     pub validator_dawn_account: Account<'info, TokenAccount>,
+
     /// The medallion DAWN pool token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        init_if_needed,
+        payer = caller,
+        token::mint = dawn_mint,
+        token::authority = config,
+        seeds = [b"medallion_dawn_account"],
+        bump,
+    )]
     pub medallion_dawn_account: Account<'info, TokenAccount>,
 
     /// The Raydium account
@@ -159,6 +196,7 @@ impl DawnApp {
         config.dawn_mint = ctx.accounts.dawn_mint.key();
 
         // token accounts
+        config.fee_pool_dawn_account = ctx.accounts.fee_pool_dawn_account.key();
         config.dao_dawn_account = ctx.accounts.dao_dawn_account.key();
         config.validator_dawn_account = ctx.accounts.validator_dawn_account.key();
         config.medallion_dawn_account = ctx.accounts.medallion_dawn_account.key();
