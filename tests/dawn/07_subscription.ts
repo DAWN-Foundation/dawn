@@ -505,8 +505,6 @@ export const subscriptionTests = () =>
         mock.subscriptionPda,
       )
 
-      console.log({ extendedSubscription, extendedExpiration, event })
-
       expect(new BN(extendedSubscription.createdAt).gt(new BN(0))).toBeTruthy()
       assert.ok(extendedSubscription.plan.equals(mock.planPda))
       assert.ok(extendedSubscription.subscriber.equals(mock.customer.publicKey))
