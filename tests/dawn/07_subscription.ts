@@ -337,6 +337,8 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
+      const timeBefore = await provider.context.banksClient.getClock()
+
       const tx = await program.methods
         .subscribe()
         .accounts(accounts)
@@ -407,9 +409,9 @@ export const subscriptionTests = () =>
         feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).eq(totalDawnFee),
       )
 
-      // TODO >> DAWN-121: Refactor
       // get block time, and calculate expected expiration
-      // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
+      const planInSeconds = plan.duration * SECONDS_PER_DAY
+      const expiration = Number(timeBefore.unixTimestamp) + planInSeconds
 
       // make sure the subscription was created
       let subscription = await program.account.subscription.fetch(
@@ -419,8 +421,14 @@ export const subscriptionTests = () =>
       assert.ok(subscription.plan.equals(mock.planPda))
       assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
       expect(subscription.device).toBeNull()
-      // assert.equal(subscription.expiration.toNumber(), expiration)
-      // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
+      console.log({
+        expiration,
+        subscriptionExpiration: subscription.expiration.toNumber(),
+      })
+      assert.equal(subscription.expiration.toNumber(), expiration)
+      assert.ok(
+        subscription.lastClaim.eq(new BN(Number(timeBefore.unixTimestamp))),
+      )
       assert.ok(subscription.claimableDawn.eq(dailyDawn))
       assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
       assert.equal(subscription.bump, mock.subscriptionBump)
@@ -549,23 +557,27 @@ export const subscriptionTests = () =>
         feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).gte(totalDawnFee),
       )
 
-      // TODO >> DAWN-121: Refactor
       // get block time, and calculate expected expiration
-      // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
+      const planInSeconds = plan.duration * SECONDS_PER_DAY
+      const expiration = expirationBefore.add(new BN(planInSeconds))
 
-      // make sure the subscription was created
+      // make sure the subscription expiration was extended
       let subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
-      expect(new BN(subscription.createdAt).gt(new BN(0))).toBeTruthy()
-      assert.ok(subscription.plan.equals(mock.planPda))
-      assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
+      assert.ok(subscription.expiration.eq(expiration))
+
+      // make sure other subscription fields are unchanged
+      expect(subscription.createdAt.eq(subscriptionBefore.createdAt))
+      assert.ok(subscription.plan.equals(subscriptionBefore.plan))
+      assert.ok(subscription.subscriber.equals(subscriptionBefore.subscriber))
       expect(subscription.device).toBeNull()
-      // assert.equal(subscription.expiration.toNumber(), expiration)
-      // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
-      assert.ok(subscription.claimableDawn.gte(dailyDawn))
-      assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
-      assert.equal(subscription.bump, mock.subscriptionBump)
+      assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
+      assert.ok(
+        subscription.claimableDawn.gte(subscriptionBefore.claimableDawn),
+      )
+      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
+      assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
     test('cannot subscribe to the same plan twice', async () => {
