@@ -7,6 +7,7 @@ mod payment;
 mod subscribe;
 
 pub use extend::*;
+pub use payment::*;
 pub use subscribe::*;
 
 /// The plan account, representing a subscription plan tied to a device
