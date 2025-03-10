@@ -162,6 +162,8 @@ export async function prepare(
       isDevnet ? wallet : serviceProvider,
       dawnMint,
       serviceProvider.publicKey,
+      true, // allowOwnerOffCurve (default)
+      'finalized', // Adding commitment level to ensure transaction confirmation
     )
 
   // Create USDC account for Service Provider
@@ -172,6 +174,8 @@ export async function prepare(
       wallet,
       usdcMint,
       serviceProvider.publicKey,
+      true,
+      'finalized',
     )
 
   // Create USDC account for Customer
@@ -182,6 +186,8 @@ export async function prepare(
       isDevnet ? wallet : customer,
       usdcMint,
       customer.publicKey,
+      true,
+      'finalized',
     )
 
   // Create DAWN token account for Customer
@@ -199,7 +205,7 @@ export async function prepare(
   const { address: walletUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      isDevnet ? wallet : wallet,
+      wallet,
       usdcMint,
       wallet.publicKey,
       true,
@@ -215,6 +221,8 @@ export async function prepare(
     walletUsdcAccount, // Token account
     wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
+    undefined,
+    { commitment: 'finalized' },
   )
 
   const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
