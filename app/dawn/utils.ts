@@ -297,7 +297,7 @@ export class DeviceGenerator {
 
     for (let i = 0; i < count; i++) {
       const device: GenerateDevice = {
-        name: `RND_Device_${i}`,
+        name: deviceNames[getRandomInt(0, deviceNames.length - 1)],
         coord: bbox
           ? this.flatPoint(this.flatPosition(bbox))
           : this.flatPoint(),
