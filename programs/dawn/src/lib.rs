@@ -6,7 +6,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ");
+declare_id!("ddwnsE29JbbYx75fyBA2undkNuMzp925NWMjBpfzuRT");
 
 mod constants;
 mod error;
@@ -24,6 +24,10 @@ pub mod dawn {
 
     pub fn init_token(ctx: Context<InitializeToken>) -> Result<()> {
         DawnApp::init_token(ctx)
+    }
+
+    pub fn init_fee_accounts(ctx: Context<InitializeFeeAccounts>) -> Result<()> {
+        DawnApp::init_fee_accounts(ctx)
     }
 
     pub fn configure(
