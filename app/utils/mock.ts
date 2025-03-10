@@ -220,6 +220,22 @@ export async function setup(
   // Get Medallion DAWN account PDA
   const medallionDawnAccount = getMedallionDawnAccountPda(program)
 
+  // Initialize fee accounts
+  console.log('Initializing fee accounts...')
+  await program.methods
+    .initFeeAccounts()
+    .accounts({
+      caller: wallet.publicKey,
+      tokenConfig: tokenConfigPda,
+      dawnMint,
+      feePoolDawnAccount,
+      daoDawnAccount,
+      validatorDawnAccount,
+      medallionDawnAccount,
+    })
+    .signers([wallet])
+    .rpc()
+
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
   const serviceProviderDawnAccount = await createAssociatedTokenAccount(

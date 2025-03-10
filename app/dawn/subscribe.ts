@@ -87,9 +87,7 @@ async function main() {
       // token accounts
       userUsdcAccount: walletUsdcAccount,
       userDawnAccount: walletDawnAccount,
-      daoDawnAccount: mock.daoDawnAccount,
-      validatorDawnAccount: mock.validatorDawnAccount,
-      medallionDawnAccount: mock.medallionDawnAccount,
+      feePoolDawnAccount: mock.feePoolDawnAccount,
       escrowUsdcVault,
       escrowDawnVault,
       // programs
