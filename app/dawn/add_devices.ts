@@ -1,7 +1,14 @@
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
-import { connect, DeviceGenerator, getFlag, getMock, planNames, submitTx } from './utils'
+import {
+  connect,
+  DeviceGenerator,
+  getFlag,
+  getMock,
+  planNames,
+  submitTx,
+} from './utils'
 import {
   COORD_DENOMINATOR,
   getAccessDomainPda,
@@ -13,8 +20,6 @@ import {
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
-
-
 
 // Plan constants
 const MIN_PRICE = 50_000_000 // 50 USDC
