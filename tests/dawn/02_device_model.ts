@@ -23,7 +23,7 @@ import { BanksClient } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
 
 /// Maximum length of a device model
-const MAX_DEVICE_MODEL_LEN = 32
+const MAX_DEVICE_MODEL_LEN = 64
 
 /// Maximum length of a device manufacturer
 const MAX_DEVICE_MANUFACTURER_LEN = 64

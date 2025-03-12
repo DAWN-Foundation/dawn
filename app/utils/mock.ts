@@ -35,15 +35,19 @@ import { getDawnProgram } from '../dawn/utils'
 import {
   getAccessDomainPda,
   getConfigPda,
+  getDaoDawnAccountPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
+  getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getMedallionDawnAccountPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
+  getValidatorDawnAccountPda,
 } from './pda'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -99,18 +103,6 @@ export async function createAccounts() {
   console.log('Loading local wallet...')
   const wallet = loadWallet().payer
 
-  // Create DAWN DAO KeyPair
-  console.log('Creating DAWN DAO KeyPair...')
-  const dao = Keypair.generate()
-
-  // Create Validator Pool KeyPair
-  console.log('Creating Validator Pool KeyPair...')
-  const validatorPool = Keypair.generate()
-
-  // Create Medallion Pool KeyPair
-  console.log('Creating Medallion Pool KeyPair...')
-  const medallionPool = Keypair.generate()
-
   // Create Service Provider KeyPair
   console.log('Creating Service Provider KeyPair...')
   const serviceProvider = Keypair.generate()
@@ -121,9 +113,6 @@ export async function createAccounts() {
 
   const newAccounts = {
     wallet,
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
   }
@@ -169,14 +158,7 @@ export async function setup(
   provider: BankrunProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
 ) {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   // Mint test USDC token
   console.log('Minting test USDC token...')
@@ -226,32 +208,33 @@ export async function setup(
     .signers([wallet])
     .rpc()
 
-  // Create DAWN account for DAWN DAO
-  console.log('Creating DAWN account for DAWN DAO...')
-  const daoDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient, // Banks client
-    dao, // Payer for transaction
-    dawnMint, // Mint
-    dao.publicKey, // Token account owner
-  )
+  // Get fee pool DAWN account PDA
+  const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // Create DAWN account for Validator Pool
-  console.log('Creating DAWN account for Validator Pool...')
-  const validatorDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
-    validatorPool,
-    dawnMint,
-    validatorPool.publicKey,
-  )
+  // Get DAO DAWN account PDA
+  const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // Create DAWN account for Medallion Pool
-  console.log('Creating DAWN account for Medallion Pool...')
-  const medallionDawnAccount = await createAssociatedTokenAccount(
-    provider.context.banksClient,
-    medallionPool,
-    dawnMint,
-    medallionPool.publicKey,
-  )
+  // Get Validator DAWN account PDA
+  const validatorDawnAccount = getValidatorDawnAccountPda(program)
+
+  // Get Medallion DAWN account PDA
+  const medallionDawnAccount = getMedallionDawnAccountPda(program)
+
+  // Initialize fee accounts
+  console.log('Initializing fee accounts...')
+  await program.methods
+    .initFeeAccounts()
+    .accounts({
+      caller: wallet.publicKey,
+      tokenConfig: tokenConfigPda,
+      dawnMint,
+      feePoolDawnAccount,
+      daoDawnAccount,
+      validatorDawnAccount,
+      medallionDawnAccount,
+    })
+    .signers([wallet])
+    .rpc()
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
@@ -457,15 +440,13 @@ export async function setup(
   )
 
   mock = {
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
     // mints
     usdcMint,
     dawnMint,
     // token accounts
+    feePoolDawnAccount,
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,

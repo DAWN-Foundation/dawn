@@ -1,4 +1,6 @@
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { connect, getMock, submitTx } from './utils'
+import { SystemProgram } from '@solana/web3.js'
 
 async function main() {
   const mock = getMock()
@@ -14,6 +16,7 @@ async function main() {
       config: mock.configPda,
       usdcMint: mock.usdcMint,
       dawnMint: mock.dawnMint,
+      feePoolDawnAccount: mock.feePoolDawnAccount,
       daoDawnAccount: mock.daoDawnAccount,
       validatorDawnAccount: mock.validatorDawnAccount,
       medallionDawnAccount: mock.medallionDawnAccount,

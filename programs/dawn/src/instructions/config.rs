@@ -7,16 +7,6 @@ use super::{DawnApp, TokenConfig};
 pub struct Config {
     /// The authority that can update the config
     pub authority: Pubkey,
-    /// PDA bump seed
-    pub bump: u8,
-
-    // FEES
-    /// The fee for DAWN DAO (3%)
-    pub dao_fee: u64,
-    /// The fee for Validators (3%)
-    pub validator_fee: u64,
-    /// The fee for Medallion (9%)
-    pub medallion_fee: u64,
 
     // MINTS
     /// The token config account that owns the DAWN mint
@@ -27,6 +17,8 @@ pub struct Config {
     pub dawn_mint: Pubkey,
 
     // TOKEN ACCOUNTS
+    /// The fee pool DAWN token account (this holds all the fees until distributed)
+    pub fee_pool_dawn_account: Pubkey,
     /// The DAWN DAO DAWN token account
     pub dao_dawn_account: Pubkey,
     /// The validator DAWN pool token account
@@ -45,6 +37,17 @@ pub struct Config {
     pub raydium_pool: Pubkey,
     /// The Raydium observation account
     pub raydium_observation: Pubkey,
+
+    // FEES - grouped the numeric types together
+    /// The fee for DAWN DAO (3%)
+    pub dao_fee: u64,
+    /// The fee for Validators (3%)
+    pub validator_fee: u64,
+    /// The fee for Medallion (9%)
+    pub medallion_fee: u64,
+
+    /// PDA bump seed
+    pub bump: u8,
 }
 
 pub const CONFIG_SIZE: usize = 8 // id
@@ -55,6 +58,7 @@ pub const CONFIG_SIZE: usize = 8 // id
     + 32 // token_config
     + 32 // usdc_mint
     + 32 // dawn_mint
+    + 32 // fee_pool_dawn_account
     + 32 // dao_dawn_account
     + 32 // validator_dawn_account
     + 32 // medallion_dawn_account
@@ -72,7 +76,7 @@ pub struct Configure<'info> {
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
-        init,
+        init_if_needed,
         payer = caller,
         space = CONFIG_SIZE,
         seeds = [b"config"],
@@ -98,14 +102,32 @@ pub struct Configure<'info> {
     )]
     pub dawn_mint: Account<'info, Mint>,
 
+    /// The fee pool DAWN token account
+    #[account(
+        seeds = [b"fee_pool_dawn_account"],
+        bump = token_config.fee_pool_bump,
+    )]
+    pub fee_pool_dawn_account: Account<'info, TokenAccount>,
+
     /// The DAWN DAO DAWN token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        seeds = [b"dao_dawn_account"],
+        bump = token_config.dao_bump,
+    )]
     pub dao_dawn_account: Account<'info, TokenAccount>,
+
     /// The validator DAWN pool token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        seeds = [b"validator_dawn_account"],
+        bump = token_config.validator_bump,
+    )]
     pub validator_dawn_account: Account<'info, TokenAccount>,
+
     /// The medallion DAWN pool token account
-    #[account(token::mint = dawn_mint)]
+    #[account(
+        seeds = [b"medallion_dawn_account"],
+        bump = token_config.medallion_bump,
+    )]
     pub medallion_dawn_account: Account<'info, TokenAccount>,
 
     /// The Raydium account
@@ -145,20 +167,13 @@ impl DawnApp {
         // make caller the authority
         config.authority = ctx.accounts.caller.key();
 
-        // bump seed
-        config.bump = ctx.bumps.config;
-
-        // fees
-        config.dao_fee = dao_fee;
-        config.validator_fee = validator_fee;
-        config.medallion_fee = medallion_fee;
-
         // mints
         config.token_config = ctx.accounts.token_config.key();
         config.usdc_mint = ctx.accounts.usdc_mint.key();
         config.dawn_mint = ctx.accounts.dawn_mint.key();
 
         // token accounts
+        config.fee_pool_dawn_account = ctx.accounts.fee_pool_dawn_account.key();
         config.dao_dawn_account = ctx.accounts.dao_dawn_account.key();
         config.validator_dawn_account = ctx.accounts.validator_dawn_account.key();
         config.medallion_dawn_account = ctx.accounts.medallion_dawn_account.key();
@@ -169,6 +184,14 @@ impl DawnApp {
         config.raydium_pool = ctx.accounts.raydium_pool.key();
         config.raydium_config = ctx.accounts.raydium_config.key();
         config.raydium_observation = ctx.accounts.raydium_observation.key();
+
+        // fees
+        config.dao_fee = dao_fee;
+        config.validator_fee = validator_fee;
+        config.medallion_fee = medallion_fee;
+
+        // bump seed
+        config.bump = ctx.bumps.config;
 
         Ok(())
     }

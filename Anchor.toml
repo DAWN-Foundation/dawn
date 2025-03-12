@@ -4,11 +4,11 @@
 seeds = false
 skip-lint = false
 
-[programs.devnet]
-dawn = "99oSHrFjjdyC6AqivbvfjXFzXgxYFzsDrMt1fEszVs1z"
-
 [programs.localnet]
-dawn = "99oSHrFjjdyC6AqivbvfjXFzXgxYFzsDrMt1fEszVs1z"
+dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
+
+[programs.devnet]
+dawn = "dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ"
 
 [registry]
 url = "https://api.apr.dev"

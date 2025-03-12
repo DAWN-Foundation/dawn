@@ -28,15 +28,19 @@ import { createAccounts, USDC_DECIMALS } from './mock'
 import {
   getAccessDomainPda,
   getConfigPda,
+  getDaoDawnAccountPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
+  getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getMedallionDawnAccountPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
   getTokenConfigPda,
+  getValidatorDawnAccountPda,
 } from './pda'
 import { getSitePda } from './pda/site'
 
@@ -44,30 +48,11 @@ async function fundAccounts(
   provider: AnchorProvider,
   accounts: Awaited<ReturnType<typeof createAccounts>>,
 ) {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   // Fund wallet
   console.log('Funding wallet...')
   await fund(provider.connection, wallet.publicKey, 1000)
-
-  // Fund DAWN DAO Account
-  console.log('Funding DAWN DAO Account...')
-  await fund(provider.connection, dao.publicKey, 1000)
-
-  // Fund Validator Pool Account
-  console.log('Funding Validator Pool Account...')
-  await fund(provider.connection, validatorPool.publicKey, 1000)
-
-  // Fund Medallion Pool Account
-  console.log('Funding Medallion Pool Account...')
-  await fund(provider.connection, medallionPool.publicKey, 1000)
 
   // Fund Service Provider Account
   console.log('Funding Service Provider Account...')
@@ -87,14 +72,7 @@ export async function prepare(
   accounts: Awaited<ReturnType<typeof createAccounts>>,
   isDevnet: boolean = false,
 ): Promise<Mock> {
-  const {
-    wallet,
-    dao,
-    validatorPool,
-    medallionPool,
-    serviceProvider,
-    customer,
-  } = accounts
+  const { wallet, serviceProvider, customer } = accounts
 
   if (!isDevnet) {
     await fundAccounts(provider, accounts)
@@ -148,34 +126,33 @@ export async function prepare(
     .signers([wallet])
     .rpc()
 
-  // Create DAWN account for DAWN DAO
-  console.log('Creating DAWN account for DAWN DAO...')
-  const { address: daoDawnAccount } = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    isDevnet ? wallet : dao,
-    dawnMint,
-    dao.publicKey,
-  )
+  // Get fee pool DAWN account PDA
+  const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
 
-  // Create DAWN account for Validator Pool
-  console.log('Creating DAWN account for Validator Pool...')
-  const { address: validatorDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : validatorPool,
-      dawnMint,
-      validatorPool.publicKey,
-    )
+  // Get DAO DAWN account PDA
+  const daoDawnAccount = getDaoDawnAccountPda(program)
 
-  // Create DAWN account for Medallion Pool
-  console.log('Creating DAWN account for Medallion Pool...')
-  const { address: medallionDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : medallionPool,
+  // Get Validator DAWN account PDA
+  const validatorDawnAccount = getValidatorDawnAccountPda(program)
+
+  // Get Medallion DAWN account PDA
+  const medallionDawnAccount = getMedallionDawnAccountPda(program)
+
+  // Initialize fee accounts
+  console.log('Initializing fee accounts...')
+  await program.methods
+    .initFeeAccounts()
+    .accounts({
+      caller: wallet.publicKey,
+      tokenConfig: tokenConfigPda,
       dawnMint,
-      medallionPool.publicKey,
-    )
+      feePoolDawnAccount,
+      daoDawnAccount,
+      validatorDawnAccount,
+      medallionDawnAccount,
+    })
+    .signers([wallet])
+    .rpc()
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
@@ -185,6 +162,8 @@ export async function prepare(
       isDevnet ? wallet : serviceProvider,
       dawnMint,
       serviceProvider.publicKey,
+      true, // allowOwnerOffCurve (default)
+      'finalized', // Adding commitment level to ensure transaction confirmation
     )
 
   // Create USDC account for Service Provider
@@ -195,6 +174,8 @@ export async function prepare(
       wallet,
       usdcMint,
       serviceProvider.publicKey,
+      true,
+      'finalized',
     )
 
   // Create USDC account for Customer
@@ -205,6 +186,8 @@ export async function prepare(
       isDevnet ? wallet : customer,
       usdcMint,
       customer.publicKey,
+      true,
+      'finalized',
     )
 
   // Create DAWN token account for Customer
@@ -222,7 +205,7 @@ export async function prepare(
   const { address: walletUsdcAccount } =
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      isDevnet ? wallet : wallet,
+      wallet,
       usdcMint,
       wallet.publicKey,
       true,
@@ -238,6 +221,8 @@ export async function prepare(
     walletUsdcAccount, // Token account
     wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
+    undefined,
+    { commitment: 'finalized' },
   )
 
   const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
@@ -374,15 +359,13 @@ export async function prepare(
   )
 
   return {
-    dao,
-    validatorPool,
-    medallionPool,
     serviceProvider,
     customer,
     // mints
     usdcMint,
     dawnMint,
     // token accounts
+    feePoolDawnAccount,
     daoDawnAccount,
     validatorDawnAccount,
     medallionDawnAccount,

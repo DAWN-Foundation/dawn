@@ -46,6 +46,16 @@ interface Subscribed {
   createdAt: number
 }
 
+interface SubscriptionExtended {
+  subscription: PublicKey
+  plan: PublicKey
+  subscriber: PublicKey
+  device: PublicKey | null
+  expiration: BN
+  swapPrice: BN
+  createdAt: number
+}
+
 export const subscriptionTests = () =>
   describe('dawn::subscription', () => {
     let provider: BankrunProvider
@@ -123,9 +133,7 @@ export const subscriptionTests = () =>
         // token accounts
         userUsdcAccount: mock.customerUsdcAccount,
         userDawnAccount: mock.customerDawnAccount,
-        daoDawnAccount: mock.daoDawnAccount,
-        validatorDawnAccount: mock.validatorDawnAccount,
-        medallionDawnAccount: mock.medallionDawnAccount,
+        feePoolDawnAccount: mock.feePoolDawnAccount,
         escrowUsdcVault: mock.escrowUsdcVault,
         escrowDawnVault: mock.escrowDawnVault,
         // programs
@@ -300,19 +308,9 @@ export const subscriptionTests = () =>
         mock.customerUsdcAccount,
       )
 
-      const daoDawnBalanceBefore = await getBalance(
+      const feePoolDawnBalanceBefore = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-
-      const validatorDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
-      )
-
-      const medallionDawnBalanceBefore = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
+        mock.feePoolDawnAccount,
       )
 
       const escrowUsdcBalanceBefore = await getBalance(
@@ -338,6 +336,8 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+      const timeBefore = await provider.context.banksClient.getClock()
 
       const tx = await program.methods
         .subscribe()
@@ -401,42 +401,17 @@ export const subscriptionTests = () =>
         .mul(BPS_DENOMINATOR.sub(new BN(100)))
         .div(BPS_DENOMINATOR)
       const totalDawnFee = totalDawnWithSlippage.sub(dailyDawn)
-
-      // make sure the DAO DAWN account was credited with the DAO fee portion
-      const daoFee = totalDawnFee.mul(mock.daoFee).div(totalFeeBps)
-      const daoDawnBalanceAfter = await getBalance(
+      const feePoolDawnBalanceAfter = await getBalance(
         provider.connection,
-        mock.daoDawnAccount,
-      )
-      assert.ok(daoDawnBalanceAfter.sub(daoDawnBalanceBefore).eq(daoFee))
-
-      // make sure the validator DAWN account was credited with the validator fee portion
-      const validatorFee = totalDawnFee.mul(mock.validatorFee).div(totalFeeBps)
-      const validatorDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.validatorDawnAccount,
+        mock.feePoolDawnAccount,
       )
       assert.ok(
-        validatorDawnBalanceAfter
-          .sub(validatorDawnBalanceBefore)
-          .eq(validatorFee),
+        feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).eq(totalDawnFee),
       )
 
-      // make sure the medallion DAWN account was credited with the medallion fee portion
-      const medallionFee = totalDawnFee.mul(mock.medallionFee).div(totalFeeBps)
-      const medallionDawnBalanceAfter = await getBalance(
-        provider.connection,
-        mock.medallionDawnAccount,
-      )
-      assert.ok(
-        medallionDawnBalanceAfter
-          .sub(medallionDawnBalanceBefore)
-          .eq(medallionFee),
-      )
-
-      // TODO >> DAWN-121: Refactor
       // get block time, and calculate expected expiration
-      // let expiration = txDetails.blockTime + plan.duration * SECONDS_PER_DAY
+      const planInSeconds = plan.duration * SECONDS_PER_DAY
+      const expiration = Number(timeBefore.unixTimestamp) + planInSeconds
 
       // make sure the subscription was created
       let subscription = await program.account.subscription.fetch(
@@ -446,11 +421,163 @@ export const subscriptionTests = () =>
       assert.ok(subscription.plan.equals(mock.planPda))
       assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
       expect(subscription.device).toBeNull()
-      // assert.equal(subscription.expiration.toNumber(), expiration)
-      // assert.ok(subscription.lastClaim.eq(new BN(txDetails.blockTime)))
+      console.log({
+        expiration,
+        subscriptionExpiration: subscription.expiration.toNumber(),
+      })
+      assert.equal(subscription.expiration.toNumber(), expiration)
+      assert.ok(
+        subscription.lastClaim.eq(new BN(Number(timeBefore.unixTimestamp))),
+      )
       assert.ok(subscription.claimableDawn.eq(dailyDawn))
       assert.ok(subscription.dailyUsdc.eq(dailyUsdc))
       assert.equal(subscription.bump, mock.subscriptionBump)
+    })
+
+    test('extends subscription', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      // get expiration before extension
+      const subscriptionBefore = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      const expirationBefore = new BN(subscriptionBefore.expiration)
+
+      const testerUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
+      )
+
+      const feePoolDawnBalanceBefore = await getBalance(
+        provider.connection,
+        mock.feePoolDawnAccount,
+      )
+
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+
+      const escrowDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+
+      // get balances of raydium vaults
+      const raydiumDawnVault = await getAccount(
+        provider.connection,
+        accounts.raydiumDawnVault,
+      )
+      const raydiumUsdcVault = await getAccount(
+        provider.connection,
+        accounts.raydiumUsdcVault,
+      )
+
+      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+      const tx = await program.methods
+        .extendSubscription()
+        .accounts(accounts)
+        .signers([mock.customer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<SubscriptionExtended>(
+        program,
+        txDetails,
+        'SubscriptionExtended',
+      )
+      assert.ok(event.subscription.equals(mock.subscriptionPda))
+      assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.subscriber.equals(mock.customer.publicKey))
+      expect(event.device).toBeNull()
+      assert.ok(
+        event.expiration.eq(
+          expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
+        ),
+      )
+      assert.ok(event.swapPrice.gt(price))
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // make sure the customer USDC account was debited
+      const testerUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
+      )
+      assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+
+      // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
+      const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+      assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
+
+      // calculate total fee in USDC
+      const totalFeeBps = mock.daoFee
+        .add(mock.validatorFee)
+        .add(mock.medallionFee)
+      const totalUsdcFee = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+
+      // make sure the device owner escrow USDC vault account was debited
+      const usdcRemainder = plan.price.sub(totalUsdcFee)
+      const dailyUsdc = usdcRemainder.div(new BN(plan.duration))
+      const dailyDawn = dailyUsdc.mul(price).div(Q32)
+      const usdcExpected = usdcRemainder.sub(dailyUsdc)
+      const escrowUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      assert.ok(
+        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
+      )
+
+      // make sure the device owner escrow DAWN vault account was credited with the daily DAWN portion
+      const escrowDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+      assert.ok(
+        escrowDawnBalanceAfter.sub(escrowDawnBalanceBefore).eq(dailyDawn),
+      )
+
+      const totalDawn = totalUsdcFee.add(dailyUsdc).mul(price).div(Q32)
+      const totalDawnWithSlippage = totalDawn
+        .mul(BPS_DENOMINATOR.sub(new BN(100)))
+        .div(BPS_DENOMINATOR)
+      const totalDawnFee = totalDawnWithSlippage.sub(dailyDawn)
+
+      // make sure the DAO DAWN account was credited with the DAO fee portion
+      const feePoolDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.feePoolDawnAccount,
+      )
+      assert.ok(
+        feePoolDawnBalanceAfter.sub(feePoolDawnBalanceBefore).gte(totalDawnFee),
+      )
+
+      // get block time, and calculate expected expiration
+      const planInSeconds = plan.duration * SECONDS_PER_DAY
+      const expiration = expirationBefore.add(new BN(planInSeconds))
+
+      // make sure the subscription expiration was extended
+      let subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      assert.ok(subscription.expiration.eq(expiration))
+
+      // make sure other subscription fields are unchanged
+      expect(subscription.createdAt.eq(subscriptionBefore.createdAt))
+      assert.ok(subscription.plan.equals(subscriptionBefore.plan))
+      assert.ok(subscription.subscriber.equals(subscriptionBefore.subscriber))
+      expect(subscription.device).toBeNull()
+      assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
+      assert.ok(
+        subscription.claimableDawn.gte(subscriptionBefore.claimableDawn),
+      )
+      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
+      assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
     test('cannot subscribe to the same plan twice', async () => {

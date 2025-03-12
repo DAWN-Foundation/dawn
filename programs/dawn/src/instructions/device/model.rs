@@ -85,7 +85,9 @@ impl DawnApp {
 
         device_model.created_at = Clock::get()?.unix_timestamp;
         device_model.device_type = device_type.clone();
-        manufacturer.trim().clone_into(&mut device_model.manufacturer);
+        manufacturer
+            .trim()
+            .clone_into(&mut device_model.manufacturer);
         model.trim().clone_into(&mut device_model.model);
         device_model.bump = ctx.bumps.device_model;
 
