@@ -3,12 +3,15 @@ use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use crate::{
-    app::{DeviceType, ACCESS_DOMAIN_SIZE},
+    app::{DeviceType, OrganizationType, ACCESS_DOMAIN_SIZE, ORGANIZATION_SIZE},
     DawnApp, DawnError, DeviceAdded,
 };
 
-use super::{AccessDomain, DeviceLocation, DeviceModel, Site, DEVICE_LOCATION_SIZE};
+use super::{AccessDomain, DeviceLocation, DeviceModel, Organization, Site, DEVICE_LOCATION_SIZE};
 
+const END_USER_ORG_NAME: &'static str = "end_user_organization";
+
+/// The device account, representing a device
 #[account]
 pub struct Device {
     /// The creation timestamp
@@ -19,6 +22,10 @@ pub struct Device {
     pub site: Option<Pubkey>,
     /// Reference to the DeviceModel account
     pub model: Pubkey,
+    /// Reference to the Organization account
+    pub organization: Pubkey,
+    /// Optional reference to the IpLease account
+    pub infra_ip: Option<Pubkey>,
     /// Name of the device
     pub name: String,
     /// MAC address
@@ -32,6 +39,8 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 32 // owner
     + (1 + 32) // optional + site
     + 32 // model
+    + 32 // organization
+    + (1 + 32) // optional + infra_ip
     + (4 + 32) // name
     + 6  // mac_address
     + 1; // bump
@@ -83,6 +92,21 @@ pub struct AddDevice<'info> {
     )]
     pub device_location: Account<'info, DeviceLocation>,
 
+    /// The organization account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = ORGANIZATION_SIZE,
+        seeds = [
+            b"organization",
+            caller.key().as_ref(),
+            OrganizationType::EndUser.to_seed(),
+            END_USER_ORG_NAME.as_bytes(),
+        ],
+        bump
+    )]
+    pub organization: Account<'info, Organization>,
+
     /// The access domain account
     #[account(
         init_if_needed,
@@ -131,6 +155,7 @@ impl DawnApp {
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
+        let organization = &mut ctx.accounts.organization;
         let access_domain = &mut ctx.accounts.access_domain;
         let caller = ctx.accounts.caller.key();
 
@@ -157,9 +182,17 @@ impl DawnApp {
         device.owner = caller;
         device.site = site;
         device.model = ctx.accounts.device_model.key();
+        device.organization = organization.key();
         device.name.clone_from(&name);
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
+
+        // Set organization info
+        organization.created_at = created_at;
+        organization.owner = caller;
+        organization.organization_type = OrganizationType::EndUser;
+        organization.name = END_USER_ORG_NAME.into();
+        organization.bump = ctx.bumps.organization;
 
         // Set device location info
         device_location.created_at = created_at;
@@ -176,6 +209,7 @@ impl DawnApp {
             owner: device.owner,
             site,
             model: device.model,
+            organization: organization.key(),
             name,
             latitude,
             longitude,

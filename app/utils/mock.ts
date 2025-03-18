@@ -24,6 +24,8 @@ import {
   MacAddress,
   PROGRAM_ID,
   AuthMethod,
+  organizationTypeSeed,
+  OrganizationType,
 } from './helpers'
 import {
   RAYDIUM_CONFIG,
@@ -43,6 +45,7 @@ import {
   getIpLeasePda,
   getIpPoolPda,
   getMedallionDawnAccountPda,
+  getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
@@ -342,6 +345,12 @@ export async function setup(
     deviceName,
     deviceMacAddress,
   )
+  const organizationPda = getOrganizationPda(
+    program,
+    serviceProvider.publicKey,
+    { endUser: {} },
+    'end_user_organization',
+  )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
@@ -475,6 +484,7 @@ export async function setup(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    organizationPda,
     accessDomainPda,
     sitePda,
     devicePda,

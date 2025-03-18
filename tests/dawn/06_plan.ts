@@ -18,6 +18,7 @@ import {
   getDeviceLocationPda,
   getAccessDomainPda,
   AuthMethod,
+  getOrganizationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 
@@ -801,6 +802,7 @@ export const parentPlanTests = () =>
       ReturnType<typeof program.account.subscription.fetch>
     >
     let devicePda: PublicKey
+    let organizationPda: PublicKey
     let accessDomainPda: PublicKey
     let deviceLocationPda: PublicKey
 
@@ -835,6 +837,12 @@ export const parentPlanTests = () =>
         mock.deviceName,
         [0, 0, 0, 0, 0, 1],
       )
+      organizationPda = getOrganizationPda(
+        program,
+        mock.customer.publicKey,
+        { endUser: {} },
+        'end_user_organization',
+      )
       accessDomainPda = getAccessDomainPda(program, devicePda)
       deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
@@ -850,6 +858,7 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          organization: organizationPda,
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,

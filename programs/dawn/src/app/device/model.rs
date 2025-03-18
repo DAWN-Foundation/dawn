@@ -8,6 +8,7 @@ use crate::{
 
 use super::DeviceType;
 
+/// The device model account, representing a device model
 #[account]
 pub struct DeviceModel {
     /// The creation timestamp

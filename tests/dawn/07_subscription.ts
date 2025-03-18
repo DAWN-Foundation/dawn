@@ -24,6 +24,7 @@ import {
   MacAddress,
   getAccessDomainPda,
   getDeviceLocationPda,
+  getOrganizationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -421,10 +422,6 @@ export const subscriptionTests = () =>
       assert.ok(subscription.plan.equals(mock.planPda))
       assert.ok(subscription.subscriber.equals(mock.customer.publicKey))
       expect(subscription.device).toBeNull()
-      console.log({
-        expiration,
-        subscriptionExpiration: subscription.expiration.toNumber(),
-      })
       assert.equal(subscription.expiration.toNumber(), expiration)
       assert.ok(
         subscription.lastClaim.eq(new BN(Number(timeBefore.unixTimestamp))),
@@ -616,6 +613,12 @@ export const subscriptionTests = () =>
         mock.deviceName,
         macAddress,
       )
+      const organizationPda = getOrganizationPda(
+        program,
+        wallet.publicKey,
+        { endUser: {} },
+        'end_user_organization',
+      )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
@@ -631,6 +634,7 @@ export const subscriptionTests = () =>
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          organization: organizationPda,
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,

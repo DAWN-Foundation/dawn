@@ -10,6 +10,7 @@ use crate::{
 
 use super::Device;
 
+/// The site account, representing a site
 #[account]
 pub struct Site {
     /// The creation timestamp
