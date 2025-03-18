@@ -11,12 +11,12 @@ declare_id!("ddwnsE29JbbYx75fyBA2undkNuMzp925NWMjBpfzuRT");
 mod constants;
 mod error;
 mod events;
-mod instructions;
+mod app;
 mod utils;
 
 use error::*;
 use events::*;
-use instructions::*;
+use app::*;
 
 #[program]
 pub mod dawn {

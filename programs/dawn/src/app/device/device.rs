@@ -3,7 +3,7 @@ use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use crate::{
-    instructions::{DeviceType, ACCESS_DOMAIN_SIZE},
+    app::{DeviceType, ACCESS_DOMAIN_SIZE},
     DawnApp, DawnError, DeviceAdded,
 };
 

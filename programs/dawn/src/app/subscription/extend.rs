@@ -1,21 +1,19 @@
-use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
-use solana_program::pubkey::MAX_SEED_LEN;
-use std::cmp::min;
+use solana_program::clock::SECONDS_PER_DAY;
 
-use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
+use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
-    instructions::{subscription::payment, PaymentAccounts},
+    error::DawnError, events::SubscriptionExtended, app::{subscription::payment, PaymentAccounts},
     utils::optional_pubkey_seed,
-    DawnError, Subscribed,
 };
 
 #[derive(Accounts)]
-pub struct Subscribe<'info> {
+pub struct ExtendSubscription<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
@@ -45,31 +43,15 @@ pub struct Subscribe<'info> {
     )]
     pub plan: Box<Account<'info, Plan>>,
 
-    /// The device account
-    #[account(
-        constraint = device.owner == caller.key(),
-        seeds = [
-            b"device",
-            device.owner.as_ref(),
-            device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
-            &device.mac_address,
-        ],
-        bump = device.bump
-    )]
-    pub device: Option<Box<Account<'info, Device>>>,
-
     /// The subscription account
     #[account(
-        init,
-        payer = caller,
-        space = SUBSCRIPTION_SIZE,
+        mut,
         seeds = [
             b"subscription",
             plan.key().as_ref(),
             caller.key().as_ref(),
         ],
-        bump
+        bump = subscription.bump
     )]
     pub subscription: Box<Account<'info, Subscription>>,
 
@@ -167,15 +149,9 @@ pub struct Subscribe<'info> {
 }
 
 impl DawnApp {
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
         let config = &ctx.accounts.config;
         let plan = &ctx.accounts.plan;
-
-        if plan.start_at > 0 {
-            let now = Clock::get()?.unix_timestamp;
-            // Make sure the plan has already started
-            require!(plan.start_at <= now, DawnError::InvalidStartTime);
-        }
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -196,38 +172,35 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        let (claimable_dawn, daily_usdc, swap_price) =
-            payment::process_payment(payment_accounts, config, plan)?;
+        let (_, _, swap_price) = payment::process_payment(payment_accounts, config, plan)?;
 
-        // Get the current timestamp from the clock
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
+        let subscription = &mut ctx.accounts.subscription;
 
         // Calculate plan duration in seconds (days to seconds)
         let duration_in_seconds = (plan.duration as u64)
             .checked_mul(SECONDS_PER_DAY)
             .ok_or(DawnError::Overflow)?;
 
-        // Calculate subscription expiration by adding plan `duration` days to current timestamp
-        let expiration = current_timestamp
-            .checked_add(duration_in_seconds as i64)
-            .ok_or(DawnError::Overflow)?;
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+        // if subscription is expired, set expiration starting from now
+        let expiration = if subscription.expiration < current_timestamp {
+            current_timestamp + duration_in_seconds as i64
+        } else {
+            // Calculate subscription expiration by adding plan `duration` days to existing expiration
+            subscription
+                .expiration
+                .checked_add(duration_in_seconds as i64)
+                .ok_or(DawnError::Overflow)?
+        };
 
         // Save subscription data
-        let subscription = &mut ctx.accounts.subscription;
-        subscription.created_at = Clock::get()?.unix_timestamp;
-        subscription.plan = ctx.accounts.plan.key();
-        subscription.subscriber = ctx.accounts.caller.key();
-        subscription.device = ctx.accounts.device.as_ref().map(|d| d.key());
         subscription.expiration = expiration;
-        subscription.last_claim = current_timestamp;
-        subscription.claimable_dawn = claimable_dawn; // Initial DAWN amount is locked for 24h
-        subscription.daily_usdc = daily_usdc;
-        subscription.bump = ctx.bumps.subscription;
 
-        emit!(Subscribed {
+        emit!(SubscriptionExtended {
             subscription: subscription.key(),
-            plan: ctx.accounts.plan.key(),
+            plan: plan.key(),
             subscriber: ctx.accounts.caller.key(),
             device: subscription.device,
             expiration: subscription.expiration,

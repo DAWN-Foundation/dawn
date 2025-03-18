@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{instructions::AuthMethod, DeviceType};
+use crate::{app::AuthMethod, DeviceType};
 
 #[event]
 pub struct SiteAdded {
