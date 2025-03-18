@@ -4,6 +4,7 @@ import { PublicKey } from '@solana/web3.js'
 import { connect, getFlag, getMock, submitTx } from './utils'
 import {
   COORD_DENOMINATOR,
+  getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
   MacAddress,
@@ -49,6 +50,7 @@ async function main() {
     MAC_ADDRESS,
   )
 
+  const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   console.log({ devicePda: devicePda.toBase58() })
@@ -61,6 +63,7 @@ async function main() {
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
+      accessDomain: accessDomainPda,
       deviceLocation: deviceLocationPda,
       site: null,
     })
