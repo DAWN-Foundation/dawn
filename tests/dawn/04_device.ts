@@ -80,6 +80,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -113,6 +114,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             latitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -144,6 +146,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             longitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -183,6 +186,7 @@ export const deviceTests = () =>
             height,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -225,6 +229,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -267,6 +272,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -296,6 +302,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -324,6 +331,7 @@ export const deviceTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -480,6 +488,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -550,6 +559,7 @@ export const deviceTests = () =>
           mock.deviceHeight,
           lattitude,
           longitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -619,6 +629,7 @@ export const deviceSiteTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -702,6 +713,7 @@ export const deviceSiteTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           macAddress,
         )
         .accounts({

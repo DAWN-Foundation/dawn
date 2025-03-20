@@ -897,6 +897,7 @@ export const parentPlanTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           [0, 0, 0, 0, 0, 1],
         )
         .accounts({

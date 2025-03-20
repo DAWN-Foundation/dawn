@@ -267,6 +267,7 @@ export async function prepare(
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
   const deviceLatitude = new BN(0.000001 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
+  const devicePlacement: [number, number] = [0, 0]
   const deviceHeight = 1
 
   const deviceModelPda = getDeviceModelPda(
@@ -428,6 +429,7 @@ export async function prepare(
     deviceName,
     deviceLatitude,
     deviceLongitude,
+    devicePlacement,
     deviceHeight,
     deviceMacAddress,
     // service agreement

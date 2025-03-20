@@ -73,6 +73,7 @@ export interface Mock {
   deviceMacAddress: MacAddress
   deviceLatitude: BN
   deviceLongitude: BN
+  devicePlacement: [number, number]
   deviceHeight: number
   // service agreement
   slaThreshold: BN
@@ -157,6 +158,7 @@ export interface RawMock {
   deviceName: string
   deviceLatitude: number
   deviceLongitude: number
+  devicePlacement: [number, number]
   deviceHeight: number
   deviceMacAddress: MacAddress
   // service agreement

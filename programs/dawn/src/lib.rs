@@ -68,9 +68,10 @@ pub mod dawn {
         height: u16,
         latitude: i64,
         longitude: i64,
+        placement: [u32; 2],
         mac_address: [u8; 6],
     ) -> Result<()> {
-        DawnApp::add_device(ctx, name, height, latitude, longitude, mac_address)
+        DawnApp::add_device(ctx, name, height, latitude, longitude, placement, mac_address)
     }
 
     pub fn assign_device_to_site(ctx: Context<AssignDeviceToSite>) -> Result<()> {

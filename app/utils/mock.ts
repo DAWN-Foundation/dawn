@@ -336,6 +336,7 @@ export async function setup(
 
   const deviceLatitude = new BN(1.0 * COORD_DENOMINATOR)
   const deviceLongitude = new BN(1.0 * COORD_DENOMINATOR)
+  const devicePlacement: [number, number] = [0, 0]
   const deviceHeight = 1
 
   const devicePda = getDevicePda(
@@ -511,6 +512,7 @@ export async function setup(
     deviceName,
     deviceLatitude,
     deviceLongitude,
+    devicePlacement,
     deviceHeight,
     deviceMacAddress,
     // service agreement

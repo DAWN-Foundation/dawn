@@ -19,6 +19,10 @@ pub struct DeviceLocation {
     pub latitude: i64,
     /// Geographic position - longitude
     pub longitude: i64,
+    /// The placement of the device, consists of azimuth and elevation
+    /// azimuth: u32,       // Bird's eye view (horizontal angle, 0.00–360.00) scaled by 100
+    /// elevation: u32,     // Side view (vertical angle, 0.00–180.00) scaled by 100
+    pub placement: [u32; 2],
     /// Verified by the DAWN authority
     pub verified: bool,
     /// The verification timestamp
@@ -33,6 +37,7 @@ pub const DEVICE_LOCATION_SIZE: usize = 8 // id
     + 2  // height
     + 8  // latitude
     + 8  // longitude
+    + (4 + 4)  // placement (azimuth, elevation)
     + 1  // verified
     + 8  // verified_at
     + 1; // bump

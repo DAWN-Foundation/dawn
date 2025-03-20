@@ -46,7 +46,14 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(name: String, height: u16, latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(
+    name: String,
+    height: u16,
+    latitude: u64,
+    longitude: u64,
+    placement: [u32; 2],
+    mac_address: [u8; 6]
+)]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -139,6 +146,7 @@ impl DawnApp {
         height: u16,
         latitude: i64,
         longitude: i64,
+        placement: [u32; 2],
         mac_address: [u8; 6],
     ) -> Result<()> {
         // Make sure the latitude, longitude and height are not eq 0
@@ -200,6 +208,7 @@ impl DawnApp {
         device_location.height = height;
         device_location.longitude = longitude;
         device_location.latitude = latitude;
+        device_location.placement = placement;
         device_location.verified = false;
         device_location.bump = ctx.bumps.device_location;
 

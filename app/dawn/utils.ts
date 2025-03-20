@@ -122,6 +122,7 @@ export function getMock(): Mock {
     deviceModel: mock.deviceModel,
     deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
     deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
+    devicePlacement: mock.devicePlacement,
     deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
     // service agreement
