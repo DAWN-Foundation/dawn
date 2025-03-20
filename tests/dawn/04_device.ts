@@ -49,6 +49,8 @@ interface DeviceAssignedToSite {
   createdAt: number
 }
 
+export let l2devicePda: PublicKey
+
 export const deviceTests = () =>
   describe('dawn::device', () => {
     let program: Program<Dawn>
@@ -564,6 +566,8 @@ export const deviceTests = () =>
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.model.equals(deviceModelPda)).toBeTruthy()
+
+      l2devicePda = devicePda
     })
   })
 

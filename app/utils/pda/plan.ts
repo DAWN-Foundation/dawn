@@ -23,7 +23,7 @@ export function getServiceAgreementPda(
 // Helper function to get the PDA for a plan given plan parameters
 export function getPlanPda(
   program: Program<Dawn>,
-  accessDomain: PublicKey,
+  accessDomain: PublicKey | null,
   device: PublicKey,
   parentPlan: PublicKey | null,
   name: string,
@@ -47,7 +47,7 @@ export function getPlanPda(
   const [planPda, planBump] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('plan'),
-      Buffer.from(accessDomain.toBytes()),
+      Buffer.from(accessDomain?.toBytes() ?? Array(32).fill(0)),
       Buffer.from(device.toBytes()),
       parentPlanBuffer,
       Buffer.from(name.slice(0, 32)),

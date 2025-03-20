@@ -29,7 +29,7 @@ pub struct ServiceAgreementAdded {
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
-    pub access_domain: Pubkey,
+    pub access_domain: Option<Pubkey>,
     pub device: Pubkey,
     pub parent_plan: Option<Pubkey>,
     pub name: String,

@@ -16,7 +16,7 @@ pub struct Plan {
     /// The plan owner
     pub owner: Pubkey,
     /// Associated Access Domain
-    pub access_domain: Pubkey,
+    pub access_domain: Option<Pubkey>,
     /// Associated Device
     pub device: Pubkey,
     /// The parent plan (for resale)
@@ -45,7 +45,7 @@ pub struct Plan {
 const PLAN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
-    + 32 // access_domain
+    + (1 + 32) // optional + access_domain
     + 32 // device
     + (1 + 32) // optional + parent_plan
     + (4 + 32) // name
@@ -72,14 +72,6 @@ pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The access domain account
-    #[account(
-        mut,
-        seeds = [b"access_domain", access_domain.device.as_ref()],
-        bump = access_domain.bump
-    )]
-    pub access_domain: Account<'info, AccessDomain>,
-
     /// The device account (must be owned by the caller)
     #[account(
         mut,
@@ -94,6 +86,14 @@ pub struct AddPlan<'info> {
         bump = device.bump
     )]
     pub device: Account<'info, Device>,
+
+    /// The access domain account (only provided if device is a Router)
+    #[account(
+        mut,
+        seeds = [b"access_domain", device.key().as_ref()],
+        bump = access_domain.bump
+    )]
+    pub access_domain: Option<Account<'info, AccessDomain>>,
 
     /// The service agreement account
     #[account(
@@ -110,7 +110,7 @@ pub struct AddPlan<'info> {
     #[account(
         seeds = [
             b"plan",
-            parent_plan.access_domain.as_ref(),
+            &optional_pubkey_seed(parent_plan.access_domain),
             parent_plan.device.as_ref(),
             &optional_pubkey_seed(parent_plan.parent_plan),
             &parent_plan.name.as_bytes()[..min(parent_plan.name.len(), MAX_SEED_LEN)],
@@ -132,7 +132,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            access_domain.key().as_ref(),
+            &optional_pubkey_seed(access_domain.as_ref().map(|a| a.key()))[..],
             device.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
             &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
@@ -236,7 +236,7 @@ impl DawnApp {
 
         plan.created_at = Clock::get()?.unix_timestamp;
         plan.owner = ctx.accounts.caller.key();
-        plan.access_domain = ctx.accounts.access_domain.key();
+        plan.access_domain = ctx.accounts.access_domain.as_ref().map(|a| a.key());
         plan.device = ctx.accounts.device.key();
         plan.parent_plan = ctx.accounts.parent_plan.as_ref().map(|p| p.key());
         plan.name.clone_from(&name);

@@ -30,7 +30,7 @@ pub struct Subscribe<'info> {
     #[account(
         seeds = [
             b"plan",
-            plan.access_domain.as_ref(),
+            &optional_pubkey_seed(plan.access_domain),
             plan.device.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),

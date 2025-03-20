@@ -73,6 +73,7 @@ pub struct AssignDeviceToSite<'info> {
     /// The device account
     #[account(
         mut,
+        constraint = device.owner == caller.key(),
         seeds = [
             b"device",
             device.owner.as_ref(),

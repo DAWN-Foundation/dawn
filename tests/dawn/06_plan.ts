@@ -21,12 +21,14 @@ import {
   getOrganizationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
+import { l2devicePda } from './04_device'
 
 export let oneDayLaterPlanPda: PublicKey
 
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
+  accessDomain?: PublicKey
   parentPlan?: PublicKey
   name: string
   price: BN
@@ -581,6 +583,52 @@ export const planTests = () =>
       assert.equal(plan.bump, planBump)
     })
 
+    test('adds a plan to L2 device with access domain', async () => {
+      const [planPda, planBump] = getPlanPda(
+        program,
+        null,
+        l2devicePda,
+        null,
+        mock.planName,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
+      )
+
+      const tx = await program.methods
+        .addPlan(
+          mock.planName,
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          null,
+          mock.planAuthMethods,
+        )
+        .accounts({
+          caller: mock.serviceProvider.publicKey,
+          accessDomain: null,
+          device: l2devicePda,
+          serviceAgreement: mock.serviceAgreementPda,
+          plan: planPda,
+          parentPlan: null,
+          subscription: null,
+        })
+        .signers([mock.serviceProvider])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      expect(event.accessDomain).toBeNull()
+
+      const plan = await program.account.plan.fetch(planPda)
+      expect(plan.accessDomain).toBeNull()
+    })
+
     test('cannot add a plan with a start time in the past', async () => {
       const oneDayAgo = new Date()
       oneDayAgo.setDate(oneDayAgo.getDate() - 1)
@@ -901,8 +949,8 @@ export const parentPlanTests = () =>
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
-          accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
+          accessDomain: mock.accessDomainPda,
           serviceAgreement: mock.serviceAgreementPda,
           plan: plan2Pda,
           parentPlan: null,
@@ -916,7 +964,7 @@ export const parentPlanTests = () =>
 
       const [resellPlanPda] = getPlanPda(
         program,
-        mock.accessDomainPda,
+        accessDomainPda,
         devicePda,
         plan2Pda,
         mock.planName,
@@ -941,7 +989,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
-            accessDomain: mock.accessDomainPda,
+            accessDomain: accessDomainPda,
             device: devicePda,
             serviceAgreement: mock.serviceAgreementPda,
             plan: resellPlanPda,
@@ -966,7 +1014,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.accessDomainPda,
+        accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planName,
@@ -991,7 +1039,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
-            accessDomain: mock.accessDomainPda,
+            accessDomain: accessDomainPda,
             device: devicePda,
             serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
@@ -1013,7 +1061,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.accessDomainPda,
+        accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planName,
@@ -1038,7 +1086,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
-            accessDomain: mock.accessDomainPda,
+            accessDomain: accessDomainPda,
             device: devicePda,
             serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
@@ -1060,7 +1108,7 @@ export const parentPlanTests = () =>
 
       const [planPda] = getPlanPda(
         program,
-        mock.accessDomainPda,
+        accessDomainPda,
         devicePda,
         mock.planPda,
         mock.planName,
@@ -1085,7 +1133,7 @@ export const parentPlanTests = () =>
           )
           .accounts({
             caller: mock.customer.publicKey,
-            accessDomain: mock.accessDomainPda,
+            accessDomain: accessDomainPda,
             device: devicePda,
             serviceAgreement: mock.serviceAgreementPda,
             subscription: mock.subscriptionPda,
@@ -1107,7 +1155,7 @@ export const parentPlanTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
-        mock.accessDomainPda,
+        accessDomainPda,
         devicePda,
         mock.planPda, // parent plan
         mock.planName,
@@ -1131,7 +1179,7 @@ export const parentPlanTests = () =>
         )
         .accounts({
           caller: mock.customer.publicKey,
-          accessDomain: mock.accessDomainPda,
+          accessDomain: accessDomainPda,
           device: devicePda,
           serviceAgreement: mock.serviceAgreementPda,
           subscription: mock.subscriptionPda,
@@ -1146,6 +1194,7 @@ export const parentPlanTests = () =>
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(event.accessDomain.equals(accessDomainPda)).toBeTruthy()
       expect(event.device.equals(devicePda)).toBeTruthy()
       expect(event.parentPlan.equals(mock.planPda)).toBeTruthy()
       expect(event.name).toBe(mock.planName)
@@ -1163,6 +1212,7 @@ export const parentPlanTests = () =>
       const plan = await program.account.plan.fetch(planPda)
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       expect(plan.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(plan.accessDomain.equals(accessDomainPda)).toBeTruthy()
       expect(plan.device.equals(devicePda)).toBeTruthy()
       expect(plan.parentPlan.equals(mock.planPda)).toBeTruthy()
       expect(plan.name).toBe(mock.planName)
