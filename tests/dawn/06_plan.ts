@@ -27,8 +27,7 @@ export let oneDayLaterPlanPda: PublicKey
 interface PlanAdded {
   owner: PublicKey
   device: PublicKey
-  isResale: boolean
-  parentPlan: PublicKey
+  parentPlan?: PublicKey
   name: string
   price: BN
   duration: number
@@ -447,8 +446,7 @@ export const planTests = () =>
       const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.device.equals(mock.devicePda))
-      assert.ok(event.isResale === false)
-      assert.ok(event.parentPlan.toBytes().every((byte) => byte === 0))
+      assert.ok(event.parentPlan === null)
       assert.ok(event.name === mock.planName)
       assert.ok(event.price.eq(mock.planPrice))
       assert.equal(event.duration, mock.planDuration)
@@ -463,8 +461,7 @@ export const planTests = () =>
       const plan = await program.account.plan.fetch(mock.planPda)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(plan.device.equals(mock.devicePda))
-      assert.ok(plan.isResale === false)
-      assert.ok(plan.parentPlan.toBytes().every((byte) => byte === 0))
+      assert.ok(plan.parentPlan === null)
       assert.ok(plan.name === mock.planName)
       assert.ok(plan.price.eq(mock.planPrice))
       assert.equal(plan.duration, mock.planDuration)
