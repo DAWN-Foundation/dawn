@@ -322,7 +322,7 @@ export const deviceTests = () =>
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('Invalid placement')
+        expect(err.error.errorMessage).toBe('Invalid placement azimuth')
       }
     })
 
@@ -354,7 +354,7 @@ export const deviceTests = () =>
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('Invalid placement')
+        expect(err.error.errorMessage).toBe('Invalid placement elevation')
       }
     })
 
