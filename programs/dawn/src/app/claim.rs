@@ -29,9 +29,9 @@ pub struct Claim<'info> {
         constraint = caller.key() == plan.owner,
         seeds = [
             b"plan",
-            plan.access_domain.as_ref(),
+            &optional_pubkey_seed(plan.access_domain),
             plan.device.as_ref(),
-            &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
+            &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
@@ -160,15 +160,10 @@ impl DawnApp {
         // Signer seeds for the subscription account
         let seeds = &[
             b"plan".as_ref(),
-            ctx.accounts.plan.access_domain.as_ref(),
+            &optional_pubkey_seed(ctx.accounts.plan.access_domain),
             ctx.accounts.plan.device.as_ref(),
-            &optional_pubkey_seed(
-                ctx.accounts
-                    .plan
-                    .is_resale
-                    .then_some(ctx.accounts.plan.parent_plan),
-            ),
-            (ctx.accounts.plan.name.as_bytes()),
+            &optional_pubkey_seed(ctx.accounts.plan.parent_plan),
+            &ctx.accounts.plan.name.as_bytes(),
             &ctx.accounts.plan.price.to_le_bytes(),
             &ctx.accounts.plan.duration.to_le_bytes(),
             &ctx.accounts.plan.speed.to_le_bytes(),

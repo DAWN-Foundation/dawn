@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-/// The plan account, representing a subscription plan tied to a device
+/// The access domain account, representing an access domain tied to a device
 #[account]
 pub struct AccessDomain {
     /// The creation timestamp

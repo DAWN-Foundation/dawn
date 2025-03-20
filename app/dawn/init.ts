@@ -18,6 +18,7 @@ import {
   getDevicePda,
   getIpLeasePda,
   getIpPoolPda,
+  getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
   IpV4Bytes,
@@ -128,6 +129,12 @@ async function main() {
 
       devicesPda.push(devicePda)
 
+      const organizationPda = getOrganizationPda(
+        program,
+        wallet.publicKey,
+        { endUser: {} },
+        'end_user_organization',
+      )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
@@ -145,6 +152,7 @@ async function main() {
             caller: wallet.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,
+            organization: organizationPda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
             site: null,
@@ -205,101 +213,101 @@ async function main() {
       }
     }
 
-    // --------------------------------------------------------------------
-    console.log('Add ip pool')
+    // // --------------------------------------------------------------------
+    // console.log('Add ip pool')
 
-    // Pool IP V4
-    const poolIpV4: IpV4Bytes = [11, 11, getRandomInt(1, 255), 0]
-    const poolIpV4CidrMask = 24
-    const ipV4List: IpV4Bytes[] = IpV4Generator.generateIPList(
-      poolIpV4.join('.'),
-      poolIpV4CidrMask,
-    )
+    // // Pool IP V4
+    // const poolIpV4: IpV4Bytes = [11, 11, getRandomInt(1, 255), 0]
+    // const poolIpV4CidrMask = 24
+    // const ipV4List: IpV4Bytes[] = IpV4Generator.generateIPList(
+    //   poolIpV4.join('.'),
+    //   poolIpV4CidrMask,
+    // )
 
-    // Pool IP V6 (2001:db8::/64 - a documentation prefix)
-    const poolIpV6: IpV6Bytes = [
-      +`0x${getRandomInt(1, 255).toString(16)}`,
-      +`0x${getRandomInt(1, 255).toString(16)}`,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-    ]
+    // // Pool IP V6 (2001:db8::/64 - a documentation prefix)
+    // const poolIpV6: IpV6Bytes = [
+    //   +`0x${getRandomInt(1, 255).toString(16)}`,
+    //   +`0x${getRandomInt(1, 255).toString(16)}`,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    //   0x0000,
+    // ]
 
-    const poolIpV6CidrMask = 108 // For less ips
-    const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(
-      poolIpV6.join(':'),
-      poolIpV6CidrMask,
-    )
+    // const poolIpV6CidrMask = 108 // For less ips
+    // const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(
+    //   poolIpV6.join(':'),
+    //   poolIpV6CidrMask,
+    // )
 
-    const [ipPoolPda] = getIpPoolPda(
-      program,
-      poolIpV4,
-      poolIpV4CidrMask,
-      poolIpV6,
-      poolIpV6CidrMask,
-    )
+    // const [ipPoolPda] = getIpPoolPda(
+    //   program,
+    //   poolIpV4,
+    //   poolIpV4CidrMask,
+    //   poolIpV6,
+    //   poolIpV6CidrMask,
+    // )
 
-    itx = await program.methods
-      .addIpPool(poolIpV4, poolIpV4CidrMask, poolIpV6, poolIpV6CidrMask)
-      .accounts({
-        caller: wallet.publicKey,
-        config: mock.configPda,
-        ipPool: ipPoolPda,
-      })
-      .signers([wallet.payer])
-      .instruction()
+    // itx = await program.methods
+    //   .addIpPool(poolIpV4, poolIpV4CidrMask, poolIpV6, poolIpV6CidrMask)
+    //   .accounts({
+    //     caller: wallet.publicKey,
+    //     config: mock.configPda,
+    //     ipPool: ipPoolPda,
+    //   })
+    //   .signers([wallet.payer])
+    //   .instruction()
 
-    await submitTx(connection, wallet, itx, false)
-    console.log('Ip pool added', { ipPoolPda: ipPoolPda.toBase58() })
+    // await submitTx(connection, wallet, itx, false)
+    // console.log('Ip pool added', { ipPoolPda: ipPoolPda.toBase58() })
 
-    // --------------------------------------------------------------------
-    console.log('Lease ip')
+    // // --------------------------------------------------------------------
+    // console.log('Lease ip')
 
-    for (let i = 0; i < devicesPda.length; i++) {
-      // Lease IP V4
-      const leaseIpV4: IpV4Bytes = ipV4List[i]
-      const leaseIpV4CidrMask = 24
+    // for (let i = 0; i < devicesPda.length; i++) {
+    //   // Lease IP V4
+    //   const leaseIpV4: IpV4Bytes = ipV4List[i]
+    //   const leaseIpV4CidrMask = 24
 
-      // Lease IP V6 (2001:db8::1 - a valid address within the pool)
-      const leaseIpV6: IpV6Bytes = ipV6List[i]
-      const leaseIpV6CidrMask = 108 // Single address
+    //   // Lease IP V6 (2001:db8::1 - a valid address within the pool)
+    //   const leaseIpV6: IpV6Bytes = ipV6List[i]
+    //   const leaseIpV6CidrMask = 108 // Single address
 
-      const [ipLeasePda] = getIpLeasePda(
-        program,
-        devicesPda[i],
-        ipPoolPda,
-        leaseIpV4,
-        leaseIpV4CidrMask,
-        leaseIpV6,
-        leaseIpV6CidrMask,
-      )
+    //   const [ipLeasePda] = getIpLeasePda(
+    //     program,
+    //     devicesPda[i],
+    //     ipPoolPda,
+    //     leaseIpV4,
+    //     leaseIpV4CidrMask,
+    //     leaseIpV6,
+    //     leaseIpV6CidrMask,
+    //   )
 
-      const itx = await program.methods
-        .leaseIp(leaseIpV4, leaseIpV4CidrMask, leaseIpV6, leaseIpV6CidrMask)
-        .accounts({
-          caller: wallet.publicKey,
-          config: mock.configPda,
-          device: devicesPda[i],
-          ipPool: ipPoolPda,
-          ipLease: ipLeasePda,
-        })
-        .signers([wallet.payer])
-        .instruction()
+    //   const itx = await program.methods
+    //     .leaseIp(leaseIpV4, leaseIpV4CidrMask, leaseIpV6, leaseIpV6CidrMask)
+    //     .accounts({
+    //       caller: wallet.publicKey,
+    //       config: mock.configPda,
+    //       device: devicesPda[i],
+    //       ipPool: ipPoolPda,
+    //       ipLease: ipLeasePda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .instruction()
 
-      await submitTx(connection, wallet, itx, false)
-      console.log('Leased ip', { ipLeasePda: ipLeasePda.toBase58() })
-    }
+    //   await submitTx(connection, wallet, itx, false)
+    //   console.log('Leased ip', { ipLeasePda: ipLeasePda.toBase58() })
+    // }
   } catch (error) {
     console.error(error)
   }

@@ -16,13 +16,11 @@ pub struct Plan {
     /// The plan owner
     pub owner: Pubkey,
     /// Associated Access Domain
-    pub access_domain: Pubkey,
+    pub access_domain: Option<Pubkey>,
     /// Associated Device
     pub device: Pubkey,
-    /// Whether the plan is a resale plan
-    pub is_resale: bool,
     /// The parent plan (for resale)
-    pub parent_plan: Pubkey,
+    pub parent_plan: Option<Pubkey>,
     /// The plan name (arbitrary string up to 32 bytes)
     pub name: String,
     /// The plan price per `duration` days (in USDC with 6 decimals)
@@ -47,10 +45,9 @@ pub struct Plan {
 const PLAN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
-    + 32 // access_domain
+    + (1 + 32) // optional + access_domain
     + 32 // device
-    + 1 // is_resale
-    + 32 // parent plan
+    + (1 + 32) // optional + parent_plan
     + (4 + 32) // name
     + 8 // price
     + 2 // duration
@@ -75,14 +72,6 @@ pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The access domain account
-    #[account(
-        mut,
-        seeds = [b"access_domain", access_domain.device.as_ref()],
-        bump = access_domain.bump
-    )]
-    pub access_domain: Account<'info, AccessDomain>,
-
     /// The device account (must be owned by the caller)
     #[account(
         mut,
@@ -97,6 +86,14 @@ pub struct AddPlan<'info> {
         bump = device.bump
     )]
     pub device: Account<'info, Device>,
+
+    /// The access domain account (only provided if device is a Router)
+    #[account(
+        mut,
+        seeds = [b"access_domain", device.key().as_ref()],
+        bump = access_domain.bump
+    )]
+    pub access_domain: Option<Account<'info, AccessDomain>>,
 
     /// The service agreement account
     #[account(
@@ -113,9 +110,9 @@ pub struct AddPlan<'info> {
     #[account(
         seeds = [
             b"plan",
-            parent_plan.access_domain.as_ref(),
+            &optional_pubkey_seed(parent_plan.access_domain),
             parent_plan.device.as_ref(),
-            &optional_pubkey_seed(parent_plan.is_resale.then_some(parent_plan.parent_plan)),
+            &optional_pubkey_seed(parent_plan.parent_plan),
             &parent_plan.name.as_bytes()[..min(parent_plan.name.len(), MAX_SEED_LEN)],
             &parent_plan.price.to_le_bytes(),
             &parent_plan.duration.to_le_bytes(),
@@ -135,7 +132,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            access_domain.key().as_ref(),
+            &optional_pubkey_seed(access_domain.as_ref().map(|a| a.key()))[..],
             device.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
             &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
@@ -205,8 +202,8 @@ impl DawnApp {
         // No more than 2 auth methods (check before moving auth_methods)
         require!(count <= 2, DawnError::TooManyAuthMethods);
 
-        let (is_resale, parent_plan) = if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref()
-        {
+        if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref() {
+            // for a resale plan, make sure the parent plan has a subscription
             require!(
                 ctx.accounts.subscription.is_some(),
                 DawnError::ParentPlanNeedSubscription
@@ -222,11 +219,7 @@ impl DawnApp {
                 capacity <= parent_plan.capacity,
                 DawnError::OutsideParentBounds
             );
-
-            (true, parent_plan.key())
-        } else {
-            (false, Pubkey::new_from_array([0; 32]))
-        };
+        }
 
         if let Some(start_at) = &start_at {
             let now = Clock::get()?.unix_timestamp;
@@ -243,10 +236,9 @@ impl DawnApp {
 
         plan.created_at = Clock::get()?.unix_timestamp;
         plan.owner = ctx.accounts.caller.key();
-        plan.access_domain = ctx.accounts.access_domain.key();
+        plan.access_domain = ctx.accounts.access_domain.as_ref().map(|a| a.key());
         plan.device = ctx.accounts.device.key();
-        plan.is_resale = is_resale;
-        plan.parent_plan = parent_plan;
+        plan.parent_plan = ctx.accounts.parent_plan.as_ref().map(|p| p.key());
         plan.name.clone_from(&name);
         plan.price = price;
         plan.duration = duration;
@@ -262,7 +254,6 @@ impl DawnApp {
             owner: plan.owner,
             access_domain: plan.access_domain,
             device: plan.device,
-            is_resale: plan.is_resale,
             parent_plan: plan.parent_plan,
             name,
             price: plan.price,

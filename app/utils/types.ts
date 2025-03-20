@@ -45,6 +45,7 @@ export interface Mock {
   configPda: PublicKey
   ipPoolPda: PublicKey
   deviceModelPda: PublicKey
+  organizationPda: PublicKey
   accessDomainPda: PublicKey
   sitePda: PublicKey
   devicePda: PublicKey
@@ -129,6 +130,7 @@ export interface RawMock {
   configPda: string
   ipPoolPda: string
   deviceModelPda: string
+  organizationPda: string
   accessDomainPda: string
   sitePda: string
   devicePda: string

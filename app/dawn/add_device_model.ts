@@ -6,6 +6,7 @@ const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
 
 async function main() {
+  const deviceTypeRaw = getFlag('--device-type') || 'router'
   const manufacturer = getFlag('--manufacturer') || MANUFACTURER
   const model = getFlag('--model') || MODEL
 
@@ -13,9 +14,13 @@ async function main() {
   const mock = getMock()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
+  const deviceType = { [deviceTypeRaw]: {} } as
+    | { router: {} }
+    | { wirelessRadio: {} }
+
   const deviceModelPda = getDeviceModelPda(
     program,
-    { router: {} },
+    deviceType,
     manufacturer,
     model,
   )
@@ -23,7 +28,7 @@ async function main() {
   console.log({ deviceModelPda: deviceModelPda.toBase58() })
 
   const itx = await program.methods
-    .addDeviceModel({ router: {} }, manufacturer, model)
+    .addDeviceModel(deviceType, manufacturer, model)
     .accounts({
       config: mock.configPda,
       caller: wallet.payer.publicKey,

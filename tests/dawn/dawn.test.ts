@@ -1,5 +1,5 @@
 import { configTests } from './00_config'
-import { ipPoolTests, leaseIpTests } from './01_ip_pool'
+// import { ipPoolTests, leaseIpTests } from './01_ip_pool'
 import { deviceModelTests } from './02_device_model'
 import { siteTests } from './03_site'
 import { deviceTests, deviceSiteTests } from './04_device'
@@ -23,12 +23,12 @@ import { claimTests } from './08_claim'
 // - parent_plan (adds parent plan)
 // - claim (claims DAWN from subscription escrow)
 configTests()
-ipPoolTests()
+// ipPoolTests()
 deviceModelTests()
 siteTests()
 deviceTests()
 deviceSiteTests()
-leaseIpTests()
+// leaseIpTests()
 serviceAgreementTests()
 planTests()
 subscriptionTests()

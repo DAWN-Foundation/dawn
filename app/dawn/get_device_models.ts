@@ -9,7 +9,11 @@ async function main() {
   console.log(
     deviceModels.map((a) => ({
       owner: a.publicKey.toBase58(),
-      account: a.account,
+      account: {
+        ...a.account,
+        createdAt: new Date(a.account.createdAt.toNumber() * 1000).toISOString(),
+        deviceType: Object.keys(a.account.deviceType)[0],
+      },
     })),
   )
 }

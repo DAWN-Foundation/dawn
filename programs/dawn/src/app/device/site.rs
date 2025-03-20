@@ -10,6 +10,7 @@ use crate::{
 
 use super::Device;
 
+/// The site account, representing a site
 #[account]
 pub struct Site {
     /// The creation timestamp
@@ -72,6 +73,7 @@ pub struct AssignDeviceToSite<'info> {
     /// The device account
     #[account(
         mut,
+        constraint = device.owner == caller.key(),
         seeds = [
             b"device",
             device.owner.as_ref(),

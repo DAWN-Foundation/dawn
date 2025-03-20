@@ -7,7 +7,7 @@ use raydium_cp_swap::states::{PoolState, Q32};
 use crate::{
     constants::BPS_DENOMINATOR,
     error::DawnError,
-    instructions::{Config, Plan},
+    app::{Config, Plan},
     utils::{sort_accounts, swap_amounts},
 };
 

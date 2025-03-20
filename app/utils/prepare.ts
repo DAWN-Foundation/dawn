@@ -36,6 +36,7 @@ import {
   getIpLeasePda,
   getIpPoolPda,
   getMedallionDawnAccountPda,
+  getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
@@ -282,6 +283,12 @@ export async function prepare(
     deviceName,
     deviceMacAddress,
   )
+  const organizationPda = getOrganizationPda(
+    program,
+    serviceProvider.publicKey,
+    { endUser: {} },
+    'end_user_organization',
+  )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
@@ -394,6 +401,7 @@ export async function prepare(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    organizationPda,
     accessDomainPda,
     sitePda,
     devicePda,

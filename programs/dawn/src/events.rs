@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{instructions::AuthMethod, DeviceType};
+use crate::{app::AuthMethod, DeviceType};
 
 #[event]
 pub struct SiteAdded {
@@ -29,10 +29,9 @@ pub struct ServiceAgreementAdded {
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
-    pub access_domain: Pubkey,
+    pub access_domain: Option<Pubkey>,
     pub device: Pubkey,
-    pub is_resale: bool,
-    pub parent_plan: Pubkey,
+    pub parent_plan: Option<Pubkey>,
     pub name: String,
     pub price: u64,
     pub duration: u16,
@@ -95,6 +94,7 @@ pub struct DeviceAdded {
     pub device: Pubkey,
     pub site: Option<Pubkey>,
     pub model: Pubkey,
+    pub organization: Pubkey,
     pub name: String,
     pub longitude: i64,
     pub latitude: i64,
@@ -111,24 +111,24 @@ pub struct DeviceLocationVerified {
     pub verified_at: i64,
 }
 
-#[event]
-pub struct IpPoolAdded {
-    pub ip_pool: Pubkey,
-    pub ip_v4: [u8; 4],
-    pub ip_v4_cidr_mask: u8,
-    pub ip_v6: [u16; 16],
-    pub ip_v6_cidr_mask: u8,
-    pub created_at: i64,
-}
+// #[event]
+// pub struct IpPoolAdded {
+//     pub ip_pool: Pubkey,
+//     pub ip_v4: [u8; 4],
+//     pub ip_v4_cidr_mask: u8,
+//     pub ip_v6: [u16; 16],
+//     pub ip_v6_cidr_mask: u8,
+//     pub created_at: i64,
+// }
 
-#[event]
-pub struct IpLeased {
-    pub ip_lease: Pubkey,
-    pub ip_pool: Pubkey,
-    pub device: Pubkey,
-    pub ip_v4: [u8; 4],
-    pub ip_v4_cidr_mask: u8,
-    pub ip_v6: [u16; 16],
-    pub ip_v6_cidr_mask: u8,
-    pub created_at: i64,
-}
+// #[event]
+// pub struct IpLeased {
+//     pub ip_lease: Pubkey,
+//     pub ip_pool: Pubkey,
+//     pub device: Pubkey,
+//     pub ip_v4: [u8; 4],
+//     pub ip_v4_cidr_mask: u8,
+//     pub ip_v6: [u16; 16],
+//     pub ip_v6_cidr_mask: u8,
+//     pub created_at: i64,
+// }

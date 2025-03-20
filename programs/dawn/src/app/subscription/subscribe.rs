@@ -9,7 +9,7 @@ use std::cmp::min;
 
 use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
 use crate::{
-    instructions::{subscription::payment, PaymentAccounts},
+    app::{subscription::payment, PaymentAccounts},
     utils::optional_pubkey_seed,
     DawnError, Subscribed,
 };
@@ -30,9 +30,9 @@ pub struct Subscribe<'info> {
     #[account(
         seeds = [
             b"plan",
-            plan.access_domain.as_ref(),
+            &optional_pubkey_seed(plan.access_domain),
             plan.device.as_ref(),
-            &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
+            &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),

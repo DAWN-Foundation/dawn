@@ -8,7 +8,9 @@ use solana_program::clock::SECONDS_PER_DAY;
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
-    error::DawnError, events::SubscriptionExtended, instructions::{subscription::payment, PaymentAccounts},
+    app::{subscription::payment, PaymentAccounts},
+    error::DawnError,
+    events::SubscriptionExtended,
     utils::optional_pubkey_seed,
 };
 
@@ -28,9 +30,9 @@ pub struct ExtendSubscription<'info> {
     #[account(
         seeds = [
             b"plan",
-            plan.access_domain.as_ref(),
+            &optional_pubkey_seed(plan.access_domain),
             plan.device.as_ref(),
-            &optional_pubkey_seed(plan.is_resale.then_some(plan.parent_plan)),
+            &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),

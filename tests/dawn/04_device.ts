@@ -17,6 +17,7 @@ import {
   MacAddress,
   getDeviceModelPda,
   DeviceType,
+  getOrganizationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -26,6 +27,7 @@ interface DeviceAdded {
   device: PublicKey
   site: PublicKey
   model: PublicKey
+  organization: PublicKey
   name: string
   latitude: BN
   longitude: BN
@@ -46,6 +48,8 @@ interface DeviceAssignedToSite {
   site: PublicKey
   createdAt: number
 }
+
+export let l2devicePda: PublicKey
 
 export const deviceTests = () =>
   describe('dawn::device', () => {
@@ -82,6 +86,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: invalidModel.publicKey,
             device: mock.devicePda,
+            organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -114,6 +119,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -144,6 +150,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -182,6 +189,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -223,6 +231,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            organization: mock.organizationPda,
             accessDomain: accessDomainPda,
             deviceLocation: deviceLocationPda,
             site: null,
@@ -264,6 +273,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
+            organization: mock.organizationPda,
             accessDomain: accessDomainPda,
             deviceLocation: deviceLocationPda,
             site: null,
@@ -292,6 +302,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            organization: mock.organizationPda,
             accessDomain: null,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -319,6 +330,7 @@ export const deviceTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: mock.devicePda,
+          organization: mock.organizationPda,
           accessDomain: mock.accessDomainPda,
           deviceLocation: mock.deviceLocationPda,
           site: null,
@@ -337,6 +349,7 @@ export const deviceTests = () =>
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(event.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(event.name).toBe(mock.deviceName)
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
       expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
@@ -348,7 +361,18 @@ export const deviceTests = () =>
       expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
       expect(device.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(device.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(device.name).toBe(mock.deviceName)
+
+      // make sure organization was created
+      const organization = await program.account.organization.fetch(
+        mock.organizationPda,
+      )
+      expect(new BN(organization.createdAt).gt(new BN(0))).toBeTruthy()
+      expect(
+        organization.owner.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
+      expect(organization.name).toBe('end_user_organization')
 
       // make sure access domain was created
       const accessDomain = await program.account.accessDomain.fetch(
@@ -462,6 +486,7 @@ export const deviceTests = () =>
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
+            organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
@@ -531,6 +556,7 @@ export const deviceTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: deviceModelPda,
           device: devicePda,
+          organization: mock.organizationPda,
           accessDomain: null,
           deviceLocation: deviceLocationPda,
           site: null,
@@ -540,6 +566,8 @@ export const deviceTests = () =>
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.model.equals(deviceModelPda)).toBeTruthy()
+
+      l2devicePda = devicePda
     })
   })
 
@@ -575,8 +603,13 @@ export const deviceSiteTests = () =>
         mock.deviceMacAddress,
       )
 
+      const organizationPda = getOrganizationPda(
+        program2,
+        wallet.publicKey,
+        { endUser: {} },
+        'end_user_organization',
+      )
       const accessDomainPda = getAccessDomainPda(program2, devicePda)
-
       const deviceLocationPda = getDeviceLocationPda(program2, devicePda)
 
       // add device
@@ -592,6 +625,7 @@ export const deviceSiteTests = () =>
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          organization: organizationPda,
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
@@ -660,7 +694,6 @@ export const deviceSiteTests = () =>
       )
 
       const accessDomainPda = getAccessDomainPda(program, devicePda)
-
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       const tx = await program.methods
@@ -675,6 +708,7 @@ export const deviceSiteTests = () =>
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
+          organization: mock.organizationPda,
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: mock.sitePda,
@@ -693,6 +727,7 @@ export const deviceSiteTests = () =>
       expect(event.device.equals(devicePda)).toBeTruthy()
       expect(event.site.equals(mock.sitePda)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
+      expect(event.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
       expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
       expect(event.macAddress).toEqual(macAddress)
