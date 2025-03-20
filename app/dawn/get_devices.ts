@@ -23,7 +23,14 @@ async function main() {
   console.log(
     devices.map((b) => ({
       owner: b.publicKey.toBase58(),
-      account: { ...b.account, owner: b.account.owner.toBase58() },
+      account: {
+        ...b.account,
+        owner: b.account.owner.toBase58(),
+        macAddress: b.account.macAddress
+          .map((n) => n.toString(16).padStart(2, '0'))
+          .join(':')
+          .toUpperCase(),
+      },
     })),
   )
 }
