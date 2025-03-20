@@ -155,6 +155,12 @@ impl DawnApp {
         require!(!height.eq(&0u16), DawnError::InvalidHeight);
         require!(!height.lt(&0u16), DawnError::InvalidHeight);
 
+        // Make sure the placement.azimuth is between 0 and 360
+        require!(placement[0] <= 36000, DawnError::InvalidPlacementAzimuth);
+
+        // Make sure the placement.elevation is between 0 and 180
+        require!(placement[1] <= 18000, DawnError::InvalidPlacementElevation);
+
         // Make sure the name is not empty
         require!(!name.is_empty(), DawnError::EmptyDeviceName);
 
