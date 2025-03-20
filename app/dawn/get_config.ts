@@ -1,10 +1,14 @@
+import { PublicKey } from '@solana/web3.js'
+import { getOrganizationPda, OrganizationType } from '../utils'
 import { getMock, connect } from './utils'
 
 async function main() {
   const { program } = await connect()
-  console.log('PROGRAM_ID', program.programId.toBase58())
+  console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const mock = getMock()
+  console.log({ CONFIG_PDA: mock.configPda.toBase58() })
+
   const configAccount = await program.account.config.fetch(mock.configPda)
 
   console.log({
