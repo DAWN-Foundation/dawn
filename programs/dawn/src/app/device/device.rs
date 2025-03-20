@@ -46,7 +46,14 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 1; // bump
 
 #[derive(Accounts)]
-#[instruction(name: String, height: u16, latitude: u64, longitude: u64, mac_address: [u8; 6])]
+#[instruction(
+    name: String,
+    height: u16,
+    latitude: u64,
+    longitude: u64,
+    placement: [u32; 2],
+    mac_address: [u8; 6]
+)]
 pub struct AddDevice<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -139,6 +146,7 @@ impl DawnApp {
         height: u16,
         latitude: i64,
         longitude: i64,
+        placement: [u32; 2],
         mac_address: [u8; 6],
     ) -> Result<()> {
         // Make sure the latitude, longitude and height are not eq 0
@@ -146,6 +154,12 @@ impl DawnApp {
         require!(!longitude.eq(&0i64), DawnError::InvalidLongitude);
         require!(!height.eq(&0u16), DawnError::InvalidHeight);
         require!(!height.lt(&0u16), DawnError::InvalidHeight);
+
+        // Make sure the placement.azimuth is between 0 and 360
+        require!(placement[0] <= 36000, DawnError::InvalidPlacementAzimuth);
+
+        // Make sure the placement.elevation is between 0 and 180
+        require!(placement[1] <= 18000, DawnError::InvalidPlacementElevation);
 
         // Make sure the name is not empty
         require!(!name.is_empty(), DawnError::EmptyDeviceName);
@@ -200,6 +214,7 @@ impl DawnApp {
         device_location.height = height;
         device_location.longitude = longitude;
         device_location.latitude = latitude;
+        device_location.placement = placement;
         device_location.verified = false;
         device_location.bump = ctx.bumps.device_location;
 

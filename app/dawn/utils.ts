@@ -122,6 +122,7 @@ export function getMock(): Mock {
     deviceModel: mock.deviceModel,
     deviceLatitude: new BN(mock.deviceLatitude * COORD_DENOMINATOR),
     deviceLongitude: new BN(mock.deviceLongitude * COORD_DENOMINATOR),
+    devicePlacement: mock.devicePlacement,
     deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
     // service agreement
@@ -296,6 +297,7 @@ export class DeviceGenerator {
         mac: generateMacAddress(),
         height: getRandomInt(1, 20),
         name: deviceNames[getRandomInt(0, deviceNames.length - 1)],
+        placement: [getRandomInt(0, 36000), getRandomInt(0, 18000)],
       }
 
       devices.push(device)

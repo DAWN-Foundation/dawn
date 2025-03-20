@@ -106,4 +106,10 @@ pub enum DawnError {
 
     #[msg("Device name is empty")]
     EmptyDeviceName,
+
+    #[msg("Invalid placement azimuth")]
+    InvalidPlacementAzimuth,
+
+    #[msg("Invalid placement elevation")]
+    InvalidPlacementElevation,
 }

@@ -80,6 +80,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -113,6 +114,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             latitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -144,6 +146,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             longitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -183,6 +186,7 @@ export const deviceTests = () =>
             height,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -225,6 +229,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -267,6 +272,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -288,6 +294,70 @@ export const deviceTests = () =>
       }
     })
 
+    test('cannot add device with invalid placement.azimuth', async () => {
+      const placement = [36001, 0]
+
+      try {
+        await program.methods
+          .addDevice(
+            mock.deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            placement,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: mock.devicePda,
+            organization: mock.organizationPda,
+            accessDomain: mock.accessDomainPda,
+            deviceLocation: mock.deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid placement azimuth')
+      }
+    })
+
+    test('cannot add device with invalid placement.elevation', async () => {
+      const placement = [0, 18001]
+
+      try {
+        await program.methods
+          .addDevice(
+            mock.deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            placement,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: mock.devicePda,
+            organization: mock.organizationPda,
+            accessDomain: mock.accessDomainPda,
+            deviceLocation: mock.deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid placement elevation')
+      }
+    })
+
     test('cannot add L3 (Router) device without access domain', async () => {
       try {
         await program.methods
@@ -296,6 +366,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -324,6 +395,7 @@ export const deviceTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -364,7 +436,7 @@ export const deviceTests = () =>
       expect(device.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(device.name).toBe(mock.deviceName)
 
-      // make sure organization was created
+     // make sure organization was created
       const organization = await program.account.organization.fetch(
         mock.organizationPda,
       )
@@ -399,6 +471,7 @@ export const deviceTests = () =>
       expect(deviceLocation.height.toString()).toBe(
         mock.deviceHeight.toString(),
       )
+      expect(deviceLocation.placement).toEqual(mock.devicePlacement)
       expect(deviceLocation.verified).toBeFalsy()
     })
 
@@ -480,6 +553,7 @@ export const deviceTests = () =>
             mock.deviceHeight,
             mock.deviceLatitude,
             mock.deviceLongitude,
+            mock.devicePlacement,
             mock.deviceMacAddress,
           )
           .accounts({
@@ -550,6 +624,7 @@ export const deviceTests = () =>
           mock.deviceHeight,
           lattitude,
           longitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -619,6 +694,7 @@ export const deviceSiteTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           mock.deviceMacAddress,
         )
         .accounts({
@@ -702,6 +778,7 @@ export const deviceSiteTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           macAddress,
         )
         .accounts({

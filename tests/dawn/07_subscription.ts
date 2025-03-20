@@ -628,6 +628,7 @@ export const subscriptionTests = () =>
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
+          mock.devicePlacement,
           macAddress,
         )
         .accounts({
