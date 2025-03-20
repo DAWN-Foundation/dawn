@@ -1,4 +1,7 @@
 const fs = require('fs')
+import dotenv from 'dotenv'
+dotenv.config()
+
 import {
   AnchorProvider,
   BN,
@@ -29,6 +32,8 @@ import {
 } from '../utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
+
+const DEVNET_RPC_URL = process.env.DEVNET_RPC_URL
 
 // parse command line arguments
 // find value of the --flag
@@ -164,9 +169,11 @@ export async function connect(): Promise<{
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
 
-  const connection = new Connection(
-    isDevnet ? 'https://api.devnet.solana.com' : 'http://127.0.0.1:8899',
-  )
+  const rpcUrl = isDevnet
+    ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
+    : 'http://127.0.0.1:8899'
+  console.log({ rpcUrl })
+  const connection = new Connection(rpcUrl)
   const provider = new AnchorProvider(connection, wallet, {})
   setProvider(provider)
   const program = getDawnProgram(provider)
@@ -205,6 +212,7 @@ export async function submitTx(
   const latestBlockHash = await connection.getLatestBlockhash({
     commitment: 'confirmed',
   })
+  console.log({ latestBlockHash })
 
   const tx = new Transaction({
     ...latestBlockHash,

@@ -17,7 +17,7 @@ export function getDeviceModelPda(
         ? Buffer.from(deviceType)
         : deviceTypeSeed(deviceType),
       Buffer.from(manufacturer),
-      Buffer.from(model),
+      Buffer.from(model.slice(0, 32)),
     ],
     program.programId,
   )

@@ -7,7 +7,9 @@ import {
   getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
+  getOrganizationPda,
   MacAddress,
+  OrganizationType,
 } from '../utils'
 
 // CONSTANTS
@@ -55,10 +57,17 @@ async function main() {
     MAC_ADDRESS,
   )
 
+  const organizationPda = getOrganizationPda(
+    program,
+    wallet.publicKey,
+    { endUser: {} } as OrganizationType,
+    'end_user_organization',
+  )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
   console.log({ devicePda: devicePda.toBase58() })
+  console.log({ organizationPda: organizationPda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })
   console.log({ deviceModelPda: deviceModel.toBase58() })
 
@@ -68,6 +77,7 @@ async function main() {
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
+      organization: organizationPda,
       accessDomain: accessDomainPda,
       deviceLocation: deviceLocationPda,
       site: null,
@@ -75,7 +85,7 @@ async function main() {
     .instruction()
 
   try {
-    const txResult = await submitTx(connection, wallet, itx)
+    const txResult = await submitTx(connection, wallet, itx, false)
     console.log('Tx submitted', { txResult })
   } catch (error) {
     console.error(error)

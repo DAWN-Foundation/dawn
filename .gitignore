@@ -15,3 +15,5 @@ tests/fixtures/dawn.so
 /ddwn**.json
 /test**.json
 devnet.json
+
+.env
