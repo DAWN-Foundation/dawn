@@ -146,6 +146,7 @@ async function main() {
             device.height,
             latitude,
             longitude,
+            device.placement,
             Array.from(Buffer.from(device.mac)),
           )
           .accounts({
