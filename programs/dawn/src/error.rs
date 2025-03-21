@@ -110,6 +110,6 @@ pub enum DawnError {
     #[msg("Invalid placement azimuth")]
     InvalidPlacementAzimuth,
 
-    #[msg("Invalid placement elevation")]
-    InvalidPlacementElevation,
+    #[msg("Invalid placement tilt")]
+    InvalidPlacementTilt,
 }

@@ -15,6 +15,7 @@
     "dawn:get_config": "yarn build && node dist/app/dawn/get_config.js",
     "dawn:add_device": "yarn build && node dist/app/dawn/add_device.js",
     "dawn:add_devices": "yarn build && node dist/app/dawn/add_devices.js",
+    "dawn:remove_device": "yarn build && node dist/app/dawn/remove_device.js",
     "dawn:add_device_model": "yarn build && node dist/app/dawn/add_device_model.js",
     "dawn:get_device_models": "yarn build && node dist/app/dawn/get_device_models.js",
     "dawn:get_devices": "yarn build && node dist/app/dawn/get_devices.js",

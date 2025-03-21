@@ -294,7 +294,7 @@ export const deviceTests = () =>
       }
     })
 
-    test('cannot add device with invalid placement.azimuth', async () => {
+    test('cannot add device with placement.azimuth gt 360', async () => {
       const placement = [36001, 0]
 
       try {
@@ -326,8 +326,8 @@ export const deviceTests = () =>
       }
     })
 
-    test('cannot add device with invalid placement.elevation', async () => {
-      const placement = [0, 18001]
+    test('cannot add device with placement.azimuth lt 0', async () => {
+      const placement = [-1, 0]
 
       try {
         await program.methods
@@ -354,7 +354,71 @@ export const deviceTests = () =>
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('Invalid placement elevation')
+        expect(err.error.errorMessage).toBe('Invalid placement azimuth')
+      }
+    })
+
+    test('cannot add device with placement.tilt gt 90', async () => {
+      const placement = [0, 9001]
+
+      try {
+        await program.methods
+          .addDevice(
+            mock.deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            placement,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: mock.devicePda,
+            organization: mock.organizationPda,
+            accessDomain: mock.accessDomainPda,
+            deviceLocation: mock.deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid placement tilt')
+      }
+    })
+
+    test('cannot add device with placement.tilt lt -90', async () => {
+      const placement = [0, -9001]
+
+      try {
+        await program.methods
+          .addDevice(
+            mock.deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            placement,
+            mock.deviceMacAddress,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: mock.devicePda,
+            organization: mock.organizationPda,
+            accessDomain: mock.accessDomainPda,
+            deviceLocation: mock.deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Invalid placement tilt')
       }
     })
 
@@ -436,7 +500,7 @@ export const deviceTests = () =>
       expect(device.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(device.name).toBe(mock.deviceName)
 
-     // make sure organization was created
+      // make sure organization was created
       const organization = await program.account.organization.fetch(
         mock.organizationPda,
       )

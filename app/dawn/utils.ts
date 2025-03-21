@@ -305,7 +305,7 @@ export class DeviceGenerator {
         mac: generateMacAddress(),
         height: getRandomInt(1, 20),
         name: deviceNames[getRandomInt(0, deviceNames.length - 1)],
-        placement: [getRandomInt(0, 36000), getRandomInt(0, 18000)],
+        placement: [getRandomInt(0, 36000), getRandomInt(-9000, 9000)],
       }
 
       devices.push(device)
