@@ -17,3 +17,4 @@ tests/fixtures/dawn.so
 devnet.json
 
 .env
+devices.csv

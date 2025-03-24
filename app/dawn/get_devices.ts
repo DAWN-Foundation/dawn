@@ -19,7 +19,7 @@ async function main() {
   }
 
   const devices = await program.account.device.all(filters)
-
+  console.log({ devices: devices.length })
   console.log(
     devices.map((b) => ({
       owner: b.publicKey.toBase58(),
