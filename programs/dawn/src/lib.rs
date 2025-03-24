@@ -8,15 +8,15 @@ declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 #[cfg(feature = "devnet")]
 declare_id!("ddwnsE29JbbYx75fyBA2undkNuMzp925NWMjBpfzuRT");
 
+mod app;
 mod constants;
 mod error;
 mod events;
-mod app;
 mod utils;
 
+use app::*;
 use error::*;
 use events::*;
-use app::*;
 
 #[program]
 pub mod dawn {
@@ -68,10 +68,18 @@ pub mod dawn {
         height: u16,
         latitude: i64,
         longitude: i64,
-        placement: [u32; 2],
+        placement: [i32; 2],
         mac_address: [u8; 6],
     ) -> Result<()> {
-        DawnApp::add_device(ctx, name, height, latitude, longitude, placement, mac_address)
+        DawnApp::add_device(
+            ctx,
+            name,
+            height,
+            latitude,
+            longitude,
+            placement,
+            mac_address,
+        )
     }
 
     pub fn assign_device_to_site(ctx: Context<AssignDeviceToSite>) -> Result<()> {

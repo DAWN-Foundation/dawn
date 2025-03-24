@@ -291,7 +291,7 @@ export async function setup(
     wallet, // Payer for transaction
     usdcMint, // Mint
     walletUsdcAccount, // Token account
-    wallet.publicKey, // Mint authority
+    wallet, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 

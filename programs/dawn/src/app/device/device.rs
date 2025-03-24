@@ -146,7 +146,7 @@ impl DawnApp {
         height: u16,
         latitude: i64,
         longitude: i64,
-        placement: [u32; 2],
+        placement: [i32; 2],
         mac_address: [u8; 6],
     ) -> Result<()> {
         // Make sure the latitude, longitude and height are not eq 0
@@ -156,10 +156,16 @@ impl DawnApp {
         require!(!height.lt(&0u16), DawnError::InvalidHeight);
 
         // Make sure the placement.azimuth is between 0 and 360
-        require!(placement[0] <= 36000, DawnError::InvalidPlacementAzimuth);
+        require!(
+            placement[0] >= 0 && placement[0] <= 36000,
+            DawnError::InvalidPlacementAzimuth
+        );
 
-        // Make sure the placement.elevation is between 0 and 180
-        require!(placement[1] <= 18000, DawnError::InvalidPlacementElevation);
+        // Make sure the placement.tilt is between -90 and 90
+        require!(
+            placement[1] >= -9000 && placement[1] <= 9000,
+            DawnError::InvalidPlacementTilt
+        );
 
         // Make sure the name is not empty
         require!(!name.is_empty(), DawnError::EmptyDeviceName);
@@ -229,6 +235,7 @@ impl DawnApp {
             latitude,
             longitude,
             height,
+            placement,
             mac_address,
             created_at,
         });
