@@ -116,7 +116,7 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethod>,
+        auth_methods: Vec<AuthMethodType>,
     ) -> Result<()> {
         DawnApp::add_plan(
             ctx,

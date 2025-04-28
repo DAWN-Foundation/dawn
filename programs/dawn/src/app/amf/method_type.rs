@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
-pub enum AuthMethod {
+pub enum AuthMethodType {
     Psk,
     Mpsk,
     Wpa2Enterprise,
@@ -10,7 +10,7 @@ pub enum AuthMethod {
     Wpa3Enterprise,
 }
 
-impl AuthMethod {
+impl AuthMethodType {
     pub fn as_seed(&self) -> &[u8] {
         match self {
             Self::Psk => &[0],

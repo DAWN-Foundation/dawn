@@ -3,10 +3,11 @@ use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use crate::{
-    utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, PlanAdded, Subscription,
+    utils::optional_pubkey_seed, AccessDomain, AuthMethodType, DawnApp, DawnError, Device,
+    PlanAdded, Subscription,
 };
 
-use super::{AuthMethod, ServiceAgreement};
+use super::ServiceAgreement;
 
 /// The plan account, representing a subscription plan tied to a device
 #[account]
@@ -37,7 +38,7 @@ pub struct Plan {
     /// The Service Level Agreement Account
     pub service_agreement: Pubkey,
     /// The authentication methods for the plan (max 2)
-    pub auth_methods: Vec<AuthMethod>,
+    pub auth_methods: Vec<AuthMethodType>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -66,7 +67,7 @@ const PLAN_SIZE: usize = 8 // id
     speed: u32,
     capacity: u64,
     start_at: Option<i64>,
-    auth_methods: Vec<AuthMethod>,
+    auth_methods: Vec<AuthMethodType>,
 )]
 pub struct AddPlan<'info> {
     #[account(mut)]
@@ -171,7 +172,7 @@ impl DawnApp {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethod>,
+        auth_methods: Vec<AuthMethodType>,
     ) -> Result<()> {
         // Make sure the plan name is not empty
         require!(!name.is_empty(), DawnError::EmptyPlanName);

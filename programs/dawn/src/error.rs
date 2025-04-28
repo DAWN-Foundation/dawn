@@ -112,4 +112,13 @@ pub enum DawnError {
 
     #[msg("Invalid placement tilt")]
     InvalidPlacementTilt,
+
+    #[msg("Inactive auth method")]
+    InactiveAuthMethod,
+
+    #[msg("Invalid cipher suite")]
+    InvalidCipherSuite,
+
+    #[msg("Invalid encryption type")]
+    InvalidEncryptionType,
 }
