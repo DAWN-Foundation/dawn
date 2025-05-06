@@ -25,7 +25,7 @@ export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 export type OrganizationType = anchor.IdlTypes<Dawn>['OrganizationType']
-export type AuthMethod = anchor.IdlTypes<Dawn>['AuthMethodType']
+export type AuthMethodType = anchor.IdlTypes<Dawn>['AuthMethodType']
 
 export type IpV4Bytes = [number, number, number, number]
 

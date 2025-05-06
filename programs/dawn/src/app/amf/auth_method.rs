@@ -6,8 +6,6 @@ use anchor_lang::prelude::*;
 pub struct AuthMethod {
     /// Which method this represents (maps to AuthMethodType enum)
     pub method_type: AuthMethodType,
-    /// The authority who manages this method
-    pub authority: Pubkey,
     /// Whether this method is currently active
     pub is_active: bool,
     /// Method-specific parameters (fixed size buffer)
@@ -18,7 +16,6 @@ pub struct AuthMethod {
 
 pub const AUTH_METHOD_SIZE: usize = 8 // id
     + 1 // method_type
-    + 1 // authority
     + 1 // is_active
     + 128 // parameters
     + 1; // bump
@@ -27,8 +24,8 @@ pub const AUTH_METHOD_SIZE: usize = 8 // id
 #[derive(Accounts)]
 #[instruction(method_type: AuthMethodType, parameters: [u8; 128])]
 pub struct RegisterAuthMethod<'info> {
-    #[account(mut, constraint = authority.key() == config.authority)]
-    pub authority: Signer<'info>,
+    #[account(mut, constraint = caller.key() == config.authority)]
+    pub caller: Signer<'info>,
 
     #[account(
         seeds = [b"config"],
@@ -38,7 +35,7 @@ pub struct RegisterAuthMethod<'info> {
 
     #[account(
         init,
-        payer = authority,
+        payer = caller,
         space = AUTH_METHOD_SIZE,
         seeds = [
             b"auth_method",
@@ -61,7 +58,6 @@ impl DawnApp {
         let auth_method = &mut ctx.accounts.auth_method;
 
         auth_method.method_type = method_type;
-        auth_method.authority = ctx.accounts.authority.key();
         auth_method.is_active = true;
         auth_method.parameters = parameters;
         auth_method.bump = ctx.bumps.auth_method;

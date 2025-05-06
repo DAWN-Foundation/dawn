@@ -39,6 +39,14 @@ pub mod dawn {
         DawnApp::configure(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
+    pub fn register_auth_method(
+        ctx: Context<RegisterAuthMethod>,
+        method_type: AuthMethodType,
+        parameters: [u8; 128],
+    ) -> Result<()> {
+        DawnApp::register_auth_method(ctx, method_type, parameters)
+    }
+
     // pub fn add_ip_pool(
     //     ctx: Context<AddIpPool>,
     //     ip_v4: [u8; 4],

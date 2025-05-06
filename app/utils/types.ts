@@ -2,7 +2,7 @@ import { BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey } from '@solana/web3.js'
 
 import {
-  AuthMethod,
+  AuthMethodType,
   DeviceType,
   IpV4Bytes,
   IpV6Bytes,
@@ -84,7 +84,7 @@ export interface Mock {
   planDuration: number
   planSpeed: number
   planCapacity: BN
-  planAuthMethods: AuthMethod[]
+  planAuthMethods: AuthMethodType[]
   // subscription
   subscriptionPda: PublicKey
   subscriptionBump: number

@@ -23,7 +23,7 @@ import {
   IpV6Bytes,
   MacAddress,
   PROGRAM_ID,
-  AuthMethod,
+  AuthMethodType,
   organizationTypeSeed,
   OrganizationType,
 } from './helpers'
@@ -409,7 +409,7 @@ export async function setup(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planAuthMethods: AuthMethod[] = [{ mpsk: {} }]
+  const planAuthMethods: AuthMethodType[] = [{ mpsk: {} }]
 
   const [planPda, planBump] = getPlanPda(
     program,
