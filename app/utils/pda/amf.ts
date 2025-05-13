@@ -14,15 +14,49 @@ const methods = {
 
 export function getAuthMethodPda(
   program: Program<Dawn>,
+  authority: PublicKey,
   methodType: AuthMethodType,
+  params: Buffer,
 ): PublicKey {
   const key = Object.keys(methodType)[0]
   const seed = methods[key]
 
   const [authMethodPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('auth_method'), Buffer.from([seed])],
+    [
+      Buffer.from('auth_method'),
+      authority.toBuffer(),
+      Buffer.from([seed]),
+      Buffer.from(Array.from(params).slice(0, 32)),
+    ],
     program.programId,
   )
 
   return authMethodPda
+}
+
+/**
+ * Get the PDA for a client credential account
+ * @param program The Dawn program
+ * @param clientPubkey The client public key
+ * @param methodType The method type number
+ * @returns The credential PDA
+ */
+export function getCredentialPda(
+  program: Program<Dawn>,
+  clientPubkey: PublicKey,
+  methodType: AuthMethodType,
+): PublicKey {
+  const key = Object.keys(methodType)[0]
+  const seed = methods[key]
+
+  const [credentialPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('credential'),
+      clientPubkey.toBuffer(),
+      Buffer.from([seed]),
+    ],
+    program.programId,
+  )
+
+  return credentialPda
 }

@@ -1,5 +1,6 @@
 use crate::app::{amf::AuthMethodType, Config, DawnApp};
 use anchor_lang::prelude::*;
+use solana_program::pubkey::MAX_SEED_LEN;
 
 /// Account structure for authentication methods
 #[account]
@@ -8,8 +9,6 @@ pub struct AuthMethod {
     pub authority: Pubkey,
     /// Which method this represents (maps to AuthMethodType enum)
     pub method_type: AuthMethodType,
-    /// Whether this method is currently active
-    pub is_active: bool,
     /// Method-specific parameters (fixed size buffer)
     pub parameters: [u8; 256],
     /// PDA bump
@@ -19,7 +18,6 @@ pub struct AuthMethod {
 pub const AUTH_METHOD_SIZE: usize = 8 // id
     + 32 // authority
     + 1 // method_type
-    + 1 // is_active
     + 256 // parameters
     + 1; // bump
 
@@ -42,7 +40,9 @@ pub struct RegisterAuthMethod<'info> {
         space = AUTH_METHOD_SIZE,
         seeds = [
             b"auth_method",
+            caller.key().as_ref(),
             method_type.as_seed(),
+            &parameters[..MAX_SEED_LEN],
         ],
         bump
     )]
@@ -62,7 +62,6 @@ impl DawnApp {
 
         auth_method.authority = ctx.accounts.caller.key();
         auth_method.method_type = method_type;
-        auth_method.is_active = true;
         auth_method.parameters = parameters;
         auth_method.bump = ctx.bumps.auth_method;
 

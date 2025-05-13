@@ -47,6 +47,18 @@ pub mod dawn {
         DawnApp::register_auth_method(ctx, method_type, parameters)
     }
 
+    pub fn register_credential(
+        ctx: Context<RegisterCredential>,
+        method_type: AuthMethodType,
+        credential_data: [u8; 128],
+    ) -> Result<()> {
+        DawnApp::register_credential(ctx, method_type, credential_data)
+    }
+
+    pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
+        DawnApp::revoke_credential(ctx)
+    }
+
     // pub fn add_ip_pool(
     //     ctx: Context<AddIpPool>,
     //     ip_v4: [u8; 4],

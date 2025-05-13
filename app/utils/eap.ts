@@ -1,7 +1,6 @@
 import { Program } from '@coral-xyz/anchor'
-import { PublicKey, Keypair, TransactionSignature } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
-import { getAuthMethodPda } from './pda'
 import { AuthMethodType } from './helpers'
 
 /**
@@ -217,4 +216,267 @@ export async function fetchEAPParams(
     console.error('Error fetching EAP parameters:', error)
     throw error
   }
+}
+
+/**
+ * Structure representing EAP-TLS credential data
+ */
+export interface EAPTLSCredential {
+  // Client identity used in EAP exchange
+  identity: string;
+  // Reference to client certificate (could be fingerprint, ID or path)
+  certificateRef: string;
+  // Optional certificate chain hash or identifier
+  chainRef?: string;
+  // Reference to private key (handle/identifier, not the actual key)
+  privateKeyRef: string;
+  // TLS version preference (1.2 or 1.3)
+  tlsVersion: number;
+  // Supported cipher suites (from CipherSuite enum)
+  supportedCipherSuites: CipherSuite[];
+  // Optional OCSP stapling preference
+  ocspStaplingEnabled?: boolean;
+  // Optional certificate verification method
+  verificationMethod?: number;
+  // Optional client-side session timeout (in seconds)
+  sessionTimeout?: number;
+}
+
+/**
+ * TLS Version constants
+ */
+export enum TLSVersion {
+  TLS_1_2 = 2, // TLS 1.2
+  TLS_1_3 = 3, // TLS 1.3
+}
+
+/**
+ * Default EAP-TLS credential configuration with secure defaults
+ */
+export const DEFAULT_EAPTLS_CREDENTIAL: Omit<
+  EAPTLSCredential,
+  'identity' | 'certificateRef' | 'privateKeyRef'
+> = {
+  tlsVersion: TLSVersion.TLS_1_3,
+  supportedCipherSuites: [
+    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+  ],
+  ocspStaplingEnabled: true,
+  verificationMethod: 1, // Standard X.509 validation
+  sessionTimeout: 28800, // 8 hours in seconds
+};
+
+/**
+ * Serializes an EAP-TLS credential into a buffer format suitable for on-chain storage
+ * @param credential EAP-TLS credential to serialize
+ * @returns Buffer containing serialized credential data (128 bytes)
+ */
+export function serializeEAPTLSCredential(credential: EAPTLSCredential): Buffer {
+  // Initialize buffer with all zeros
+  const buffer = Buffer.alloc(128);
+  let offset = 0;
+
+  // Format version - allows for future format changes (1 byte)
+  buffer[offset++] = 1;
+
+  // TLS version (1 byte)
+  buffer[offset++] = credential.tlsVersion & 0xFF;
+
+  // Write identity (max 32 bytes, null-terminated)
+  const identityBuf = Buffer.from(credential.identity);
+  const identityLen = Math.min(identityBuf.length, 31);
+  identityBuf.copy(buffer, offset, 0, identityLen);
+  offset += 32; // Fixed field size
+
+  // Write certificate reference (max 32 bytes, null-terminated)
+  const certRefBuf = Buffer.from(credential.certificateRef);
+  const certRefLen = Math.min(certRefBuf.length, 31);
+  certRefBuf.copy(buffer, offset, 0, certRefLen);
+  offset += 32; // Fixed field size
+
+  // Write private key reference (max 32 bytes, null-terminated)
+  const keyRefBuf = Buffer.from(credential.privateKeyRef);
+  const keyRefLen = Math.min(keyRefBuf.length, 31);
+  keyRefBuf.copy(buffer, offset, 0, keyRefLen);
+  offset += 32; // Fixed field size
+
+  // Configuration flags (1 byte):
+  // - bit 0: OCSP stapling enabled
+  // - bit 1-3: verification method
+  // - bits 4-7: reserved
+  let configFlags = 0;
+  if (credential.ocspStaplingEnabled) {
+    configFlags |= 1;
+  }
+  if (credential.verificationMethod !== undefined) {
+    configFlags |= (credential.verificationMethod & 0x07) << 1;
+  }
+  buffer[offset++] = configFlags;
+
+  // Number of supported cipher suites (1 byte)
+  buffer[offset++] = credential.supportedCipherSuites.length;
+
+  // Write supported cipher suites (up to 8 suites, 1 byte each)
+  for (let i = 0; i < Math.min(credential.supportedCipherSuites.length, 8); i++) {
+    buffer[offset++] = credential.supportedCipherSuites[i];
+  }
+  // Skip to next section if fewer than 8 cipher suites
+  offset = 100;
+
+  // Session timeout (4 bytes)
+  if (credential.sessionTimeout !== undefined) {
+    buffer.writeUInt32LE(credential.sessionTimeout, offset);
+  }
+  offset += 4;
+
+  // Chain reference (up to 16 bytes)
+  if (credential.chainRef) {
+    const chainRefBuf = Buffer.from(credential.chainRef);
+    const chainRefLen = Math.min(chainRefBuf.length, 16);
+    chainRefBuf.copy(buffer, offset, 0, chainRefLen);
+  }
+  // offset += 16; // We're at the end anyway
+
+  return buffer;
+}
+
+/**
+ * Deserializes a buffer into an EAP-TLS credential
+ * @param buffer Buffer containing serialized credential data
+ * @returns Deserialized EAP-TLS credential
+ */
+export function deserializeEAPTLSCredential(buffer: Buffer): EAPTLSCredential {
+  // Ensure buffer is at least 128 bytes
+  if (buffer.length < 128) {
+    throw new Error('Buffer too small for EAP-TLS credential');
+  }
+
+  let offset = 0;
+
+  // Format version (1 byte)
+  const formatVersion = buffer[offset++];
+  if (formatVersion !== 1) {
+    throw new Error(`Unsupported credential format version: ${formatVersion}`);
+  }
+
+  // TLS version (1 byte)
+  const tlsVersion = buffer[offset++];
+
+  // Read identity (32 bytes, null-terminated)
+  const identityBuf = buffer.slice(offset, offset + 32);
+  const identityEnd = identityBuf.indexOf(0);
+  const identity = identityBuf.slice(
+    0,
+    identityEnd === -1 ? 32 : identityEnd
+  ).toString('utf8');
+  offset += 32;
+
+  // Read certificate reference (32 bytes, null-terminated)
+  const certRefBuf = buffer.slice(offset, offset + 32);
+  const certRefEnd = certRefBuf.indexOf(0);
+  const certificateRef = certRefBuf.slice(
+    0,
+    certRefEnd === -1 ? 32 : certRefEnd
+  ).toString('utf8');
+  offset += 32;
+
+  // Read private key reference (32 bytes, null-terminated)
+  const keyRefBuf = buffer.slice(offset, offset + 32);
+  const keyRefEnd = keyRefBuf.indexOf(0);
+  const privateKeyRef = keyRefBuf.slice(
+    0,
+    keyRefEnd === -1 ? 32 : keyRefEnd
+  ).toString('utf8');
+  offset += 32;
+
+  // Configuration flags (1 byte)
+  const configFlags = buffer[offset++];
+  const ocspStaplingEnabled = (configFlags & 0x01) === 0x01;
+  const verificationMethod = (configFlags >> 1) & 0x07;
+
+  // Number of supported cipher suites (1 byte)
+  const numCipherSuites = buffer[offset++];
+  
+  // Read supported cipher suites (up to 8 suites, 1 byte each)
+  const supportedCipherSuites: CipherSuite[] = [];
+  for (let i = 0; i < numCipherSuites; i++) {
+    supportedCipherSuites.push(buffer[offset++] as CipherSuite);
+  }
+  
+  // Skip to next section
+  offset = 100;
+
+  // Session timeout (4 bytes)
+  const sessionTimeout = buffer.readUInt32LE(offset);
+  offset += 4;
+
+  // Chain reference (up to 16 bytes, null-terminated)
+  const chainRefBuf = buffer.slice(offset, offset + 16);
+  const chainRefEnd = chainRefBuf.indexOf(0);
+  const chainRef = chainRefEnd === -1 ? '' : 
+                  chainRefBuf.slice(0, chainRefEnd).toString('utf8');
+
+  return {
+    identity,
+    certificateRef,
+    privateKeyRef,
+    tlsVersion,
+    supportedCipherSuites,
+    ocspStaplingEnabled,
+    verificationMethod,
+    sessionTimeout: sessionTimeout || undefined,
+    chainRef: chainRef || undefined,
+  };
+}
+
+/**
+ * Generates an EAP-TLS credential with secure defaults for production use
+ * @param identity Client identity to use in EAP exchange
+ * @param certificatePath Path or reference to client certificate
+ * @param privateKeyPath Path or reference to private key
+ * @returns EAP-TLS credential ready for serialization
+ */
+export function generateEAPTLSCredential(
+  identity: string,
+  certificatePath: string,
+  privateKeyPath: string
+): EAPTLSCredential {
+  return {
+    identity,
+    certificateRef: certificatePath,
+    privateKeyRef: privateKeyPath,
+    ...DEFAULT_EAPTLS_CREDENTIAL,
+  };
+}
+
+/**
+ * Validates an EAP-TLS credential for correctness
+ * @param credential EAP-TLS credential to validate
+ * @returns true if credential is valid, otherwise throws error
+ */
+export function validateEAPTLSCredential(credential: EAPTLSCredential): boolean {
+  if (!credential.identity || credential.identity.length === 0) {
+    throw new Error('Identity cannot be empty');
+  }
+
+  if (!credential.certificateRef || credential.certificateRef.length === 0) {
+    throw new Error('Certificate reference cannot be empty');
+  }
+
+  if (!credential.privateKeyRef || credential.privateKeyRef.length === 0) {
+    throw new Error('Private key reference cannot be empty');
+  }
+
+  if (credential.tlsVersion !== TLSVersion.TLS_1_2 && 
+      credential.tlsVersion !== TLSVersion.TLS_1_3) {
+    throw new Error(`Invalid TLS version: ${credential.tlsVersion}`);
+  }
+
+  if (!credential.supportedCipherSuites || 
+      credential.supportedCipherSuites.length === 0) {
+    throw new Error('At least one cipher suite must be specified');
+  }
+
+  return true;
 }

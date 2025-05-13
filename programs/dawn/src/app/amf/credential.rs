@@ -1,40 +1,39 @@
 use anchor_lang::prelude::*;
+use solana_program::pubkey::MAX_SEED_LEN;
 
 use crate::{app::DawnApp, error::DawnError};
 
-use super::AuthMethod;
+use super::{AuthMethod, AuthMethodType};
 
 /// Account structure for client credentials
 #[account]
-pub struct ClientCredential {
+pub struct Credential {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The client public key
     pub client_pubkey: Pubkey,
     /// The method this credential is for
-    pub method_type: u8,
+    pub method_type: AuthMethodType,
     /// The authority who created this credential
     pub authority: Pubkey,
-    /// Whether this credential is revoked
-    pub is_revoked: bool,
-    /// Whether this is a one-way or two-way credential (0 = one-way, 1 = two-way)
-    pub credential_type: u8,
     /// Credential-specific data (fixed size buffer)
     pub credential_data: [u8; 128],
     /// PDA bump
     pub bump: u8,
 }
 
-pub const CLIENT_CREDENTIAL_SIZE: usize = 8 // client_pubkey
+pub const CREDENTIAL_SIZE: usize = 8 // id
+    + 8 // created_at
+    + 32 // client_pubkey
     + 1 // method_type
     + 1 // authority
-    + 1 // is_revoked
-    + 1 // credential_type
     + 128 // credential_data
     + 1; // bump
 
 /// Context for registering client credentials
 #[derive(Accounts)]
 #[instruction(method_type: u8, credential_data: [u8; 128])]
-pub struct RegisterClientCredential<'info> {
+pub struct RegisterCredential<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -45,8 +44,9 @@ pub struct RegisterClientCredential<'info> {
         mut,
         seeds = [
             b"auth_method",
-            &[method_type],
-            authority.key().as_ref()
+            auth_method.authority.as_ref(),
+            &auth_method.method_type.as_seed(),
+            &auth_method.parameters[..MAX_SEED_LEN]
         ],
         bump = auth_method.bump
     )]
@@ -55,7 +55,7 @@ pub struct RegisterClientCredential<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + std::mem::size_of::<ClientCredential>(),
+        space = CREDENTIAL_SIZE,
         seeds = [
             b"credential",
             client.key().as_ref(),
@@ -63,7 +63,7 @@ pub struct RegisterClientCredential<'info> {
         ],
         bump
     )]
-    pub credential: Account<'info, ClientCredential>,
+    pub credential: Account<'info, Credential>,
 
     pub system_program: Program<'info, System>,
 }
@@ -79,43 +79,36 @@ pub struct RevokeCredential<'info> {
         seeds = [
             b"credential",
             credential.client_pubkey.as_ref(),
-            &[credential.method_type]
+            credential.method_type.as_seed()
         ],
         bump = credential.bump,
-        constraint = credential.authority == authority.key()
+        constraint = credential.authority == authority.key(),
+        close = authority
     )]
-    pub credential: Account<'info, ClientCredential>,
+    pub credential: Account<'info, Credential>,
 }
 
 impl DawnApp {
     /// Register client credentials for an auth method
-    pub fn register_client_credential(
-        ctx: Context<RegisterClientCredential>,
-        method_type: u8,
+    pub fn register_credential(
+        ctx: Context<RegisterCredential>,
+        method_type: AuthMethodType,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        // Ensure auth method is active
-        require!(
-            ctx.accounts.auth_method.is_active,
-            DawnError::InactiveAuthMethod
-        );
-
         let credential = &mut ctx.accounts.credential;
 
         credential.client_pubkey = ctx.accounts.client.key();
         credential.method_type = method_type;
         credential.authority = ctx.accounts.authority.key();
-        credential.is_revoked = false;
-        credential.credential_type = 0; // One-way credential
         credential.credential_data = credential_data;
         credential.bump = ctx.bumps.credential;
 
         Ok(())
     }
 
-    /// Revoke client credentials
-    pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
-        ctx.accounts.credential.is_revoked = true;
+    /// Revoke client credentials by closing the account
+    pub fn revoke_credential(_ctx: Context<RevokeCredential>) -> Result<()> {
+        // Account will be automatically closed due to the `close = authority` constraint
         Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{app::DawnApp, error::DawnError};
+use crate::app::DawnApp;
 
 use super::AuthMethod;
 
@@ -102,12 +102,6 @@ impl DawnApp {
         entity_a_credential_data: [u8; 64],
         entity_b_credential_data: [u8; 64],
     ) -> Result<()> {
-        // Ensure auth method is active
-        require!(
-            ctx.accounts.auth_method.is_active,
-            DawnError::InactiveAuthMethod
-        );
-
         let connection = &mut ctx.accounts.connection;
 
         connection.entity_a_pubkey = ctx.accounts.entity_a.key();
