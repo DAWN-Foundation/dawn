@@ -121,4 +121,13 @@ pub enum DawnError {
 
     #[msg("Invalid encryption type")]
     InvalidEncryptionType,
+
+    #[msg("Invalid EAP type")]
+    InvalidEAPType,
+
+    #[msg("Invalid fragment size")]
+    InvalidFragmentSize,
+
+    #[msg("Invalid session timeout")]
+    InvalidSessionTimeout,
 }

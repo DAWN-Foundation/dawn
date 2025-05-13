@@ -7,7 +7,7 @@ const methods = {
   psk: 0,
   mpsk: 1,
   wpa2Enterprise: 2,
-  _8021x: 3,
+  eap: 3,
   ipsecAh: 4,
   wpa3Enterprise: 5,
 }

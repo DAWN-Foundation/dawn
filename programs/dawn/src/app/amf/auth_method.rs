@@ -4,25 +4,28 @@ use anchor_lang::prelude::*;
 /// Account structure for authentication methods
 #[account]
 pub struct AuthMethod {
+    /// The authority of the auth method
+    pub authority: Pubkey,
     /// Which method this represents (maps to AuthMethodType enum)
     pub method_type: AuthMethodType,
     /// Whether this method is currently active
     pub is_active: bool,
     /// Method-specific parameters (fixed size buffer)
-    pub parameters: [u8; 128],
+    pub parameters: [u8; 256],
     /// PDA bump
     pub bump: u8,
 }
 
 pub const AUTH_METHOD_SIZE: usize = 8 // id
+    + 32 // authority
     + 1 // method_type
     + 1 // is_active
-    + 128 // parameters
+    + 256 // parameters
     + 1; // bump
 
 /// Context for registering a new authentication method
 #[derive(Accounts)]
-#[instruction(method_type: AuthMethodType, parameters: [u8; 128])]
+#[instruction(method_type: AuthMethodType, parameters: [u8; 256])]
 pub struct RegisterAuthMethod<'info> {
     #[account(mut, constraint = caller.key() == config.authority)]
     pub caller: Signer<'info>,
@@ -53,10 +56,11 @@ impl DawnApp {
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
-        parameters: [u8; 128],
+        parameters: [u8; 256],
     ) -> Result<()> {
         let auth_method = &mut ctx.accounts.auth_method;
 
+        auth_method.authority = ctx.accounts.caller.key();
         auth_method.method_type = method_type;
         auth_method.is_active = true;
         auth_method.parameters = parameters;

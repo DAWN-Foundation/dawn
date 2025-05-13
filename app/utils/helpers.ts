@@ -1,12 +1,20 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, Keypair, TransactionSignature } from '@solana/web3.js'
 import { readFileSync } from 'fs'
 import * as toml from 'toml'
-
 import { Dawn } from '../../target/types/dawn'
+
 import { BanksTransactionMeta } from 'solana-bankrun'
 import { hasFlag } from '../dawn/utils'
+import {
+  deserializeEAPParams,
+  EAPParams,
+  EAPType,
+  serializeEAPParams,
+  validateEAPParams,
+} from './eap'
+import { getAuthMethodPda } from './pda'
 
 function getProgramId(): PublicKey {
   const anchorToml = toml.parse(readFileSync('./Anchor.toml', 'utf-8'))
