@@ -43,18 +43,11 @@ export function getAuthMethodPda(
  */
 export function getCredentialPda(
   program: Program<Dawn>,
-  clientPubkey: PublicKey,
-  methodType: AuthMethodType,
+  authMethod: PublicKey,
+  client: PublicKey,
 ): PublicKey {
-  const key = Object.keys(methodType)[0]
-  const seed = methods[key]
-
   const [credentialPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('credential'),
-      clientPubkey.toBuffer(),
-      Buffer.from([seed]),
-    ],
+    [Buffer.from('credential'), authMethod.toBuffer(), client.toBuffer()],
     program.programId,
   )
 

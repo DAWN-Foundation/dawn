@@ -19,7 +19,6 @@ import {
   fetchEAPParams,
   generateEAPTLSCredential,
   serializeEAPTLSCredential,
-  TLSVersion,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
@@ -145,7 +144,6 @@ export const amfTests = () =>
     })
 
     test('fails to register client credential with wrong authority', async () => {
-      const methodType: AuthMethodType = { eap: {} }
       const unauthorizedKeypair = anchor.web3.Keypair.generate()
 
       // Fund the unauthorized wallet so it can pay for transaction fees
@@ -153,31 +151,29 @@ export const amfTests = () =>
         lamports: 1000000000, // 1 SOL
         owner: anchor.web3.SystemProgram.programId,
         executable: false,
-        data: Buffer.from([])
+        data: Buffer.from([]),
       })
 
       // Create a proper EAP-TLS credential
       const eapTLSCredential = generateEAPTLSCredential(
         'client@example.com',
         '/path/to/client-cert.pem',
-        '/path/to/private-key.pem'
-      );
+        '/path/to/private-key.pem',
+      )
 
       // Validate and serialize the credential to a 128-byte buffer
-      const serializedCredential = serializeEAPTLSCredential(eapTLSCredential);
-      
+      const serializedCredential = serializeEAPTLSCredential(eapTLSCredential)
+
       // Convert buffer to array for the API
-      const credentialData = Array.from(serializedCredential);
+      const credentialData = Array.from(serializedCredential)
 
       try {
         await program.methods
-          .registerCredential(methodType, credentialData)
+          .registerCredential(clientKeypair.publicKey, credentialData)
           .accounts({
-            authority: unauthorizedKeypair.publicKey,
-            client: clientKeypair.publicKey,
+            caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
             credential: credentialPda,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([unauthorizedKeypair])
           .rpc()
@@ -199,41 +195,37 @@ export const amfTests = () =>
       const eapTLSCredential = generateEAPTLSCredential(
         'client@example.com',
         '/path/to/client-cert.pem',
-        '/path/to/private-key.pem'
-      );
+        '/path/to/private-key.pem',
+      )
 
       // Validate and serialize the credential to a 128-byte buffer
-      const serializedCredential = serializeEAPTLSCredential(eapTLSCredential);
-      
+      const serializedCredential = serializeEAPTLSCredential(eapTLSCredential)
+
       // Convert buffer to array for the API
-      const credentialData = Array.from(serializedCredential);
+      const credentialData = Array.from(serializedCredential)
 
       credentialPda = getCredentialPda(
         program,
+        authMethodPda,
         clientKeypair.publicKey,
-        { eap: {} } as AuthMethodType, // This is just for PDA derivation
       )
 
       const tx = await program.methods
-        .registerCredential(methodType, credentialData)
+        .registerCredential(clientKeypair.publicKey, credentialData)
         .accounts({
-          authority: wallet.publicKey,
-          client: clientKeypair.publicKey,
+          caller: wallet.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([wallet.payer])
         .rpc()
 
       // Fetch and verify the credential was created correctly
-      const credential = await program.account.credential.fetch(
-        credentialPda,
-      )
-      expect(credential.clientPubkey).toEqual(clientKeypair.publicKey)
-      expect(credential.methodType).toBe({ eap: {} })
-      expect(credential.authority).toEqual(wallet.publicKey)
-      expect(credential.credentialData).toEqual(credentialData)
+      const credential = await program.account.credential.fetch(credentialPda)
+      expect(credential.createdAt.toNumber()).toBeGreaterThan(0)
+      expect(credential.client.equals(clientKeypair.publicKey)).toBeTruthy()
+      expect(credential.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(credential.credentialData).toStrictEqual(credentialData)
     })
 
     test('fails to revoke credential with wrong authority', async () => {
@@ -241,16 +233,19 @@ export const amfTests = () =>
       const unauthorizedKeypair = anchor.web3.Keypair.generate()
 
       // Fund the unauthorized wallet so it can pay for transaction fees
-      await provider.connection.requestAirdrop(
-        unauthorizedKeypair.publicKey,
-        1000000000, // 1 SOL
-      )
+      provider.context.setAccount(unauthorizedKeypair.publicKey, {
+        lamports: 1000000000, // 1 SOL
+        owner: anchor.web3.SystemProgram.programId,
+        executable: false,
+        data: Buffer.from([]),
+      })
 
       try {
         await program.methods
           .revokeCredential()
           .accounts({
-            authority: unauthorizedKeypair.publicKey,
+            caller: unauthorizedKeypair.publicKey,
+            authMethod: authMethodPda,
             credential: credentialPda,
           })
           .signers([unauthorizedKeypair])
@@ -275,7 +270,8 @@ export const amfTests = () =>
       await program.methods
         .revokeCredential()
         .accounts({
-          authority: wallet.publicKey,
+          caller: wallet.publicKey,
+          authMethod: authMethodPda,
           credential: credentialPda,
         })
         .signers([wallet.payer])

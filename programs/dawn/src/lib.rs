@@ -49,10 +49,10 @@ pub mod dawn {
 
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        method_type: AuthMethodType,
+        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential(ctx, method_type, credential_data)
+        DawnApp::register_credential(ctx, client, credential_data)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {

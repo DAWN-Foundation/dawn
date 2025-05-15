@@ -1,21 +1,19 @@
 use anchor_lang::prelude::*;
 use solana_program::pubkey::MAX_SEED_LEN;
 
-use crate::{app::DawnApp, error::DawnError};
+use crate::app::DawnApp;
 
-use super::{AuthMethod, AuthMethodType};
+use super::AuthMethod;
 
 /// Account structure for client credentials
 #[account]
 pub struct Credential {
     /// The creation timestamp
     pub created_at: i64,
+    /// The auth method this credential is for
+    pub auth_method: Pubkey,
     /// The client public key
-    pub client_pubkey: Pubkey,
-    /// The method this credential is for
-    pub method_type: AuthMethodType,
-    /// The authority who created this credential
-    pub authority: Pubkey,
+    pub client: Pubkey,
     /// Credential-specific data (fixed size buffer)
     pub credential_data: [u8; 128],
     /// PDA bump
@@ -24,24 +22,21 @@ pub struct Credential {
 
 pub const CREDENTIAL_SIZE: usize = 8 // id
     + 8 // created_at
-    + 32 // client_pubkey
-    + 1 // method_type
-    + 1 // authority
+    + 32 // auth_method
+    + 32 // client
     + 128 // credential_data
     + 1; // bump
 
 /// Context for registering client credentials
 #[derive(Accounts)]
-#[instruction(method_type: u8, credential_data: [u8; 128])]
+#[instruction(client: Pubkey, credential_data: [u8; 128])]
 pub struct RegisterCredential<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
-
-    /// CHECK: TODO
-    pub client: AccountInfo<'info>,
+    pub caller: Signer<'info>,
 
     #[account(
         mut,
+        constraint = auth_method.authority == caller.key(),
         seeds = [
             b"auth_method",
             auth_method.authority.as_ref(),
@@ -54,12 +49,12 @@ pub struct RegisterCredential<'info> {
 
     #[account(
         init,
-        payer = authority,
+        payer = caller,
         space = CREDENTIAL_SIZE,
         seeds = [
             b"credential",
+            auth_method.key().as_ref(),
             client.key().as_ref(),
-            &[method_type]
         ],
         bump
     )]
@@ -72,18 +67,30 @@ pub struct RegisterCredential<'info> {
 #[derive(Accounts)]
 pub struct RevokeCredential<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub caller: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = auth_method.authority == caller.key(),
+        seeds = [
+            b"auth_method",
+            auth_method.authority.as_ref(),
+            &auth_method.method_type.as_seed(),
+            &auth_method.parameters[..MAX_SEED_LEN]
+        ],
+        bump = auth_method.bump
+    )]
+    pub auth_method: Account<'info, AuthMethod>,
 
     #[account(
         mut,
         seeds = [
             b"credential",
-            credential.client_pubkey.as_ref(),
-            credential.method_type.as_seed()
+            auth_method.key().as_ref(),
+            credential.client.as_ref(),
         ],
         bump = credential.bump,
-        constraint = credential.authority == authority.key(),
-        close = authority
+        close = caller
     )]
     pub credential: Account<'info, Credential>,
 }
@@ -92,14 +99,14 @@ impl DawnApp {
     /// Register client credentials for an auth method
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        method_type: AuthMethodType,
+        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
         let credential = &mut ctx.accounts.credential;
 
-        credential.client_pubkey = ctx.accounts.client.key();
-        credential.method_type = method_type;
-        credential.authority = ctx.accounts.authority.key();
+        credential.created_at = Clock::get()?.unix_timestamp; 
+        credential.client = client;
+        credential.auth_method = ctx.accounts.auth_method.key();
         credential.credential_data = credential_data;
         credential.bump = ctx.bumps.credential;
 
