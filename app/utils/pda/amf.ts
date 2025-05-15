@@ -53,3 +53,22 @@ export function getCredentialPda(
 
   return credentialPda
 }
+
+export function getConnectionPda(
+  program: Program<Dawn>,
+  authMethod: PublicKey,
+  entityA: PublicKey,
+  entityB: PublicKey,
+): PublicKey {
+  const [connectionPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('connection'),
+      authMethod.toBuffer(),
+      entityA.toBuffer(),
+      entityB.toBuffer(),
+    ],
+    program.programId,
+  )
+
+  return connectionPda
+}

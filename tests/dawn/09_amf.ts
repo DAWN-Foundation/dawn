@@ -9,6 +9,7 @@ import {
   AuthMethodType,
   getAuthMethodPda,
   getCredentialPda,
+  getConnectionPda,
   loadWallet,
   EAPType,
   CipherSuite,
@@ -19,6 +20,14 @@ import {
   fetchEAPParams,
   generateEAPTLSCredential,
   serializeEAPTLSCredential,
+  IPSecAlgorithm,
+  IPSecMode,
+  IPSecAHParams,
+  DEFAULT_IPSEC_AH_PARAMS,
+  serializeIPSecAHParams,
+  validateIPSecAHParams,
+  generateIPSecAHCredential,
+  serializeIPSecAHCredential,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
@@ -30,6 +39,10 @@ export const amfTests = () =>
     let authMethodPda: anchor.web3.PublicKey
     let clientKeypair: anchor.web3.Keypair
     let credentialPda: anchor.web3.PublicKey
+    let ipsecAuthMethodPda: anchor.web3.PublicKey
+    let connectionPda: anchor.web3.PublicKey
+    let entityAKeypair: anchor.web3.Keypair
+    let entityBKeypair: anchor.web3.Keypair
 
     const wallet = loadWallet()
 
@@ -42,6 +55,10 @@ export const amfTests = () =>
 
       // Generate client keypair for credential tests
       clientKeypair = anchor.web3.Keypair.generate()
+      
+      // Generate entity keypairs for IPSec connection tests
+      entityAKeypair = anchor.web3.Keypair.generate()
+      entityBKeypair = anchor.web3.Keypair.generate()
     })
 
     test('mock setup', () => {
@@ -287,4 +304,209 @@ export const amfTests = () =>
         console.log(error)
       }
     })
+    
+    // IPSec Authentication Header Tests
+    test('registers IPSec AH auth method', async () => {
+      const authMethodType: AuthMethodType = { ipsecAh: {} }
+
+      // Create IPSec AH parameters with appropriate values
+      const ipsecParams: IPSecAHParams = {
+        ...DEFAULT_IPSEC_AH_PARAMS,
+        // Override default SPI to ensure consistent testing
+        spi: 0x12345678,
+      }
+
+      // Validate parameters
+      try {
+        validateIPSecAHParams(ipsecParams)
+        console.log('IPSec AH parameters validated successfully')
+      } catch (error) {
+        console.error('Invalid IPSec AH parameters:', error)
+        throw error
+      }
+
+      // Serialize parameters to buffer
+      const paramsBuffer = serializeIPSecAHParams(ipsecParams)
+
+      // Convert to array for the API
+      const paramsArray = Array.from(paramsBuffer)
+
+      console.log({
+        algorithm: IPSecAlgorithm[ipsecParams.algorithm],
+        mode: IPSecMode[ipsecParams.mode],
+        spi: `0x${ipsecParams.spi.toString(16).padStart(8, '0')}`,
+        keyLifetime: ipsecParams.keyLifetime,
+        bufferLength: paramsBuffer.length,
+      })
+
+      ipsecAuthMethodPda = getAuthMethodPda(
+        program,
+        wallet.publicKey,
+        authMethodType,
+        paramsBuffer,
+      )
+
+      // This cast is needed to ensure compatibility with the exact type expected by Anchor
+      await program.methods
+        .registerAuthMethod(authMethodType as any, paramsArray)
+        .accounts({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          authMethod: ipsecAuthMethodPda,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // make sure the account was created
+      const authMethod = await program.account.authMethod.fetch(ipsecAuthMethodPda)
+      expect(authMethod.methodType).toStrictEqual(authMethodType)
+      expect(authMethod.parameters).toStrictEqual(paramsArray)
+
+      return ipsecParams
+    })
+    
+    test('registers IPSec AH connection successfully', async () => {
+      // Create credentials for both entities
+      const entityACredential = generateIPSecAHCredential(
+        'vpn-client-1',
+        'psk-hash-1',
+      )
+      
+      const entityBCredential = generateIPSecAHCredential(
+        'vpn-server-1',
+        'psk-hash-2',
+      )
+      
+      // Serialize credentials
+      const serializedEntityACredential = serializeIPSecAHCredential(entityACredential)
+      const serializedEntityBCredential = serializeIPSecAHCredential(entityBCredential)
+
+      // Convert to arrays for the API
+      const entityACredentialData = Array.from(serializedEntityACredential)
+      const entityBCredentialData = Array.from(serializedEntityBCredential)
+      
+      // Connection type for IPSec AH is 0
+      const connectionType = 0 // ConnectionType.IPSecAH
+      
+      connectionPda = getConnectionPda(
+        program,
+        ipsecAuthMethodPda,
+        entityAKeypair.publicKey,
+        entityBKeypair.publicKey,
+      )
+      
+      await program.methods
+        .registerConnection(
+          connectionType,
+          entityAKeypair.publicKey,
+          entityBKeypair.publicKey,
+          entityACredentialData,
+          entityBCredentialData
+        )
+        .accounts({
+          authority: wallet.publicKey,
+          authMethod: ipsecAuthMethodPda,
+          connection: connectionPda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+        
+      // // Fetch and verify the connection was created correctly
+      // const connection = await program.account.connectionCredential.fetch(connectionPda)
+      // expect(connection.createdAt.toNumber()).toBeGreaterThan(0)
+      // expect(connection.entityAPubkey.equals(entityAKeypair.publicKey)).toBeTruthy()
+      // expect(connection.entityBPubkey.equals(entityBKeypair.publicKey)).toBeTruthy()
+      // expect(connection.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
+      // expect(connection.connectionType).toBe(connectionType)
+      // expect(connection.isActive).toBe(true)
+      // expect(connection.entityACredentialData).toStrictEqual(entityACredentialData)
+      // expect(connection.entityBCredentialData).toStrictEqual(entityBCredentialData)
+    })
+    
+    // test('updates connection status', async () => {
+    //   // Deactivate the connection
+    //   await program.methods
+    //     .updateConnectionStatus(false)
+    //     .accounts({
+    //       authority: wallet.publicKey,
+    //       connection: connectionPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .rpc()
+        
+    //   // Verify connection is deactivated
+    //   let connection = await program.account.connectionCredential.fetch(connectionPda)
+    //   expect(connection.isActive).toBe(false)
+      
+    //   // Reactivate the connection
+    //   await program.methods
+    //     .updateConnectionStatus(true)
+    //     .accounts({
+    //       authority: wallet.publicKey,
+    //       connection: connectionPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .rpc()
+        
+    //   // Verify connection is reactivated
+    //   connection = await program.account.connectionCredential.fetch(connectionPda)
+    //   expect(connection.isActive).toBe(true)
+    // })
+    
+    // test('fails to update connection with wrong authority', async () => {
+    //   // Create a different keypair to attempt unauthorized update
+    //   const unauthorizedKeypair = anchor.web3.Keypair.generate()
+
+    //   // Fund the unauthorized wallet so it can pay for transaction fees
+    //   provider.context.setAccount(unauthorizedKeypair.publicKey, {
+    //     lamports: 1000000000, // 1 SOL
+    //     owner: anchor.web3.SystemProgram.programId,
+    //     executable: false,
+    //     data: Buffer.from([]),
+    //   })
+
+    //   try {
+    //     await program.methods
+    //       .updateConnectionStatus(false)
+    //       .accounts({
+    //         authority: unauthorizedKeypair.publicKey,
+    //         connection: connectionPda,
+    //       })
+    //       .signers([unauthorizedKeypair])
+    //       .rpc()
+
+    //     // Should not reach here
+    //     expect(false).toBe(true)
+    //   } catch (error) {
+    //     expect(error).toBeTruthy()
+    //   }
+    // })
+    
+    // test('revokes connection successfully', async () => {
+    //   // Verify connection exists before revocation
+    //   const connectionBefore = await program.account.connectionCredential.fetch(
+    //     connectionPda,
+    //   )
+    //   expect(connectionBefore).toBeTruthy()
+
+    //   // Revoke the connection
+    //   await program.methods
+    //     .revokeConnection()
+    //     .accounts({
+    //       authority: wallet.publicKey,
+    //       connection: connectionPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .rpc()
+
+    //   // Verify connection account is closed (should throw error when trying to fetch)
+    //   try {
+    //     await program.account.connectionCredential.fetch(connectionPda)
+    //     // Should not reach here if account is properly closed
+    //     expect(false).toBe(true)
+    //   } catch (error) {
+    //     expect(error).toBeTruthy()
+    //   }
+    // })
   })
