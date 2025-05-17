@@ -5,32 +5,6 @@ use crate::app::DawnApp;
 
 use super::AuthMethod;
 
-/// Authentication connection types
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
-pub enum ConnectionType {
-    /// IPSec Authentication Header
-    IPSecAH = 0,
-    /// Generic bidirectional connection
-    Generic = 1,
-}
-
-impl ConnectionType {
-    pub fn from_u8(value: u8) -> Result<Self> {
-        match value {
-            0 => Ok(ConnectionType::IPSecAH),
-            1 => Ok(ConnectionType::Generic),
-            _ => Err(error!(ErrorCode::InvalidConnectionType)),
-        }
-    }
-
-    pub fn as_u8(&self) -> u8 {
-        match self {
-            ConnectionType::IPSecAH => 0,
-            ConnectionType::Generic => 1,
-        }
-    }
-}
-
 /// Account structure for connection between two entities
 #[account]
 pub struct Connection {
@@ -42,8 +16,6 @@ pub struct Connection {
     pub entity_a: Pubkey,
     /// Entity B public key (typically responder)
     pub entity_b: Pubkey,
-    /// The connection type
-    pub connection_type: u8,
     /// Entity A credential data (fixed size buffer)
     pub credential_data_a: [u8; 64],
     /// Entity B credential data (fixed size buffer)
@@ -57,21 +29,9 @@ pub const CONNECTION_SIZE: usize = 8 // discriminator
     + 32 // auth_method
     + 32 // entity_a
     + 32 // entity_b
-    + 1 // connection_type
     + 64 // credential_data_a
     + 64 // credential_data_b
     + 1; // bump
-
-#[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct ConnectionErrorCode {
-    pub code: u32,
-}
-
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Invalid connection type")]
-    InvalidConnectionType,
-}
 
 /// Context for registering connection credentials
 #[derive(Accounts)]
@@ -187,26 +147,19 @@ impl DawnApp {
     /// Register connection credentials for two-way auth methods
     pub fn register_connection(
         ctx: Context<RegisterConnection>,
-        connection_type: u8,
         entity_a: Pubkey,
         entity_b: Pubkey,
         credential_data_a: [u8; 64],
         credential_data_b: [u8; 64],
     ) -> Result<()> {
-        // Validate the connection type
-        ConnectionType::from_u8(connection_type)?;
-        
         let connection = &mut ctx.accounts.connection;
 
         connection.created_at = Clock::get()?.unix_timestamp;
         connection.entity_a = entity_a;
         connection.entity_b = entity_b;
         connection.auth_method = ctx.accounts.auth_method.key();
-        connection.connection_type = connection_type;
-        connection.authority = ctx.accounts.caller.key();
-        connection.is_active = true;
-        connection.entity_a_credential_data = credential_data_a;
-        connection.entity_b_credential_data = credential_data_b;
+        connection.credential_data_a = credential_data_a;
+        connection.credential_data_b = credential_data_b;
         connection.bump = ctx.bumps.connection;
 
         Ok(())

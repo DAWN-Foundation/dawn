@@ -384,10 +384,7 @@ export const amfTests = () =>
       // Convert to arrays for the API
       const entityACredentialData = Array.from(serializedEntityACredential)
       const entityBCredentialData = Array.from(serializedEntityBCredential)
-      
-      // Connection type for IPSec AH is 0
-      const connectionType = 0 // ConnectionType.IPSecAH
-      
+
       connectionPda = getConnectionPda(
         program,
         ipsecAuthMethodPda,
@@ -397,14 +394,13 @@ export const amfTests = () =>
       
       await program.methods
         .registerConnection(
-          connectionType,
           entityAKeypair.publicKey,
           entityBKeypair.publicKey,
           entityACredentialData,
           entityBCredentialData
         )
         .accounts({
-          authority: wallet.publicKey,
+          caller: wallet.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,
           systemProgram: anchor.web3.SystemProgram.programId,

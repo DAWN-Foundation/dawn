@@ -59,6 +59,20 @@ pub mod dawn {
         DawnApp::revoke_credential(ctx)
     }
 
+    pub fn register_connection(
+        ctx: Context<RegisterConnection>,
+        entity_a: Pubkey,
+        entity_b: Pubkey,
+        credential_data_a: [u8; 64],
+        credential_data_b: [u8; 64],
+    ) -> Result<()> {
+        DawnApp::register_connection(ctx, entity_a, entity_b, credential_data_a, credential_data_b)
+    }
+
+    pub fn revoke_connection(ctx: Context<RevokeConnection>) -> Result<()> {
+        DawnApp::revoke_connection(ctx)
+    }
+
     // pub fn add_ip_pool(
     //     ctx: Context<AddIpPool>,
     //     ip_v4: [u8; 4],
