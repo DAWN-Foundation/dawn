@@ -6,20 +6,20 @@ export * from './prepare'
 export * from './pda'
 export * from './eap'
 
-// Export IPSec utilities
+// Export IPsec utilities
 export {
-  IPSecAlgorithm,
-  IPSecMode,
-  IPSecAHParams,
+  IPsecAlgorithm,
+  IPsecMode,
+  IPsecAHParams,
   DEFAULT_IPSEC_AH_PARAMS,
-  serializeIPSecAHParams,
-  deserializeIPSecAHParams,
-  validateIPSecAHParams,
-  fetchIPSecAHParams,
-  IPSecAHCredential,
+  serializeIPsecAHParams,
+  deserializeIPsecAHParams,
+  validateIPsecAHParams,
+  fetchIPsecAHParams,
+  IPsecAHCredential,
   DEFAULT_IPSEC_AH_CREDENTIAL,
-  serializeIPSecAHCredential,
-  deserializeIPSecAHCredential,
-  generateIPSecAHCredential,
-  fetchIPSecAHConnection,
+  serializeIPsecAHCredential,
+  deserializeIPsecAHCredential,
+  generateIPsecAHCredential,
+  fetchIPsecAHConnection,
 } from './ipsec'

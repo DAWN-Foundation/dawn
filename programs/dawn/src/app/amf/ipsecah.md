@@ -1,16 +1,16 @@
-# IPSec Authentication Header (AH) for Dawn AMF
+# IPsec Authentication Header (AH) for Dawn AMF
 
-This module implements IPSec Authentication Header (AH) for Dawn's Authentication Method Framework (AMF).
+This module implements IPsec Authentication Header (AH) for Dawn's Authentication Method Framework (AMF).
 
 ## Overview
 
-IPSec AH is a protocol that provides data origin authentication, data integrity, and anti-replay protection at the IP layer (Layer 3). Unlike other IPSec protocols like ESP, AH does not provide confidentiality (encryption) of the payload.
+IPsec AH is a protocol that provides data origin authentication, data integrity, and anti-replay protection at the IP layer (Layer 3). Unlike other IPsec protocols like ESP, AH does not provide confidentiality (encryption) of the payload.
 
 Our implementation focuses on modern hash algorithms like HMAC-SHA256 and supports both transport and tunnel modes.
 
 ## Key Components
 
-The IPSec AH implementation involves several components:
+The IPsec AH implementation involves several components:
 
 1. **Host A**: The initiator of the secure connection
 2. **Host B**: The responder to the connection request
@@ -31,7 +31,7 @@ Legacy algorithms (HMAC_MD5_96, HMAC_SHA1_96) are supported but not recommended 
 
 ## Parameters
 
-The `IPSecAHParams` structure contains the following fields:
+The `IPsecAHParams` structure contains the following fields:
 
 - `algorithm`: Authentication algorithm to use
 - `keyLifetime`: Key lifetime in seconds
@@ -43,9 +43,9 @@ The `IPSecAHParams` structure contains the following fields:
 
 ## Authentication Process
 
-IPSec AH establishes secure communications through a two-phase process:
+IPsec AH establishes secure communications through a two-phase process:
 
-## IPSec AH Flow
+## IPsec AH Flow
 
 ```mermaid
 sequenceDiagram
@@ -59,10 +59,10 @@ sequenceDiagram
     B->>A: IKE_AUTH (ID, Auth, SA Response)
     Note over A,B: Secure IKE SA established
     
-    Note over A,B: Phase 2: IPSec SA Establishment
+    Note over A,B: Phase 2: IPsec SA Establishment
     A->>B: CREATE_CHILD_SA (AH SA Proposal)
     B->>A: CREATE_CHILD_SA (AH SA Response)
-    Note over A,B: IPSec AH SA established
+    Note over A,B: IPsec AH SA established
 
     Note over A,B: Secure Communication
     A->>B: IP Packet with AH Header
@@ -84,7 +84,7 @@ sequenceDiagram
     participant IKE as IKE Service
     
     Note over Authority,Dawn: Setup Phase (One-Time)
-    Authority->>Dawn: registerAuthMethod(IPSecAHParams)
+    Authority->>Dawn: registerAuthMethod(IPsecAHParams)
     Dawn-->>Authority: AuthMethod PDA
     Note over Authority: Store AuthMethod address
     
@@ -131,14 +131,14 @@ sequenceDiagram
 
 ## On-Chain Implementation
 
-Our Dawn AMF implementation stores IPSec parameters and credentials directly in the Connection account, which is more appropriate for two-way authentication protocols like IPSec AH:
+Our Dawn AMF implementation stores IPsec parameters and credentials directly in the Connection account, which is more appropriate for two-way authentication protocols like IPsec AH:
 
 ```mermaid
 classDiagram
-    class IPSecAHParams {
-        algorithm: IPSecAlgorithm
+    class IPsecAHParams {
+        algorithm: IPsecAlgorithm
         keyLifetime: number
-        mode: IPSecMode
+        mode: IPsecMode
         spi: number
         replayWindowSize: number
         useExtendedSequence: boolean
@@ -160,17 +160,17 @@ classDiagram
     }
 
     AuthMethod -- Connection: configures >
-    IPSecAHParams -- AuthMethod: stored in parameters
+    IPsecAHParams -- AuthMethod: stored in parameters
 ```
 
 ## Two-Way vs One-Way Authentication
 
-Unlike 802.1X which uses one-way authentication (client authenticating to network), IPSec AH requires mutual authentication between both entities. This is why our implementation:
+Unlike 802.1X which uses one-way authentication (client authenticating to network), IPsec AH requires mutual authentication between both entities. This is why our implementation:
 
 - Stores credentials for both entities directly in the Connection account
 - Does not require separate Credential accounts for each entity
 
-This approach simplifies the authentication flow and better matches the IPSec protocol model where both parties need access to each other's authentication information.
+This approach simplifies the authentication flow and better matches the IPsec protocol model where both parties need access to each other's authentication information.
 
 ## Security Considerations
 
@@ -185,11 +185,11 @@ Our implementation prioritizes security through:
 
 ## Usage
 
-To register an IPSec AH authentication method and connection for a Dawn network:
+To register an IPsec AH authentication method and connection for a Dawn network:
 
-1. Create an `IPSecAHParams` instance with appropriate settings
+1. Create an `IPsecAHParams` instance with appropriate settings
 2. Register the authentication method using `registerAuthMethod`
-3. Generate credential data for each entity using `generateIPSecAHCredential`
+3. Generate credential data for each entity using `generateIPsecAHCredential`
 4. Register a connection with both credentials using `registerConnection`
 
-See the test file (`tests/dawn/09_amf.ts`) for a complete example of registering an IPSec AH authentication method and establishing a connection.
+See the test file (`tests/dawn/09_amf.ts`) for a complete example of registering an IPsec AH authentication method and establishing a connection.

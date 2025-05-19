@@ -5,9 +5,9 @@ import { AuthMethodType } from './helpers'
 import { getConnectionPda } from './pda'
 
 /**
- * IPSec Authentication Header (AH) algorithms
+ * IPsec Authentication Header (AH) algorithms
  */
-export enum IPSecAlgorithm {
+export enum IPsecAlgorithm {
   HMAC_MD5_96 = 0, // RFC 2403 (legacy, not recommended for new implementations)
   HMAC_SHA1_96 = 1, // RFC 2404 (legacy, not recommended for new implementations)
   HMAC_SHA256_128 = 2, // RFC 4868
@@ -20,9 +20,9 @@ export enum IPSecAlgorithm {
 }
 
 /**
- * IPSec modes of operation
+ * IPsec modes of operation
  */
-export enum IPSecMode {
+export enum IPsecMode {
   TRANSPORT = 0, // End-to-end security between hosts
   TUNNEL = 1, // Gateway-to-gateway or host-to-gateway security
 }
@@ -40,12 +40,12 @@ export interface IKEv2Params {
 }
 
 /**
- * Interface representing IPSec Authentication Header parameters
+ * Interface representing IPsec Authentication Header parameters
  */
-export interface IPSecAHParams {
-  algorithm: IPSecAlgorithm // Authentication algorithm
+export interface IPsecAHParams {
+  algorithm: IPsecAlgorithm // Authentication algorithm
   keyLifetime: number // Key lifetime in seconds
-  mode: IPSecMode // Transport or Tunnel mode
+  mode: IPsecMode // Transport or Tunnel mode
   spi: number // Security Parameter Index
   replayWindowSize: number // Anti-replay window size
   useExtendedSequence: boolean // Use 64-bit extended sequence numbers
@@ -54,12 +54,12 @@ export interface IPSecAHParams {
 }
 
 /**
- * Default IPSec AH parameters with recommended secure values
+ * Default IPsec AH parameters with recommended secure values
  */
-export const DEFAULT_IPSEC_AH_PARAMS: IPSecAHParams = {
-  algorithm: IPSecAlgorithm.HMAC_SHA256_128,
+export const DEFAULT_IPSEC_AH_PARAMS: IPsecAHParams = {
+  algorithm: IPsecAlgorithm.HMAC_SHA256_128,
   keyLifetime: 28800, // 8 hours in seconds
-  mode: IPSecMode.TRANSPORT,
+  mode: IPsecMode.TRANSPORT,
   spi: Math.floor(Math.random() * 0xffffffff), // Random SPI
   replayWindowSize: 64,
   useExtendedSequence: true,
@@ -74,11 +74,11 @@ export const DEFAULT_IPSEC_AH_PARAMS: IPSecAHParams = {
 }
 
 /**
- * Serializes IPSec AH parameters into a buffer for on-chain storage
- * @param params IPSec AH parameters to serialize
+ * Serializes IPsec AH parameters into a buffer for on-chain storage
+ * @param params IPsec AH parameters to serialize
  * @returns Buffer containing serialized parameters
  */
-export function serializeIPSecAHParams(params: IPSecAHParams): Buffer {
+export function serializeIPsecAHParams(params: IPsecAHParams): Buffer {
   const buffer = Buffer.alloc(256)
   let offset = 0
 
@@ -140,15 +140,15 @@ export function serializeIPSecAHParams(params: IPSecAHParams): Buffer {
 }
 
 /**
- * Deserializes a buffer into IPSec AH parameters
+ * Deserializes a buffer into IPsec AH parameters
  * @param buffer Buffer containing serialized parameters
- * @returns Deserialized IPSec AH parameters
+ * @returns Deserialized IPsec AH parameters
  */
-export function deserializeIPSecAHParams(buffer: Buffer): IPSecAHParams {
+export function deserializeIPsecAHParams(buffer: Buffer): IPsecAHParams {
   let offset = 0
 
   // algorithm: u8 (1 byte)
-  const algorithm = buffer[offset] as IPSecAlgorithm
+  const algorithm = buffer[offset] as IPsecAlgorithm
   offset += 1
 
   // keyLifetime: u32 (4 bytes)
@@ -156,7 +156,7 @@ export function deserializeIPSecAHParams(buffer: Buffer): IPSecAHParams {
   offset += 4
 
   // mode: u8 (1 byte)
-  const mode = buffer[offset] as IPSecMode
+  const mode = buffer[offset] as IPsecMode
   offset += 1
 
   // spi: u32 (4 bytes)
@@ -219,9 +219,9 @@ export function deserializeIPSecAHParams(buffer: Buffer): IPSecAHParams {
 }
 
 /**
- * Structure representing IPSec Authentication Header (AH) credential data
+ * Structure representing IPsec Authentication Header (AH) credential data
  */
-export interface IPSecAHCredential {
+export interface IPsecAHCredential {
   // Shared key identity (key ID or reference)
   keyId: string
   // Pre-shared key hash or reference (not the actual key)
@@ -229,7 +229,7 @@ export interface IPSecAHCredential {
   // Optional Security Parameter Index override
   spiOverride?: number
   // Authentication algorithm preference
-  preferredAlgorithm: IPSecAlgorithm
+  preferredAlgorithm: IPsecAlgorithm
   // Anti-replay window size preference
   preferredWindowSize: number
   // Use extended sequence numbers
@@ -239,24 +239,24 @@ export interface IPSecAHCredential {
 }
 
 /**
- * Default IPSec AH credential with secure defaults
+ * Default IPsec AH credential with secure defaults
  */
 export const DEFAULT_IPSEC_AH_CREDENTIAL: Omit<
-  IPSecAHCredential,
+  IPsecAHCredential,
   'keyId' | 'pskRef'
 > = {
-  preferredAlgorithm: IPSecAlgorithm.HMAC_SHA256_128,
+  preferredAlgorithm: IPsecAlgorithm.HMAC_SHA256_128,
   preferredWindowSize: 64,
   useExtendedSequence: true,
 }
 
 /**
- * Serializes an IPSec AH credential into a buffer format suitable for on-chain storage
- * @param credential IPSec AH credential to serialize
+ * Serializes an IPsec AH credential into a buffer format suitable for on-chain storage
+ * @param credential IPsec AH credential to serialize
  * @returns Buffer containing serialized credential data (64 bytes)
  */
-export function serializeIPSecAHCredential(
-  credential: IPSecAHCredential,
+export function serializeIPsecAHCredential(
+  credential: IPsecAHCredential,
 ): Buffer {
   const buffer = Buffer.alloc(64)
   let offset = 0
@@ -304,15 +304,15 @@ export function serializeIPSecAHCredential(
 }
 
 /**
- * Deserializes a buffer into an IPSec AH credential
+ * Deserializes a buffer into an IPsec AH credential
  * @param buffer Buffer containing serialized credential data
- * @returns Deserialized IPSec AH credential
+ * @returns Deserialized IPsec AH credential
  */
-export function deserializeIPSecAHCredential(
+export function deserializeIPsecAHCredential(
   buffer: Buffer,
-): IPSecAHCredential {
+): IPsecAHCredential {
   if (buffer.length < 64) {
-    throw new Error('Buffer too small for IPSec AH credential')
+    throw new Error('Buffer too small for IPsec AH credential')
   }
 
   let offset = 0
@@ -344,7 +344,7 @@ export function deserializeIPSecAHCredential(
   offset += 4
 
   // Preferred algorithm (1 byte)
-  const preferredAlgorithm = buffer[offset++] as IPSecAlgorithm
+  const preferredAlgorithm = buffer[offset++] as IPsecAlgorithm
 
   // Preferred window size (1 byte)
   const preferredWindowSize = buffer[offset++]
@@ -367,15 +367,15 @@ export function deserializeIPSecAHCredential(
 }
 
 /**
- * Generates an IPSec AH credential with secure defaults
+ * Generates an IPsec AH credential with secure defaults
  * @param keyId Key identifier
  * @param pskRef Pre-shared key reference
- * @returns IPSec AH credential ready for serialization
+ * @returns IPsec AH credential ready for serialization
  */
-export function generateIPSecAHCredential(
+export function generateIPsecAHCredential(
   keyId: string,
   pskRef: string,
-): IPSecAHCredential {
+): IPsecAHCredential {
   return {
     keyId,
     pskRef,
@@ -384,14 +384,14 @@ export function generateIPSecAHCredential(
 }
 
 /**
- * Validates IPSec AH parameters to ensure they are within allowed ranges
- * @param params IPSec AH parameters to validate
+ * Validates IPsec AH parameters to ensure they are within allowed ranges
+ * @param params IPsec AH parameters to validate
  * @returns True if parameters are valid, otherwise throws an error
  */
-export function validateIPSecAHParams(params: IPSecAHParams): boolean {
+export function validateIPsecAHParams(params: IPsecAHParams): boolean {
   // Check algorithm is valid
   if (params.algorithm < 0 || params.algorithm > 8) {
-    throw new Error(`Invalid IPSec algorithm: ${params.algorithm}`)
+    throw new Error(`Invalid IPsec algorithm: ${params.algorithm}`)
   }
 
   // Check key lifetime is reasonable (300-86400 seconds, 5 min to 24 hours)
@@ -400,8 +400,8 @@ export function validateIPSecAHParams(params: IPSecAHParams): boolean {
   }
 
   // Check mode is valid
-  if (params.mode !== IPSecMode.TRANSPORT && params.mode !== IPSecMode.TUNNEL) {
-    throw new Error(`Invalid IPSec mode: ${params.mode}`)
+  if (params.mode !== IPsecMode.TRANSPORT && params.mode !== IPsecMode.TUNNEL) {
+    throw new Error(`Invalid IPsec mode: ${params.mode}`)
   }
 
   // Check replay window size is valid (must be power of 2)
@@ -422,21 +422,21 @@ export function validateIPSecAHParams(params: IPSecAHParams): boolean {
 }
 
 /**
- * Fetches and deserializes IPSec AH parameters from an auth method account
+ * Fetches and deserializes IPsec AH parameters from an auth method account
  * @param program Anchor program instance
  * @param authMethodAddress Address of the auth method account
- * @returns Deserialized IPSec AH parameters if method type is IPSEC_AH, otherwise null
+ * @returns Deserialized IPsec AH parameters if method type is IPSEC_AH, otherwise null
  */
-export async function fetchIPSecAHParams(
+export async function fetchIPsecAHParams(
   program: Program<Dawn>,
   authMethodAddress: PublicKey,
-): Promise<IPSecAHParams | null> {
+): Promise<IPsecAHParams | null> {
   try {
     const authMethod = await program.account.authMethod.fetch(authMethodAddress)
 
     // Check if method type is IPSEC_AH
     if (!authMethod.methodType.ipsecAh) {
-      console.log('Auth method is not IPSec AH')
+      console.log('Auth method is not IPsec AH')
       return null
     }
 
@@ -444,30 +444,30 @@ export async function fetchIPSecAHParams(
     const paramsBuffer = Buffer.from(authMethod.parameters)
 
     // Deserialize parameters
-    return deserializeIPSecAHParams(paramsBuffer)
+    return deserializeIPsecAHParams(paramsBuffer)
   } catch (error) {
-    console.error('Error fetching IPSec AH parameters:', error)
+    console.error('Error fetching IPsec AH parameters:', error)
     throw error
   }
 }
 
 /**
- * Fetches a connection credential and deserializes the IPSec AH credential data
+ * Fetches a connection credential and deserializes the IPsec AH credential data
  * @param program Anchor program instance
  * @param entityA First entity public key
  * @param entityB Second entity public key
  * @param authMethod Auth method public key
  * @returns Connection with deserialized credential data for both entities
  */
-export async function fetchIPSecAHConnection(
+export async function fetchIPsecAHConnection(
   program: Program<Dawn>,
   entityA: PublicKey,
   entityB: PublicKey,
   authMethod: PublicKey,
 ): Promise<{
   connection: any
-  entityACredential: IPSecAHCredential
-  entityBCredential: IPSecAHCredential
+  entityACredential: IPsecAHCredential
+  entityBCredential: IPsecAHCredential
 } | null> {
   try {
     const connectionPda = getConnectionPda(
@@ -482,10 +482,10 @@ export async function fetchIPSecAHConnection(
     )
 
     // Deserialize credential data for both entities
-    const entityACredential = deserializeIPSecAHCredential(
+    const entityACredential = deserializeIPsecAHCredential(
       Buffer.from(connection.credentialDataA),
     )
-    const entityBCredential = deserializeIPSecAHCredential(
+    const entityBCredential = deserializeIPsecAHCredential(
       Buffer.from(connection.credentialDataB),
     )
 
@@ -495,7 +495,7 @@ export async function fetchIPSecAHConnection(
       entityBCredential,
     }
   } catch (error) {
-    console.error('Error fetching IPSec AH connection:', error)
+    console.error('Error fetching IPsec AH connection:', error)
     return null
   }
 }

@@ -20,14 +20,14 @@ import {
   fetchEAPParams,
   generateEAPTLSCredential,
   serializeEAPTLSCredential,
-  IPSecAlgorithm,
-  IPSecMode,
-  IPSecAHParams,
+  IPsecAlgorithm,
+  IPsecMode,
+  IPsecAHParams,
   DEFAULT_IPSEC_AH_PARAMS,
-  serializeIPSecAHParams,
-  validateIPSecAHParams,
-  generateIPSecAHCredential,
-  serializeIPSecAHCredential,
+  serializeIPsecAHParams,
+  validateIPsecAHParams,
+  generateIPsecAHCredential,
+  serializeIPsecAHCredential,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
@@ -56,7 +56,7 @@ export const amfTests = () =>
       // Generate client keypair for credential tests
       clientKeypair = anchor.web3.Keypair.generate()
       
-      // Generate entity keypairs for IPSec connection tests
+      // Generate entity keypairs for IPsec connection tests
       entityAKeypair = anchor.web3.Keypair.generate()
       entityBKeypair = anchor.web3.Keypair.generate()
     })
@@ -305,12 +305,12 @@ export const amfTests = () =>
       }
     })
     
-    // IPSec Authentication Header Tests
-    test('registers IPSec AH auth method', async () => {
+    // IPsec Authentication Header Tests
+    test('registers IPsec AH auth method', async () => {
       const authMethodType: AuthMethodType = { ipsecAh: {} }
 
-      // Create IPSec AH parameters with appropriate values
-      const ipsecParams: IPSecAHParams = {
+      // Create IPsec AH parameters with appropriate values
+      const ipsecParams: IPsecAHParams = {
         ...DEFAULT_IPSEC_AH_PARAMS,
         // Override default SPI to ensure consistent testing
         spi: 0x12345678,
@@ -318,22 +318,22 @@ export const amfTests = () =>
 
       // Validate parameters
       try {
-        validateIPSecAHParams(ipsecParams)
-        console.log('IPSec AH parameters validated successfully')
+        validateIPsecAHParams(ipsecParams)
+        console.log('IPsec AH parameters validated successfully')
       } catch (error) {
-        console.error('Invalid IPSec AH parameters:', error)
+        console.error('Invalid IPsec AH parameters:', error)
         throw error
       }
 
       // Serialize parameters to buffer
-      const paramsBuffer = serializeIPSecAHParams(ipsecParams)
+      const paramsBuffer = serializeIPsecAHParams(ipsecParams)
 
       // Convert to array for the API
       const paramsArray = Array.from(paramsBuffer)
 
       console.log({
-        algorithm: IPSecAlgorithm[ipsecParams.algorithm],
-        mode: IPSecMode[ipsecParams.mode],
+        algorithm: IPsecAlgorithm[ipsecParams.algorithm],
+        mode: IPsecMode[ipsecParams.mode],
         spi: `0x${ipsecParams.spi.toString(16).padStart(8, '0')}`,
         keyLifetime: ipsecParams.keyLifetime,
         bufferLength: paramsBuffer.length,
@@ -365,21 +365,21 @@ export const amfTests = () =>
       return ipsecParams
     })
     
-    test('registers IPSec AH connection successfully', async () => {
+    test('registers IPsec AH connection successfully', async () => {
       // Create credentials for both entities
-      const entityACredential = generateIPSecAHCredential(
+      const entityACredential = generateIPsecAHCredential(
         'vpn-client-1',
         'psk-hash-1',
       )
       
-      const entityBCredential = generateIPSecAHCredential(
+      const entityBCredential = generateIPsecAHCredential(
         'vpn-server-1',
         'psk-hash-2',
       )
       
       // Serialize credentials
-      const serializedEntityACredential = serializeIPSecAHCredential(entityACredential)
-      const serializedEntityBCredential = serializeIPSecAHCredential(entityBCredential)
+      const serializedEntityACredential = serializeIPsecAHCredential(entityACredential)
+      const serializedEntityBCredential = serializeIPsecAHCredential(entityBCredential)
 
       // Convert to arrays for the API
       const entityACredentialData = Array.from(serializedEntityACredential)
