@@ -382,8 +382,8 @@ export const amfTests = () =>
       const serializedEntityBCredential = serializeIPsecAHCredential(entityBCredential)
 
       // Convert to arrays for the API
-      const entityACredentialData = Array.from(serializedEntityACredential)
-      const entityBCredentialData = Array.from(serializedEntityBCredential)
+      const credentialDataA = Array.from(serializedEntityACredential)
+      const credentialDataB = Array.from(serializedEntityBCredential)
 
       connectionPda = getConnectionPda(
         program,
@@ -396,8 +396,8 @@ export const amfTests = () =>
         .registerConnection(
           entityAKeypair.publicKey,
           entityBKeypair.publicKey,
-          entityACredentialData,
-          entityBCredentialData
+          credentialDataA,
+          credentialDataB
         )
         .accounts({
           caller: wallet.publicKey,
@@ -408,101 +408,41 @@ export const amfTests = () =>
         .signers([wallet.payer])
         .rpc()
         
-      // // Fetch and verify the connection was created correctly
-      // const connection = await program.account.connectionCredential.fetch(connectionPda)
-      // expect(connection.createdAt.toNumber()).toBeGreaterThan(0)
-      // expect(connection.entityAPubkey.equals(entityAKeypair.publicKey)).toBeTruthy()
-      // expect(connection.entityBPubkey.equals(entityBKeypair.publicKey)).toBeTruthy()
-      // expect(connection.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
-      // expect(connection.connectionType).toBe(connectionType)
-      // expect(connection.isActive).toBe(true)
-      // expect(connection.entityACredentialData).toStrictEqual(entityACredentialData)
-      // expect(connection.entityBCredentialData).toStrictEqual(entityBCredentialData)
+      // Fetch and verify the connection was created correctly
+      const connection = await program.account.connection.fetch(connectionPda)
+      expect(connection.createdAt.toNumber()).toBeGreaterThan(0)
+      expect(connection.entityA.equals(entityAKeypair.publicKey)).toBeTruthy()
+      expect(connection.entityB.equals(entityBKeypair.publicKey)).toBeTruthy()
+      expect(connection.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
+      expect(connection.credentialDataA).toStrictEqual(credentialDataA)
+      expect(connection.credentialDataB).toStrictEqual(credentialDataB)
     })
     
-    // test('updates connection status', async () => {
-    //   // Deactivate the connection
-    //   await program.methods
-    //     .updateConnectionStatus(false)
-    //     .accounts({
-    //       authority: wallet.publicKey,
-    //       connection: connectionPda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .rpc()
-        
-    //   // Verify connection is deactivated
-    //   let connection = await program.account.connectionCredential.fetch(connectionPda)
-    //   expect(connection.isActive).toBe(false)
-      
-    //   // Reactivate the connection
-    //   await program.methods
-    //     .updateConnectionStatus(true)
-    //     .accounts({
-    //       authority: wallet.publicKey,
-    //       connection: connectionPda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .rpc()
-        
-    //   // Verify connection is reactivated
-    //   connection = await program.account.connectionCredential.fetch(connectionPda)
-    //   expect(connection.isActive).toBe(true)
-    // })
-    
-    // test('fails to update connection with wrong authority', async () => {
-    //   // Create a different keypair to attempt unauthorized update
-    //   const unauthorizedKeypair = anchor.web3.Keypair.generate()
+    test('revokes connection successfully', async () => {
+      // Verify connection exists before revocation
+      const connectionBefore = await program.account.connection.fetch(
+        connectionPda,
+      )
+      expect(connectionBefore).toBeTruthy()
 
-    //   // Fund the unauthorized wallet so it can pay for transaction fees
-    //   provider.context.setAccount(unauthorizedKeypair.publicKey, {
-    //     lamports: 1000000000, // 1 SOL
-    //     owner: anchor.web3.SystemProgram.programId,
-    //     executable: false,
-    //     data: Buffer.from([]),
-    //   })
+      // Revoke the connection
+      await program.methods
+        .revokeConnection()
+        .accounts({
+          caller: wallet.publicKey,
+          authMethod: ipsecAuthMethodPda,
+          connection: connectionPda,
+        })
+        .signers([wallet.payer])
+        .rpc()
 
-    //   try {
-    //     await program.methods
-    //       .updateConnectionStatus(false)
-    //       .accounts({
-    //         authority: unauthorizedKeypair.publicKey,
-    //         connection: connectionPda,
-    //       })
-    //       .signers([unauthorizedKeypair])
-    //       .rpc()
-
-    //     // Should not reach here
-    //     expect(false).toBe(true)
-    //   } catch (error) {
-    //     expect(error).toBeTruthy()
-    //   }
-    // })
-    
-    // test('revokes connection successfully', async () => {
-    //   // Verify connection exists before revocation
-    //   const connectionBefore = await program.account.connectionCredential.fetch(
-    //     connectionPda,
-    //   )
-    //   expect(connectionBefore).toBeTruthy()
-
-    //   // Revoke the connection
-    //   await program.methods
-    //     .revokeConnection()
-    //     .accounts({
-    //       authority: wallet.publicKey,
-    //       connection: connectionPda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .rpc()
-
-    //   // Verify connection account is closed (should throw error when trying to fetch)
-    //   try {
-    //     await program.account.connectionCredential.fetch(connectionPda)
-    //     // Should not reach here if account is properly closed
-    //     expect(false).toBe(true)
-    //   } catch (error) {
-    //     expect(error).toBeTruthy()
-    //   }
-    // })
+      // Verify connection account is closed (should throw error when trying to fetch)
+      try {
+        await program.account.connection.fetch(connectionPda)
+        // Should not reach here if account is properly closed
+        expect(false).toBe(true)
+      } catch (error) {
+        expect(error).toBeTruthy()
+      }
+    })
   })

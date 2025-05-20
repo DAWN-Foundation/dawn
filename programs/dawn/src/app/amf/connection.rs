@@ -63,49 +63,15 @@ pub struct RegisterConnection<'info> {
         space = CONNECTION_SIZE,
         seeds = [
             b"connection",
+            auth_method.key().as_ref(),
             entity_a.as_ref(),
             entity_b.as_ref(),
-            auth_method.key().as_ref(),
         ],
         bump
     )]
     pub connection: Account<'info, Connection>,
 
     pub system_program: Program<'info, System>,
-}
-
-/// Context for updating connection status (activate/deactivate)
-#[derive(Accounts)]
-pub struct UpdateConnectionStatus<'info> {
-    #[account(mut)]
-    pub caller: Signer<'info>,
-
-    #[account(
-        mut,
-        constraint = auth_method.authority == caller.key(),
-        seeds = [
-            b"auth_method",
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            &auth_method.parameters[..MAX_SEED_LEN]
-        ],
-        bump = auth_method.bump,
-    )]
-    pub auth_method: Account<'info, AuthMethod>,
-
-    // connection
-    #[account(
-        mut,
-        constraint = connection.auth_method == auth_method.key(),
-        seeds = [
-            b"connection",
-            connection.auth_method.as_ref(),
-            connection.entity_a.as_ref(),
-            connection.entity_b.as_ref(),
-        ],
-        bump = connection.bump,
-    )]
-    pub connection: Account<'info, Connection>,
 }
 
 /// Context for revoking connection credentials
