@@ -104,7 +104,7 @@ impl DawnApp {
     ) -> Result<()> {
         let credential = &mut ctx.accounts.credential;
 
-        credential.created_at = Clock::get()?.unix_timestamp; 
+        credential.created_at = Clock::get()?.unix_timestamp;
         credential.client = client;
         credential.auth_method = ctx.accounts.auth_method.key();
         credential.credential_data = credential_data;

@@ -38,7 +38,7 @@ pub const CONNECTION_SIZE: usize = 8 // discriminator
 #[instruction(
     entity_a: Pubkey,
     entity_b: Pubkey,
-    credential_data_a: [u8; 64], 
+    credential_data_a: [u8; 64],
     credential_data_b: [u8; 64]
 )]
 pub struct RegisterConnection<'info> {
@@ -79,7 +79,7 @@ pub struct RegisterConnection<'info> {
 pub struct RevokeConnection<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
-    
+
     // auth method
     #[account(
         mut,

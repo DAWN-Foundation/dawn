@@ -66,7 +66,13 @@ pub mod dawn {
         credential_data_a: [u8; 64],
         credential_data_b: [u8; 64],
     ) -> Result<()> {
-        DawnApp::register_connection(ctx, entity_a, entity_b, credential_data_a, credential_data_b)
+        DawnApp::register_connection(
+            ctx,
+            entity_a,
+            entity_b,
+            credential_data_a,
+            credential_data_b,
+        )
     }
 
     pub fn revoke_connection(ctx: Context<RevokeConnection>) -> Result<()> {
