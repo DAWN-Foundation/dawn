@@ -28,6 +28,7 @@ import {
   validateIPsecAHParams,
   generateIPsecAHCredential,
   serializeIPsecAHCredential,
+  deserializeIPsecAHCredential,
 } from '../../app/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
@@ -416,6 +417,27 @@ export const amfTests = () =>
       expect(connection.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
       expect(connection.credentialDataA).toStrictEqual(credentialDataA)
       expect(connection.credentialDataB).toStrictEqual(credentialDataB)
+
+      // Test credential deserialization
+      const deserializedEntityACredential = deserializeIPsecAHCredential(
+        Buffer.from(connection.credentialDataA)
+      )
+      const deserializedEntityBCredential = deserializeIPsecAHCredential(
+        Buffer.from(connection.credentialDataB)
+      )
+
+      // Verify deserialized credentials match original
+      expect(deserializedEntityACredential.keyId).toBe(entityACredential.keyId)
+      expect(deserializedEntityACredential.pskRef).toBe(entityACredential.pskRef)
+      expect(deserializedEntityACredential.preferredAlgorithm).toBe(entityACredential.preferredAlgorithm)
+      expect(deserializedEntityACredential.preferredWindowSize).toBe(entityACredential.preferredWindowSize)
+      expect(deserializedEntityACredential.useExtendedSequence).toBe(entityACredential.useExtendedSequence)
+
+      expect(deserializedEntityBCredential.keyId).toBe(entityBCredential.keyId)
+      expect(deserializedEntityBCredential.pskRef).toBe(entityBCredential.pskRef)
+      expect(deserializedEntityBCredential.preferredAlgorithm).toBe(entityBCredential.preferredAlgorithm)
+      expect(deserializedEntityBCredential.preferredWindowSize).toBe(entityBCredential.preferredWindowSize)
+      expect(deserializedEntityBCredential.useExtendedSequence).toBe(entityBCredential.useExtendedSequence)
     })
     
     test('revokes connection successfully', async () => {
