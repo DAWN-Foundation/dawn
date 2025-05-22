@@ -6,16 +6,16 @@ mod device;
 // mod ip_pool;
 mod location;
 mod model;
-mod site;
 mod organization;
+mod site;
 
 pub use access_domain::*;
 pub use device::*;
 // pub use ip_pool::*;
 pub use location::*;
 pub use model::*;
-pub use site::*;
 pub use organization::*;
+pub use site::*;
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Eq)]
 pub enum DeviceType {

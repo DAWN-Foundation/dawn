@@ -67,6 +67,7 @@ pub struct SetOrganizationName<'info> {
 }
 
 impl DawnApp {
+    #[allow(dead_code)]
     pub fn set_organization_name(ctx: Context<SetOrganizationName>, name: String) -> Result<()> {
         let organization = &mut ctx.accounts.organization;
         organization.name = name;

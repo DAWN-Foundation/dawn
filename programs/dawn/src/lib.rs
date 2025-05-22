@@ -39,6 +39,46 @@ pub mod dawn {
         DawnApp::configure(ctx, dawn_fee, validator_fee, medallion_fee)
     }
 
+    pub fn register_auth_method(
+        ctx: Context<RegisterAuthMethod>,
+        method_type: AuthMethodType,
+        parameters: [u8; 256],
+    ) -> Result<()> {
+        DawnApp::register_auth_method(ctx, method_type, parameters)
+    }
+
+    pub fn register_credential(
+        ctx: Context<RegisterCredential>,
+        client: Pubkey,
+        credential_data: [u8; 128],
+    ) -> Result<()> {
+        DawnApp::register_credential(ctx, client, credential_data)
+    }
+
+    pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
+        DawnApp::revoke_credential(ctx)
+    }
+
+    pub fn register_connection(
+        ctx: Context<RegisterConnection>,
+        entity_a: Pubkey,
+        entity_b: Pubkey,
+        credential_data_a: [u8; 64],
+        credential_data_b: [u8; 64],
+    ) -> Result<()> {
+        DawnApp::register_connection(
+            ctx,
+            entity_a,
+            entity_b,
+            credential_data_a,
+            credential_data_b,
+        )
+    }
+
+    pub fn revoke_connection(ctx: Context<RevokeConnection>) -> Result<()> {
+        DawnApp::revoke_connection(ctx)
+    }
+
     // pub fn add_ip_pool(
     //     ctx: Context<AddIpPool>,
     //     ip_v4: [u8; 4],
@@ -116,7 +156,7 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethod>,
+        auth_methods: Vec<AuthMethodType>,
     ) -> Result<()> {
         DawnApp::add_plan(
             ctx,
@@ -134,7 +174,7 @@ pub mod dawn {
         DawnApp::subscribe(ctx)
     }
 
-    pub fn extend_subscription<'info>(ctx: Context<ExtendSubscription>) -> Result<()> {
+    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
         DawnApp::extend_subscription(ctx)
     }
 

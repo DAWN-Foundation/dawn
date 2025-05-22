@@ -17,7 +17,7 @@ import {
   getDevicePda,
   getDeviceLocationPda,
   getAccessDomainPda,
-  AuthMethod,
+  AuthMethodType,
   getOrganizationPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
@@ -37,7 +37,7 @@ interface PlanAdded {
   capacity: BN
   createdAt: number
   serviceAgreement: PublicKey
-  authMethods: AuthMethod[]
+  authMethods: AuthMethodType[]
   startAt: BN
 }
 
@@ -253,7 +253,7 @@ export const planTests = () =>
     })
 
     test('cannot add more than 2 auth methods', async () => {
-      const authMethods: AuthMethod[] = [
+      const authMethods: AuthMethodType[] = [
         { mpsk: {} },
         { wpa2Enterprise: {} },
         { wpa3Enterprise: {} },
@@ -290,7 +290,7 @@ export const planTests = () =>
     })
 
     test('cannot add duplicate auth methods', async () => {
-      const authMethods: AuthMethod[] = [
+      const authMethods: AuthMethodType[] = [
         { wpa2Enterprise: {} },
         { wpa2Enterprise: {} },
       ]

@@ -7,6 +7,7 @@ import { serviceAgreementTests } from './05_service_agreement'
 import { parentPlanTests, planTests } from './06_plan'
 import { subscriptionTests } from './07_subscription'
 import { claimTests } from './08_claim'
+import { amfTests } from './09_amf'
 
 // order is important here
 // because tests are dependent on the previous ones
@@ -34,3 +35,4 @@ planTests()
 subscriptionTests()
 parentPlanTests()
 claimTests()
+amfTests()

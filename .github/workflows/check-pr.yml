@@ -8,15 +8,48 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache Rust toolchain
+        uses: actions/cache@v4
+        id: rust-cache
+        with:
+          key: ${{ runner.os }}-rust-1.82.0
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+
       # RUST
       - name: Install Rust toolchain
-        run: rustup default 1.79.0
+        if: steps.rust-cache.outputs.cache-hit != 'true'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.82.0
+          components: clippy, rustfmt
+
+      - name: Install build essentials
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install yarn
+        run: corepack enable yarn
+
+      - name: Check fmt
+        run: cargo fmt --check
+
+      - name: Check clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       # CACHE SOLANA
       - name: Cache Solana CLI
@@ -26,12 +59,12 @@ jobs:
           path: |
             ~/.local/share/solana/install
             ~/.cache/solana
-          key: ${{ runner.os }}-solana-1.17.0
+          key: ${{ runner.os }}-solana-1.17.25
 
       # SOLANA
       - name: Install Solana CLI
         if: steps.solana-cache.outputs.cache-hit != 'true'
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v1.17.25/install)"
       - name: Set Solana CLI path
         run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 

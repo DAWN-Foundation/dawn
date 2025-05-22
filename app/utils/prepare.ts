@@ -19,7 +19,7 @@ import {
   IpV6Bytes,
   MacAddress,
   PROGRAM_ID,
-  AuthMethod,
+  AuthMethodType,
 } from './helpers'
 import { mock } from './mock'
 import { setupRaydium } from './raydium'
@@ -324,7 +324,7 @@ export async function prepare(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planAuthMethods: AuthMethod[] = [{ mpsk: {} }]
+  const planAuthMethods: AuthMethodType[] = [{ mpsk: {} }]
 
   const [planPda, planBump] = getPlanPda(
     program,

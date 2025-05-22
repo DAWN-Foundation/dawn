@@ -1,10 +1,10 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, Keypair, TransactionSignature } from '@solana/web3.js'
 import { readFileSync } from 'fs'
 import * as toml from 'toml'
-
 import { Dawn } from '../../target/types/dawn'
+
 import { BanksTransactionMeta } from 'solana-bankrun'
 import { hasFlag } from '../dawn/utils'
 
@@ -25,7 +25,7 @@ export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
 export type OrganizationType = anchor.IdlTypes<Dawn>['OrganizationType']
-export type AuthMethod = anchor.IdlTypes<Dawn>['AuthMethod']
+export type AuthMethodType = anchor.IdlTypes<Dawn>['AuthMethodType']
 
 export type IpV4Bytes = [number, number, number, number]
 

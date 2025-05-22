@@ -3,7 +3,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { SendTransactionError } from '@solana/web3.js'
+import { PublicKey, SendTransactionError } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
 
 import { Dawn, IDL } from '../../target/types/dawn'
@@ -13,7 +13,6 @@ import {
   getProvider,
   createAccounts,
   PROGRAM_ID,
-  getConfigPdaWithProgramId,
   getConfigPda,
 } from '../../app/utils'
 
@@ -22,6 +21,8 @@ export const configTests = () =>
     let program: Program<Dawn>
     let provider: BankrunProvider
     let wallet: NodeWallet
+    let configPda: PublicKey
+    let configBump: number
 
     beforeAll(async () => {
       const accounts = await createAccounts()
@@ -33,10 +34,12 @@ export const configTests = () =>
       wallet = provider.wallet
 
       await setup(provider, accounts)
-    })
 
-    // Generate config PDA
-    const [configPda, configBump] = getConfigPdaWithProgramId(PROGRAM_ID)
+      // Generate config PDA
+      const config = getConfigPda(program)
+      configPda = config[0]
+      configBump = config[1]
+    })
 
     test('mock setup', () => {
       assert.exists(mock)

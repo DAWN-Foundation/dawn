@@ -9,7 +9,7 @@ use crate::{
 
 use super::{AccessDomain, DeviceLocation, DeviceModel, Organization, Site, DEVICE_LOCATION_SIZE};
 
-const END_USER_ORG_NAME: &'static str = "end_user_organization";
+const END_USER_ORG_NAME: &str = "end_user_organization";
 
 /// The device account, representing a device
 #[account]
