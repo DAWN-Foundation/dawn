@@ -21,7 +21,9 @@ jobs:
           toolchain: 1.82.0
 
       - name: Install build essentials
-        run: sudo apt install -y build-essential
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential
 
       # CACHE SOLANA
       - name: Cache Solana CLI
