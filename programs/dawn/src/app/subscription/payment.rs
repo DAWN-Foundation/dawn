@@ -18,16 +18,16 @@ pub struct PaymentAccounts<'info, 'a> {
     pub raydium_authority: &'a UncheckedAccount<'info>,
     pub raydium_config: &'a UncheckedAccount<'info>,
     pub raydium_observation: &'a UncheckedAccount<'info>,
-    pub usdc_mint: &'a Box<Account<'info, Mint>>,
-    pub dawn_mint: &'a Box<Account<'info, Mint>>,
+    pub usdc_mint: &'a Account<'info, Mint>,
+    pub dawn_mint: &'a Account<'info, Mint>,
     pub raydium: &'a Program<'info, RaydiumCpSwap>,
-    pub raydium_usdc_vault: &'a Box<Account<'info, TokenAccount>>,
-    pub raydium_dawn_vault: &'a Box<Account<'info, TokenAccount>>,
-    pub user_usdc_account: &'a Box<Account<'info, TokenAccount>>,
-    pub user_dawn_account: &'a Box<Account<'info, TokenAccount>>,
-    pub fee_pool_dawn_account: &'a Box<Account<'info, TokenAccount>>,
-    pub escrow_usdc_vault: &'a Box<Account<'info, TokenAccount>>,
-    pub escrow_dawn_vault: &'a Box<Account<'info, TokenAccount>>,
+    pub raydium_usdc_vault: &'a Account<'info, TokenAccount>,
+    pub raydium_dawn_vault: &'a Account<'info, TokenAccount>,
+    pub user_usdc_account: &'a Account<'info, TokenAccount>,
+    pub user_dawn_account: &'a Account<'info, TokenAccount>,
+    pub fee_pool_dawn_account: &'a Account<'info, TokenAccount>,
+    pub escrow_usdc_vault: &'a Account<'info, TokenAccount>,
+    pub escrow_dawn_vault: &'a Account<'info, TokenAccount>,
     pub token_program: &'a Program<'info, Token>,
 }
 
@@ -140,9 +140,9 @@ pub(super) fn process_payment(
     // Calculate swap amounts in USDC
     let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);
     let (usdc_amount_in, minimum_dawn_amount_out, price) = swap_amounts(
-        &accounts.raydium_pool,
-        &accounts.raydium_usdc_vault,
-        &accounts.raydium_dawn_vault,
+        accounts.raydium_pool,
+        accounts.raydium_usdc_vault,
+        accounts.raydium_dawn_vault,
         is_usdc_base,
         usdc_to_swap,
     )?;

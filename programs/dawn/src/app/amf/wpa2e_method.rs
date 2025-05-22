@@ -23,7 +23,7 @@ impl AuthMethodFramework for WPA2EnterpriseMethod {
 
     fn generate_params(&self) -> Result<Self::Params> {
         // Generate WPA2 parameters
-        Ok(self.params.clone())
+        Ok(self.params)
     }
 
     fn validate(&self) -> Result<()> {

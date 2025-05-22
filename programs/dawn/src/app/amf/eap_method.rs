@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types, dead_code)]
+
 use anchor_lang::prelude::*;
 
 use crate::error::DawnError;
@@ -54,6 +56,7 @@ pub struct EAPMethodParams {
     pub _reserved: [u8; 64],
 }
 
+#[allow(dead_code)]
 impl EAPMethodParams {
     /// Creates default EAP parameters with secure defaults
     pub fn default() -> Self {
@@ -125,6 +128,7 @@ pub struct EAPMethod {
     pub params: EAPMethodParams,
 }
 
+#[allow(dead_code)]
 impl EAPMethod {
     /// Creates a new EAP method with default parameters
     pub fn new() -> Self {
@@ -161,7 +165,7 @@ impl AuthMethodFramework for EAPMethod {
     fn generate_params(&self) -> Result<Self::Params> {
         // Validate parameters before returning
         self.params.validate()?;
-        Ok(self.params.clone())
+        Ok(self.params)
     }
 
     fn validate(&self) -> Result<()> {
@@ -179,13 +183,8 @@ impl AuthMethodFramework for EAPMethod {
         let ca_bytes = self.params.certificate_authority.as_ref();
         let radius_bytes = self.params.radius_server.as_ref();
 
-        for i in 0..16 {
-            verification_data[32 + i] = ca_bytes[i];
-        }
-
-        for i in 0..16 {
-            verification_data[48 + i] = radius_bytes[i];
-        }
+        verification_data[32..(16 + 32)].copy_from_slice(&ca_bytes[..16]);
+        verification_data[48..(16 + 48)].copy_from_slice(&radius_bytes[..16]);
 
         Ok(verification_data)
     }

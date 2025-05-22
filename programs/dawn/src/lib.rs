@@ -174,7 +174,7 @@ pub mod dawn {
         DawnApp::subscribe(ctx)
     }
 
-    pub fn extend_subscription<'info>(ctx: Context<ExtendSubscription>) -> Result<()> {
+    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
         DawnApp::extend_subscription(ctx)
     }
 

@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+
+#[allow(clippy::module_inception)]
 mod amf;
 mod auth_method;
 mod connection;

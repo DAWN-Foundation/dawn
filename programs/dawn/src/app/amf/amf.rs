@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 /// The core trait that all authentication methods must implement
+#[allow(dead_code)]
 pub trait AuthMethodFramework {
     /// Required authentication parameters for this method
     type Params: AnchorSerialize + AnchorDeserialize + Clone + Copy;
