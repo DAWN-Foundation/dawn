@@ -7,9 +7,9 @@ use super::AuthMethodFramework;
 /// EAP Type constants for 802.1x authentication
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EAPType {
-    EAP_TLS = 0,      // Certificate-based
+    EAP_TLS = 0,       // Certificate-based
     PEAP_MSCHAPV2 = 1, // Password-based
-    EAP_TTLS = 2,     // Tunneled TLS
+    EAP_TTLS = 2,      // Tunneled TLS
 }
 
 /// Cipher Suite constants for TLS encryption
@@ -62,9 +62,9 @@ impl EAPMethodParams {
             cipher_suite: CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 as u8,
             eap_type: EAPType::EAP_TLS as u8,
             radius_server: Pubkey::default(),
-            max_fragment_size: 1400, // Reasonable size for Ethernet frames
-            session_timeout: 3600,   // 1 hour in seconds
-            identity_privacy: true,  // Use anonymous identity for privacy
+            max_fragment_size: 1400,    // Reasonable size for Ethernet frames
+            session_timeout: 3600,      // 1 hour in seconds
+            identity_privacy: true,     // Use anonymous identity for privacy
             validate_server_cert: true, // Validate server certificate for security
             _reserved: [0; 64],
         }
@@ -139,10 +139,7 @@ impl EAPMethod {
     }
 
     /// Creates a new EAP method with secure defaults for production use
-    pub fn secure(
-        certificate_authority: Pubkey,
-        radius_server: Pubkey,
-    ) -> Self {
+    pub fn secure(certificate_authority: Pubkey, radius_server: Pubkey) -> Self {
         Self {
             params: EAPMethodParams::new(
                 certificate_authority,
