@@ -81,7 +81,7 @@ jobs:
       # ANCHOR
       - name: Install Anchor CLI
         if: steps.anchor-cache.outputs.cache-hit != 'true'
-        run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
+        run: cargo +nightly-2024-02-04 install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
 
       # GENERATE KEY
       - name: Generate new keygen
