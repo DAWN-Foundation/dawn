@@ -18,18 +18,17 @@ jobs:
         uses: actions/cache@v4
         id: rust-cache
         with:
-          key: ${{ runner.os }}-rust-1.82.0
+          key: ${{ runner.os }}-rust-nightly-2024-02-04
           path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.rustup
+            ~/.cargo
 
       # RUST
       - name: Install Rust toolchain
         if: steps.rust-cache.outputs.cache-hit != 'true'
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.82.0
+          toolchain: nightly-2024-02-04
           components: clippy, rustfmt
 
       - name: Install build essentials
