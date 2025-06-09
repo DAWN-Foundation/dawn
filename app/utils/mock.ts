@@ -44,6 +44,7 @@ import {
   getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getLocalDomainPda,
   getMedallionDawnAccountPda,
   getOrganizationPda,
   getPlanPda,
@@ -326,6 +327,7 @@ export async function setup(
   const deviceModel = 'GG69420'
   const deviceName = 'DefaultDevice'
   const deviceMacAddress: MacAddress = [0, 0, 0, 0, 0, 0]
+  const localDomain = 'local-domain'
 
   const deviceModelPda = getDeviceModelPda(
     program,
@@ -354,6 +356,7 @@ export async function setup(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
 
   // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 0]
@@ -487,6 +490,7 @@ export async function setup(
     deviceModelPda,
     organizationPda,
     accessDomainPda,
+    localDomainPda,
     sitePda,
     devicePda,
     ipLeasePda,
@@ -515,6 +519,7 @@ export async function setup(
     devicePlacement,
     deviceHeight,
     deviceMacAddress,
+    localDomain,
     // service agreement
     slaThreshold,
     slaPayoutRatio,

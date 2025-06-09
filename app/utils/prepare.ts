@@ -35,6 +35,7 @@ import {
   getFeePoolDawnAccountPda,
   getIpLeasePda,
   getIpPoolPda,
+  getLocalDomainPda,
   getMedallionDawnAccountPda,
   getOrganizationPda,
   getPlanPda,
@@ -269,6 +270,7 @@ export async function prepare(
   const deviceLongitude = new BN(0.000001 * COORD_DENOMINATOR)
   const devicePlacement: [number, number] = [0, 0]
   const deviceHeight = 1
+  const localDomain = 'local-domain'
 
   const deviceModelPda = getDeviceModelPda(
     program,
@@ -292,6 +294,7 @@ export async function prepare(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
   const leaseIpV4CidrMask = 32
@@ -404,6 +407,7 @@ export async function prepare(
     deviceModelPda,
     organizationPda,
     accessDomainPda,
+    localDomainPda,
     sitePda,
     devicePda,
     ipLeasePda,
@@ -432,6 +436,7 @@ export async function prepare(
     devicePlacement,
     deviceHeight,
     deviceMacAddress,
+    localDomain,
     // service agreement
     slaThreshold,
     slaPayoutRatio,

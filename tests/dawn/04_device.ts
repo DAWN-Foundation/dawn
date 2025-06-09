@@ -18,6 +18,7 @@ import {
   getDeviceModelPda,
   DeviceType,
   getOrganizationPda,
+  getLocalDomainPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -82,6 +83,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -89,6 +91,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -116,6 +119,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -123,6 +127,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -148,6 +153,7 @@ export const deviceTests = () =>
             longitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -155,6 +161,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -188,6 +195,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -195,6 +203,7 @@ export const deviceTests = () =>
             device: devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -231,6 +240,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -238,6 +248,7 @@ export const deviceTests = () =>
             device: devicePda,
             organization: mock.organizationPda,
             accessDomain: accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: deviceLocationPda,
             site: null,
           })
@@ -274,6 +285,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -281,6 +293,7 @@ export const deviceTests = () =>
             device: devicePda,
             organization: mock.organizationPda,
             accessDomain: accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: deviceLocationPda,
             site: null,
           })
@@ -306,6 +319,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             placement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -313,6 +327,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -338,6 +353,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             placement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -345,6 +361,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -370,6 +387,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             placement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -377,6 +395,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -402,6 +421,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             placement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -409,6 +429,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -432,6 +453,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -439,6 +461,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: null,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -446,6 +469,8 @@ export const deviceTests = () =>
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
+        // console.log(error)
+        // expect(error).toBe("Access domain is required")
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Access domain is required')
@@ -461,6 +486,7 @@ export const deviceTests = () =>
           mock.deviceLongitude,
           mock.devicePlacement,
           mock.deviceMacAddress,
+          mock.localDomain,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -470,6 +496,7 @@ export const deviceTests = () =>
           accessDomain: mock.accessDomainPda,
           deviceLocation: mock.deviceLocationPda,
           site: null,
+          localDomain: mock.localDomainPda,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -619,6 +646,7 @@ export const deviceTests = () =>
             mock.deviceLongitude,
             mock.devicePlacement,
             mock.deviceMacAddress,
+            mock.localDomain,
           )
           .accounts({
             caller: mock.serviceProvider.publicKey,
@@ -626,6 +654,7 @@ export const deviceTests = () =>
             device: mock.devicePda,
             organization: mock.organizationPda,
             accessDomain: mock.accessDomainPda,
+            localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
             site: null,
           })
@@ -690,6 +719,7 @@ export const deviceTests = () =>
           longitude,
           mock.devicePlacement,
           mock.deviceMacAddress,
+          mock.localDomain,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -699,6 +729,7 @@ export const deviceTests = () =>
           accessDomain: null,
           deviceLocation: deviceLocationPda,
           site: null,
+          localDomain: mock.localDomainPda,
         })
         .signers([mock.serviceProvider])
         .rpc()
@@ -707,6 +738,158 @@ export const deviceTests = () =>
       expect(device.model.equals(deviceModelPda)).toBeTruthy()
 
       l2devicePda = devicePda
+    })
+
+    test('adds second L2 device to the same local domain', async () => {
+      const manufacturer = 'DAWN'
+      const model = 'WirelessRadio'
+      const deviceType = { wirelessRadio: {} } as DeviceType
+      const deviceName = 'WR2'
+
+      const deviceModelPda = getDeviceModelPda(
+        program,
+        deviceType,
+        manufacturer,
+        model,
+      )
+
+      // add device model
+      provider.wallet = wallet
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        deviceModelPda,
+        deviceName,
+        mock.deviceMacAddress,
+      )
+
+      const lattitude = new BN(25.195849 * COORD_DENOMINATOR)
+      const longitude = new BN(55.276457 * COORD_DENOMINATOR)
+
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+
+      await program.methods
+      .addDevice(
+        deviceName,
+        mock.deviceHeight,
+        lattitude,
+        longitude,
+        mock.devicePlacement,
+        mock.deviceMacAddress,
+        mock.localDomain,
+      )
+      .accounts({
+        caller: mock.serviceProvider.publicKey,
+        deviceModel: deviceModelPda,
+        device: devicePda,
+        organization: mock.organizationPda,
+        accessDomain: null,
+        deviceLocation: deviceLocationPda,
+        site: null,
+        localDomain: mock.localDomainPda,
+      })
+      .signers([mock.serviceProvider])
+        .rpc()
+
+      const device = await program.account.device.fetch(devicePda)
+      expect(device.localDomain.equals(mock.localDomainPda)).toBeTruthy()
+
+      const localDomain = await program.account.localDomain.fetch(mock.localDomainPda)
+      expect(localDomain.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(Buffer.from(localDomain.name).toString('utf8').split('\0')[0]).toBe(mock.localDomain)
+    })
+
+    test('cannot add device with local domain name too long', async () => {
+      const deviceName = 'WR3'
+      const localDomainName = 'a'.repeat(33)
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        deviceName,
+        mock.deviceMacAddress,
+      )
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, localDomainName)
+
+      try {
+        await program.methods
+          .addDevice(
+            deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.devicePlacement,
+            mock.deviceMacAddress,
+            localDomainName,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            organization: mock.organizationPda,
+            accessDomain: accessDomainPda,
+            localDomain: localDomainPda,
+            deviceLocation: deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Local domain name is too long')
+      }
+    })
+
+    test('cannot add device with local domain name empty', async () => {
+      const localDomainName = ''
+      const deviceName = 'WR3'
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        deviceName,
+        mock.deviceMacAddress,
+      )
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, localDomainName)
+
+      try {
+        await program.methods
+          .addDevice(
+            deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.devicePlacement,
+            mock.deviceMacAddress,
+            localDomainName,
+          )
+          .accounts({
+            caller: mock.serviceProvider.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            organization: mock.organizationPda,
+            accessDomain: accessDomainPda,
+            localDomain: localDomainPda,
+            deviceLocation: deviceLocationPda,
+            site: null,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        expect(false).toBeTruthy()
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe('Local domain name is empty')
+      }
     })
   })
 
@@ -750,6 +933,7 @@ export const deviceSiteTests = () =>
       )
       const accessDomainPda = getAccessDomainPda(program2, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program2, devicePda)
+      const localDomainPda = getLocalDomainPda(program2, wallet.publicKey, mock.localDomain)
 
       // add device
       await program2.methods
@@ -760,6 +944,7 @@ export const deviceSiteTests = () =>
           mock.deviceLongitude,
           mock.devicePlacement,
           mock.deviceMacAddress,
+          mock.localDomain,
         )
         .accounts({
           caller: wallet.publicKey,
@@ -767,6 +952,7 @@ export const deviceSiteTests = () =>
           device: devicePda,
           organization: organizationPda,
           accessDomain: accessDomainPda,
+          localDomain: localDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
         })
@@ -844,6 +1030,7 @@ export const deviceSiteTests = () =>
           mock.deviceLongitude,
           mock.devicePlacement,
           macAddress,
+          mock.localDomain,
         )
         .accounts({
           caller: mock.serviceProvider.publicKey,
@@ -851,6 +1038,7 @@ export const deviceSiteTests = () =>
           device: devicePda,
           organization: mock.organizationPda,
           accessDomain: accessDomainPda,
+          localDomain: mock.localDomainPda,
           deviceLocation: deviceLocationPda,
           site: mock.sitePda,
         })

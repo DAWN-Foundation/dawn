@@ -130,4 +130,11 @@ pub enum DawnError {
 
     #[msg("Invalid session timeout")]
     InvalidSessionTimeout,
+
+    // LOCAL DOMAIN
+    #[msg("Local domain name is too long")]
+    LocalDomainNameTooLong,
+
+    #[msg("Local domain name is empty")]
+    EmptyLocalDomainName,
 }

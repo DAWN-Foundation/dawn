@@ -102,6 +102,7 @@ export function getMock(): Mock {
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     organizationPda: new PublicKey(mock.organizationPda),
     accessDomainPda: new PublicKey(mock.accessDomainPda),
+    localDomainPda: new PublicKey(mock.localDomainPda),
     sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     ipLeasePda: new PublicKey(mock.ipLeasePda),
@@ -130,6 +131,7 @@ export function getMock(): Mock {
     devicePlacement: mock.devicePlacement,
     deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
+    localDomain: mock.localDomain,
     // service agreement
     slaThreshold: new BN(mock.slaThreshold),
     slaPayoutRatio: new BN(mock.slaPayoutRatio),
@@ -306,6 +308,7 @@ export class DeviceGenerator {
         height: getRandomInt(1, 20),
         name: deviceNames[getRandomInt(0, deviceNames.length - 1)],
         placement: [getRandomInt(0, 36000), getRandomInt(-9000, 9000)],
+        localDomain: 'local-domain',
       }
 
       devices.push(device)

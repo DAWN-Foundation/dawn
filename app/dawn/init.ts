@@ -18,6 +18,7 @@ import {
   getDevicePda,
   getIpLeasePda,
   getIpPoolPda,
+  getLocalDomainPda,
   getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
@@ -137,7 +138,8 @@ async function main() {
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-
+      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, device.localDomain)
+      
       try {
         // Add device
         const deviceItx = await program.methods
@@ -148,6 +150,7 @@ async function main() {
             longitude,
             device.placement,
             Array.from(Buffer.from(device.mac)),
+            device.localDomain,
           )
           .accounts({
             caller: wallet.publicKey,
@@ -156,6 +159,7 @@ async function main() {
             organization: organizationPda,
             deviceModel: deviceModelPda,
             deviceLocation: deviceLocationPda,
+            localDomain: localDomainPda,
             site: null,
           })
           .signers([wallet.payer])

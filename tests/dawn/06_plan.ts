@@ -19,6 +19,7 @@ import {
   getAccessDomainPda,
   AuthMethodType,
   getOrganizationPda,
+  getLocalDomainPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { l2devicePda } from './04_device'
@@ -850,6 +851,7 @@ export const parentPlanTests = () =>
     let organizationPda: PublicKey
     let accessDomainPda: PublicKey
     let deviceLocationPda: PublicKey
+    let localDomainPda: PublicKey
 
     beforeAll(async () => {
       provider = await getProvider()
@@ -890,6 +892,7 @@ export const parentPlanTests = () =>
       )
       accessDomainPda = getAccessDomainPda(program, devicePda)
       deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
 
       await program.methods
         .addDevice(
@@ -899,6 +902,7 @@ export const parentPlanTests = () =>
           mock.deviceLongitude,
           mock.devicePlacement,
           [0, 0, 0, 0, 0, 1],
+          mock.localDomain,
         )
         .accounts({
           caller: mock.customer.publicKey,
@@ -907,6 +911,7 @@ export const parentPlanTests = () =>
           organization: organizationPda,
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
           site: null,
         })
         .signers([mock.customer])

@@ -7,6 +7,7 @@ import {
   getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
+  getLocalDomainPda,
   getPlanPda,
 } from '../utils'
 
@@ -73,6 +74,7 @@ async function main() {
     )
     const accessDomainPda = getAccessDomainPda(program, devicePda)
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+    const localDomainPda = getLocalDomainPda(program, wallet.publicKey, device.localDomain)
 
     try {
       // Add device
@@ -84,12 +86,14 @@ async function main() {
           longitude,
           device.placement,
           Array.from(Buffer.from(device.mac)),
+          device.localDomain,
         )
         .accounts({
           caller: wallet.publicKey,
           device: devicePda,
           deviceModel: mock.deviceModelPda,
           deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
           site: null,
         })
         .signers([wallet.payer])

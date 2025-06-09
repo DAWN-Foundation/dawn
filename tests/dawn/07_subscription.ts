@@ -25,6 +25,7 @@ import {
   getAccessDomainPda,
   getDeviceLocationPda,
   getOrganizationPda,
+  getLocalDomainPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -621,6 +622,7 @@ export const subscriptionTests = () =>
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, mock.localDomain)
 
       await program2.methods
         .addDevice(
@@ -630,6 +632,7 @@ export const subscriptionTests = () =>
           mock.deviceLongitude,
           mock.devicePlacement,
           macAddress,
+          mock.localDomain,
         )
         .accounts({
           caller: wallet.publicKey,
@@ -639,6 +642,7 @@ export const subscriptionTests = () =>
           accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
+          localDomain: localDomainPda,
         })
         .signers([wallet.payer])
         .rpc()
