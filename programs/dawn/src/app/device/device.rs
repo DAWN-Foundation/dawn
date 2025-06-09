@@ -7,7 +7,10 @@ use crate::{
     DawnApp, DawnError, DeviceAdded,
 };
 
-use super::{AccessDomain, DeviceLocation, DeviceModel, LocalDomain, Organization, Site, DEVICE_LOCATION_SIZE};
+use super::{
+    AccessDomain, DeviceLocation, DeviceModel, LocalDomain, Organization, Site,
+    DEVICE_LOCATION_SIZE,
+};
 
 const END_USER_ORG_NAME: &str = "end_user_organization";
 
@@ -193,8 +196,14 @@ impl DawnApp {
         require!(name.len() <= 32, DawnError::DeviceNameTooLong,);
 
         // Make sure the local domain name is not empty or too long
-        require!(!local_domain_name.is_empty(), DawnError::EmptyLocalDomainName);
-        require!(local_domain_name.len() <= 32, DawnError::LocalDomainNameTooLong);
+        require!(
+            !local_domain_name.is_empty(),
+            DawnError::EmptyLocalDomainName
+        );
+        require!(
+            local_domain_name.len() <= 32,
+            DawnError::LocalDomainNameTooLong
+        );
 
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
@@ -223,7 +232,7 @@ impl DawnApp {
             local_domain.created_at = Clock::get()?.unix_timestamp;
             local_domain.owner = caller;
             local_domain.bump = ctx.bumps.local_domain;
-            
+
             // Convert domain name to fixed-size byte array
             let domain_bytes = local_domain_name.as_bytes();
             let mut name_bytes = [0u8; 32];
