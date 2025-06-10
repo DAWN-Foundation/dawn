@@ -7,6 +7,7 @@ import {
   getAccessDomainPda,
   getDeviceLocationPda,
   getDevicePda,
+  getLocalDomainPda,
   getOrganizationPda,
   MacAddress,
   OrganizationType,
@@ -28,6 +29,7 @@ async function main() {
   const name = getFlag('--name') || mock.deviceName
   const placementFlag = getFlag('--placement')
   const macAddressFlag = getFlag('--mac-address')
+  const localDomainName = getFlag('--local-domain')
 
   const placement = placementFlag
     ? placementFlag.split(',').map(Number)
@@ -70,14 +72,16 @@ async function main() {
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+  const localDomainPda = getLocalDomainPda(program, wallet.payer.publicKey, mock.localDomain)
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ organizationPda: organizationPda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })
+  console.log({ localDomainPda: localDomainPda.toBase58() })
   console.log({ deviceModelPda: deviceModel.toBase58() })
 
   const itx = await program.methods
-    .addDevice(name, height, latitude, longitude, placement, macAddress)
+    .addDevice(name, height, latitude, longitude, placement, macAddress, localDomainName)
     .accounts({
       caller: wallet.payer.publicKey,
       device: devicePda,

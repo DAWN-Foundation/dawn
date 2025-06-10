@@ -110,6 +110,7 @@ pub mod dawn {
         longitude: i64,
         placement: [i32; 2],
         mac_address: [u8; 6],
+        local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_device(
             ctx,
@@ -119,6 +120,7 @@ pub mod dawn {
             longitude,
             placement,
             mac_address,
+            local_domain_name,
         )
     }
 

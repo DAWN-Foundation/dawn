@@ -3,11 +3,14 @@ use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use crate::{
-    app::{DeviceType, OrganizationType, ACCESS_DOMAIN_SIZE, ORGANIZATION_SIZE},
+    app::{DeviceType, OrganizationType, ACCESS_DOMAIN_SIZE, LOCAL_DOMAIN_SIZE, ORGANIZATION_SIZE},
     DawnApp, DawnError, DeviceAdded,
 };
 
-use super::{AccessDomain, DeviceLocation, DeviceModel, Organization, Site, DEVICE_LOCATION_SIZE};
+use super::{
+    AccessDomain, DeviceLocation, DeviceModel, LocalDomain, Organization, Site,
+    DEVICE_LOCATION_SIZE,
+};
 
 const END_USER_ORG_NAME: &str = "end_user_organization";
 
@@ -28,6 +31,8 @@ pub struct Device {
     pub infra_ip: Option<Pubkey>,
     /// Name of the device
     pub name: String,
+    /// Reference to the LocalDomain account
+    pub local_domain: Pubkey,
     /// MAC address
     pub mac_address: [u8; 6],
     /// PDA bump seed
@@ -42,6 +47,7 @@ pub const DEVICE_SIZE: usize = 8 // id
     + 32 // organization
     + (1 + 32) // optional + infra_ip
     + (4 + 32) // name
+    + 32 // local_domain
     + 6  // mac_address
     + 1; // bump
 
@@ -52,7 +58,8 @@ pub const DEVICE_SIZE: usize = 8 // id
     latitude: u64,
     longitude: u64,
     placement: [u32; 2],
-    mac_address: [u8; 6]
+    mac_address: [u8; 6],
+    local_domain_name: String,
 )]
 pub struct AddDevice<'info> {
     #[account(mut)]
@@ -68,7 +75,7 @@ pub struct AddDevice<'info> {
         ],
         bump = device_model.bump
     )]
-    pub device_model: Account<'info, DeviceModel>,
+    pub device_model: Box<Account<'info, DeviceModel>>,
 
     /// The device account
     #[account(
@@ -84,7 +91,7 @@ pub struct AddDevice<'info> {
         ],
         bump
     )]
-    pub device: Account<'info, Device>,
+    pub device: Box<Account<'info, Device>>,
 
     /// The device location account
     #[account(
@@ -97,7 +104,7 @@ pub struct AddDevice<'info> {
         ],
         bump
     )]
-    pub device_location: Account<'info, DeviceLocation>,
+    pub device_location: Box<Account<'info, DeviceLocation>>,
 
     /// The organization account
     #[account(
@@ -112,7 +119,7 @@ pub struct AddDevice<'info> {
         ],
         bump
     )]
-    pub organization: Account<'info, Organization>,
+    pub organization: Box<Account<'info, Organization>>,
 
     /// The access domain account
     #[account(
@@ -122,7 +129,7 @@ pub struct AddDevice<'info> {
         seeds = [b"access_domain", device.key().as_ref()],
         bump
     )]
-    pub access_domain: Option<Account<'info, AccessDomain>>,
+    pub access_domain: Option<Box<Account<'info, AccessDomain>>>,
 
     /// The site account
     #[account(
@@ -134,7 +141,21 @@ pub struct AddDevice<'info> {
         bump = site.bump,
         constraint = site.owner == caller.key(),
     )]
-    pub site: Option<Account<'info, Site>>,
+    pub site: Option<Box<Account<'info, Site>>>,
+
+    /// The local domain account
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = LOCAL_DOMAIN_SIZE,
+        seeds = [
+            b"local_domain",
+            caller.key().as_ref(),
+            &local_domain_name.trim().as_bytes()[..min(local_domain_name.trim().len(), MAX_SEED_LEN)]
+        ],
+        bump
+    )]
+    pub local_domain: Box<Account<'info, LocalDomain>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -148,6 +169,7 @@ impl DawnApp {
         longitude: i64,
         placement: [i32; 2],
         mac_address: [u8; 6],
+        local_domain_name: String,
     ) -> Result<()> {
         // Make sure the latitude, longitude and height are not eq 0
         require!(!latitude.eq(&0i64), DawnError::InvalidLatitude);
@@ -173,6 +195,16 @@ impl DawnApp {
         // Make sure the name is not too long
         require!(name.len() <= 32, DawnError::DeviceNameTooLong,);
 
+        // Make sure the local domain name is not empty or too long
+        require!(
+            !local_domain_name.is_empty(),
+            DawnError::EmptyLocalDomainName
+        );
+        require!(
+            local_domain_name.len() <= 32,
+            DawnError::LocalDomainNameTooLong
+        );
+
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
         let organization = &mut ctx.accounts.organization;
@@ -194,6 +226,21 @@ impl DawnApp {
             }
         }
 
+        // Initialize local_domain if not already created
+        if ctx.accounts.local_domain.created_at == 0 {
+            let local_domain = &mut ctx.accounts.local_domain;
+            local_domain.created_at = Clock::get()?.unix_timestamp;
+            local_domain.owner = caller;
+            local_domain.bump = ctx.bumps.local_domain;
+
+            // Convert domain name to fixed-size byte array
+            let domain_bytes = local_domain_name.as_bytes();
+            let mut name_bytes = [0u8; 32];
+            let copy_len = domain_bytes.len().min(32);
+            name_bytes[..copy_len].copy_from_slice(&domain_bytes[..copy_len]);
+            local_domain.name = name_bytes;
+        }
+
         let created_at = Clock::get()?.unix_timestamp;
         let site = ctx.accounts.site.as_ref().map(|site| site.key());
 
@@ -204,6 +251,7 @@ impl DawnApp {
         device.model = ctx.accounts.device_model.key();
         device.organization = organization.key();
         device.name.clone_from(&name);
+        device.local_domain = ctx.accounts.local_domain.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
 

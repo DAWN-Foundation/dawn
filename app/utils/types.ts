@@ -47,6 +47,7 @@ export interface Mock {
   deviceModelPda: PublicKey
   organizationPda: PublicKey
   accessDomainPda: PublicKey
+  localDomainPda: PublicKey
   sitePda: PublicKey
   devicePda: PublicKey
   ipLeasePda: PublicKey
@@ -75,6 +76,7 @@ export interface Mock {
   deviceLongitude: BN
   devicePlacement: [number, number]
   deviceHeight: number
+  localDomain: string
   // service agreement
   slaThreshold: BN
   slaPayoutRatio: BN
@@ -133,6 +135,7 @@ export interface RawMock {
   deviceModelPda: string
   organizationPda: string
   accessDomainPda: string
+  localDomainPda: string
   sitePda: string
   devicePda: string
   ipLeasePda: string
@@ -161,6 +164,7 @@ export interface RawMock {
   devicePlacement: [number, number]
   deviceHeight: number
   deviceMacAddress: MacAddress
+  localDomain: string
   // service agreement
   slaThreshold: string
   slaPayoutRatio: string
