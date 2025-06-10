@@ -18,7 +18,7 @@ jobs:
         uses: actions/cache@v4
         id: rust-cache
         with:
-          key: ${{ runner.os }}-rust-1.83.0
+          key: ${{ runner.os }}-rust-1.84.1
           path: |
             ~/.cargo/bin
             ~/.cargo/registry
@@ -29,7 +29,7 @@ jobs:
         if: steps.rust-cache.outputs.cache-hit != 'true'
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.83.0
+          toolchain: 1.84.1
           components: clippy, rustfmt
 
       - name: Install build essentials
