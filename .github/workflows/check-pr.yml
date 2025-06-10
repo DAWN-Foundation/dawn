@@ -76,12 +76,14 @@ jobs:
             ~/.cargo/bin
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-anchor-0.29.0
+          key: ${{ runner.os }}-anchor-0.29.0-v2
 
       # ANCHOR
       - name: Install Anchor CLI
         if: steps.anchor-cache.outputs.cache-hit != 'true'
-        run: cargo +nightly-2024-02-04 install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
+        run: |
+          rustup install nightly-2024-02-04
+          cargo +nightly-2024-02-04 install --git https://github.com/coral-xyz/anchor --tag v0.29.0 anchor-cli
 
       # GENERATE KEY
       - name: Generate new keygen
