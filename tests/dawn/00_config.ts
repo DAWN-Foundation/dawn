@@ -1,18 +1,17 @@
-import { expect, test, beforeAll } from '@jest/globals'
+import { test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { PublicKey, SendTransactionError } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   setup,
   mock,
   getProvider,
   createAccounts,
-  PROGRAM_ID,
   getConfigPda,
 } from '../../app/utils'
 
@@ -30,7 +29,7 @@ export const configTests = () =>
       provider.wallet = new Wallet(accounts.wallet)
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
       wallet = provider.wallet
 
       await setup(provider, accounts)
@@ -50,7 +49,7 @@ export const configTests = () =>
 
       const tx = await program.methods
         .configure(daoFee, mock.validatorFee, mock.medallionFee)
-        .accounts({
+        .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
@@ -103,7 +102,7 @@ export const configTests = () =>
 
       const tx = await program.methods
         .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
-        .accounts({
+        .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,

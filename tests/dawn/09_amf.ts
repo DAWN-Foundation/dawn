@@ -1,7 +1,7 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
 import { assert } from 'chai'
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   mock,
   getProvider,
@@ -50,9 +50,9 @@ export const amfTests = () =>
     beforeAll(async () => {
       provider = await getProvider()
       provider.wallet = wallet
-      anchor.setProvider(provider)
+      anchor.setProvider(provider as any)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
 
       // Generate client keypair for credential tests
       clientKeypair = anchor.web3.Keypair.generate()
@@ -109,7 +109,7 @@ export const amfTests = () =>
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           authMethod: authMethodPda,
@@ -188,7 +188,7 @@ export const amfTests = () =>
       try {
         await program.methods
           .registerCredential(clientKeypair.publicKey, credentialData)
-          .accounts({
+          .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
             credential: credentialPda,
@@ -230,7 +230,7 @@ export const amfTests = () =>
 
       const tx = await program.methods
         .registerCredential(clientKeypair.publicKey, credentialData)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
@@ -261,7 +261,7 @@ export const amfTests = () =>
       try {
         await program.methods
           .revokeCredential()
-          .accounts({
+          .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
             credential: credentialPda,
@@ -287,7 +287,7 @@ export const amfTests = () =>
       // Revoke the credential
       await program.methods
         .revokeCredential()
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
@@ -350,7 +350,7 @@ export const amfTests = () =>
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           authMethod: ipsecAuthMethodPda,
@@ -400,7 +400,7 @@ export const amfTests = () =>
           credentialDataA,
           credentialDataB
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,
@@ -450,7 +450,7 @@ export const amfTests = () =>
       // Revoke the connection
       await program.methods
         .revokeConnection()
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,

@@ -33,7 +33,7 @@ export const RAYDIUM_POOL_FEE_RECEIVER = new PublicKey(
 export function getRaydiumProgram(provider: BankrunProvider | AnchorProvider) {
   const idlPath = path.resolve('raydium/raydium_cp_swap.json')
   const idl = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
-  return new Program(idl as RaydiumCpSwap, RAYDIUM_PROGRAM_ID, provider)
+  return new Program(idl, provider)
 }
 
 export async function setupRaydium(

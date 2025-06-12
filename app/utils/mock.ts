@@ -203,7 +203,7 @@ export async function setup(
   console.log('Initializing DAWN token...')
   await program.methods
     .initToken()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint: dawnMint,
@@ -228,7 +228,7 @@ export async function setup(
   console.log('Initializing fee accounts...')
   await program.methods
     .initFeeAccounts()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint,

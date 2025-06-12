@@ -23,9 +23,9 @@ function getProgramId(): PublicKey {
 export const PROGRAM_ID = getProgramId()
 export const COORD_DENOMINATOR = 1e6
 
-export type DeviceType = anchor.IdlTypes<Dawn>['DeviceType']
-export type OrganizationType = anchor.IdlTypes<Dawn>['OrganizationType']
-export type AuthMethodType = anchor.IdlTypes<Dawn>['AuthMethodType']
+export type DeviceType = anchor.IdlTypes<Dawn>['deviceType']
+export type OrganizationType = anchor.IdlTypes<Dawn>['organizationType']
+export type AuthMethodType = anchor.IdlTypes<Dawn>['authMethodType']
 
 export type IpV4Bytes = [number, number, number, number]
 

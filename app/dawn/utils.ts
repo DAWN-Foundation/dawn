@@ -158,7 +158,7 @@ export function getDawnProgram(
   provider: BankrunProvider | AnchorProvider,
 ): Program<Dawn> {
   const idl = getIDL()
-  return new Program<Dawn>(idl as Dawn, PROGRAM_ID, provider)
+  return new Program(idl, provider)
 }
 
 export async function connect(): Promise<{

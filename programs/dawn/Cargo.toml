@@ -15,15 +15,15 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 devnet = []
 default = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = "=0.29.0"
-anchor-spl = "=0.29.0"
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
 raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", features = [
     "no-entrypoint",
     "cpi",
 ] }
-solana-program = ">=1.16, <1.18"
 spl-memo = "4.0.0"
 
 [build-dependencies]

@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
@@ -64,7 +64,7 @@ export const deviceTests = () =>
 
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
     })
 
     test('mock setup', () => {
@@ -85,7 +85,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: invalidModel.publicKey,
             device: mock.devicePda,
@@ -121,7 +121,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -155,7 +155,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -197,7 +197,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
@@ -242,7 +242,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
@@ -287,7 +287,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
@@ -321,7 +321,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -355,7 +355,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -389,7 +389,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -423,7 +423,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -455,7 +455,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -488,7 +488,7 @@ export const deviceTests = () =>
           mock.deviceMacAddress,
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: mock.devicePda,
@@ -507,7 +507,7 @@ export const deviceTests = () =>
       const event = await getEvent<DeviceAdded>(
         program,
         txDetails,
-        'DeviceAdded',
+        'deviceAdded',
       )
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
@@ -570,7 +570,7 @@ export const deviceTests = () =>
       try {
         await program.methods
           .verifyDeviceLocation()
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             config: mock.configPda,
             device: mock.devicePda,
@@ -596,11 +596,11 @@ export const deviceTests = () =>
       const wallet = loadWallet()
       provider.wallet = wallet
 
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      // const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
-      const tx = await program2.methods
+      const tx = await program.methods
         .verifyDeviceLocation()
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           device: mock.devicePda,
@@ -613,9 +613,9 @@ export const deviceTests = () =>
 
       // make sure event was emitted
       const event = await getEvent<DeviceLocationVerified>(
-        program2,
+        program,
         txDetails,
-        'DeviceLocationVerified',
+        'deviceLocationVerified',
       )
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
@@ -623,7 +623,7 @@ export const deviceTests = () =>
       expect(new BN(event.verifiedAt).gt(new BN(0))).toBeTruthy()
 
       // make sure device location was updated
-      const deviceLocation = await program2.account.deviceLocation.fetch(
+      const deviceLocation = await program.account.deviceLocation.fetch(
         mock.deviceLocationPda,
       )
       expect(deviceLocation.verified).toBeTruthy()
@@ -648,7 +648,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             mock.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: mock.devicePda,
@@ -687,10 +687,9 @@ export const deviceTests = () =>
 
       // add device model
       provider.wallet = wallet
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      await program2.methods
+      await program.methods
         .addDeviceModel(deviceType, manufacturer, model)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           deviceModel: deviceModelPda,
@@ -721,7 +720,7 @@ export const deviceTests = () =>
           mock.deviceMacAddress,
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           deviceModel: deviceModelPda,
           device: devicePda,
@@ -779,7 +778,7 @@ export const deviceTests = () =>
         mock.deviceMacAddress,
         mock.localDomain,
       )
-      .accounts({
+      .accountsPartial({
         caller: mock.serviceProvider.publicKey,
         deviceModel: deviceModelPda,
         device: devicePda,
@@ -826,7 +825,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             localDomainName,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
@@ -872,7 +871,7 @@ export const deviceTests = () =>
             mock.deviceMacAddress,
             localDomainName,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             deviceModel: mock.deviceModelPda,
             device: devicePda,
@@ -904,7 +903,7 @@ export const deviceSiteTests = () =>
 
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
     })
 
     test('mock setup', () => {
@@ -915,10 +914,8 @@ export const deviceSiteTests = () =>
       const wallet = loadWallet()
       provider.wallet = wallet
 
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-
       const devicePda = getDevicePda(
-        program2,
+        program,
         wallet.payer,
         mock.deviceModelPda,
         mock.deviceName,
@@ -926,17 +923,17 @@ export const deviceSiteTests = () =>
       )
 
       const organizationPda = getOrganizationPda(
-        program2,
+        program,
         wallet.publicKey,
         { endUser: {} },
         'end_user_organization',
       )
-      const accessDomainPda = getAccessDomainPda(program2, devicePda)
-      const deviceLocationPda = getDeviceLocationPda(program2, devicePda)
-      const localDomainPda = getLocalDomainPda(program2, wallet.publicKey, mock.localDomain)
+      const accessDomainPda = getAccessDomainPda(program, devicePda)
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, mock.localDomain)
 
       // add device
-      await program2.methods
+      await program.methods
         .addDevice(
           mock.deviceName,
           mock.deviceHeight,
@@ -946,7 +943,7 @@ export const deviceSiteTests = () =>
           mock.deviceMacAddress,
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
@@ -961,7 +958,7 @@ export const deviceSiteTests = () =>
 
       // cannot assign to the site owned by serviceProvider
       try {
-        await program2.methods
+        await program.methods
           .assignDeviceToSite()
           .accounts({
             caller: wallet.publicKey,
@@ -997,7 +994,7 @@ export const deviceSiteTests = () =>
       const event = await getEvent<DeviceAssignedToSite>(
         program,
         txDetails,
-        'DeviceAssignedToSite',
+        'deviceAssignedToSite',
       )
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
       expect(event.site.equals(mock.sitePda)).toBeTruthy()
@@ -1032,7 +1029,7 @@ export const deviceSiteTests = () =>
           macAddress,
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
@@ -1051,7 +1048,7 @@ export const deviceSiteTests = () =>
       const event = await getEvent<DeviceAdded>(
         program,
         txDetails,
-        'DeviceAdded',
+        'deviceAdded',
       )
       expect(event.device.equals(devicePda)).toBeTruthy()
       expect(event.site.equals(mock.sitePda)).toBeTruthy()

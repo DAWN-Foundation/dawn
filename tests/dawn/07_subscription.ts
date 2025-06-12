@@ -10,7 +10,7 @@ import {
 } from '@solana/spl-token'
 import { mintTo, createAssociatedTokenAccount } from 'spl-token-bankrun'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   getPlanPda,
@@ -76,7 +76,7 @@ export const subscriptionTests = () =>
       provider.wallet = new Wallet(mock.customer)
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
 
       // since raydiumn pool open time is 1 second in the future
       // set clock to 2 seconds in the future to allow swaps
@@ -180,7 +180,7 @@ export const subscriptionTests = () =>
       try {
         await program.methods
           .subscribe()
-          .accounts({
+          .accountsPartial({
             ...accounts,
             plan: planPda,
             subscription: badSubscriptionPda,
@@ -236,7 +236,7 @@ export const subscriptionTests = () =>
       try {
         await program.methods
           .subscribe()
-          .accounts({
+          .accountsPartial({
             ...accounts,
             plan: oneDayLaterPlanPda,
             subscription: subscriptionPda,
@@ -274,7 +274,7 @@ export const subscriptionTests = () =>
 
       const tx = await program.methods
         .subscribe()
-        .accounts({
+        .accountsPartial({
           ...accounts,
           plan: oneDayLaterPlanPda,
           subscription: subscriptionPda,
@@ -287,7 +287,7 @@ export const subscriptionTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
+      const event = await getEvent<Subscribed>(program, txDetails, 'subscribed')
       assert.ok(event.subscription.equals(subscriptionPda))
       assert.ok(event.subscriber.equals(mock.customer.publicKey))
       assert.ok(event.plan.equals(oneDayLaterPlanPda))
@@ -350,7 +350,7 @@ export const subscriptionTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
+      const event = await getEvent<Subscribed>(program, txDetails, 'subscribed')
       assert.ok(event.subscription.equals(mock.subscriptionPda))
       assert.ok(event.plan.equals(mock.planPda))
       assert.ok(event.subscriber.equals(mock.customer.publicKey))
@@ -487,7 +487,7 @@ export const subscriptionTests = () =>
       const event = await getEvent<SubscriptionExtended>(
         program,
         txDetails,
-        'SubscriptionExtended',
+        'subscriptionExtended',
       )
       assert.ok(event.subscription.equals(mock.subscriptionPda))
       assert.ok(event.plan.equals(mock.planPda))
@@ -603,7 +603,6 @@ export const subscriptionTests = () =>
       )
 
       provider.wallet = new Wallet(wallet.payer)
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
       // add device
       const macAddress = [1, 0, 1, 0, 1, 0] as MacAddress
@@ -624,7 +623,7 @@ export const subscriptionTests = () =>
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const localDomainPda = getLocalDomainPda(program, wallet.publicKey, mock.localDomain)
 
-      await program2.methods
+      await program.methods
         .addDevice(
           mock.deviceName,
           mock.deviceHeight,
@@ -634,7 +633,7 @@ export const subscriptionTests = () =>
           macAddress,
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
@@ -647,9 +646,9 @@ export const subscriptionTests = () =>
         .signers([wallet.payer])
         .rpc()
 
-      const tx = await program2.methods
+      const tx = await program.methods
         .subscribe()
-        .accounts({
+        .accountsPartial({
           ...accounts,
           caller: wallet.publicKey,
           device: devicePda,
@@ -665,7 +664,7 @@ export const subscriptionTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<Subscribed>(program, txDetails, 'Subscribed')
+      const event = await getEvent<Subscribed>(program, txDetails, 'subscribed')
       assert.ok(event.subscription.equals(subscriptionPda))
       assert.ok(event.plan.equals(mock.planPda))
       assert.ok(event.subscriber.equals(wallet.publicKey))

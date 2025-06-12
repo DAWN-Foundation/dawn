@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
@@ -36,7 +36,7 @@ export const serviceAgreementTests = () =>
 
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>;
     })
 
     test('mock setup', () => {
@@ -46,10 +46,9 @@ export const serviceAgreementTests = () =>
     test('cannot add service agreement as non-authority', async () => {
       try {
         provider.wallet = new Wallet(mock.serviceProvider)
-        const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-        await program2.methods
+        await program.methods
           .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             config: mock.configPda,
             serviceAgreement: mock.serviceAgreementPda,
@@ -70,7 +69,7 @@ export const serviceAgreementTests = () =>
       try {
         await program.methods
           .addServiceAgreement(mock.slaThreshold, new BN(0))
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             serviceAgreement: mock.serviceAgreementPda,
@@ -87,7 +86,7 @@ export const serviceAgreementTests = () =>
     test('adds the service agreement', async () => {
       const tx = await program.methods
         .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           serviceAgreement: mock.serviceAgreementPda,
@@ -101,7 +100,7 @@ export const serviceAgreementTests = () =>
       const event = await getEvent<ServiceAgreementAdded>(
         program,
         txDetails,
-        'ServiceAgreementAdded',
+        'serviceAgreementAdded',
       )
       expect(
         event.serviceAgreement.equals(mock.serviceAgreementPda),
