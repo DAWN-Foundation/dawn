@@ -64,7 +64,7 @@ export const deviceTests = () =>
 
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
@@ -769,34 +769,40 @@ export const deviceTests = () =>
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       await program.methods
-      .addDevice(
-        deviceName,
-        mock.deviceHeight,
-        lattitude,
-        longitude,
-        mock.devicePlacement,
-        mock.deviceMacAddress,
-        mock.localDomain,
-      )
-      .accountsPartial({
-        caller: mock.serviceProvider.publicKey,
-        deviceModel: deviceModelPda,
-        device: devicePda,
-        organization: mock.organizationPda,
-        accessDomain: null,
-        deviceLocation: deviceLocationPda,
-        site: null,
-        localDomain: mock.localDomainPda,
-      })
-      .signers([mock.serviceProvider])
+        .addDevice(
+          deviceName,
+          mock.deviceHeight,
+          lattitude,
+          longitude,
+          mock.devicePlacement,
+          mock.deviceMacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: deviceModelPda,
+          device: devicePda,
+          organization: mock.organizationPda,
+          accessDomain: null,
+          deviceLocation: deviceLocationPda,
+          site: null,
+          localDomain: mock.localDomainPda,
+        })
+        .signers([mock.serviceProvider])
         .rpc()
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.localDomain.equals(mock.localDomainPda)).toBeTruthy()
 
-      const localDomain = await program.account.localDomain.fetch(mock.localDomainPda)
-      expect(localDomain.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
-      expect(Buffer.from(localDomain.name).toString('utf8').split('\0')[0]).toBe(mock.localDomain)
+      const localDomain = await program.account.localDomain.fetch(
+        mock.localDomainPda,
+      )
+      expect(
+        localDomain.owner.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
+      expect(
+        Buffer.from(localDomain.name).toString('utf8').split('\0')[0],
+      ).toBe(mock.localDomain)
     })
 
     test('cannot add device with local domain name too long', async () => {
@@ -812,7 +818,11 @@ export const deviceTests = () =>
       )
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const accessDomainPda = getAccessDomainPda(program, devicePda)
-      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, localDomainName)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        localDomainName,
+      )
 
       try {
         await program.methods
@@ -858,7 +868,11 @@ export const deviceTests = () =>
       )
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const accessDomainPda = getAccessDomainPda(program, devicePda)
-      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, localDomainName)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        localDomainName,
+      )
 
       try {
         await program.methods
@@ -903,7 +917,7 @@ export const deviceSiteTests = () =>
 
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
@@ -930,7 +944,11 @@ export const deviceSiteTests = () =>
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        wallet.publicKey,
+        mock.localDomain,
+      )
 
       // add device
       await program.methods

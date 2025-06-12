@@ -477,9 +477,7 @@ export async function fetchIPsecAHConnection(
       entityB,
     )
 
-    const connection = await program.account.connection.fetch(
-      connectionPda,
-    )
+    const connection = await program.account.connection.fetch(connectionPda)
 
     // Deserialize credential data for both entities
     const entityACredential = deserializeIPsecAHCredential(

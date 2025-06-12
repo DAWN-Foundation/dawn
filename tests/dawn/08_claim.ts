@@ -52,7 +52,7 @@ export const claimTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const planAccount = await provider.context.banksClient.getAccount(
         mock.planPda,
@@ -223,9 +223,9 @@ export const claimTests = () =>
         .claim()
         .accounts(accounts)
         .signers([mock.serviceProvider])
-        .transaction();
+        .transaction()
 
-      provider.wallet = new Wallet(mock.serviceProvider);
+      provider.wallet = new Wallet(mock.serviceProvider)
 
       const txDetails = await confirmTx(provider, tx)
 

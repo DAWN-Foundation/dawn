@@ -36,7 +36,9 @@ async function main() {
     : mock.devicePlacement
 
   const macAddress = macAddressFlag
-    ? macAddressFlag.split(':').map(segment => parseInt(segment, 16)) as MacAddress
+    ? (macAddressFlag
+        .split(':')
+        .map((segment) => parseInt(segment, 16)) as MacAddress)
     : MAC_ADDRESS
 
   const longitude = longitudeFlag
@@ -72,7 +74,11 @@ async function main() {
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const localDomainPda = getLocalDomainPda(program, wallet.payer.publicKey, mock.localDomain)
+  const localDomainPda = getLocalDomainPda(
+    program,
+    wallet.payer.publicKey,
+    mock.localDomain,
+  )
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ organizationPda: organizationPda.toBase58() })
@@ -81,8 +87,16 @@ async function main() {
   console.log({ deviceModelPda: deviceModel.toBase58() })
 
   const itx = await program.methods
-    .addDevice(name, height, latitude, longitude, placement, macAddress, localDomainName)
-    .accounts({
+    .addDevice(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomainName,
+    )
+    .accountsPartial({
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,

@@ -1,7 +1,14 @@
 import { BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
-import { connect, DeviceGenerator, getFlag, getMock, planNames, submitTx } from './utils'
+import {
+  connect,
+  DeviceGenerator,
+  getFlag,
+  getMock,
+  planNames,
+  submitTx,
+} from './utils'
 import {
   COORD_DENOMINATOR,
   getAccessDomainPda,
@@ -14,8 +21,6 @@ import {
 // CONSTANTS
 const MANUFACTURER = 'MikroTik'
 const MODEL = 'GG69420'
-
-
 
 // Plan constants
 const MIN_PRICE = 50_000_000 // 50 USDC
@@ -74,7 +79,11 @@ async function main() {
     )
     const accessDomainPda = getAccessDomainPda(program, devicePda)
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-    const localDomainPda = getLocalDomainPda(program, wallet.publicKey, device.localDomain)
+    const localDomainPda = getLocalDomainPda(
+      program,
+      wallet.publicKey,
+      device.localDomain,
+    )
 
     try {
       // Add device
@@ -88,7 +97,7 @@ async function main() {
           Array.from(Buffer.from(device.mac)),
           device.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           device: devicePda,
           deviceModel: mock.deviceModelPda,

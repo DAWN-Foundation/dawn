@@ -356,7 +356,11 @@ export async function setup(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
+  const localDomainPda = getLocalDomainPda(
+    program,
+    serviceProvider.publicKey,
+    localDomain,
+  )
 
   // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 0]

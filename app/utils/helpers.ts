@@ -36,8 +36,8 @@ export interface GenerateDevice {
   coord: [number, number]
   mac: MacAddress
   height: number
-  placement: [number, number],
-  localDomain: string,
+  placement: [number, number]
+  localDomain: string
 }
 
 export type IpV6Bytes = number[]

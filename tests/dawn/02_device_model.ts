@@ -46,7 +46,7 @@ export const deviceModelTests = () =>
 
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
@@ -65,7 +65,7 @@ export const deviceModelTests = () =>
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
-            config: mock.configPda, 
+            config: mock.configPda,
             deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])

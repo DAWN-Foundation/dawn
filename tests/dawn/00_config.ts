@@ -29,7 +29,7 @@ export const configTests = () =>
       provider.wallet = new Wallet(accounts.wallet)
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
       wallet = provider.wallet
 
       await setup(provider, accounts)

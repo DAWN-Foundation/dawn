@@ -76,7 +76,7 @@ export const subscriptionTests = () =>
       provider.wallet = new Wallet(mock.customer)
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       // since raydiumn pool open time is 1 second in the future
       // set clock to 2 seconds in the future to allow swaps
@@ -621,7 +621,11 @@ export const subscriptionTests = () =>
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        wallet.publicKey,
+        mock.localDomain,
+      )
 
       await program.methods
         .addDevice(

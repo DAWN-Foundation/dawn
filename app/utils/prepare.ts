@@ -294,7 +294,11 @@ export async function prepare(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
+  const localDomainPda = getLocalDomainPda(
+    program,
+    serviceProvider.publicKey,
+    localDomain,
+  )
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
   const leaseIpV4CidrMask = 32

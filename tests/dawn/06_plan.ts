@@ -55,7 +55,7 @@ export const planTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const deviceAccount = await provider.context.banksClient.getAccount(
         mock.devicePda,
@@ -857,7 +857,7 @@ export const parentPlanTests = () =>
       provider.wallet = new Wallet(mock.customer)
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const planAccount = await provider.context.banksClient.getAccount(
         mock.planPda,
@@ -891,7 +891,11 @@ export const parentPlanTests = () =>
       )
       accessDomainPda = getAccessDomainPda(program, devicePda)
       deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
 
       await program.methods
         .addDevice(

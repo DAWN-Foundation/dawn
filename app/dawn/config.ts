@@ -10,7 +10,7 @@ async function main() {
 
   const itx = await program.methods
     .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
-    .accounts({
+    .accountsPartial({
       caller: wallet.payer.publicKey,
       tokenConfig: mock.tokenConfigPda,
       config: mock.configPda,

@@ -36,7 +36,7 @@ export const serviceAgreementTests = () =>
 
       anchor.setProvider(provider)
 
-      program = anchor.workspace.DAWN as Program<Dawn>;
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
