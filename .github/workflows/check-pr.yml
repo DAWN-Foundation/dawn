@@ -85,7 +85,7 @@ jobs:
       # ANCHOR
       - name: Install Anchor CLI
         if: steps.anchor-cache.outputs.cache-hit != 'true'
-        run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.31.1 anchor-cli
+        run: RUSTFLAGS="-A deprecated" cargo install --git https://github.com/coral-xyz/anchor --tag v0.31.1 anchor-cli
 
       # GENERATE KEY
       - name: Generate new keygen
