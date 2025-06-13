@@ -27,7 +27,7 @@ raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", featu
     "no-entrypoint",
     "cpi",
 ] }
-spl-memo = "4.0.0"
+spl-memo = "6.0.0"
 
 [build-dependencies]
 toml = "0.7"
