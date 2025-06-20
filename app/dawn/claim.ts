@@ -55,7 +55,7 @@ async function main() {
 
   const itx = await program.methods
     .claim()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       config: mock.configPda,
       plan: planPda,

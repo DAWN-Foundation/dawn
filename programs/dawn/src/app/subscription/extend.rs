@@ -1,10 +1,9 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
-use solana_program::clock::SECONDS_PER_DAY;
 
 use super::{Config, DawnApp, Plan, Subscription};
 use crate::{

@@ -1,5 +1,4 @@
-use anchor_lang::prelude::*;
-use solana_program::pubkey::MAX_SEED_LEN;
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 use crate::app::DawnApp;
 

@@ -1,9 +1,7 @@
 import fs from 'fs'
-import { Connection, Keypair } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey } from '@solana/web3.js'
 import { loadWallet, fund, setup, createAccounts, prepare } from './utils'
 import { AnchorProvider } from '@coral-xyz/anchor'
-
-const { PublicKey } = require('@solana/web3.js')
 
 async function main() {
   console.log(

@@ -72,7 +72,7 @@ async function main() {
 
     let itx = await program.methods
       .addDeviceModel({ router: {} }, manufacturer, model)
-      .accounts({
+      .accountsPartial({
         config: mock.configPda,
         caller: wallet.payer.publicKey,
         deviceModel: deviceModelPda,
@@ -92,7 +92,7 @@ async function main() {
       console.log('Add service agreement')
       const itx2 = await program.methods
         .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           serviceAgreement: mock.serviceAgreementPda,
@@ -138,8 +138,12 @@ async function main() {
       )
       const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const localDomainPda = getLocalDomainPda(program, wallet.publicKey, device.localDomain)
-      
+      const localDomainPda = getLocalDomainPda(
+        program,
+        wallet.publicKey,
+        device.localDomain,
+      )
+
       try {
         // Add device
         const deviceItx = await program.methods
@@ -152,7 +156,7 @@ async function main() {
             Array.from(Buffer.from(device.mac)),
             device.localDomain,
           )
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,

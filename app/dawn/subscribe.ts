@@ -66,7 +66,7 @@ async function main() {
 
   const itx = await program.methods
     .subscribe()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       config: mock.configPda,
       plan: planPda,

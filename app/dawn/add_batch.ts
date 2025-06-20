@@ -33,6 +33,7 @@ async function main() {
       _ip,
       macAddressRaw,
       name,
+      localDomain,
     ] = device
 
     const azimuth = parseInt(azimuthRaw)
@@ -53,6 +54,7 @@ async function main() {
       height,
       macAddress,
       name,
+      localDomain,
     })
 
     const devicePda = getDevicePda(
@@ -82,8 +84,16 @@ async function main() {
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     const itx = await program.methods
-      .addDevice(name, height, lattitude, longitude, placement, macAddress)
-      .accounts({
+      .addDevice(
+        name,
+        height,
+        lattitude,
+        longitude,
+        placement,
+        macAddress,
+        localDomain,
+      )
+      .accountsPartial({
         caller: wallet.payer.publicKey,
         device: devicePda,
         deviceModel,

@@ -20,7 +20,7 @@ import {
 import { RAYDIUM_POOL_FEE_RECEIVER } from '.'
 
 export async function createPool(
-  program: Program<RaydiumCpSwap>,
+  program: Program,
   wallet: Keypair,
   configPda: PublicKey,
   mint0: PublicKey,

@@ -1,5 +1,4 @@
-use anchor_lang::prelude::*;
-use solana_program::pubkey::MAX_SEED_LEN;
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
@@ -218,7 +217,7 @@ impl DawnApp {
                     access_domain.created_at = Clock::get()?.unix_timestamp;
                     access_domain.owner = caller;
                     access_domain.device = device.key();
-                    access_domain.bump = ctx.bumps.access_domain;
+                    access_domain.bump = ctx.bumps.access_domain.unwrap();
                 }
                 None => {
                     return Err(DawnError::AccessDomainRequired.into());

@@ -13,7 +13,7 @@ import {
 } from './pda'
 
 export async function deposit(
-  program: Program<RaydiumCpSwap>,
+  program: Program,
   wallet: Keypair,
   configPda: PublicKey,
   mint0: PublicKey,

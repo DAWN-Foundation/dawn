@@ -119,7 +119,7 @@ export async function prepare(
   console.log('Initializing DAWN token...')
   await program.methods
     .initToken()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint: dawnMint,
@@ -144,7 +144,7 @@ export async function prepare(
   console.log('Initializing fee accounts...')
   await program.methods
     .initFeeAccounts()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint,
@@ -294,7 +294,11 @@ export async function prepare(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
+  const localDomainPda = getLocalDomainPda(
+    program,
+    serviceProvider.publicKey,
+    localDomain,
+  )
 
   const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
   const leaseIpV4CidrMask = 32

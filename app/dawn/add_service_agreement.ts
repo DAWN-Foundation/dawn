@@ -20,7 +20,7 @@ async function main() {
   try {
     const itx = await program.methods
       .addServiceAgreement(threshold, payoutRatio)
-      .accounts({
+      .accountsPartial({
         caller: wallet.publicKey,
         config: mock.configPda,
         serviceAgreement: serviceAgreementPda,
