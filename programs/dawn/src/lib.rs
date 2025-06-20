@@ -1,5 +1,4 @@
 #![allow(clippy::too_many_arguments)]
-#![allow(deprecated)]
 
 use anchor_lang::prelude::*;
 
@@ -160,6 +159,7 @@ pub mod dawn {
         capacity: u64,
         start_at: Option<i64>,
         auth_methods: Vec<AuthMethodType>,
+        local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_plan(
             ctx,
@@ -170,6 +170,7 @@ pub mod dawn {
             capacity,
             start_at,
             auth_methods,
+            local_domain_name,
         )
     }
 
