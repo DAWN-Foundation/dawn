@@ -8,7 +8,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
@@ -52,7 +52,7 @@ export const claimTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const planAccount = await provider.context.banksClient.getAccount(
         mock.planPda,
@@ -147,7 +147,7 @@ export const claimTests = () =>
       try {
         await program.methods
           .claim()
-          .accounts({
+          .accountsPartial({
             ...accounts,
             plan: badPlanPda,
             subscription: badSubscriptionPda,
@@ -167,10 +167,9 @@ export const claimTests = () =>
 
     test('cannot claim from escrow of a plan that is not owned by the caller', async () => {
       provider.wallet = new Wallet(mock.customer)
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
       try {
-        await program2.methods
+        await program.methods
           .claim()
           .accounts({ ...accounts, caller: mock.customer.publicKey })
           .signers([mock.customer])
@@ -180,9 +179,6 @@ export const claimTests = () =>
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('A raw constraint was violated')
-      } finally {
-        provider.wallet = new Wallet(mock.serviceProvider)
-        program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       }
     })
 
@@ -229,10 +225,12 @@ export const claimTests = () =>
         .signers([mock.serviceProvider])
         .transaction()
 
+      provider.wallet = new Wallet(mock.serviceProvider)
+
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<Claimed>(program, txDetails, 'Claimed')
+      const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
       expect(event.swapPrice.gte(price)).toBeTruthy()
@@ -349,7 +347,7 @@ export const claimTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<Claimed>(program, txDetails, 'Claimed')
+      const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
       expect(event.swapPrice.gte(price)).toBeTruthy()

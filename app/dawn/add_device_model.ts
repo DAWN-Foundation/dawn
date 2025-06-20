@@ -29,7 +29,7 @@ async function main() {
 
   const itx = await program.methods
     .addDeviceModel(deviceType, manufacturer, model)
-    .accounts({
+    .accountsPartial({
       config: mock.configPda,
       caller: wallet.payer.publicKey,
       deviceModel: deviceModelPda,

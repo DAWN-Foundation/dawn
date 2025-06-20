@@ -203,7 +203,7 @@ export async function setup(
   console.log('Initializing DAWN token...')
   await program.methods
     .initToken()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint: dawnMint,
@@ -228,7 +228,7 @@ export async function setup(
   console.log('Initializing fee accounts...')
   await program.methods
     .initFeeAccounts()
-    .accounts({
+    .accountsPartial({
       caller: wallet.publicKey,
       tokenConfig: tokenConfigPda,
       dawnMint,
@@ -356,7 +356,11 @@ export async function setup(
   )
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const localDomainPda = getLocalDomainPda(program, serviceProvider.publicKey, localDomain)
+  const localDomainPda = getLocalDomainPda(
+    program,
+    serviceProvider.publicKey,
+    localDomain,
+  )
 
   // Pool IP V4
   const poolIpV4: IpV4Bytes = [11, 11, 11, 0]

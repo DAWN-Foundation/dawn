@@ -1,7 +1,7 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
 import { assert } from 'chai'
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   mock,
   getProvider,
@@ -50,13 +50,13 @@ export const amfTests = () =>
     beforeAll(async () => {
       provider = await getProvider()
       provider.wallet = wallet
-      anchor.setProvider(provider)
+      anchor.setProvider(provider as any)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       // Generate client keypair for credential tests
       clientKeypair = anchor.web3.Keypair.generate()
-      
+
       // Generate entity keypairs for IPsec connection tests
       entityAKeypair = anchor.web3.Keypair.generate()
       entityBKeypair = anchor.web3.Keypair.generate()
@@ -109,7 +109,7 @@ export const amfTests = () =>
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           authMethod: authMethodPda,
@@ -188,7 +188,7 @@ export const amfTests = () =>
       try {
         await program.methods
           .registerCredential(clientKeypair.publicKey, credentialData)
-          .accounts({
+          .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
             credential: credentialPda,
@@ -230,7 +230,7 @@ export const amfTests = () =>
 
       const tx = await program.methods
         .registerCredential(clientKeypair.publicKey, credentialData)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
@@ -261,7 +261,7 @@ export const amfTests = () =>
       try {
         await program.methods
           .revokeCredential()
-          .accounts({
+          .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
             credential: credentialPda,
@@ -287,7 +287,7 @@ export const amfTests = () =>
       // Revoke the credential
       await program.methods
         .revokeCredential()
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
@@ -305,7 +305,7 @@ export const amfTests = () =>
         console.log(error)
       }
     })
-    
+
     // IPsec Authentication Header Tests
     test('registers IPsec AH auth method', async () => {
       const authMethodType: AuthMethodType = { ipsecAh: {} }
@@ -350,7 +350,7 @@ export const amfTests = () =>
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           authMethod: ipsecAuthMethodPda,
@@ -359,28 +359,32 @@ export const amfTests = () =>
         .rpc()
 
       // make sure the account was created
-      const authMethod = await program.account.authMethod.fetch(ipsecAuthMethodPda)
+      const authMethod = await program.account.authMethod.fetch(
+        ipsecAuthMethodPda,
+      )
       expect(authMethod.methodType).toStrictEqual(authMethodType)
       expect(authMethod.parameters).toStrictEqual(paramsArray)
 
       return ipsecParams
     })
-    
+
     test('registers IPsec AH connection successfully', async () => {
       // Create credentials for both entities
       const entityACredential = generateIPsecAHCredential(
         'vpn-client-1',
         'psk-hash-1',
       )
-      
+
       const entityBCredential = generateIPsecAHCredential(
         'vpn-server-1',
         'psk-hash-2',
       )
-      
+
       // Serialize credentials
-      const serializedEntityACredential = serializeIPsecAHCredential(entityACredential)
-      const serializedEntityBCredential = serializeIPsecAHCredential(entityBCredential)
+      const serializedEntityACredential =
+        serializeIPsecAHCredential(entityACredential)
+      const serializedEntityBCredential =
+        serializeIPsecAHCredential(entityBCredential)
 
       // Convert to arrays for the API
       const credentialDataA = Array.from(serializedEntityACredential)
@@ -392,15 +396,15 @@ export const amfTests = () =>
         entityAKeypair.publicKey,
         entityBKeypair.publicKey,
       )
-      
+
       await program.methods
         .registerConnection(
           entityAKeypair.publicKey,
           entityBKeypair.publicKey,
           credentialDataA,
-          credentialDataB
+          credentialDataB,
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,
@@ -408,7 +412,7 @@ export const amfTests = () =>
         })
         .signers([wallet.payer])
         .rpc()
-        
+
       // Fetch and verify the connection was created correctly
       const connection = await program.account.connection.fetch(connectionPda)
       expect(connection.createdAt.toNumber()).toBeGreaterThan(0)
@@ -420,26 +424,42 @@ export const amfTests = () =>
 
       // Test credential deserialization
       const deserializedEntityACredential = deserializeIPsecAHCredential(
-        Buffer.from(connection.credentialDataA)
+        Buffer.from(connection.credentialDataA),
       )
       const deserializedEntityBCredential = deserializeIPsecAHCredential(
-        Buffer.from(connection.credentialDataB)
+        Buffer.from(connection.credentialDataB),
       )
 
       // Verify deserialized credentials match original
       expect(deserializedEntityACredential.keyId).toBe(entityACredential.keyId)
-      expect(deserializedEntityACredential.pskRef).toBe(entityACredential.pskRef)
-      expect(deserializedEntityACredential.preferredAlgorithm).toBe(entityACredential.preferredAlgorithm)
-      expect(deserializedEntityACredential.preferredWindowSize).toBe(entityACredential.preferredWindowSize)
-      expect(deserializedEntityACredential.useExtendedSequence).toBe(entityACredential.useExtendedSequence)
+      expect(deserializedEntityACredential.pskRef).toBe(
+        entityACredential.pskRef,
+      )
+      expect(deserializedEntityACredential.preferredAlgorithm).toBe(
+        entityACredential.preferredAlgorithm,
+      )
+      expect(deserializedEntityACredential.preferredWindowSize).toBe(
+        entityACredential.preferredWindowSize,
+      )
+      expect(deserializedEntityACredential.useExtendedSequence).toBe(
+        entityACredential.useExtendedSequence,
+      )
 
       expect(deserializedEntityBCredential.keyId).toBe(entityBCredential.keyId)
-      expect(deserializedEntityBCredential.pskRef).toBe(entityBCredential.pskRef)
-      expect(deserializedEntityBCredential.preferredAlgorithm).toBe(entityBCredential.preferredAlgorithm)
-      expect(deserializedEntityBCredential.preferredWindowSize).toBe(entityBCredential.preferredWindowSize)
-      expect(deserializedEntityBCredential.useExtendedSequence).toBe(entityBCredential.useExtendedSequence)
+      expect(deserializedEntityBCredential.pskRef).toBe(
+        entityBCredential.pskRef,
+      )
+      expect(deserializedEntityBCredential.preferredAlgorithm).toBe(
+        entityBCredential.preferredAlgorithm,
+      )
+      expect(deserializedEntityBCredential.preferredWindowSize).toBe(
+        entityBCredential.preferredWindowSize,
+      )
+      expect(deserializedEntityBCredential.useExtendedSequence).toBe(
+        entityBCredential.useExtendedSequence,
+      )
     })
-    
+
     test('revokes connection successfully', async () => {
       // Verify connection exists before revocation
       const connectionBefore = await program.account.connection.fetch(
@@ -450,7 +470,7 @@ export const amfTests = () =>
       // Revoke the connection
       await program.methods
         .revokeConnection()
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,

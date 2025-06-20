@@ -1,6 +1,5 @@
 use crate::app::{amf::AuthMethodType, Config, DawnApp};
-use anchor_lang::prelude::*;
-use solana_program::pubkey::MAX_SEED_LEN;
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 /// Account structure for authentication methods
 #[account]

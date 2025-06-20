@@ -1,10 +1,12 @@
-use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
+use anchor_lang::{
+    prelude::*,
+    solana_program::{clock::SECONDS_PER_DAY, pubkey::MAX_SEED_LEN},
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
-use solana_program::pubkey::MAX_SEED_LEN;
 use std::cmp::min;
 
 use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};

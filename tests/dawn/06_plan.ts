@@ -4,7 +4,7 @@ import { assert } from 'chai'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
@@ -55,7 +55,7 @@ export const planTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const deviceAccount = await provider.context.banksClient.getAccount(
         mock.devicePda,
@@ -100,7 +100,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -147,7 +147,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -194,7 +194,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -215,7 +215,6 @@ export const planTests = () =>
 
     test('cannot be added for a device not owned by the caller', async () => {
       provider.wallet = new Wallet(wallet.payer)
-      const program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
       try {
         await program.methods
@@ -228,7 +227,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -271,7 +270,7 @@ export const planTests = () =>
             null,
             authMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -307,7 +306,7 @@ export const planTests = () =>
             null,
             authMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -354,7 +353,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -401,7 +400,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -431,7 +430,7 @@ export const planTests = () =>
           null,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
@@ -446,7 +445,7 @@ export const planTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.device.equals(mock.devicePda))
       assert.ok(event.parentPlan === null)
@@ -492,7 +491,7 @@ export const planTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -542,7 +541,7 @@ export const planTests = () =>
           { wpa2Enterprise: {} },
           { ipsecAh: {} },
         ])
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
@@ -557,7 +556,7 @@ export const planTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       assert.ok(event.owner.equals(mock.serviceProvider.publicKey))
       assert.ok(event.device.equals(mock.devicePda))
       assert.ok(event.price.eq(price))
@@ -609,7 +608,7 @@ export const planTests = () =>
           null,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           accessDomain: null,
           device: l2devicePda,
@@ -623,7 +622,7 @@ export const planTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       expect(event.accessDomain).toBeNull()
 
       const plan = await program.account.plan.fetch(planPda)
@@ -660,7 +659,7 @@ export const planTests = () =>
             startAt,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -709,7 +708,7 @@ export const planTests = () =>
             startAt,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             accessDomain: mock.accessDomainPda,
             device: mock.devicePda,
@@ -760,7 +759,7 @@ export const planTests = () =>
           startAt,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
@@ -775,7 +774,7 @@ export const planTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       expect(event.startAt.eq(startAt)).toBeTruthy()
 
       // make sure account was created
@@ -815,7 +814,7 @@ export const planTests = () =>
           startAt,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           accessDomain: mock.accessDomainPda,
           device: mock.devicePda,
@@ -858,7 +857,7 @@ export const parentPlanTests = () =>
       provider.wallet = new Wallet(mock.customer)
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
 
       const planAccount = await provider.context.banksClient.getAccount(
         mock.planPda,
@@ -892,7 +891,11 @@ export const parentPlanTests = () =>
       )
       accessDomainPda = getAccessDomainPda(program, devicePda)
       deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
 
       await program.methods
         .addDevice(
@@ -904,7 +907,7 @@ export const parentPlanTests = () =>
           [0, 0, 0, 0, 0, 1],
           mock.localDomain,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
@@ -926,11 +929,11 @@ export const parentPlanTests = () =>
 
     test('cannot add plan that resells the parent plan if caller is not subscribed to parent plan', async () => {
       provider.wallet = new Wallet(mock.serviceProvider)
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      // const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
       // create new plan
       const speed = 240
       const [plan2Pda] = getPlanPda(
-        program2,
+        program,
         mock.accessDomainPda,
         mock.devicePda,
         null,
@@ -943,7 +946,7 @@ export const parentPlanTests = () =>
         mock.serviceAgreementPda,
       )
 
-      await program2.methods
+      await program.methods
         .addPlan(
           mock.planName,
           mock.planPrice,
@@ -953,7 +956,7 @@ export const parentPlanTests = () =>
           null,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           device: mock.devicePda,
           accessDomain: mock.accessDomainPda,
@@ -966,7 +969,6 @@ export const parentPlanTests = () =>
         .rpc()
 
       provider.wallet = new Wallet(mock.customer)
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
       const [resellPlanPda] = getPlanPda(
         program,
@@ -993,7 +995,7 @@ export const parentPlanTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.customer.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,
@@ -1043,7 +1045,7 @@ export const parentPlanTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.customer.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,
@@ -1090,7 +1092,7 @@ export const parentPlanTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.customer.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,
@@ -1137,7 +1139,7 @@ export const parentPlanTests = () =>
             null,
             mock.planAuthMethods,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.customer.publicKey,
             accessDomain: accessDomainPda,
             device: devicePda,
@@ -1183,7 +1185,7 @@ export const parentPlanTests = () =>
           null,
           mock.planAuthMethods,
         )
-        .accounts({
+        .accountsPartial({
           caller: mock.customer.publicKey,
           accessDomain: accessDomainPda,
           device: devicePda,
@@ -1198,7 +1200,7 @@ export const parentPlanTests = () =>
       const txDetails = await confirmTx(provider, addPlanTx)
 
       // make sure event was emitted
-      const event = await getEvent<PlanAdded>(program, txDetails, 'PlanAdded')
+      const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
       expect(event.accessDomain.equals(accessDomainPda)).toBeTruthy()
       expect(event.device.equals(devicePda)).toBeTruthy()

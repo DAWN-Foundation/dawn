@@ -6,20 +6,17 @@ import {
   SendTransactionError,
 } from '@solana/web3.js'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
   getProvider,
-  PROGRAM_ID,
   confirmTx,
   loadWallet,
   DeviceType,
-  deviceTypeSeed,
   getDeviceModelPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
-import { BanksClient } from 'solana-bankrun'
 import { BankrunProvider } from 'anchor-bankrun'
 
 /// Maximum length of a device model
@@ -49,7 +46,7 @@ export const deviceModelTests = () =>
 
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
@@ -58,16 +55,15 @@ export const deviceModelTests = () =>
 
     test('cannot add device model by non-authority', async () => {
       provider.wallet = new Wallet(mock.serviceProvider)
-      const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
 
       try {
-        await program2.methods
+        await program.methods
           .addDeviceModel(
             mock.deviceType,
             mock.deviceManufacturer,
             mock.deviceModel,
           )
-          .accounts({
+          .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             config: mock.configPda,
             deviceModel: mock.deviceModelPda,
@@ -107,7 +103,7 @@ export const deviceModelTests = () =>
             mock.deviceManufacturer,
             mock.deviceModel,
           )
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: deviceModelPda,
@@ -128,7 +124,7 @@ export const deviceModelTests = () =>
       try {
         await program.methods
           .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: mock.deviceModelPda,
@@ -156,7 +152,7 @@ export const deviceModelTests = () =>
       try {
         await program.methods
           .addDeviceModel(mock.deviceType, manufacturer, mock.deviceModel)
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: deviceModelPda,
@@ -184,7 +180,7 @@ export const deviceModelTests = () =>
       try {
         await program.methods
           .addDeviceModel(mock.deviceType, mock.deviceManufacturer, model)
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: deviceModelPda,
@@ -212,7 +208,7 @@ export const deviceModelTests = () =>
       try {
         await program.methods
           .addDeviceModel(mock.deviceType, manufacturer, mock.deviceModel)
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: deviceModelPda,
@@ -240,7 +236,7 @@ export const deviceModelTests = () =>
       try {
         await program.methods
           .addDeviceModel(mock.deviceType, mock.deviceManufacturer, model)
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: deviceModelPda,
@@ -262,7 +258,7 @@ export const deviceModelTests = () =>
           mock.deviceManufacturer,
           mock.deviceModel,
         )
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           deviceModel: mock.deviceModelPda,
@@ -283,7 +279,7 @@ export const deviceModelTests = () =>
       const event = await getEvent<DeviceModelAdded>(
         program,
         txDetails,
-        'DeviceModelAdded',
+        'deviceModelAdded',
       )
 
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
@@ -303,7 +299,7 @@ export const deviceModelTests = () =>
             mock.deviceManufacturer,
             mock.deviceModel,
           )
-          .accounts({
+          .accountsPartial({
             caller: wallet.publicKey,
             config: mock.configPda,
             deviceModel: mock.deviceModelPda,
@@ -335,7 +331,7 @@ export const deviceModelTests = () =>
 
       const tx = await program.methods
         .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
-        .accounts({
+        .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
           deviceModel: deviceModelPda,
@@ -349,7 +345,7 @@ export const deviceModelTests = () =>
       const event = await getEvent<DeviceModelAdded>(
         program,
         txDetails,
-        'DeviceModelAdded',
+        'deviceModelAdded',
       )
       expect(event.manufacturer).toBe(mock.deviceManufacturer)
       expect(event.model).toBe(mock.deviceModel)

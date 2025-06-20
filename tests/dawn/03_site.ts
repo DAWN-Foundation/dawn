@@ -2,7 +2,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 
-import { Dawn, IDL } from '../../target/types/dawn'
+import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
   mock,
@@ -34,7 +34,7 @@ export const siteTests = () =>
 
       anchor.setProvider(provider)
 
-      program = new Program<Dawn>(IDL, PROGRAM_ID, provider)
+      program = anchor.workspace.DAWN as Program<Dawn>
     })
 
     test('mock setup', () => {
@@ -76,7 +76,7 @@ export const siteTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<SiteAdded>(program, txDetails, 'SiteAdded')
+      const event = await getEvent<SiteAdded>(program, txDetails, 'siteAdded')
       expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.site.equals(mock.sitePda)).toBeTruthy()
       expect(event.name).toBe(mock.siteName)
