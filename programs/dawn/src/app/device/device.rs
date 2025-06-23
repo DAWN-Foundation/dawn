@@ -278,6 +278,7 @@ impl DawnApp {
             site,
             model: device.model,
             organization: organization.key(),
+            local_domain: device.local_domain,
             name,
             latitude,
             longitude,

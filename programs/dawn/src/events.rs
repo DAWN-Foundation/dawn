@@ -29,8 +29,7 @@ pub struct ServiceAgreementAdded {
 pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
-    pub access_domain: Option<Pubkey>,
-    pub device: Pubkey,
+    pub local_domain: Pubkey,
     pub parent_plan: Option<Pubkey>,
     pub name: String,
     pub price: u64,
@@ -95,6 +94,7 @@ pub struct DeviceAdded {
     pub site: Option<Pubkey>,
     pub model: Pubkey,
     pub organization: Pubkey,
+    pub local_domain: Pubkey,
     pub name: String,
     pub longitude: i64,
     pub latitude: i64,

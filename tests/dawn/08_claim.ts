@@ -126,8 +126,7 @@ export const claimTests = () =>
     test('cannot claim from escrow of a plan that doesnt exist', async () => {
       const [badPlanPda] = getPlanPda(
         program,
-        mock.accessDomainPda,
-        mock.devicePda,
+        mock.localDomainPda,
         null,
         mock.planName,
         mock.planPrice,

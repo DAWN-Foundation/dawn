@@ -2,8 +2,8 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    utils::optional_pubkey_seed, AccessDomain, AuthMethodType, DawnApp, DawnError, Device,
-    PlanAdded, Subscription,
+    utils::optional_pubkey_seed, AuthMethodType, DawnApp, DawnError, LocalDomain, PlanAdded,
+    Subscription,
 };
 
 use super::ServiceAgreement;
@@ -17,8 +17,8 @@ pub struct Plan {
     pub owner: Pubkey,
     /// Associated Access Domain
     pub access_domain: Option<Pubkey>,
-    /// Associated Device
-    pub device: Pubkey,
+    /// Associated Local Domain
+    pub local_domain: Pubkey,
     /// The parent plan (for resale)
     pub parent_plan: Option<Pubkey>,
     /// The plan name (arbitrary string up to 32 bytes)
@@ -46,7 +46,7 @@ const PLAN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
     + (1 + 32) // optional + access_domain
-    + 32 // device
+    + 32 // local_domain
     + (1 + 32) // optional + parent_plan
     + (4 + 32) // name
     + 8 // price
@@ -67,33 +67,11 @@ const PLAN_SIZE: usize = 8 // id
     capacity: u64,
     start_at: Option<i64>,
     auth_methods: Vec<AuthMethodType>,
+    local_domain_name: String,
 )]
 pub struct AddPlan<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
-
-    /// The device account (must be owned by the caller)
-    #[account(
-        mut,
-        constraint = device.owner == caller.key(),
-        seeds = [
-            b"device",
-            device.owner.as_ref(),
-            device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
-            &device.mac_address,
-        ],
-        bump = device.bump
-    )]
-    pub device: Account<'info, Device>,
-
-    /// The access domain account (only provided if device is a Router)
-    #[account(
-        mut,
-        seeds = [b"access_domain", device.key().as_ref()],
-        bump = access_domain.bump
-    )]
-    pub access_domain: Option<Account<'info, AccessDomain>>,
 
     /// The service agreement account
     #[account(
@@ -110,8 +88,7 @@ pub struct AddPlan<'info> {
     #[account(
         seeds = [
             b"plan",
-            &optional_pubkey_seed(parent_plan.access_domain),
-            parent_plan.device.as_ref(),
+            parent_plan.local_domain.as_ref(),
             &optional_pubkey_seed(parent_plan.parent_plan),
             &parent_plan.name.as_bytes()[..min(parent_plan.name.len(), MAX_SEED_LEN)],
             &parent_plan.price.to_le_bytes(),
@@ -132,8 +109,7 @@ pub struct AddPlan<'info> {
         space = PLAN_SIZE,
         seeds = [
             b"plan",
-            &optional_pubkey_seed(access_domain.as_ref().map(|a| a.key()))[..],
-            device.key().as_ref(),
+            local_domain.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|p| p.key())),
             &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
             &price.to_le_bytes(),
@@ -158,6 +134,17 @@ pub struct AddPlan<'info> {
     )]
     pub subscription: Option<Account<'info, Subscription>>,
 
+    /// The local domain account (derived from seeds)
+    #[account(
+        seeds = [
+            b"local_domain",
+            caller.key().as_ref(),
+            &local_domain_name.trim().as_bytes()[..min(local_domain_name.trim().len(), MAX_SEED_LEN)]
+        ],
+        bump = local_domain.bump
+    )]
+    pub local_domain: Account<'info, LocalDomain>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -172,7 +159,18 @@ impl DawnApp {
         capacity: u64,
         start_at: Option<i64>,
         auth_methods: Vec<AuthMethodType>,
+        local_domain_name: String,
     ) -> Result<()> {
+        // Make sure the local domain name is not empty or too long
+        require!(
+            !local_domain_name.is_empty(),
+            DawnError::EmptyLocalDomainName
+        );
+        require!(
+            local_domain_name.len() <= 32,
+            DawnError::LocalDomainNameTooLong
+        );
+
         // Make sure the plan name is not empty
         require!(!name.is_empty(), DawnError::EmptyPlanName);
 
@@ -236,8 +234,7 @@ impl DawnApp {
 
         plan.created_at = Clock::get()?.unix_timestamp;
         plan.owner = ctx.accounts.caller.key();
-        plan.access_domain = ctx.accounts.access_domain.as_ref().map(|a| a.key());
-        plan.device = ctx.accounts.device.key();
+        plan.local_domain = ctx.accounts.local_domain.key();
         plan.parent_plan = ctx.accounts.parent_plan.as_ref().map(|p| p.key());
         plan.name.clone_from(&name);
         plan.price = price;
@@ -252,8 +249,7 @@ impl DawnApp {
         emit!(PlanAdded {
             plan: plan.key(),
             owner: plan.owner,
-            access_domain: plan.access_domain,
-            device: plan.device,
+            local_domain: plan.local_domain,
             parent_plan: plan.parent_plan,
             name,
             price: plan.price,

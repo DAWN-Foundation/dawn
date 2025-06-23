@@ -420,8 +420,7 @@ export async function setup(
 
   const [planPda, planBump] = getPlanPda(
     program,
-    accessDomainPda,
-    devicePda,
+    localDomainPda,
     null,
     planName,
     planPrice,

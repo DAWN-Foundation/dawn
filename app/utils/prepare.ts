@@ -335,8 +335,7 @@ export async function prepare(
 
   const [planPda, planBump] = getPlanPda(
     program,
-    accessDomainPda,
-    devicePda,
+    localDomainPda,
     null,
     planName,
     planPrice,
