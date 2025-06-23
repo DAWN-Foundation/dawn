@@ -18,7 +18,7 @@ jobs:
         uses: actions/cache@v4
         id: rust-cache
         with:
-          key: ${{ runner.os }}-rust-1.87.0
+          key: ${{ runner.os }}-rust-1.87.0-clippy-rustfmt
           path: |
             ~/.cargo/bin
             ~/.cargo/registry

@@ -29,8 +29,7 @@ pub struct ExtendSubscription<'info> {
     #[account(
         seeds = [
             b"plan",
-            &optional_pubkey_seed(plan.access_domain),
-            plan.device.as_ref(),
+            &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
             &plan.price.to_le_bytes(),

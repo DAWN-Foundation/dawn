@@ -180,8 +180,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
-            accessDomainPda,
-            devicePda,
+            localDomainPda,
             null,
             planParams.name,
             planParams.price,
@@ -201,11 +200,11 @@ async function main() {
               planParams.capacity,
               null,
               mock.planAuthMethods,
+              device.localDomain
             )
             .accounts({
               caller: wallet.payer.publicKey,
-              accessDomain: accessDomainPda,
-              device: devicePda,
+              localDomain: localDomainPda,
               serviceAgreement: mock.serviceAgreementPda,
               plan: planPda,
               parentPlan: null,

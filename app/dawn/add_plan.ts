@@ -1,17 +1,13 @@
-import * as anchor from '@coral-xyz/anchor'
 import { BN } from '@coral-xyz/anchor'
-import { Connection, PublicKey } from '@solana/web3.js'
 
-import { Dawn } from '../../target/types/dawn'
-import { connect, getFlag, getIDL, getMock, getWallet, submitTx } from './utils'
-import { getAccessDomainPda, getPlanPda } from '../utils'
+import { connect, getFlag, getMock, submitTx } from './utils'
+import { getPlanPda, getLocalDomainPda } from '../utils'
 
 async function main() {
   const mock = getMock()
 
-  const device = getFlag('--device')
-  if (!device) throw new Error('--device is required')
-  const devicePda = new PublicKey(device)
+  const localDomain = getFlag('--local-domain')
+  if (!localDomain) throw new Error('--local-domain is required')
 
   const name = getFlag('--name') || mock.planName
   const price = new BN(getFlag('--price') || mock.planPrice)
@@ -22,12 +18,11 @@ async function main() {
   const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  const accessDomainPda = getAccessDomainPda(program, devicePda)
+  const localDomainPda = getLocalDomainPda(program, wallet.payer.publicKey, localDomain)
 
   const [planPda] = getPlanPda(
     program,
-    accessDomainPda,
-    devicePda,
+    localDomainPda,
     null,
     name,
     price,
@@ -41,11 +36,9 @@ async function main() {
   console.log({ planPda: planPda.toBase58() })
 
   const itx = await program.methods
-    .addPlan(name, price, duration, speed, capacity, null, mock.planAuthMethods)
+    .addPlan(name, price, duration, speed, capacity, null, mock.planAuthMethods, localDomain)
     .accounts({
       caller: wallet.payer.publicKey,
-      accessDomain: accessDomainPda,
-      device: devicePda,
       serviceAgreement: mock.serviceAgreementPda,
       plan: planPda,
       parentPlan: null,

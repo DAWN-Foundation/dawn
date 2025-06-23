@@ -1,18 +1,18 @@
 import { connect, getFlag } from './utils'
 
 async function main() {
-  const device = getFlag('--device')
+  const localDomain = getFlag('--localDomain')
 
   const { program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   let filters = []
-  if (device) {
+  if (localDomain) {
     filters = [
       {
         memcmp: {
-          offset: 8 + 8 + 32,
-          bytes: device,
+          offset: 8 + 8 + 32 + 33,
+          bytes: localDomain,
         },
       },
     ]
@@ -26,7 +26,7 @@ async function main() {
       account: {
         ...b.account,
         owner: b.account.owner.toBase58(),
-        device: b.account.device.toBase58(),
+        localDomain: b.account.localDomain.toBase58(),
         price: b.account.price.toString(),
         capacity: b.account.capacity.toString(),
         serviceAgreement: b.account.serviceAgreement.toBase58(),
