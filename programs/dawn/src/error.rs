@@ -148,21 +148,9 @@ pub enum DawnError {
     #[msg("Invalid rotation interval")]
     InvalidRotationInterval,
 
-    #[msg("Invalid maximum connections")]
-    InvalidMaxConnections,
-
-    #[msg("Invalid access level")]
-    InvalidAccessLevel,
-
-    #[msg("Invalid bandwidth limit")]
-    InvalidBandwidthLimit,
 
     #[msg("Invalid network identifier")]
     InvalidNetworkId,
-
-    #[msg("Invalid PSK hash")]
-    InvalidPSKHash,
-
     // IPSEC AUTH METHOD
     #[msg("Invalid IPsec algorithm")]
     InvalidIPsecAlgorithm,
