@@ -1,9 +1,8 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { PublicKey, SystemProgram, Connection } from "@solana/web3.js";
+import { Program } from "@coral-xyz/anchor";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Dawn } from "../../target/types/dawn";
-import { getConfigPda } from "../utils/pda";
 import { mock } from "../utils";
-import { createHash, randomBytes } from "crypto";
+import { createHash } from "crypto";
 
 /// PSK credential structure stored in the Credential account
 /// Format: [hash: 32 bytes][reserved: 96 bytes] = 128 bytes

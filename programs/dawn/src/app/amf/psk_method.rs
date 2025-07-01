@@ -111,70 +111,42 @@ impl PSKMethodParams {
 /// PSK credential structure stored in the Credential account
 /// Format: [salt: 32 bytes][hash: 32 bytes][client_metadata: 64 bytes]
 pub struct PSKCredentialData {
-    /// Unique salt for this user (32 bytes)
-    pub salt: [u8; 32],
     /// SHA-256 hash of salt || psk_utf8 (32 bytes)
     pub psk_hash: [u8; 32],
 
-    /// _reserved: [u8; 64]
-    pub _reserved: [u8; 64],
+    /// _reserved: [u8; 96]
+    pub _reserved: [u8; 96],
 }
 
 impl PSKCredentialData {
     /// Create new PSK credential data
-    pub fn new(salt: [u8; 32], psk_hash: [u8; 32]) -> Self {
+    pub fn new(psk_hash: [u8; 32]) -> Self {
         Self {
-            salt,
             psk_hash,
-            _reserved: [0; 64],
+            _reserved: [0; 96],
         }
     }
 
     /// Serialize to [u8; 128] for storage
     pub fn serialize(&self) -> [u8; 128] {
         let mut data = [0u8; 128];
-        data[0..32].copy_from_slice(&self.salt);
-        data[32..64].copy_from_slice(&self.psk_hash);
-        data[64..128].copy_from_slice(&self._reserved);
+        data[0..32].copy_from_slice(&self.psk_hash);
+        data[32..128].copy_from_slice(&self._reserved);
         data
     }
 
     /// Deserialize from [u8; 128]  
     pub fn deserialize(data: &[u8; 128]) -> Self {
-        let mut salt = [0u8; 32];
         let mut psk_hash = [0u8; 32];
-        let mut _reserved = [0u8; 64];
+        let mut _reserved = [0u8; 96];
 
-        salt.copy_from_slice(&data[0..32]);
-        psk_hash.copy_from_slice(&data[32..64]);
-        _reserved.copy_from_slice(&data[64..128]);
+        psk_hash.copy_from_slice(&data[0..32]);
+        _reserved.copy_from_slice(&data[32..128]);
 
         Self {
-            salt,
             psk_hash,
             _reserved,
         }
-    }
-
-    /// Verify PSK knowledge by recomputing hash
-    pub fn verify_psk(&self, psk: &str) -> bool {
-        // Add basic validation
-        if psk.is_empty() || psk.len() > 256 {
-            return false;
-        }
-
-        let computed_hash = Self::compute_psk_hash(&self.salt, psk);
-        computed_hash == self.psk_hash
-    }
-
-    /// Compute SHA-256 hash of salt || psk_utf8
-    pub fn compute_psk_hash(salt: &[u8; 32], psk: &str) -> [u8; 32] {
-        let mut hasher_input = Vec::with_capacity(salt.len() + psk.len());
-        hasher_input.extend_from_slice(salt);
-        hasher_input.extend_from_slice(psk.as_bytes());
-
-        // Use Solana's SHA-256
-        hash::hash(&hasher_input).to_bytes()
     }
 }
 
