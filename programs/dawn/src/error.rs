@@ -148,9 +148,9 @@ pub enum DawnError {
     #[msg("Invalid rotation interval")]
     InvalidRotationInterval,
 
-
     #[msg("Invalid network identifier")]
     InvalidNetworkId,
+
     // IPSEC AUTH METHOD
     #[msg("Invalid IPsec algorithm")]
     InvalidIPsecAlgorithm,
