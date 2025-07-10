@@ -7,6 +7,7 @@ mod connection;
 mod credential;
 mod eap_method;
 mod method_type;
+mod psk_method;
 mod wpa2e_method;
 
 pub use amf::*;
@@ -15,4 +16,5 @@ pub use connection::*;
 pub use credential::*;
 pub use eap_method::*;
 pub use method_type::*;
+pub use psk_method::*;
 pub use wpa2e_method::*;

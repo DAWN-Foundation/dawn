@@ -137,4 +137,33 @@ pub enum DawnError {
 
     #[msg("Local domain name is empty")]
     EmptyLocalDomainName,
+
+    // PSK AUTH METHOD
+    #[msg("Invalid security standard")]
+    InvalidSecurityStandard,
+
+    #[msg("Invalid encryption algorithm")]
+    InvalidEncryptionAlgorithm,
+
+    #[msg("Invalid rotation interval")]
+    InvalidRotationInterval,
+
+    #[msg("Invalid network identifier")]
+    InvalidNetworkId,
+
+    // IPSEC AUTH METHOD
+    #[msg("Invalid IPsec algorithm")]
+    InvalidIPsecAlgorithm,
+
+    #[msg("Invalid key lifetime")]
+    InvalidKeyLifetime,
+
+    #[msg("Invalid IPsec mode")]
+    InvalidIPsecMode,
+
+    #[msg("Invalid replay window size")]
+    InvalidReplayWindowSize,
+
+    #[msg("Invalid DH group")]
+    InvalidDHGroup,
 }

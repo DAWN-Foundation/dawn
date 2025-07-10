@@ -8,6 +8,7 @@ import { parentPlanTests, planTests } from './06_plan'
 import { subscriptionTests } from './07_subscription'
 import { claimTests } from './08_claim'
 import { amfTests } from './09_amf'
+import { pskAmfTests } from './10_psk_amf'
 
 // order is important here
 // because tests are dependent on the previous ones
@@ -36,3 +37,4 @@ subscriptionTests()
 parentPlanTests()
 claimTests()
 amfTests()
+pskAmfTests()
