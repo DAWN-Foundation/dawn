@@ -183,17 +183,16 @@ export function serializePSKMethodParams(params: PSKMethodParams): Buffer {
 export function getPskAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
+  plan: PublicKey,
   parameters: Buffer
 ): [PublicKey, number] {
-  const maxSeedLen = 32; // MAX_SEED_LEN from Solana
-  const parametersSeed = parameters.subarray(0, maxSeedLen);
-  
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from("auth_method"),
       authority.toBuffer(),
       Buffer.from([0]), // PSK method type seed
-      parametersSeed,
+      plan.toBuffer(),
+      parameters.slice(0, 32), // MAX_SEED_LEN
     ],
     program.programId
   );
@@ -205,6 +204,7 @@ export function getPskAuthMethodPda(
 export async function registerPskAuthMethod(
   program: Program<Dawn>,
   authority: PublicKey,
+  plan: PublicKey,
   config: PSKNetworkConfig
 ): Promise<{ signature: string; authMethodPda: PublicKey }> {
   const networkIdHash = generateNetworkIdHash(config.ssid);
@@ -218,7 +218,7 @@ export async function registerPskAuthMethod(
   };
 
   const parametersBuffer = serializePSKMethodParams(params);
-  const [authMethodPda] = getPskAuthMethodPda(program, authority, parametersBuffer);
+  const [authMethodPda] = getPskAuthMethodPda(program, authority, plan, parametersBuffer);
 
   const signature = await program.methods
     .registerAuthMethod(
@@ -228,8 +228,8 @@ export async function registerPskAuthMethod(
     .accountsPartial({
       caller: authority,
       config: mock.configPda,
+      plan: plan,
       authMethod: authMethodPda,
-      systemProgram: SystemProgram.programId,
     })
     .rpc();
 

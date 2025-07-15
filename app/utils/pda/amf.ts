@@ -16,7 +16,8 @@ export function getAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
   methodType: AuthMethodType,
-  params: Buffer,
+  plan: PublicKey,
+  parameters: Buffer,
 ): PublicKey {
   const key = Object.keys(methodType)[0]
   const seed = methods[key]
@@ -26,7 +27,8 @@ export function getAuthMethodPda(
       Buffer.from('auth_method'),
       authority.toBuffer(),
       Buffer.from([seed]),
-      Buffer.from(Array.from(params).slice(0, 32)),
+      plan.toBuffer(),
+      parameters.slice(0, 32), // MAX_SEED_LEN
     ],
     program.programId,
   )
