@@ -232,7 +232,9 @@ export const claimTests = () =>
       const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
-      expect(event.swapPrice.gte(price)).toBeTruthy()
+      // Convert swapPrice to BN for comparison since it comes as u128
+      const swapPriceBN = new BN(event.swapPrice.toString())
+      expect(swapPriceBN.gte(price)).toBeTruthy()
       expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
 
       // make sure the service provider DAWN account was credited with the claimable DAWN amount
@@ -349,7 +351,9 @@ export const claimTests = () =>
       const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
-      expect(event.swapPrice.gte(price)).toBeTruthy()
+      // Convert swapPrice to BN for comparison since it comes as u128
+      const swapPriceBN = new BN(event.swapPrice.toString())
+      expect(swapPriceBN.gte(price)).toBeTruthy()
       expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
 
       // make sure the service provider DAWN account was credited with the claimable DAWN amount (1 day)
