@@ -4,7 +4,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+declare_id!("6k628JDr9f7NusJ7uzdA8GS8BkrhcoiYHteNSwJgbriZ");
 
 #[cfg(feature = "devnet")]
 declare_id!("Fgnro1Xh59RyYiArHHEmNZ1TryTXsLtdu9fKDeQ86thz");
@@ -164,7 +164,6 @@ pub mod dawn {
         capacity: u64,
         start_at: Option<i64>,
         auth_methods: Vec<Pubkey>,
-        local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_plan(
             ctx,
@@ -175,7 +174,6 @@ pub mod dawn {
             capacity,
             start_at,
             auth_methods,
-            local_domain_name,
         )
     }
 

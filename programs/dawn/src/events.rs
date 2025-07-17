@@ -30,6 +30,8 @@ pub struct PlanAdded {
     pub plan: Pubkey,
     pub owner: Pubkey,
     pub local_domain: Pubkey,
+    pub access_domain: Option<Pubkey>,
+    pub distribution_domain: Option<Pubkey>,
     pub parent_plan: Option<Pubkey>,
     pub name: String,
     pub price: u64,

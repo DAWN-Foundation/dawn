@@ -2,7 +2,9 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    utils::optional_pubkey_seed, DawnApp, DawnError, LocalDomain, PlanAdded, Subscription,
+    utils::optional_pubkey_seed, AccessDomain, DawnApp, DawnError, Device, DeviceModel, DeviceType,
+    DistributionDomain, LocalDomain, PlanAdded, Subscription, ACCESS_DOMAIN_SIZE,
+    DISTRIBUTION_DOMAIN_SIZE,
 };
 
 use super::ServiceAgreement;
@@ -16,6 +18,8 @@ pub struct Plan {
     pub owner: Pubkey,
     /// Associated Access Domain
     pub access_domain: Option<Pubkey>,
+    /// Associated Distribution Domain
+    pub distribution_domain: Option<Pubkey>,
     /// Associated Local Domain
     pub local_domain: Pubkey,
     /// The parent plan (for resale)
@@ -45,6 +49,7 @@ const PLAN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
     + (1 + 32) // optional + access_domain
+    + (1 + 32) // optional + distribution_domain
     + 32 // local_domain
     + (1 + 32) // optional + parent_plan
     + (4 + 32) // name
@@ -66,7 +71,6 @@ const PLAN_SIZE: usize = 8 // id
     capacity: u64,
     start_at: Option<i64>,
     auth_methods: Vec<Pubkey>,
-    local_domain_name: String,
 )]
 pub struct AddPlan<'info> {
     #[account(mut)]
@@ -134,15 +138,62 @@ pub struct AddPlan<'info> {
     pub subscription: Option<Account<'info, Subscription>>,
 
     /// The local domain account (derived from seeds)
-    #[account(
-        seeds = [
-            b"local_domain",
-            caller.key().as_ref(),
-            &local_domain_name.trim().as_bytes()[..min(local_domain_name.trim().len(), MAX_SEED_LEN)]
-        ],
-        bump = local_domain.bump
-    )]
+    #[account(address = device.local_domain )]
     pub local_domain: Account<'info, LocalDomain>,
+
+    /// The distribution domain account (only for original plans)
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = DISTRIBUTION_DOMAIN_SIZE,
+        seeds = [
+            b"distribution_domain",
+            device.key().as_ref(),
+        ],
+        bump,
+        constraint = parent_plan.is_none() @ DawnError::DistributionDomainForL3PlansOnly,
+    )]
+    pub distribution_domain: Option<Account<'info, DistributionDomain>>,
+
+    /// The access domain account (only for derived plans)
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = ACCESS_DOMAIN_SIZE,
+        seeds = [
+            b"access_domain", 
+            device.key().as_ref(),
+        ],
+        bump,
+        constraint = parent_plan.is_some() @ DawnError::AccessDomainForL2PlansOnly,
+    )]
+    pub access_domain: Option<Account<'info, AccessDomain>>,
+
+    #[account(
+            mut,
+            constraint = device.owner == caller.key(),
+            seeds = [
+                b"device",
+                device.owner.as_ref(),
+                device.model.as_ref(),
+                &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+                &device.mac_address,
+            ],
+            bump = device.bump
+        )]
+    pub device: Account<'info, Device>,
+
+    /// We need to get the device model to check the device type
+    #[account(
+            seeds = [
+                b"device_model",
+                device_model.device_type.to_seed(),
+                &device_model.manufacturer.trim().as_bytes()[..min(device_model.manufacturer.trim().len(), MAX_SEED_LEN)],
+                &device_model.model.trim().as_bytes()[..min(device_model.model.trim().len(), MAX_SEED_LEN)],
+            ],
+            bump = device_model.bump
+        )]
+    pub device_model: Box<Account<'info, DeviceModel>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -194,18 +245,7 @@ impl DawnApp {
         capacity: u64,
         start_at: Option<i64>,
         auth_methods: Vec<Pubkey>,
-        local_domain_name: String,
     ) -> Result<()> {
-        // Make sure the local domain name is not empty or too long
-        require!(
-            !local_domain_name.is_empty(),
-            DawnError::EmptyLocalDomainName
-        );
-        require!(
-            local_domain_name.len() <= 32,
-            DawnError::LocalDomainNameTooLong
-        );
-
         // Make sure the plan name is not empty
         require!(!name.is_empty(), DawnError::EmptyPlanName);
 
@@ -232,6 +272,10 @@ impl DawnApp {
             }
         }
 
+        let plan = &mut ctx.accounts.plan;
+        let now = Clock::get()?.unix_timestamp;
+
+        // Handle plan type-specific logic
         if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref() {
             // for a resale plan, make sure the parent plan has a subscription
             require!(
@@ -249,10 +293,52 @@ impl DawnApp {
                 capacity <= parent_plan.capacity,
                 DawnError::OutsideParentBounds
             );
+
+            require!(
+                ctx.accounts.device_model.device_type == DeviceType::WirelessRadio,
+                DawnError::InvalidDeviceType
+            );
+
+            // Initialize Access Domain for derived plan
+            if let Some(access_domain) = ctx.accounts.access_domain.as_mut() {
+                access_domain.created_at = now;
+                access_domain.owner = ctx.accounts.caller.key();
+                access_domain.device = ctx.accounts.device.key(); // Link to parent plan
+                access_domain.bump = ctx.bumps.access_domain.unwrap();
+            } else {
+                return Err(DawnError::AccessDomainRequired.into());
+            }
+
+            // Set plan fields for derived plan
+            plan.access_domain = ctx.accounts.access_domain.as_ref().map(|ad| ad.key());
+            plan.distribution_domain = None;
+            plan.parent_plan = Some(parent_plan.key());
+        } else {
+            // L3 PLAN LOGIC (Router devices)
+
+            require!(
+                ctx.accounts.device_model.device_type == DeviceType::Router,
+                DawnError::InvalidDeviceType
+            );
+
+            // Initialize Distribution Domain for original plan
+            if let Some(distribution_domain) = ctx.accounts.distribution_domain.as_mut() {
+                distribution_domain.created_at = now;
+                distribution_domain.owner = ctx.accounts.caller.key();
+                distribution_domain.device = ctx.accounts.device.key(); // Link to this plan
+                distribution_domain.bump = ctx.bumps.distribution_domain.unwrap();
+            } else {
+                return Err(DawnError::DistributionDomainRequired.into());
+            }
+
+            // Set plan fields for original plan
+            plan.distribution_domain = ctx.accounts.distribution_domain.as_ref().map(|dd| dd.key());
+            plan.access_domain = None;
+            plan.parent_plan = None;
         }
 
+        // Validate start time
         if let Some(start_at) = &start_at {
-            let now = Clock::get()?.unix_timestamp;
             let six_months_later = now + 6 * 30 * 24 * 60 * 60;
 
             // Make sure the start time is not in the past
@@ -262,12 +348,10 @@ impl DawnApp {
             require!(start_at <= &six_months_later, DawnError::InvalidStartTime);
         }
 
-        let plan = &mut ctx.accounts.plan;
-
-        plan.created_at = Clock::get()?.unix_timestamp;
+        // Set common plan fields
+        plan.created_at = now;
         plan.owner = ctx.accounts.caller.key();
         plan.local_domain = ctx.accounts.local_domain.key();
-        plan.parent_plan = ctx.accounts.parent_plan.as_ref().map(|p| p.key());
         plan.name.clone_from(&name);
         plan.price = price;
         plan.duration = duration;
@@ -282,6 +366,8 @@ impl DawnApp {
             plan: plan.key(),
             owner: plan.owner,
             local_domain: plan.local_domain,
+            access_domain: plan.access_domain,
+            distribution_domain: plan.distribution_domain,
             parent_plan: plan.parent_plan,
             name,
             price: plan.price,
