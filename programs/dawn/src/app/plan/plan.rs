@@ -306,9 +306,7 @@ impl DawnApp {
     }
 
     /// Add an auth method to a plan
-    pub fn add_auth_method(
-        ctx: Context<AddAuthMethod>,
-    ) -> Result<()> {
+    pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
         let plan = &mut ctx.accounts.plan;
         let auth_method = &ctx.accounts.auth_method;
 

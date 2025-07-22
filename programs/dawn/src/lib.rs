@@ -48,9 +48,7 @@ pub mod dawn {
         DawnApp::register_auth_method(ctx, method_type, parameters)
     }
 
-    pub fn add_auth_method(
-        ctx: Context<AddAuthMethod>,
-    ) -> Result<()> {
+    pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
         DawnApp::add_auth_method(ctx)
     }
 
