@@ -103,7 +103,6 @@ export const amfTests = () =>
         program,
         wallet.publicKey,
         authMethodType,
-        mock.planPda,
         paramsBuffer,
       )
 
@@ -113,7 +112,6 @@ export const amfTests = () =>
         .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
-          plan: mock.planPda,
           authMethod: authMethodPda,
         })
         .signers([wallet.payer])
@@ -346,7 +344,6 @@ export const amfTests = () =>
         program,
         wallet.publicKey,
         authMethodType,
-        mock.planPda,
         paramsBuffer,
       )
 
@@ -356,7 +353,6 @@ export const amfTests = () =>
         .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
-          plan: mock.planPda,
           authMethod: ipsecAuthMethodPda,
         })
         .signers([wallet.payer])

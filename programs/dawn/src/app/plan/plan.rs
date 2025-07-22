@@ -38,6 +38,8 @@ pub struct Plan {
     pub service_agreement: Pubkey,
     /// The authentication methods for the plan (max 2)
     pub auth_methods: Vec<AuthMethodType>,
+    /// The authentication method accounts associated with this plan (max 10)
+    pub auth_method_accounts: Vec<Pubkey>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -56,6 +58,7 @@ const PLAN_SIZE: usize = 8 // id
     + 8 // start_at
     + 32 // service_agreement
     + (4 + 2) // auth_methods
+    + (4 + 10 * 32) // auth_method_accounts (max 10 * 32 bytes)
     + 1; // bump
 
 #[derive(Accounts)]
@@ -146,6 +149,42 @@ pub struct AddPlan<'info> {
     pub local_domain: Account<'info, LocalDomain>,
 
     pub system_program: Program<'info, System>,
+}
+
+/// Context for adding an auth method to a plan
+#[derive(Accounts)]
+pub struct AddAuthMethod<'info> {
+    #[account(mut, constraint = caller.key() == plan.owner)]
+    pub caller: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"plan",
+            plan.local_domain.as_ref(),
+            &optional_pubkey_seed(plan.parent_plan),
+            &plan.name.as_bytes()[..min(plan.name.len(), MAX_SEED_LEN)],
+            &plan.price.to_le_bytes(),
+            &plan.duration.to_le_bytes(),
+            &plan.speed.to_le_bytes(),
+            &plan.capacity.to_le_bytes(),
+            &plan.start_at.to_le_bytes(),
+            plan.service_agreement.as_ref(),
+        ],
+        bump = plan.bump,
+    )]
+    pub plan: Account<'info, Plan>,
+
+    #[account(
+        seeds = [
+            b"auth_method",
+            auth_method.authority.as_ref(),
+            &auth_method.method_type.as_seed(),
+            &auth_method.parameters[..MAX_SEED_LEN],
+        ],
+        bump = auth_method.bump
+    )]
+    pub auth_method: Account<'info, crate::app::amf::AuthMethod>,
 }
 
 impl DawnApp {
@@ -244,6 +283,7 @@ impl DawnApp {
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
         plan.service_agreement = ctx.accounts.service_agreement.key();
         plan.auth_methods.clone_from(&auth_methods);
+        plan.auth_method_accounts = Vec::new(); // Initialize empty, will be populated later
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -261,6 +301,37 @@ impl DawnApp {
             auth_methods,
             created_at: plan.created_at,
         });
+
+        Ok(())
+    }
+
+    /// Add an auth method to a plan
+    pub fn add_auth_method(
+        ctx: Context<AddAuthMethod>,
+    ) -> Result<()> {
+        let plan = &mut ctx.accounts.plan;
+        let auth_method = &ctx.accounts.auth_method;
+
+        // Check if the auth method type is already in the plan's auth_methods
+        require!(
+            plan.auth_methods.contains(&auth_method.method_type),
+            DawnError::InvalidAuthMethodType
+        );
+
+        // Check if the auth method is already associated with this plan
+        require!(
+            !plan.auth_method_accounts.contains(&auth_method.key()),
+            DawnError::DuplicateAuthMethods
+        );
+
+        // Check if we haven't exceeded the maximum number of auth methods (10)
+        require!(
+            plan.auth_method_accounts.len() < 10,
+            DawnError::TooManyAuthMethods
+        );
+
+        // Add the auth method to the plan
+        plan.auth_method_accounts.push(auth_method.key());
 
         Ok(())
     }

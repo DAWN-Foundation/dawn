@@ -52,7 +52,7 @@ export const pskAmfTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
       const parametersBuffer = serializePSKMethodParams(params)
-      const [pskAuthMethodPda] = getPskAuthMethodPda(program, wallet.publicKey, mock.planPda, parametersBuffer)
+      const [pskAuthMethodPda] = getPskAuthMethodPda(program, wallet.publicKey, parametersBuffer)
       
       authMethodPda = pskAuthMethodPda
 
@@ -65,7 +65,6 @@ export const pskAmfTests = () =>
         .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
-          plan: mock.planPda,
           authMethod: authMethodPda,
         })
         .signers([wallet.payer])

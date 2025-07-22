@@ -40,7 +40,6 @@ pub struct RegisterCredential<'info> {
             b"auth_method",
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            auth_method.plan.as_ref(),
             &auth_method.parameters[..MAX_SEED_LEN]
         ],
         bump = auth_method.bump
@@ -76,7 +75,6 @@ pub struct RevokeCredential<'info> {
             b"auth_method",
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            auth_method.plan.as_ref(),
             &auth_method.parameters[..MAX_SEED_LEN]
         ],
         bump = auth_method.bump

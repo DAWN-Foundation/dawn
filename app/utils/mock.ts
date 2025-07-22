@@ -416,7 +416,7 @@ export async function setup(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planAuthMethods: AuthMethodType[] = [{ mpsk: {} }]
+  const planAuthMethods: AuthMethodType[] = [{ eap: {} }, { psk: {} }]
 
   const [planPda, planBump] = getPlanPda(
     program,
