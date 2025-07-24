@@ -89,8 +89,9 @@ pub struct DeviceModelAdded {
 
 #[event]
 pub struct DeviceAdded {
-    pub owner: Pubkey,
     pub device: Pubkey,
+    pub device_location: Pubkey,
+    pub owner: Pubkey,
     pub site: Option<Pubkey>,
     pub model: Pubkey,
     pub organization: Pubkey,
