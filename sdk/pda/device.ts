@@ -58,6 +58,23 @@ export function getAccessDomainPda(
   return accessDomainPda
 }
 
+export function getAccessDomainForPlanPda(
+  program: Program<Dawn>,
+  localDomainPda: PublicKey,
+  parentPlanPda: PublicKey,
+): PublicKey {
+  const [accessDomainPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('access_domain'),
+      Buffer.from(localDomainPda.toBytes()),
+      Buffer.from(parentPlanPda.toBytes()),
+    ],
+    program.programId,
+  )
+
+  return accessDomainPda
+}
+
 export function getLocalDomainPda(
   program: Program<Dawn>,
   owner: PublicKey,
@@ -73,6 +90,21 @@ export function getLocalDomainPda(
   )
 
   return localDomainPda
+}
+
+export function getDistributionDomainPda(
+  program: Program<Dawn>,
+  localDomainPda: PublicKey,
+): PublicKey {
+  const [distributionDomainPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('distribution_domain'),
+      Buffer.from(localDomainPda.toBytes()),
+    ],
+    program.programId,
+  )
+
+  return distributionDomainPda
 }
 
 export function getDeviceLocationPda(

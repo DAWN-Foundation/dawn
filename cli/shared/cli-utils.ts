@@ -100,11 +100,14 @@ export function getMock(): Mock {
     configPda: new PublicKey(mock.configPda),
     ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
+    deviceL2ModelPda: new PublicKey(mock.deviceL2ModelPda),
     organizationPda: new PublicKey(mock.organizationPda),
+    distributionDomainPda: new PublicKey(mock.distributionDomainPda),
     accessDomainPda: new PublicKey(mock.accessDomainPda),
     localDomainPda: new PublicKey(mock.localDomainPda),
     sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
+    deviceL2Pda: new PublicKey(mock.deviceL2Pda),
     ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     serviceAgreementPda: new PublicKey(mock.serviceAgreementPda),
@@ -132,6 +135,10 @@ export function getMock(): Mock {
     deviceHeight: mock.deviceHeight,
     deviceMacAddress: mock.deviceMacAddress,
     localDomain: mock.localDomain,
+    deviceTypeL2: JSON.parse(mock.deviceTypeL2),
+    deviceManufacturerL2: mock.deviceManufacturerL2,
+    deviceModelL2: mock.deviceModelL2,
+    deviceNameL2: mock.deviceNameL2,
     // service agreement
     slaThreshold: new BN(mock.slaThreshold),
     slaPayoutRatio: new BN(mock.slaPayoutRatio),
@@ -141,7 +148,7 @@ export function getMock(): Mock {
     planDuration: mock.planDuration,
     planSpeed: mock.planSpeed,
     planCapacity: new BN(mock.planCapacity),
-    planAuthMethods: [], // TODO: Fix testnet.json format for planAuthMethods
+    planAuthMethods: JSON.parse(mock.planAuthMethods),
     // subscription
     subscriptionPda: new PublicKey(mock.subscriptionPda),
     subscriptionBump: mock.subscriptionBump,
@@ -212,7 +219,9 @@ export async function submitTx(
   itx: web3.TransactionInstruction,
   logs: boolean = true,
 ) {
-  const latestBlockHash = await connection.getLatestBlockhash()
+  const latestBlockHash = await connection.getLatestBlockhash({
+    commitment: 'confirmed',
+  })
   console.log({ latestBlockHash })
 
   const tx = new Transaction({
@@ -223,7 +232,7 @@ export async function submitTx(
   const signed = await wallet.signTransaction(tx)
 
   let txSignature = await connection.sendRawTransaction(signed.serialize(), {
-    skipPreflight: false,
+    skipPreflight: true,
   })
 
   logs && console.log({ txSignature })

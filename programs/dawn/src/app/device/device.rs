@@ -2,14 +2,11 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    app::{DeviceType, OrganizationType, ACCESS_DOMAIN_SIZE, LOCAL_DOMAIN_SIZE, ORGANIZATION_SIZE},
+    app::{OrganizationType, LOCAL_DOMAIN_SIZE, ORGANIZATION_SIZE},
     DawnApp, DawnError, DeviceAdded,
 };
 
-use super::{
-    AccessDomain, DeviceLocation, DeviceModel, LocalDomain, Organization, Site,
-    DEVICE_LOCATION_SIZE,
-};
+use super::{DeviceLocation, DeviceModel, LocalDomain, Organization, Site, DEVICE_LOCATION_SIZE};
 
 const END_USER_ORG_NAME: &str = "end_user_organization";
 
@@ -120,16 +117,6 @@ pub struct AddDevice<'info> {
     )]
     pub organization: Box<Account<'info, Organization>>,
 
-    /// The access domain account
-    #[account(
-        init_if_needed,
-        payer = caller,
-        space = ACCESS_DOMAIN_SIZE,
-        seeds = [b"access_domain", device.key().as_ref()],
-        bump
-    )]
-    pub access_domain: Option<Box<Account<'info, AccessDomain>>>,
-
     /// The site account
     #[account(
         seeds = [
@@ -207,23 +194,7 @@ impl DawnApp {
         let device = &mut ctx.accounts.device;
         let device_location = &mut ctx.accounts.device_location;
         let organization = &mut ctx.accounts.organization;
-        let access_domain = &mut ctx.accounts.access_domain;
         let caller = ctx.accounts.caller.key();
-
-        // if device_type is Router (L3), create access_domain
-        if ctx.accounts.device_model.device_type == DeviceType::Router {
-            match access_domain {
-                Some(access_domain) => {
-                    access_domain.created_at = Clock::get()?.unix_timestamp;
-                    access_domain.owner = caller;
-                    access_domain.device = device.key();
-                    access_domain.bump = ctx.bumps.access_domain.unwrap();
-                }
-                None => {
-                    return Err(DawnError::AccessDomainRequired.into());
-                }
-            }
-        }
 
         // Initialize local_domain if not already created
         if ctx.accounts.local_domain.created_at == 0 {

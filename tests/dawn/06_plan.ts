@@ -19,14 +19,14 @@ import {
   AuthMethodType,
   getOrganizationPda,
   getLocalDomainPda,
-  getAuthMethodPda,
+  getDeviceModelPda,
 } from '../../sdk/utils'
-import { beforeAll, expect } from '@jest/globals'
 import {
   createPSKMethodParams,
   serializePSKMethodParams,
 } from '../../sdk/utils/auth'
 import { getPskAuthMethodPda } from '../../sdk/pda/amf'
+import { beforeAll, expect } from '@jest/globals'
 
 export let oneDayLaterPlanPda: PublicKey
 
@@ -91,7 +91,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -100,7 +99,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: planPda,
-            // authMethod: mock.planAuthMethods,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -138,7 +139,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -147,6 +147,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: planPda,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -184,7 +187,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -193,6 +195,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: planPda,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -217,7 +222,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: wallet.publicKey,
@@ -226,6 +230,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: mock.planPda,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([wallet.payer])
           .rpc()
@@ -235,9 +242,9 @@ export const planTests = () =>
         const err: AnchorError = error
         assert.strictEqual(
           err.error.errorMessage,
-          'A seeds constraint was violated',
+          'A raw constraint was violated',
         )
-        assert.strictEqual(err.error.errorCode.number, 2006)
+        assert.strictEqual(err.error.errorCode.number, 2003)
       } finally {
         provider.wallet = new Wallet(mock.serviceProvider)
       }
@@ -284,20 +291,23 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             authMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             localDomain: mock.localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
+            accessDomain: null,
             subscription: null,
             plan: mock.planPda,
+            device: mock.devicePda,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
         assert.ok(false)
       } catch (error) {
+        console.log("debug: ", error)
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
         assert.strictEqual(err.error.errorMessage, 'Too many auth methods')
@@ -317,15 +327,17 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             authMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             localDomain: mock.localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
             parentPlan: null,
+            accessDomain: null,
             subscription: null,
             plan: mock.planPda,
+            device: mock.devicePda,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -363,7 +375,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -372,6 +383,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: planPda,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -409,7 +423,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -418,6 +431,9 @@ export const planTests = () =>
             parentPlan: null,
             subscription: null,
             plan: planPda,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -430,11 +446,7 @@ export const planTests = () =>
     })
 
     test('adds the plan', async () => {
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.serviceProvider.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, mock.localDomain)
 
       const tx = await program.methods
         .addPlan(
@@ -445,7 +457,6 @@ export const planTests = () =>
           mock.planCapacity,
           null,
           mock.planAuthMethods,
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -454,6 +465,9 @@ export const planTests = () =>
           plan: mock.planPda,
           parentPlan: null,
           subscription: null,
+          accessDomain: null,
+          device: mock.devicePda,
+          deviceModel: mock.deviceModelPda,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -507,7 +521,6 @@ export const planTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -515,7 +528,10 @@ export const planTests = () =>
             serviceAgreement: mock.serviceAgreementPda,
             plan: mock.planPda,
             parentPlan: null,
+            accessDomain: null,
             subscription: null,
+            device: mock.devicePda,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -561,7 +577,6 @@ export const planTests = () =>
           capacity,
           null,
           [],
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -570,6 +585,9 @@ export const planTests = () =>
           plan: planPda,
           parentPlan: null,
           subscription: null,
+          accessDomain: null,
+          device: mock.devicePda,
+          deviceModel: mock.deviceModelPda,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -631,7 +649,6 @@ export const planTests = () =>
             mock.planCapacity,
             startAt,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -640,6 +657,9 @@ export const planTests = () =>
             plan: planPda,
             parentPlan: null,
             subscription: null,
+            device: mock.devicePda,
+            accessDomain: null,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -679,7 +699,6 @@ export const planTests = () =>
             mock.planCapacity,
             startAt,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
@@ -688,6 +707,9 @@ export const planTests = () =>
             plan: planPda,
             parentPlan: null,
             subscription: null,
+            accessDomain: null,
+            device: mock.devicePda,
+            deviceModel: mock.deviceModelPda,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -729,7 +751,6 @@ export const planTests = () =>
           mock.planCapacity,
           startAt,
           mock.planAuthMethods,
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -738,6 +759,9 @@ export const planTests = () =>
           plan: planPda,
           parentPlan: null,
           subscription: null,
+          accessDomain: null,
+          device: mock.devicePda,
+          deviceModel: mock.deviceModelPda,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -783,7 +807,6 @@ export const planTests = () =>
           mock.planCapacity,
           startAt,
           mock.planAuthMethods,
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -792,6 +815,9 @@ export const planTests = () =>
           plan: planPda,
           parentPlan: null,
           subscription: null,
+          accessDomain: null,
+          device: mock.devicePda,
+          deviceModel: mock.deviceModelPda,
         })
         .signers([mock.serviceProvider])
         .rpc()
@@ -805,266 +831,6 @@ export const planTests = () =>
       // // make sure account was created
       // const plan = await program.account.plan.fetch(planPda)
       // expect(plan.startAt.eq(startAt)).toBeTruthy()
-    })
-
-    // Add Auth Method Tests
-    test('adds auth method to plan successfully', async () => {
-      // First create a plan
-      const planName = 'test plan for auth method'
-      const [planPda] = getPlanPda(
-        program,
-        mock.localDomainPda,
-        null,
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-        mock.serviceAgreementPda,
-      )
-
-      await program.methods
-        .addPlan(
-          planName,
-          mock.planPrice,
-          mock.planDuration,
-          mock.planSpeed,
-          mock.planCapacity,
-          null,
-          mock.planAuthMethods,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          localDomain: mock.localDomainPda,
-          serviceAgreement: mock.serviceAgreementPda,
-          plan: planPda,
-          parentPlan: null,
-          subscription: null,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Create an auth method
-      const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 1) // Simple test parameters
-      const paramsArray = Array.from(paramsBuffer)
-
-      const authMethodPda = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType,
-        paramsBuffer,
-      )
-
-      await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
-        .accountsPartial({
-          caller: wallet.publicKey,
-          config: mock.configPda,
-          authMethod: authMethodPda,
-        })
-        .signers([wallet.payer])
-        .rpc()
-
-      // Add the auth method to the plan
-      await program.methods
-        .addAuthMethod()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          plan: planPda,
-          authMethod: authMethodPda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Verify the auth method was added to the plan
-      const plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethods.length).toBe(2)
-      expect(plan.authMethods[1].equals(authMethodPda)).toBeTruthy()
-    })
-
-    test('cannot add duplicate auth method to plan', async () => {
-      // Create a plan
-      const planName = 'test plan for duplicate'
-      const [planPda] = getPlanPda(
-        program,
-        mock.localDomainPda,
-        null,
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-        mock.serviceAgreementPda,
-      )
-
-      await program.methods
-        .addPlan(
-          planName,
-          mock.planPrice,
-          mock.planDuration,
-          mock.planSpeed,
-          mock.planCapacity,
-          null,
-          mock.planAuthMethods,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          localDomain: mock.localDomainPda,
-          serviceAgreement: mock.serviceAgreementPda,
-          plan: planPda,
-          parentPlan: null,
-          subscription: null,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Create an auth method
-      const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 1)
-
-      const authMethodPda = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType,
-        paramsBuffer,
-      )
-
-      // Add the auth method to the plan first time
-      await program.methods
-        .addAuthMethod()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          plan: planPda,
-          authMethod: authMethodPda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // sleep 1 second
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Try to add the same auth method again
-      try {
-        await program.methods
-          .addAuthMethod()
-          .accountsPartial({
-            caller: mock.serviceProvider.publicKey,
-            plan: planPda,
-            authMethod: authMethodPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
-        assert.ok(false)
-      } catch (error) {
-        assert.ok(error instanceof AnchorError)
-        const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Duplicate auth methods')
-      }
-    })
-
-    test('adds multiple auth methods to plan successfully', async () => {
-      // Create a plan with 2 auth methods
-      const planName = 'test plan multiple auth methods'
-
-      const p1 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test1',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
-      const [m1] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        p1,
-      )
-
-      const p2 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test2',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
-
-      const [m2] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        p2,
-      )
-
-      // Create first auth method
-      const pskMethodType: AuthMethodType = { psk: {} }
-
-      await program.methods
-        .registerAuthMethod(pskMethodType as any, [...p1])
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: m1,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      const authMethods = [m1, m2]
-
-      const [planPda] = getPlanPda(
-        program,
-        mock.localDomainPda,
-        null,
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-        mock.serviceAgreementPda,
-      )
-
-      await program.methods
-        .addPlan(
-          planName,
-          mock.planPrice,
-          mock.planDuration,
-          mock.planSpeed,
-          mock.planCapacity,
-          null,
-          authMethods,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          localDomain: mock.localDomainPda,
-          serviceAgreement: mock.serviceAgreementPda,
-          plan: planPda,
-          parentPlan: null,
-          subscription: null,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      await program.methods
-        .registerAuthMethod(pskMethodType as any, [...p2])
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: m2,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Verify both auth methods were added
-      const plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethods.length).toBe(2)
-      expect(plan.authMethods[0].equals(m1)).toBeTruthy()
-      expect(plan.authMethods[1].equals(m2)).toBeTruthy()
     })
   })
 
@@ -1105,22 +871,13 @@ export const parentPlanTests = () =>
         Buffer.from(subscriptionAccount.data),
       )
 
-      // create new device (as customer)
-      devicePda = getDevicePda(
-        program,
-        mock.customer,
-        mock.deviceModelPda,
-        mock.deviceName,
-        [0, 0, 0, 0, 0, 1],
-      )
       organizationPda = getOrganizationPda(
         program,
         mock.customer.publicKey,
         { endUser: {} },
         'end_user_organization',
       )
-      accessDomainPda = getAccessDomainPda(program, devicePda)
-      deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      deviceLocationPda = getDeviceLocationPda(program, mock.deviceL2Pda)
       localDomainPda = getLocalDomainPda(
         program,
         mock.customer.publicKey,
@@ -1129,7 +886,7 @@ export const parentPlanTests = () =>
 
       await program.methods
         .addDevice(
-          mock.deviceName,
+          mock.deviceNameL2,
           mock.deviceHeight,
           mock.deviceLatitude,
           mock.deviceLongitude,
@@ -1139,10 +896,9 @@ export const parentPlanTests = () =>
         )
         .accountsPartial({
           caller: mock.customer.publicKey,
-          deviceModel: mock.deviceModelPda,
-          device: devicePda,
+          deviceModel: mock.deviceL2ModelPda,
+          device: mock.deviceL2Pda,
           organization: organizationPda,
-          accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
           site: null,
@@ -1184,7 +940,6 @@ export const parentPlanTests = () =>
           mock.planCapacity,
           null,
           mock.planAuthMethods,
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -1193,17 +948,16 @@ export const parentPlanTests = () =>
           plan: plan2Pda,
           parentPlan: null,
           subscription: null,
+          accessDomain: null,
+          device: mock.devicePda,
+          deviceModel: mock.deviceModelPda,
         })
         .signers([mock.serviceProvider])
         .rpc()
 
       provider.wallet = new Wallet(mock.customer)
 
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.customer.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
       const [resellPlanPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1227,7 +981,6 @@ export const parentPlanTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.customer.publicKey,
@@ -1235,12 +988,16 @@ export const parentPlanTests = () =>
             serviceAgreement: mock.serviceAgreementPda,
             plan: resellPlanPda,
             parentPlan: plan2Pda,
+            distributionDomain: null,
             subscription: null,
+            device: mock.deviceL2Pda,
+            deviceModel: mock.deviceL2ModelPda,
           })
           .signers([mock.customer])
           .rpc()
         assert.ok(false)
       } catch (error) {
+        console.log("myError", error)
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         assert.strictEqual(
@@ -1253,11 +1010,7 @@ export const parentPlanTests = () =>
     test('cannot add plan that exceeds duration of parent plan', async () => {
       const duration = mock.planDuration + 1
 
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.customer.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1281,7 +1034,6 @@ export const parentPlanTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.customer.publicKey,
@@ -1290,6 +1042,9 @@ export const parentPlanTests = () =>
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
+            distributionDomain: null,
+            device: mock.deviceL2Pda,
+            deviceModel: mock.deviceL2ModelPda,
           })
           .signers([mock.customer])
           .rpc()
@@ -1304,11 +1059,7 @@ export const parentPlanTests = () =>
     test('cannot add plan that exceeds speed of parent plan', async () => {
       const speed = mock.planSpeed + 1
 
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.customer.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1332,7 +1083,6 @@ export const parentPlanTests = () =>
             mock.planCapacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.customer.publicKey,
@@ -1341,6 +1091,9 @@ export const parentPlanTests = () =>
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
+            distributionDomain: null,
+            device: mock.deviceL2Pda,
+            deviceModel: mock.deviceL2ModelPda,
           })
           .signers([mock.customer])
           .rpc()
@@ -1354,12 +1107,7 @@ export const parentPlanTests = () =>
 
     test('cannot add plan that exceeds capacity of parent plan', async () => {
       const capacity = mock.planCapacity.add(new BN(1))
-
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.customer.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1383,7 +1131,6 @@ export const parentPlanTests = () =>
             capacity,
             null,
             mock.planAuthMethods,
-            mock.localDomain,
           )
           .accountsPartial({
             caller: mock.customer.publicKey,
@@ -1392,11 +1139,15 @@ export const parentPlanTests = () =>
             subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
+            distributionDomain: null,
+            device: mock.deviceL2Pda,
+            deviceModel: mock.deviceL2ModelPda,
           })
           .signers([mock.customer])
           .rpc()
         assert.ok(false)
       } catch (error) {
+        console.log("myError", error)
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
         assert.strictEqual(err.error.errorMessage, 'Outside parent bounds')
@@ -1406,11 +1157,7 @@ export const parentPlanTests = () =>
     test('adds plan to resell the parent plan (customer is subscribed)', async () => {
       // use mock.planPda as parent plan, customer is subscribed to it
 
-      const localDomainPda = getLocalDomainPda(
-        program,
-        mock.customer.publicKey,
-        mock.localDomain,
-      )
+      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
       const [planPda, planBump] = getPlanPda(
         program,
         localDomainPda,
@@ -1433,7 +1180,6 @@ export const parentPlanTests = () =>
           mock.planCapacity,
           null,
           mock.planAuthMethods,
-          mock.localDomain,
         )
         .accountsPartial({
           caller: mock.customer.publicKey,
@@ -1442,16 +1188,21 @@ export const parentPlanTests = () =>
           subscription: mock.subscriptionPda,
           parentPlan: mock.planPda,
           plan: planPda,
+          distributionDomain: null,
+          device: mock.deviceL2Pda,
+          deviceModel: mock.deviceL2ModelPda,
         })
         .signers([mock.customer])
         .transaction()
 
       const txDetails = await confirmTx(provider, addPlanTx)
 
+      const accessDomainPda = getAccessDomainPda(program, mock.deviceL2Pda)
+
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
-      expect(event.accessDomain).toBeUndefined()
+      expect(event.accessDomain.equals(accessDomainPda)).toBeTruthy()
       expect(event.localDomain.equals(localDomainPda)).toBeTruthy()
       expect(event.parentPlan.equals(mock.planPda)).toBeTruthy()
       expect(event.name).toBe(mock.planName)
@@ -1470,7 +1221,7 @@ export const parentPlanTests = () =>
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       expect(plan.owner.equals(mock.customer.publicKey)).toBeTruthy()
       expect(plan.localDomain.equals(localDomainPda)).toBeTruthy()
-      expect(plan.accessDomain).toBeNull()
+      expect(plan.accessDomain.equals(accessDomainPda)).toBeTruthy()
       expect(plan.parentPlan.equals(mock.planPda)).toBeTruthy()
       expect(plan.name).toBe(mock.planName)
       expect(plan.price.eq(mock.planPrice)).toBeTruthy()
