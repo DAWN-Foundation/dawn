@@ -167,6 +167,7 @@ export async function connect(): Promise<{
   connection: Connection
 }> {
   const isDevnet = hasFlag('--devnet')
+  console.log({ isDevnet })
 
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })

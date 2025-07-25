@@ -274,6 +274,7 @@ impl DawnApp {
         // Emit event
         emit!(DeviceAdded {
             device: device.key(),
+            device_location: device_location.key(),
             owner: device.owner,
             site,
             model: device.model,
