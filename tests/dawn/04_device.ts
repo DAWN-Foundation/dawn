@@ -24,8 +24,9 @@ import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
 
 interface DeviceAdded {
-  owner: PublicKey
   device: PublicKey
+  deviceLocation: PublicKey
+  owner: PublicKey
   site: PublicKey
   model: PublicKey
   organization: PublicKey
@@ -509,8 +510,9 @@ export const deviceTests = () =>
         txDetails,
         'deviceAdded',
       )
-      expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
+      expect(event.deviceLocation.equals(mock.deviceLocationPda)).toBeTruthy()
+      expect(event.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
       expect(event.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(event.name).toBe(mock.deviceName)

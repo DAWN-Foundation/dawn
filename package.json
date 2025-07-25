@@ -25,6 +25,7 @@
     "dawn:lease_ip": "yarn build && node dist/app/dawn/lease_ip.js",
     "dawn:subscribe": "yarn build && node dist/app/dawn/subscribe.js",
     "dawn:get_subscriptions": "yarn build && node dist/app/dawn/get_subscriptions.js",
+    "dawn:get_service_agreements": "yarn build && node dist/app/dawn/get_service_agreements.js",
     "dawn:claim": "yarn build && node dist/app/dawn/claim.js"
   },
   "dependencies": {

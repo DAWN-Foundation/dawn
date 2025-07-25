@@ -8,6 +8,7 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
+  getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
 
 import { Mock } from './types'
@@ -88,6 +89,8 @@ export async function prepare(
     wallet.publicKey, // Mint authority
     null, // Freeze authority
     6, // Decimals (6 decimals for USDC)
+    undefined,
+    { commitment: 'finalized' },
   )
 
   // Get DAWN token PDA
@@ -111,8 +114,6 @@ export async function prepare(
     dawnMint,
     wallet.publicKey,
     false,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
   )
 
   // Initialize DAWN token
@@ -126,7 +127,7 @@ export async function prepare(
       callerDawnAccount: walletDawnAccount,
     })
     .signers([wallet])
-    .rpc()
+    .rpc({ commitment: 'finalized' })
 
   // Get fee pool DAWN account PDA
   const feePoolDawnAccount = getFeePoolDawnAccountPda(program)
@@ -154,65 +155,57 @@ export async function prepare(
       medallionDawnAccount,
     })
     .signers([wallet])
-    .rpc()
+    .rpc({ commitment: 'finalized' })
 
   // Create DAWN account for Service Provider
   console.log('Creating DAWN account for Service Provider...')
-  const { address: serviceProviderDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : serviceProvider,
-      dawnMint,
-      serviceProvider.publicKey,
-      true, // allowOwnerOffCurve (default)
-      'finalized', // Adding commitment level to ensure transaction confirmation
-    )
+  const serviceProviderDawnAccount = await createAssociatedTokenAccount(
+    provider.connection,
+    wallet,
+    dawnMint,
+    serviceProvider.publicKey,
+    { commitment: 'finalized', skipPreflight: true },
+  )
 
   // Create USDC account for Service Provider
   console.log('Creating USDC account for Service Provider...')
-  const { address: serviceProviderUsdcAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      wallet,
-      usdcMint,
-      serviceProvider.publicKey,
-      true,
-      'finalized',
-    )
+  const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
+    provider.connection,
+    wallet,
+    usdcMint,
+    serviceProvider.publicKey,
+    { commitment: 'finalized', skipPreflight: true },
+  )
 
   // Create USDC account for Customer
   console.log('Creating USDC account for Customer...')
-  const { address: customerUsdcAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : customer,
-      usdcMint,
-      customer.publicKey,
-      true,
-      'finalized',
-    )
+  const customerUsdcAccount = await createAssociatedTokenAccount(
+    provider.connection,
+    wallet,
+    usdcMint,
+    customer.publicKey,
+    { commitment: 'finalized', skipPreflight: true },
+  )
 
   // Create DAWN token account for Customer
   console.log('Creating DAWN token account for Customer...')
-  const { address: customerDawnAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      isDevnet ? wallet : customer,
-      dawnMint,
-      customer.publicKey,
-    )
+  const customerDawnAccount = await createAssociatedTokenAccount(
+    provider.connection,
+    wallet,
+    dawnMint,
+    customer.publicKey,
+    { commitment: 'finalized', skipPreflight: true },
+  )
 
-  // Create USDC token account for wallet
+  // create USDC token account for wallet
   console.log('Creating USDC token account for wallet...')
-  const { address: walletUsdcAccount } =
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      wallet,
-      usdcMint,
-      wallet.publicKey,
-      true,
-      'finalized',
-    )
+  const walletUsdcAccount = await createAssociatedTokenAccount(
+    provider.connection,
+    wallet,
+    usdcMint,
+    wallet.publicKey,
+    { commitment: 'finalized', skipPreflight: true },
+  )
 
   // Mint 1_000_000 USDC to wallet
   console.log('Minting 1_000_000 USDC to wallet...')
@@ -224,9 +217,10 @@ export async function prepare(
     wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
     undefined,
-    { commitment: 'finalized' },
+    { commitment: 'finalized', skipPreflight: true },
   )
 
+  console.log('Setting up Raydium...')
   const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
     await setupRaydium(
       provider,
@@ -354,21 +348,27 @@ export async function prepare(
 
   // Create USDC vault token account for plan escrow
   console.log('Creating USDC vault token account for plan escrow...')
-  const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
+  const escrowUsdcVault = await createAssociatedTokenAccount(
     provider.connection,
     isDevnet ? wallet : serviceProvider,
     usdcMint,
     planPda,
+    { commitment: 'finalized', skipPreflight: true },
+    undefined,
+    undefined,
     true,
   )
 
   // Create DAWN vault token account for plan escrow
   console.log('Creating DAWN vault token account for plan escrow...')
-  const { address: escrowDawnVault } = await getOrCreateAssociatedTokenAccount(
+  const escrowDawnVault = await createAssociatedTokenAccount(
     provider.connection,
     isDevnet ? wallet : serviceProvider,
     dawnMint,
     planPda,
+    { commitment: 'finalized', skipPreflight: true },
+    undefined,
+    undefined,
     true,
   )
 
