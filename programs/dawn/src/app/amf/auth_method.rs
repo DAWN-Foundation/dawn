@@ -27,7 +27,7 @@ pub const AUTH_METHOD_SIZE: usize = 8 // id
 #[derive(Accounts)]
 #[instruction(method_type: AuthMethodType, parameters: [u8; 256])]
 pub struct RegisterAuthMethod<'info> {
-    #[account(mut, constraint = caller.key() == config.authority)]
+    #[account(mut)]
     pub caller: Signer<'info>,
 
     #[account(

@@ -59,6 +59,11 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { Dawn } from '../../target/types/dawn'
+import {
+  createPSKMethodParams,
+  getPskAuthMethodPda,
+  serializePSKMethodParams,
+} from '../dawn/register_psk_auth'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
@@ -416,7 +421,21 @@ export async function setup(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planAuthMethods: AuthMethodType[] = [{ eap: {} }, { psk: {} }]
+
+  // Create PSK method parameters
+  const params = createPSKMethodParams({
+    ssid: 'DawnTestNetwork',
+    securityStandard: 'WPA3_PSK',
+    encryptionAlgorithm: 'AES_GCMP',
+    pskRotationInterval: 86400, // 24 hours
+  })
+  const parametersBuffer = serializePSKMethodParams(params)
+  const [pskAuthMethodPda] = getPskAuthMethodPda(
+    program,
+    serviceProvider.publicKey,
+    parametersBuffer,
+  )
+  const planAuthMethods = [pskAuthMethodPda]
 
   const [planPda, planBump] = getPlanPda(
     program,

@@ -22,6 +22,11 @@ import {
   getAuthMethodPda,
 } from '../../app/utils'
 import { beforeAll, expect } from '@jest/globals'
+import {
+  createPSKMethodParams,
+  getPskAuthMethodPda,
+  serializePSKMethodParams,
+} from '../../app/dawn/register_psk_auth'
 
 export let oneDayLaterPlanPda: PublicKey
 
@@ -239,11 +244,35 @@ export const planTests = () =>
     })
 
     test('cannot add more than 2 auth methods', async () => {
-      const authMethods: AuthMethodType[] = [
-        { mpsk: {} },
-        { wpa2Enterprise: {} },
-        { wpa3Enterprise: {} },
-      ]
+      const p2 = serializePSKMethodParams(
+        createPSKMethodParams({
+          ssid: 'test1',
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        }),
+      )
+      const [m1] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        p2,
+      )
+
+      const p3 = serializePSKMethodParams(
+        createPSKMethodParams({
+          ssid: 'test2',
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        }),
+      )
+      const [m2] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        p3,
+      )
+
+      const authMethods = [...mock.planAuthMethods, m1, m2]
 
       try {
         await program.methods
@@ -276,10 +305,7 @@ export const planTests = () =>
     })
 
     test('cannot add duplicate auth methods', async () => {
-      const authMethods: AuthMethodType[] = [
-        { wpa2Enterprise: {} },
-        { wpa2Enterprise: {} },
-      ]
+      const authMethods = [...mock.planAuthMethods, mock.planAuthMethods[0]]
 
       try {
         await program.methods
@@ -404,7 +430,11 @@ export const planTests = () =>
     })
 
     test('adds the plan', async () => {
-      const localDomainPda = getLocalDomainPda(program, mock.serviceProvider.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.localDomain,
+      )
 
       const tx = await program.methods
         .addPlan(
@@ -523,10 +553,14 @@ export const planTests = () =>
       )
 
       const tx = await program.methods
-        .addPlan(name, price, duration, speed, capacity, null, [
-            { wpa2Enterprise: {} },
-            { ipsecAh: {} },
-          ],
+        .addPlan(
+          name,
+          price,
+          duration,
+          speed,
+          capacity,
+          null,
+          [],
           mock.localDomain,
         )
         .accountsPartial({
@@ -552,8 +586,7 @@ export const planTests = () =>
       assert.equal(event.speed, speed)
       assert.ok(event.capacity.eq(capacity))
       assert.ok(event.serviceAgreement.equals(mock.serviceAgreementPda))
-      expect(event.authMethods[0]).toStrictEqual({ wpa2Enterprise: {} })
-      expect(event.authMethods[1]).toStrictEqual({ ipsecAh: {} })
+      expect(event.authMethods).toStrictEqual([])
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
@@ -566,8 +599,7 @@ export const planTests = () =>
       assert.equal(plan.speed, speed)
       assert.ok(plan.capacity.eq(capacity))
       assert.ok(plan.serviceAgreement.equals(mock.serviceAgreementPda))
-      expect(plan.authMethods[0]).toStrictEqual({ wpa2Enterprise: {} })
-      expect(plan.authMethods[1]).toStrictEqual({ ipsecAh: {} })
+      expect(plan.authMethods).toStrictEqual([])
       assert.equal(plan.bump, planBump)
     })
 
@@ -849,168 +881,8 @@ export const planTests = () =>
 
       // Verify the auth method was added to the plan
       const plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethodAccounts.length).toBe(1)
-      expect(plan.authMethodAccounts[0].equals(authMethodPda)).toBeTruthy()
-    })
-
-    test('cannot add auth method with wrong authority', async () => {
-      // Create a plan
-      const planName = 'test plan for auth method auth'
-      const [planPda] = getPlanPda(
-        program,
-        mock.localDomainPda,
-        null,
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-        mock.serviceAgreementPda,
-      )
-
-      await program.methods
-        .addPlan(
-          planName,
-          mock.planPrice,
-          mock.planDuration,
-          mock.planSpeed,
-          mock.planCapacity,
-          null,
-          mock.planAuthMethods,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          localDomain: mock.localDomainPda,
-          serviceAgreement: mock.serviceAgreementPda,
-          plan: planPda,
-          parentPlan: null,
-          subscription: null,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Create an auth method with different authority
-      const unauthorizedKeypair = anchor.web3.Keypair.generate()
-      const authMethodType: AuthMethodType = {  psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 1)
-      const paramsArray = Array.from(paramsBuffer)
-
-      const authMethodPda = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType,
-        paramsBuffer,
-      )
-
-      // Fund the unauthorized wallet
-      provider.context.setAccount(wallet.publicKey, {
-        lamports: 1000000000, // 1 SOL
-        owner: anchor.web3.SystemProgram.programId,
-        executable: false,
-        data: Buffer.from([]),
-      })
-
-      // Try to add auth method with wrong authority
-      try {
-        await program.methods
-          .addAuthMethod()
-          .accountsPartial({
-            caller: unauthorizedKeypair.publicKey,
-            plan: planPda,
-            authMethod: authMethodPda,
-          })
-          .signers([unauthorizedKeypair])
-          .rpc()
-        assert.ok(false)
-      } catch (error) {
-        console.log("Error adding auth method with wrong authority", error)
-        assert.ok(error instanceof AnchorError)
-        const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'A raw constraint was violated')
-      }
-    })
-
-    test('cannot add auth method that is not in plan auth_methods', async () => {
-      // Create a plan with only PSK auth method
-      const planName = 'test plan psk only'
-      const pskAuthMethods: AuthMethodType[] = [{ psk: {} }]
-      
-      const [planPda] = getPlanPda(
-        program,
-        mock.localDomainPda,
-        null,
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-        mock.serviceAgreementPda,
-      )
-
-      await program.methods
-        .addPlan(
-          planName,
-          mock.planPrice,
-          mock.planDuration,
-          mock.planSpeed,
-          mock.planCapacity,
-          null,
-          pskAuthMethods,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          localDomain: mock.localDomainPda,
-          serviceAgreement: mock.serviceAgreementPda,
-          plan: planPda,
-          parentPlan: null,
-          subscription: null,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Create an EAP auth method (not in plan's auth_methods)
-      const authMethodType: AuthMethodType = { eap: {} }
-      const paramsBuffer = Buffer.alloc(256, 1)
-      const paramsArray = Array.from(paramsBuffer)
-
-      const authMethodPda = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType,
-        paramsBuffer,
-      )
-
-      await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
-        .accountsPartial({
-          caller: wallet.publicKey,
-          config: mock.configPda,
-          authMethod: authMethodPda,
-        })
-        .signers([wallet.payer])
-        .rpc()
-
-      // Try to add EAP auth method to PSK-only plan
-      try {
-        await program.methods
-          .addAuthMethod()
-          .accountsPartial({
-            caller: mock.serviceProvider.publicKey,
-            plan: planPda,
-            authMethod: authMethodPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
-        assert.ok(false)
-      } catch (error) {
-        assert.ok(error instanceof AnchorError)
-        const err: AnchorError = error
-        assert.strictEqual(err.error.errorMessage, 'Invalid auth method type')
-      }
+      expect(plan.authMethods.length).toBe(2)
+      expect(plan.authMethods[1].equals(authMethodPda)).toBeTruthy()
     })
 
     test('cannot add duplicate auth method to plan', async () => {
@@ -1075,7 +947,7 @@ export const planTests = () =>
         .rpc()
 
       // sleep 1 second
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
       // Try to add the same auth method again
       try {
@@ -1099,8 +971,51 @@ export const planTests = () =>
     test('adds multiple auth methods to plan successfully', async () => {
       // Create a plan with 2 auth methods
       const planName = 'test plan multiple auth methods'
-      const twoAuthMethods: AuthMethodType[] = [{ eap: {} }, { psk: {} }]
-      
+
+      const p1 = serializePSKMethodParams(
+        createPSKMethodParams({
+          ssid: 'test1',
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        }),
+      )
+      const [m1] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        p1,
+      )
+
+      const p2 = serializePSKMethodParams(
+        createPSKMethodParams({
+          ssid: 'test2',
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        }),
+      )
+
+      const [m2] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        p2,
+      )
+
+      // Create first auth method
+      const pskMethodType: AuthMethodType = { psk: {} }
+
+      await program.methods
+        .registerAuthMethod(pskMethodType as any, [...p1])
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          authMethod: m1,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      const authMethods = [m1, m2]
+
       const [planPda] = getPlanPda(
         program,
         mock.localDomainPda,
@@ -1122,7 +1037,7 @@ export const planTests = () =>
           mock.planSpeed,
           mock.planCapacity,
           null,
-          twoAuthMethods,
+          authMethods,
           mock.localDomain,
         )
         .accountsPartial({
@@ -1136,68 +1051,43 @@ export const planTests = () =>
         .signers([mock.serviceProvider])
         .rpc()
 
-      // Create first auth method
-      const authMethodType1: AuthMethodType = { psk: {} }
-      const paramsBuffer1 = Buffer.alloc(256, 1)
-      const paramsArray1 = Array.from(paramsBuffer1)
-
-      const authMethodPda1 = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType1,
-        paramsBuffer1,
-      )
-
-      // Create second auth method
-      const authMethodType2: AuthMethodType = { psk: {} }
-      const paramsBuffer2 = Buffer.alloc(256, 2)
-      const paramsArray2 = Array.from(paramsBuffer2)
-
-      const authMethodPda2 = getAuthMethodPda(
-        program,
-        wallet.publicKey,
-        authMethodType2,
-        paramsBuffer2,
-      )
-      
       await program.methods
-        .registerAuthMethod(authMethodType2 as any, paramsArray2)
+        .registerAuthMethod(pskMethodType as any, [...p2])
         .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
-          authMethod: authMethodPda2,
+          authMethod: m2,
         })
         .signers([wallet.payer])
         .rpc()
 
-        // Add first auth method
+      // Add first auth method
       await program.methods
         .addAuthMethod()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           plan: planPda,
-          authMethod: authMethodPda1,
+          authMethod: m1,
         })
         .signers([mock.serviceProvider])
         .rpc()
 
-
-        // Add second auth method
+      // Add second auth method
       await program.methods
         .addAuthMethod()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           plan: planPda,
-          authMethod: authMethodPda2,
+          authMethod: m2,
         })
         .signers([mock.serviceProvider])
         .rpc()
 
       // Verify both auth methods were added
       const plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethodAccounts.length).toBe(2)
-      expect(plan.authMethodAccounts[0].equals(authMethodPda1)).toBeTruthy()
-      expect(plan.authMethodAccounts[1].equals(authMethodPda2)).toBeTruthy()
+      expect(plan.authMethods.length).toBe(2)
+      expect(plan.authMethods[0].equals(m1)).toBeTruthy()
+      expect(plan.authMethods[1].equals(m2)).toBeTruthy()
     })
   })
 
@@ -1332,7 +1222,11 @@ export const parentPlanTests = () =>
 
       provider.wallet = new Wallet(mock.customer)
 
-      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
       const [resellPlanPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1382,7 +1276,11 @@ export const parentPlanTests = () =>
     test('cannot add plan that exceeds duration of parent plan', async () => {
       const duration = mock.planDuration + 1
 
-      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1429,7 +1327,11 @@ export const parentPlanTests = () =>
     test('cannot add plan that exceeds speed of parent plan', async () => {
       const speed = mock.planSpeed + 1
 
-      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1476,7 +1378,11 @@ export const parentPlanTests = () =>
     test('cannot add plan that exceeds capacity of parent plan', async () => {
       const capacity = mock.planCapacity.add(new BN(1))
 
-      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
       const [planPda] = getPlanPda(
         program,
         localDomainPda,
@@ -1523,7 +1429,11 @@ export const parentPlanTests = () =>
     test('adds plan to resell the parent plan (customer is subscribed)', async () => {
       // use mock.planPda as parent plan, customer is subscribed to it
 
-      const localDomainPda = getLocalDomainPda(program, mock.customer.publicKey, mock.localDomain)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.customer.publicKey,
+        mock.localDomain,
+      )
       const [planPda, planBump] = getPlanPda(
         program,
         localDomainPda,

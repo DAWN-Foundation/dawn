@@ -163,7 +163,7 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethodType>,
+        auth_methods: Vec<Pubkey>,
         local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_plan(

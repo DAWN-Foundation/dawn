@@ -2,8 +2,7 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    utils::optional_pubkey_seed, AuthMethodType, DawnApp, DawnError, LocalDomain, PlanAdded,
-    Subscription,
+    utils::optional_pubkey_seed, DawnApp, DawnError, LocalDomain, PlanAdded, Subscription,
 };
 
 use super::ServiceAgreement;
@@ -37,9 +36,7 @@ pub struct Plan {
     /// The Service Level Agreement Account
     pub service_agreement: Pubkey,
     /// The authentication methods for the plan (max 2)
-    pub auth_methods: Vec<AuthMethodType>,
-    /// The authentication method accounts associated with this plan (max 10)
-    pub auth_method_accounts: Vec<Pubkey>,
+    pub auth_methods: Vec<Pubkey>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -57,8 +54,7 @@ const PLAN_SIZE: usize = 8 // id
     + 8 // capacity
     + 8 // start_at
     + 32 // service_agreement
-    + (4 + 2) // auth_methods
-    + (4 + 10 * 32) // auth_method_accounts (max 10 * 32 bytes)
+    + (4 + 2 * 32) // auth_methods (max 2 * 32 bytes)
     + 1; // bump
 
 #[derive(Accounts)]
@@ -69,7 +65,7 @@ const PLAN_SIZE: usize = 8 // id
     speed: u32,
     capacity: u64,
     start_at: Option<i64>,
-    auth_methods: Vec<AuthMethodType>,
+    auth_methods: Vec<Pubkey>,
     local_domain_name: String,
 )]
 pub struct AddPlan<'info> {
@@ -197,7 +193,7 @@ impl DawnApp {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethodType>,
+        auth_methods: Vec<Pubkey>,
         local_domain_name: String,
     ) -> Result<()> {
         // Make sure the local domain name is not empty or too long
@@ -226,18 +222,15 @@ impl DawnApp {
         require!(speed > 0, DawnError::ZeroPlanSpeed);
 
         // Make sure the auth methods are valid
-        // No duplicate auth methods
-        let mut seen = [false; 6]; // Assuming AuthMethod is an enum with 6 variants
-        let mut count = 0;
-        for method in &auth_methods {
-            let idx = method.to_owned() as usize;
-            require!(!seen[idx], DawnError::DuplicateAuthMethods);
-            seen[idx] = true;
-            count += 1;
-        }
+        // No more than 2 auth methods
+        require!(auth_methods.len() <= 2, DawnError::TooManyAuthMethods);
 
-        // No more than 2 auth methods (check before moving auth_methods)
-        require!(count <= 2, DawnError::TooManyAuthMethods);
+        // No duplicate auth methods
+        for (i, method1) in auth_methods.iter().enumerate() {
+            for method2 in auth_methods.iter().skip(i + 1) {
+                require!(method1 != method2, DawnError::DuplicateAuthMethods);
+            }
+        }
 
         if let Some(parent_plan) = ctx.accounts.parent_plan.as_ref() {
             // for a resale plan, make sure the parent plan has a subscription
@@ -283,7 +276,6 @@ impl DawnApp {
         plan.start_at = start_at.unwrap_or(0); // 0 for immediate start
         plan.service_agreement = ctx.accounts.service_agreement.key();
         plan.auth_methods.clone_from(&auth_methods);
-        plan.auth_method_accounts = Vec::new(); // Initialize empty, will be populated later
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -310,26 +302,17 @@ impl DawnApp {
         let plan = &mut ctx.accounts.plan;
         let auth_method = &ctx.accounts.auth_method;
 
-        // Check if the auth method type is already in the plan's auth_methods
-        require!(
-            plan.auth_methods.contains(&auth_method.method_type),
-            DawnError::InvalidAuthMethodType
-        );
-
         // Check if the auth method is already associated with this plan
         require!(
-            !plan.auth_method_accounts.contains(&auth_method.key()),
+            !plan.auth_methods.contains(&auth_method.key()),
             DawnError::DuplicateAuthMethods
         );
 
-        // Check if we haven't exceeded the maximum number of auth methods (10)
-        require!(
-            plan.auth_method_accounts.len() < 10,
-            DawnError::TooManyAuthMethods
-        );
+        // Check if we haven't exceeded the maximum number of auth methods (3)
+        require!(plan.auth_methods.len() < 3, DawnError::TooManyAuthMethods);
 
         // Add the auth method to the plan
-        plan.auth_method_accounts.push(auth_method.key());
+        plan.auth_methods.push(auth_method.key());
 
         Ok(())
     }

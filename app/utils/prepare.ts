@@ -325,7 +325,7 @@ export async function prepare(
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
-  const planAuthMethods: AuthMethodType[] = [{ mpsk: {} }]
+  const planAuthMethods: PublicKey[] = []
 
   const [planPda, planBump] = getPlanPda(
     program,
