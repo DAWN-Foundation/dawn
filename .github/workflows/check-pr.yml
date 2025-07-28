@@ -74,8 +74,17 @@ jobs:
           key: ${{ runner.os }}-solana-2.1.0
 
       # SOLANA
+      - name: Check if Solana is installed
+        id: solana-check
+        run: |
+          if command -v solana &> /dev/null && solana --version | grep -q "2.1.0"; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install Solana CLI
-        if: steps.solana-cache.outputs.cache-hit != 'true'
+        if: steps.solana-check.outputs.installed != 'true'
         run: sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.0/install)"
       - name: Set Solana CLI path
         run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
@@ -92,8 +101,17 @@ jobs:
           key: ${{ runner.os }}-anchor-0.31.1
 
       # ANCHOR
+      - name: Check if Anchor is installed
+        id: anchor-check
+        run: |
+          if command -v anchor &> /dev/null && anchor --version | grep -q "0.31.1"; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install Anchor CLI
-        if: steps.anchor-cache.outputs.cache-hit != 'true'
+        if: steps.anchor-check.outputs.installed != 'true'
         run: RUSTFLAGS="-A deprecated" cargo install --git https://github.com/coral-xyz/anchor --tag v0.31.1 anchor-cli
 
       # GENERATE KEY
