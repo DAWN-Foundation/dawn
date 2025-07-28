@@ -26,10 +26,10 @@ import {
   getDeviceLocationPda,
   getOrganizationPda,
   getLocalDomainPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
-import { getBalance } from '../../app/dawn/utils'
+import { getBalance } from '../../cli/shared/cli-utils'
 import { oneDayLaterPlanPda } from './06_plan'
 
 const SECONDS_PER_DAY = 86_400

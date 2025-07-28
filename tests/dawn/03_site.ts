@@ -11,10 +11,10 @@ import {
   confirmTx,
   COORD_DENOMINATOR,
   loadWallet,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
-import { getSitePda } from '../../app/utils/pda/site'
+import { getSitePda } from '../../sdk/pda/site'
 
 interface SiteAdded {
   owner: PublicKey

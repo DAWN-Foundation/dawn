@@ -2,19 +2,17 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
 import { assert } from 'chai'
 import { Dawn } from '../../target/types/dawn'
-import {
-  mock,
-  getProvider,
-  loadWallet,
-} from '../../app/utils'
+import { mock, getProvider, loadWallet } from '../../sdk/utils'
 import {
   createPskCredentialData,
   serializePskCredentialData,
   createPSKMethodParams,
   serializePSKMethodParams,
+} from '../../sdk/utils/auth'
+import {
   getPskAuthMethodPda,
   getCredentialPda as getPskCredentialPda,
-} from '../../app/dawn/register_psk_auth'
+} from '../../sdk/pda/amf'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
 
@@ -52,16 +50,17 @@ export const pskAmfTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
       const parametersBuffer = serializePSKMethodParams(params)
-      const [pskAuthMethodPda] = getPskAuthMethodPda(program, wallet.publicKey, parametersBuffer)
-      
+      const [pskAuthMethodPda] = getPskAuthMethodPda(
+        program,
+        wallet.publicKey,
+        parametersBuffer,
+      )
+
       authMethodPda = pskAuthMethodPda
 
       // Register the auth method on-chain
       const signature = await program.methods
-        .registerAuthMethod(
-          { psk: {} },
-          Array.from(parametersBuffer)
-        )
+        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
         .accountsPartial({
           caller: wallet.publicKey,
           config: mock.configPda,
@@ -87,20 +86,20 @@ export const pskAmfTests = () =>
       const psk = 'SuperSecurePassword123!'
 
       // Create credential data with hash using client pubkey as salt
-      const credentialData = createPskCredentialData(psk, clientKeypair.publicKey)
+      const credentialData = createPskCredentialData(
+        psk,
+        clientKeypair.publicKey,
+      )
       const serializedData = serializePskCredentialData(credentialData)
 
       credentialPda = getPskCredentialPda(
         program,
         authMethodPda,
-        clientKeypair.publicKey
-      )[0]
+        clientKeypair.publicKey,
+      )
 
       await program.methods
-        .registerCredential(
-          clientKeypair.publicKey,
-          Array.from(serializedData)
-        )
+        .registerCredential(clientKeypair.publicKey, Array.from(serializedData))
         .accountsPartial({
           caller: wallet.publicKey,
           authMethod: authMethodPda,
@@ -139,21 +138,21 @@ export const pskAmfTests = () =>
 
       const credentialData = createPskCredentialData(
         'TestPassword',
-        clientKeypair.publicKey
+        clientKeypair.publicKey,
       )
       const serializedData = serializePskCredentialData(credentialData)
 
-      const [unauthorizedCredentialPda] = getPskCredentialPda(
+      const unauthorizedCredentialPda = getPskCredentialPda(
         program,
         authMethodPda,
-        anchor.web3.Keypair.generate().publicKey // Different client
+        anchor.web3.Keypair.generate().publicKey, // Different client
       )
 
       try {
         await program.methods
           .registerCredential(
             clientKeypair.publicKey,
-            Array.from(serializedData)
+            Array.from(serializedData),
           )
           .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
@@ -167,14 +166,17 @@ export const pskAmfTests = () =>
         expect(false).toBe(true)
       } catch (error) {
         expect(error).toBeTruthy()
-        console.log('Expected error for unauthorized credential registration:', error.message)
+        console.log(
+          'Expected error for unauthorized credential registration:',
+          error.message,
+        )
       }
     })
 
     test('revokes PSK credential successfully', async () => {
       // Verify credential exists before revocation
       const credentialBefore = await program.account.credential.fetch(
-        credentialPda
+        credentialPda,
       )
       expect(credentialBefore).toBeTruthy()
 
@@ -199,6 +201,4 @@ export const pskAmfTests = () =>
         console.log('Expected error for closed credential account')
       }
     })
-
-
-  }) 
+  })

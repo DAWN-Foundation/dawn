@@ -17,11 +17,11 @@ import {
   confirmTx,
   getPlanPda,
   getSubscriptionPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { Clock } from 'solana-bankrun'
 import { beforeAll, expect } from '@jest/globals'
-import { getBalance } from '../../app/dawn/utils'
+import { getBalance } from '../../cli/shared/cli-utils'
 
 const SECONDS_PER_DAY = 86_400n
 const BPS_DENOMINATOR = new BN(10_000)

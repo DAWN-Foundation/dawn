@@ -20,13 +20,13 @@ import {
   getOrganizationPda,
   getLocalDomainPda,
   getAuthMethodPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import {
   createPSKMethodParams,
-  getPskAuthMethodPda,
   serializePSKMethodParams,
-} from '../../app/dawn/register_psk_auth'
+} from '../../sdk/utils/auth'
+import { getPskAuthMethodPda } from '../../sdk/pda/amf'
 
 export let oneDayLaterPlanPda: PublicKey
 
@@ -926,7 +926,6 @@ export const planTests = () =>
       // Create an auth method
       const authMethodType: AuthMethodType = { psk: {} }
       const paramsBuffer = Buffer.alloc(256, 1)
-      const paramsArray = Array.from(paramsBuffer)
 
       const authMethodPda = getAuthMethodPda(
         program,
@@ -1007,11 +1006,11 @@ export const planTests = () =>
       await program.methods
         .registerAuthMethod(pskMethodType as any, [...p1])
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
           authMethod: m1,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       const authMethods = [m1, m2]
@@ -1054,30 +1053,8 @@ export const planTests = () =>
       await program.methods
         .registerAuthMethod(pskMethodType as any, [...p2])
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
-          authMethod: m2,
-        })
-        .signers([wallet.payer])
-        .rpc()
-
-      // Add first auth method
-      await program.methods
-        .addAuthMethod()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          plan: planPda,
-          authMethod: m1,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Add second auth method
-      await program.methods
-        .addAuthMethod()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          plan: planPda,
           authMethod: m2,
         })
         .signers([mock.serviceProvider])

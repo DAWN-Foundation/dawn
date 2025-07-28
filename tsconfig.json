@@ -5,6 +5,18 @@
     "lib": ["es2020"],
     "module": "commonjs",
     "target": "es2020",
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist"
+  },
+  "include": [
+    "cli/**/*.ts",
+    "sdk/**/*.ts", 
+    "migrations/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests/**/*",
+    "target/**/*"
+  ]
 }

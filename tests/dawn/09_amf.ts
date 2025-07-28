@@ -29,7 +29,7 @@ import {
   generateIPsecAHCredential,
   serializeIPsecAHCredential,
   deserializeIPsecAHCredential,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
 
