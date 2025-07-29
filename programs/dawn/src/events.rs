@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{AuthMethodType, DeviceType};
+use crate::DeviceType;
 
 #[event]
 pub struct SiteAdded {
@@ -38,7 +38,7 @@ pub struct PlanAdded {
     pub capacity: u64,
     pub start_at: i64,
     pub service_agreement: Pubkey,
-    pub auth_methods: Vec<AuthMethodType>,
+    pub auth_methods: Vec<Pubkey>,
     pub created_at: i64,
 }
 

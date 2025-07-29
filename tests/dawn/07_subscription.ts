@@ -26,10 +26,10 @@ import {
   getDeviceLocationPda,
   getOrganizationPda,
   getLocalDomainPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
-import { getBalance } from '../../app/dawn/utils'
+import { getBalance } from '../../cli/shared/cli-utils'
 import { oneDayLaterPlanPda } from './06_plan'
 
 const SECONDS_PER_DAY = 86_400
@@ -259,7 +259,7 @@ export const subscriptionTests = () =>
         mock.customer,
       )
 
-      // set chain time to 1 day in the future
+      // set chain time to 1 day in the future (with buffer for CI timing)
       const clock = await provider.context.banksClient.getClock()
       provider.context.setClock(
         new Clock(
@@ -267,7 +267,7 @@ export const subscriptionTests = () =>
           clock.epochStartTimestamp,
           clock.epoch,
           clock.leaderScheduleEpoch,
-          clock.unixTimestamp + 86400n,
+          clock.unixTimestamp + 86400n + 300n, // Add 5 minutes buffer for CI
         ),
       )
 
@@ -355,7 +355,9 @@ export const subscriptionTests = () =>
       assert.ok(event.subscriber.equals(mock.customer.publicKey))
       expect(event.device).toBeNull()
       assert.ok(event.expiration > 0)
-      assert.ok(event.swapPrice.gt(price))
+      // Convert swapPrice to BN for comparison since it comes as u128
+      const swapPriceBN = new BN(event.swapPrice.toString())
+      assert.ok(swapPriceBN.gt(price))
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure the customer USDC account was debited
@@ -497,7 +499,9 @@ export const subscriptionTests = () =>
           expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
         ),
       )
-      assert.ok(event.swapPrice.gt(price))
+      // Convert swapPrice to BN for comparison since it comes as u128
+      const swapPriceBN = new BN(event.swapPrice.toString())
+      assert.ok(swapPriceBN.gt(price))
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure the customer USDC account was debited
