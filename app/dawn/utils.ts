@@ -212,9 +212,7 @@ export async function submitTx(
   itx: web3.TransactionInstruction,
   logs: boolean = true,
 ) {
-  const latestBlockHash = await connection.getLatestBlockhash({
-    commitment: 'confirmed',
-  })
+  const latestBlockHash = await connection.getLatestBlockhash()
   console.log({ latestBlockHash })
 
   const tx = new Transaction({
@@ -225,7 +223,7 @@ export async function submitTx(
   const signed = await wallet.signTransaction(tx)
 
   let txSignature = await connection.sendRawTransaction(signed.serialize(), {
-    skipPreflight: true,
+    skipPreflight: false,
   })
 
   logs && console.log({ txSignature })
