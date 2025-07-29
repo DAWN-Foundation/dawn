@@ -1,5 +1,5 @@
 import { BN } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import {
@@ -29,7 +29,7 @@ async function main() {
   const name = getFlag('--name') || mock.deviceName
   const placementFlag = getFlag('--placement')
   const macAddressFlag = getFlag('--mac-address')
-  const localDomainName = getFlag('--local-domain')
+  const localDomainName = getFlag('--local-domain') || mock.localDomain
 
   const placement = placementFlag
     ? placementFlag.split(',').map(Number)
@@ -77,7 +77,7 @@ async function main() {
   const localDomainPda = getLocalDomainPda(
     program,
     wallet.payer.publicKey,
-    mock.localDomain,
+    localDomainName,
   )
 
   console.log({ devicePda: devicePda.toBase58() })
@@ -96,7 +96,7 @@ async function main() {
       macAddress,
       localDomainName,
     )
-    .accountsPartial({
+    .accountsStrict({
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
@@ -104,6 +104,8 @@ async function main() {
       accessDomain: accessDomainPda,
       deviceLocation: deviceLocationPda,
       site: null,
+      localDomain: localDomainPda,
+      systemProgram: SystemProgram.programId,
     })
     .instruction()
 
