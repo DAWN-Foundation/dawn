@@ -48,6 +48,10 @@ pub mod dawn {
         DawnApp::register_auth_method(ctx, method_type, parameters)
     }
 
+    pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
+        DawnApp::add_auth_method(ctx)
+    }
+
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
         client: Pubkey,
@@ -159,7 +163,7 @@ pub mod dawn {
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<AuthMethodType>,
+        auth_methods: Vec<Pubkey>,
         local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_plan(

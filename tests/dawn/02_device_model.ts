@@ -15,7 +15,7 @@ import {
   loadWallet,
   DeviceType,
   getDeviceModelPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
 

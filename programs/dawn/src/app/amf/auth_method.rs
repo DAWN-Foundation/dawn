@@ -1,4 +1,7 @@
-use crate::app::{amf::AuthMethodType, Config, DawnApp};
+use crate::{
+    app::{amf::AuthMethodType, Config, DawnApp},
+    utils::optional_pubkey_seed,
+};
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 /// Account structure for authentication methods
@@ -24,7 +27,7 @@ pub const AUTH_METHOD_SIZE: usize = 8 // id
 #[derive(Accounts)]
 #[instruction(method_type: AuthMethodType, parameters: [u8; 256])]
 pub struct RegisterAuthMethod<'info> {
-    #[account(mut, constraint = caller.key() == config.authority)]
+    #[account(mut)]
     pub caller: Signer<'info>,
 
     #[account(

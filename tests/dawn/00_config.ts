@@ -13,7 +13,7 @@ import {
   getProvider,
   createAccounts,
   getConfigPda,
-} from '../../app/utils'
+} from '../../sdk/utils'
 
 export const configTests = () =>
   describe('dawn::configure', () => {
