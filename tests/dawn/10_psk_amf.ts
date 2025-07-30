@@ -52,7 +52,7 @@ export const pskAmfTests = () =>
       const parametersBuffer = serializePSKMethodParams(params)
       const [pskAuthMethodPda] = getPskAuthMethodPda(
         program,
-        wallet.publicKey,
+        mock.serviceProvider.publicKey,
         parametersBuffer,
       )
 
@@ -62,11 +62,12 @@ export const pskAmfTests = () =>
       const signature = await program.methods
         .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
           authMethod: authMethodPda,
+          device: mock.devicePda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       expect(signature).toBeTruthy()
@@ -74,7 +75,8 @@ export const pskAmfTests = () =>
       // Verify the account was created correctly
       const authMethod = await program.account.authMethod.fetch(authMethodPda)
       expect(authMethod.methodType).toStrictEqual({ psk: {} })
-      expect(authMethod.authority.equals(wallet.publicKey)).toBeTruthy()
+      expect(authMethod.authority.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(authMethod.device.equals(mock.devicePda)).toBeTruthy()
 
       console.log({
         authMethodPda: authMethodPda.toString(),
@@ -101,11 +103,11 @@ export const pskAmfTests = () =>
       await program.methods
         .registerCredential(clientKeypair.publicKey, Array.from(serializedData))
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Verify the credential was created correctly
@@ -184,11 +186,11 @@ export const pskAmfTests = () =>
       await program.methods
         .revokeCredential()
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Verify credential account is closed

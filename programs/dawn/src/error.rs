@@ -58,6 +58,9 @@ pub enum DawnError {
     #[msg("Plan is expired")]
     PlanExpired,
 
+    #[msg("Device not in local domain")]
+    DeviceNotInLocalDomain,
+
     // CLAIM
     #[msg("Invalid vault")]
     InvalidVault,
