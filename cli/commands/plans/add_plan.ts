@@ -2,11 +2,12 @@ import { BN } from '@coral-xyz/anchor'
 
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import { getPlanPda, getLocalDomainPda } from '../../../sdk/utils'
+import { SystemProgram } from '@solana/web3.js'
 
 async function main() {
   const mock = getMock()
 
-  const localDomain = getFlag('--local-domain')
+  const localDomain = getFlag('--local-domain') || mock.localDomain
   if (!localDomain) throw new Error('--local-domain is required')
 
   const name = getFlag('--name') || mock.planName
@@ -50,13 +51,15 @@ async function main() {
       mock.planAuthMethods,
       localDomain,
     )
-    .accounts({
+    .accountsStrict({
       caller: wallet.payer.publicKey,
       serviceAgreement: mock.serviceAgreementPda,
-      plan: planPda,
       parentPlan: null,
+      plan: planPda,
       subscription: null,
-    } as {})
+      localDomain: localDomainPda,
+      systemProgram: SystemProgram.programId,
+    })
     .signers([wallet.payer])
     .instruction()
 

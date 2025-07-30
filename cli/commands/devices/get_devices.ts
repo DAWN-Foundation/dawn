@@ -22,7 +22,7 @@ async function main() {
   console.log({ devices: devices.length })
   console.log(
     devices.map((b) => ({
-      owner: b.publicKey.toBase58(),
+      publicKey: b.publicKey.toBase58(),
       account: {
         ...b.account,
         createdAt: new Date(
