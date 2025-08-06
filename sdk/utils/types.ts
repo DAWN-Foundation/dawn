@@ -188,7 +188,7 @@ export interface RawMock {
   planDuration: number
   planSpeed: number
   planCapacity: string
-  planAuthMethods: string[]
+  planAuthMethods: string
   // subscription
   subscriptionPda: string
   subscriptionBump: number

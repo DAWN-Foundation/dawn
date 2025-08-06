@@ -286,6 +286,7 @@ export async function prepare(
   const deviceManufacturerL2 = 'DAWN'
   const deviceModelL2 = 'WirelessRadio'
   const deviceNameL2 = 'WirelessRadio'
+  const deviceMacAddressL2: MacAddress = [0, 0, 0, 0, 0, 1]
 
   const deviceL2ModelPda = getDeviceModelPda(
     program,
@@ -299,8 +300,9 @@ export async function prepare(
     customer,
     deviceL2ModelPda,
     deviceNameL2,
-    deviceMacAddress,
+    deviceMacAddressL2,
   )
+
   const organizationPda = getOrganizationPda(
     program,
     serviceProvider.publicKey,
