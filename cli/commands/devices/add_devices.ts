@@ -132,15 +132,14 @@ async function main() {
           )
 
           const planItx = await program.methods
-            .addPlan(
+            .addL3Plan(
               planParams.name,
               planParams.price,
               planParams.duration,
               planParams.speed,
               planParams.capacity,
               null,
-              mock.planAuthMethods,
-              mock.localDomain,
+              mock.planAuthMethods
             )
             .accounts({
               caller: wallet.payer.publicKey,

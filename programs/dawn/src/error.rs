@@ -182,4 +182,10 @@ pub enum DawnError {
 
     #[msg("Distribution domain is required")]
     DistributionDomainRequired,
+
+    #[msg("Invalid auth method account")]
+    InvalidAuthMethodAccount,
+
+    #[msg("Invalid auth method authority")]
+    InvalidAuthMethodAuthority,
 }

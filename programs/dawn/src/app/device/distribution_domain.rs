@@ -7,8 +7,8 @@ pub struct DistributionDomain {
     pub created_at: i64,
     /// The owner of the access domain, same as the L3 device owner
     pub owner: Pubkey,
-    /// Associated L3 device
-    pub device: Pubkey,
+    /// Associated local domain
+    pub local_domain: Pubkey,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -16,5 +16,5 @@ pub struct DistributionDomain {
 pub const DISTRIBUTION_DOMAIN_SIZE: usize = 8 // id
     + 8 // created_at
     + 32 // owner
-    + 32 // device
+    + 32 // local_domain
     + 1; // bump
