@@ -164,15 +164,7 @@ pub mod dawn {
         capacity: u64,
         start_at: Option<i64>,
     ) -> Result<()> {
-        DawnApp::add_l3_plan(
-            ctx,
-            name,
-            price,
-            duration,
-            speed,
-            capacity,
-            start_at,
-        )
+        DawnApp::add_l3_plan(ctx, name, price, duration, speed, capacity, start_at)
     }
 
     pub fn add_l2_plan(
@@ -184,15 +176,7 @@ pub mod dawn {
         capacity: u64,
         start_at: Option<i64>,
     ) -> Result<()> {
-        DawnApp::add_l2_plan(
-            ctx,
-            name,
-            price,
-            duration,
-            speed,
-            capacity,
-            start_at,
-        )
+        DawnApp::add_l2_plan(ctx, name, price, duration, speed, capacity, start_at)
     }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
