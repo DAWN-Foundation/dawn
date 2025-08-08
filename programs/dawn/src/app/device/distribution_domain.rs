@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 
-/// The access domain account, representing an access domain tied to a device
+/// The distribution domain account, representing a distribution domain tied to a device
 #[account]
 pub struct DistributionDomain {
     /// The creation timestamp
     pub created_at: i64,
-    /// The owner of the access domain, same as the L3 device owner
+    /// The owner of the distribution domain, same as the L3 device owner
     pub owner: Pubkey,
     /// Associated local domain
     pub local_domain: Pubkey,
