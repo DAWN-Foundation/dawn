@@ -155,28 +155,28 @@ pub mod dawn {
         DawnApp::add_service_agreement(ctx, threshold, payout_ratio)
     }
 
-    pub fn add_plan(
-        ctx: Context<AddPlan>,
+    pub fn add_l3_plan(
+        ctx: Context<AddL3Plan>,
         name: String,
         price: u64,
         duration: u16,
         speed: u32,
         capacity: u64,
         start_at: Option<i64>,
-        auth_methods: Vec<Pubkey>,
-        local_domain_name: String,
     ) -> Result<()> {
-        DawnApp::add_plan(
-            ctx,
-            name,
-            price,
-            duration,
-            speed,
-            capacity,
-            start_at,
-            auth_methods,
-            local_domain_name,
-        )
+        DawnApp::add_l3_plan(ctx, name, price, duration, speed, capacity, start_at)
+    }
+
+    pub fn add_l2_plan(
+        ctx: Context<AddL2Plan>,
+        name: String,
+        price: u64,
+        duration: u16,
+        speed: u32,
+        capacity: u64,
+        start_at: Option<i64>,
+    ) -> Result<()> {
+        DawnApp::add_l2_plan(ctx, name, price, duration, speed, capacity, start_at)
     }
 
     pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {

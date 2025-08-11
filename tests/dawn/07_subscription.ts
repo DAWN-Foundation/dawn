@@ -645,7 +645,6 @@ export const subscriptionTests = () =>
           deviceModel: mock.deviceModelPda,
           device: devicePda,
           organization: organizationPda,
-          accessDomain: accessDomainPda,
           deviceLocation: deviceLocationPda,
           site: null,
           localDomain: localDomainPda,

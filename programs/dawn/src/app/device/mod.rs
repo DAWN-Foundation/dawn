@@ -3,6 +3,7 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 mod access_domain;
 #[allow(clippy::module_inception)]
 mod device;
+mod distribution_domain;
 // mod ip_pool;
 mod local_domain;
 mod location;
@@ -12,6 +13,7 @@ mod site;
 
 pub use access_domain::*;
 pub use device::*;
+pub use distribution_domain::*;
 // pub use ip_pool::*;
 pub use local_domain::*;
 pub use location::*;

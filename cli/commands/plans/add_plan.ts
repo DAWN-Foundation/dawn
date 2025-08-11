@@ -2,11 +2,12 @@ import { BN } from '@coral-xyz/anchor'
 
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import { getPlanPda, getLocalDomainPda } from '../../../sdk/utils'
-import { SystemProgram } from '@solana/web3.js'
+import { SystemProgram, PublicKey } from '@solana/web3.js'
 
 async function main() {
   const mock = getMock()
 
+  const planType = getFlag('--type') || 'L3' // L3 (original) or L2 (derived)
   const localDomain = getFlag('--local-domain') || mock.localDomain
   if (!localDomain) throw new Error('--local-domain is required')
 
@@ -25,49 +26,142 @@ async function main() {
     localDomain,
   )
 
-  const [planPda] = getPlanPda(
-    program,
-    localDomainPda,
-    null,
-    name,
-    price,
-    duration,
-    speed,
-    capacity,
-    null,
-    mock.serviceAgreementPda,
-  )
-
-  console.log({ planPda: planPda.toBase58() })
-
-  const itx = await program.methods
-    .addPlan(
+  if (planType.toUpperCase() === 'L3') {
+    // Create L3 plan (original plan with distribution domain)
+    const [planPda] = getPlanPda(
+      program,
+      localDomainPda,
+      null,
       name,
       price,
       duration,
       speed,
       capacity,
       null,
-      mock.planAuthMethods,
-      localDomain,
+      mock.serviceAgreementPda,
     )
-    .accountsStrict({
-      caller: wallet.payer.publicKey,
-      serviceAgreement: mock.serviceAgreementPda,
-      parentPlan: null,
-      plan: planPda,
-      subscription: null,
-      localDomain: localDomainPda,
-      systemProgram: SystemProgram.programId,
-    })
-    .signers([wallet.payer])
-    .instruction()
 
-  try {
-    const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
-  } catch (error) {
-    console.error(error)
+    const [distributionDomainPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('distribution_domain'),
+        planPda.toBuffer(),
+        localDomainPda.toBuffer(),
+      ],
+      program.programId,
+    )
+
+    console.log({ 
+      planPda: planPda.toBase58(),
+      distributionDomainPda: distributionDomainPda.toBase58()
+    })
+
+    const itx = await program.methods
+      .addL3Plan(
+        name,
+        price,
+        duration,
+        speed,
+        capacity,
+        null,
+      )
+      .accountsStrict({
+        caller: wallet.payer.publicKey,
+        serviceAgreement: mock.serviceAgreementPda,
+        plan: planPda,
+        localDomain: localDomainPda,
+        distributionDomain: distributionDomainPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .remainingAccounts(
+        mock.planAuthMethods.map(pubkey => ({
+          pubkey,
+          isWritable: false,
+          isSigner: false,
+        }))
+      )
+      .signers([wallet.payer])
+      .instruction()
+
+    try {
+      const txResult = await submitTx(connection, wallet, itx)
+      console.log('L3 Plan created successfully', { txResult })
+    } catch (error) {
+      console.error('Error creating L3 plan:', error)
+    }
+  } else if (planType.toUpperCase() === 'L2') {
+    // Create L2 plan (derived plan with access domain)
+    const parentPlanAddress = getFlag('--parent-plan')
+    if (!parentPlanAddress) throw new Error('--parent-plan is required for L2 plans')
+
+    const subscriptionAddress = getFlag('--subscription')
+    if (!subscriptionAddress) throw new Error('--subscription is required for L2 plans')
+
+    const [planPda] = getPlanPda(
+      program,
+      localDomainPda,
+      new PublicKey(parentPlanAddress),
+      name,
+      price,
+      duration,
+      speed,
+      capacity,
+      null,
+      mock.serviceAgreementPda,
+    )
+
+    const [accessDomainPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('access_domain'),
+        planPda.toBuffer(),
+        localDomainPda.toBuffer(),
+      ],
+      program.programId,
+    )
+
+    console.log({ 
+      planPda: planPda.toBase58(),
+      accessDomainPda: accessDomainPda.toBase58(),
+      parentPlan: parentPlanAddress,
+      subscription: subscriptionAddress
+    })
+
+    const itx = await program.methods
+      .addL2Plan(
+        name,
+        price,
+        duration,
+        speed,
+        capacity,
+        null,
+      )
+      .accountsStrict({
+        caller: wallet.payer.publicKey,
+        serviceAgreement: mock.serviceAgreementPda,
+        parentPlan: parentPlanAddress,
+        plan: planPda,
+        subscription: subscriptionAddress,
+        localDomain: localDomainPda,
+        accessDomain: accessDomainPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .remainingAccounts(
+        mock.planAuthMethods.map(pubkey => ({
+          pubkey,
+          isWritable: false,
+          isSigner: false,
+        }))
+      )
+      .signers([wallet.payer])
+      .instruction()
+
+    try {
+      const txResult = await submitTx(connection, wallet, itx)
+      console.log('L2 Plan created successfully', { txResult })
+    } catch (error) {
+      console.error('Error creating L2 plan:', error)
+    }
+  } else {
+    throw new Error('Invalid plan type. Use --type L3 or --type L2')
   }
 }
 

@@ -45,11 +45,14 @@ export interface Mock {
   configPda: PublicKey
   ipPoolPda: PublicKey
   deviceModelPda: PublicKey
+  deviceL2ModelPda: PublicKey
   organizationPda: PublicKey
+  distributionDomainPda: PublicKey
   accessDomainPda: PublicKey
   localDomainPda: PublicKey
   sitePda: PublicKey
   devicePda: PublicKey
+  deviceL2Pda: PublicKey
   ipLeasePda: PublicKey
   deviceLocationPda: PublicKey
   serviceAgreementPda: PublicKey
@@ -77,6 +80,10 @@ export interface Mock {
   devicePlacement: [number, number]
   deviceHeight: number
   localDomain: string
+  deviceTypeL2: DeviceType
+  deviceManufacturerL2: string
+  deviceModelL2: string
+  deviceNameL2: string
   // service agreement
   slaThreshold: BN
   slaPayoutRatio: BN
@@ -133,11 +140,14 @@ export interface RawMock {
   configPda: string
   ipPoolPda: string
   deviceModelPda: string
+  deviceL2ModelPda: string
   organizationPda: string
+  distributionDomainPda: string
   accessDomainPda: string
   localDomainPda: string
   sitePda: string
   devicePda: string
+  deviceL2Pda: string
   ipLeasePda: string
   deviceLocationPda: string
   serviceAgreementPda: string
@@ -165,6 +175,10 @@ export interface RawMock {
   deviceHeight: number
   deviceMacAddress: MacAddress
   localDomain: string
+  deviceTypeL2: string
+  deviceManufacturerL2: string
+  deviceModelL2: string
+  deviceNameL2: string
   // service agreement
   slaThreshold: string
   slaPayoutRatio: string
@@ -174,7 +188,7 @@ export interface RawMock {
   planDuration: number
   planSpeed: number
   planCapacity: string
-  planAuthMethods: string[]
+  planAuthMethods: string
   // subscription
   subscriptionPda: string
   subscriptionBump: number

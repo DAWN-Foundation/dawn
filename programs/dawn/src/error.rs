@@ -169,4 +169,23 @@ pub enum DawnError {
 
     #[msg("Invalid DH group")]
     InvalidDHGroup,
+
+    // PLAN DOMAIN CONSTRAINTS
+    #[msg("Distribution domain can only be created for original plans")]
+    DistributionDomainForL3PlansOnly,
+
+    #[msg("Access domain can only be created for derived plans")]
+    AccessDomainForL2PlansOnly,
+
+    #[msg("Device type is invalid")]
+    InvalidDeviceType,
+
+    #[msg("Distribution domain is required")]
+    DistributionDomainRequired,
+
+    #[msg("Invalid auth method account")]
+    InvalidAuthMethodAccount,
+
+    #[msg("Invalid auth method authority")]
+    InvalidAuthMethodAuthority,
 }

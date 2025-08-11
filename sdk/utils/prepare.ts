@@ -27,6 +27,7 @@ import { setupRaydium } from '../integrations/raydium'
 import { getDawnProgram } from '../../cli/shared/cli-utils'
 import { createAccounts, USDC_DECIMALS } from './mock'
 import {
+  getDistributionDomainPda,
   getAccessDomainPda,
   getConfigPda,
   getDaoDawnAccountPda,
@@ -280,12 +281,35 @@ export async function prepare(
     deviceName,
     deviceMacAddress,
   )
+
+  const deviceTypeL2 = { wirelessRadio: {} }
+  const deviceManufacturerL2 = 'DAWN'
+  const deviceModelL2 = 'WirelessRadio'
+  const deviceNameL2 = 'WirelessRadio'
+  const deviceMacAddressL2: MacAddress = [0, 0, 0, 0, 0, 1]
+
+  const deviceL2ModelPda = getDeviceModelPda(
+    program,
+    deviceTypeL2,
+    deviceManufacturerL2,
+    deviceModelL2,
+  )
+
+  const deviceL2Pda = getDevicePda(
+    program,
+    customer,
+    deviceL2ModelPda,
+    deviceNameL2,
+    deviceMacAddressL2,
+  )
+
   const organizationPda = getOrganizationPda(
     program,
     serviceProvider.publicKey,
     { endUser: {} },
     'end_user_organization',
   )
+  const distributionDomainPda = getDistributionDomainPda(program, devicePda)
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
   const localDomainPda = getLocalDomainPda(
@@ -408,11 +432,14 @@ export async function prepare(
     configPda,
     ipPoolPda,
     deviceModelPda,
+    deviceL2ModelPda,
     organizationPda,
+    distributionDomainPda,
     accessDomainPda,
     localDomainPda,
     sitePda,
     devicePda,
+    deviceL2Pda,
     ipLeasePda,
     deviceLocationPda,
     serviceAgreementPda,
@@ -440,6 +467,10 @@ export async function prepare(
     deviceHeight,
     deviceMacAddress,
     localDomain,
+    deviceTypeL2,
+    deviceManufacturerL2,
+    deviceModelL2,
+    deviceNameL2,
     // service agreement
     slaThreshold,
     slaPayoutRatio,
