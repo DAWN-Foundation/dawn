@@ -264,6 +264,20 @@ pub struct AddAuthMethod<'info> {
     pub plan: Account<'info, Plan>,
 
     #[account(
+        address = auth_method.device,
+        constraint = device.local_domain == plan.local_domain @ DawnError::DeviceNotInLocalDomain,
+        seeds = [
+            b"device",
+            device.owner.as_ref(),
+            device.model.as_ref(),
+            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &device.mac_address,
+        ],
+        bump = device.bump,
+    )]
+    pub device: Account<'info, crate::app::Device>,
+
+    #[account(
         seeds = [
             b"auth_method",
             auth_method.authority.as_ref(),

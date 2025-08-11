@@ -101,7 +101,7 @@ export const amfTests = () =>
 
       authMethodPda = getAuthMethodPda(
         program,
-        wallet.publicKey,
+        mock.serviceProvider.publicKey,
         authMethodType,
         paramsBuffer,
       )
@@ -110,11 +110,12 @@ export const amfTests = () =>
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
           authMethod: authMethodPda,
+          device: mock.devicePda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // make sure the account was created
@@ -231,11 +232,11 @@ export const amfTests = () =>
       const tx = await program.methods
         .registerCredential(clientKeypair.publicKey, credentialData)
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Fetch and verify the credential was created correctly
@@ -288,11 +289,11 @@ export const amfTests = () =>
       await program.methods
         .revokeCredential()
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: authMethodPda,
           credential: credentialPda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Verify credential account is closed (should throw error when trying to fetch)
@@ -342,7 +343,7 @@ export const amfTests = () =>
 
       ipsecAuthMethodPda = getAuthMethodPda(
         program,
-        wallet.publicKey,
+        mock.serviceProvider.publicKey,
         authMethodType,
         paramsBuffer,
       )
@@ -351,11 +352,12 @@ export const amfTests = () =>
       await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
           authMethod: ipsecAuthMethodPda,
+          device: mock.devicePda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // make sure the account was created
@@ -405,12 +407,12 @@ export const amfTests = () =>
           credentialDataB,
         )
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Fetch and verify the connection was created correctly
@@ -471,11 +473,11 @@ export const amfTests = () =>
       await program.methods
         .revokeConnection()
         .accountsPartial({
-          caller: wallet.publicKey,
+          caller: mock.serviceProvider.publicKey,
           authMethod: ipsecAuthMethodPda,
           connection: connectionPda,
         })
-        .signers([wallet.payer])
+        .signers([mock.serviceProvider])
         .rpc()
 
       // Verify connection account is closed (should throw error when trying to fetch)
