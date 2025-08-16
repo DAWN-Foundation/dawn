@@ -16,6 +16,7 @@ mod events;
 mod utils;
 
 use app::*;
+use constants::*;
 use error::*;
 use events::*;
 
@@ -189,5 +190,30 @@ pub mod dawn {
 
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         DawnApp::claim(ctx)
+    }
+
+    // IPAM Instructions
+    pub fn initialize_root_ip_block(
+        ctx: Context<InitializeRootIpBlock>,
+        tier: u8, // Tier enum serialized as u8
+    ) -> Result<()> {
+        let tier_enum = Tier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
+        DawnApp::initialize_root_ip_block(ctx, tier_enum)
+    }
+
+    pub fn initialize_all_root_ip_blocks(
+        ctx: Context<InitializeAllRootIpBlocks>,
+    ) -> Result<()> {
+        DawnApp::initialize_all_root_ip_blocks(ctx)
+    }
+
+    pub fn lease_subscription_ip(
+        ctx: Context<LeaseSubscriberIp>,
+    ) -> Result<()> {
+        DawnApp::lease_subscription_ip(ctx)
+    }
+
+    pub fn release_ip(ctx: Context<ReleaseIp>) -> Result<()> {
+        DawnApp::release_ip(ctx)
     }
 }

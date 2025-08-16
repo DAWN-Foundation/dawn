@@ -191,4 +191,35 @@ pub enum DawnError {
 
     #[msg("Invalid auth method authority")]
     InvalidAuthMethodAuthority,
+
+    // IPAM errors
+    #[msg("Invalid tier specified")]
+    InvalidTier,
+
+    #[msg("Invalid unit index")]
+    InvalidUnitIndex,
+
+    #[msg("IP allocation capacity exhausted")]
+    CapacityExhausted,
+
+    #[msg("IP block not found")]
+    IpBlockNotFound,
+
+    #[msg("IP lease not found")]
+    IpLeaseNotFound,
+
+    #[msg("IP lease expired")]
+    IpLeaseExpired,
+
+    #[msg("Device is required for this operation")]
+    DeviceRequired,
+
+    #[msg("Unauthorized: caller is not the authority")]
+    Unauthorized,
+
+    #[msg("Subscription expired")]
+    SubscriptionExpired,
+
+    #[msg("IP lease not expired")]
+    IpLeaseNotExpired,
 }

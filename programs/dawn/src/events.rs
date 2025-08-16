@@ -115,24 +115,49 @@ pub struct DeviceLocationVerified {
     pub verified_at: i64,
 }
 
-// #[event]
-// pub struct IpPoolAdded {
-//     pub ip_pool: Pubkey,
-//     pub ip_v4: [u8; 4],
-//     pub ip_v4_cidr_mask: u8,
-//     pub ip_v6: [u16; 16],
-//     pub ip_v6_cidr_mask: u8,
-//     pub created_at: i64,
-// }
+#[event]
+pub struct IpPoolAdded {
+    pub ip_pool: Pubkey,
+    pub ip_v4: [u8; 4],
+    pub ip_v4_cidr_mask: u8,
+    pub ip_v6: [u16; 16],
+    pub ip_v6_cidr_mask: u8,
+    pub created_at: i64,
+}
 
-// #[event]
-// pub struct IpLeased {
-//     pub ip_lease: Pubkey,
-//     pub ip_pool: Pubkey,
-//     pub device: Pubkey,
-//     pub ip_v4: [u8; 4],
-//     pub ip_v4_cidr_mask: u8,
-//     pub ip_v6: [u16; 16],
-//     pub ip_v6_cidr_mask: u8,
-//     pub created_at: i64,
-// }
+#[event]
+pub struct IpLeased {
+    pub ip_lease: Pubkey,
+    pub device: Pubkey,
+    pub tier: u8,
+    pub ipv4: [u8; 4],
+    pub cidr: u8,
+    pub lease_end: i64,
+    pub block_index: u32,
+}
+
+#[event]
+pub struct IpReleased {
+    pub ip_lease: Pubkey,
+    pub device: Pubkey,
+    pub ipv4: [u8; 4],
+    pub block_index: u32,
+}
+
+#[event]
+pub struct RootIpBlockInitialized {
+    pub root_ip_block: Pubkey,
+    pub tier: u8,
+    pub base_ipv4: u32,
+    pub base_prefix: u8,
+    // pub blocks_total: u16,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct IpAllocationNeeded {
+    pub subscription: Pubkey,
+    pub device: Pubkey,
+    pub tier: u8,
+    pub lease_duration: i64,
+}
