@@ -43,7 +43,7 @@ export interface Mock {
   // PDAs
   tokenConfigPda: PublicKey
   configPda: PublicKey
-  ipPoolPda: PublicKey
+  // ipPoolPda: PublicKey§
   deviceModelPda: PublicKey
   deviceL2ModelPda: PublicKey
   organizationPda: PublicKey
@@ -53,20 +53,15 @@ export interface Mock {
   sitePda: PublicKey
   devicePda: PublicKey
   deviceL2Pda: PublicKey
-  ipLeasePda: PublicKey
   deviceLocationPda: PublicKey
   serviceAgreementPda: PublicKey
   planPda: PublicKey
   planBump: number
-  // ip pool
-  poolIpV4: IpV4Bytes
-  poolIpV4CidrMask: number
-  poolIpV6: IpV6Bytes
-  poolIpV6CidrMask: number
-  leaseIpV4: IpV4Bytes
-  leaseIpV4CidrMask: number
-  leaseIpV6: IpV6Bytes
-  leaseIpV6CidrMask: number
+  // IPAM
+  rootSubscriberIpBlockPda: PublicKey
+  ipBlockPda: PublicKey
+  ipLeasePda: PublicKey
+
   // site
   siteName: string
   // device
@@ -148,20 +143,22 @@ export interface RawMock {
   sitePda: string
   devicePda: string
   deviceL2Pda: string
-  ipLeasePda: string
   deviceLocationPda: string
   serviceAgreementPda: string
   planPda: string
   planBump: number
   // ip pool
-  poolIpV4: IpV4Bytes
-  poolIpV4CidrMask: number
-  poolIpV6: IpV6Bytes
-  poolIpV6CidrMask: number
-  leaseIpV4: IpV4Bytes
-  leaseIpV4CidrMask: number
-  leaseIpV6: IpV6Bytes
-  leaseIpV6CidrMask: number
+  rootSubscriberIpBlockPda: string
+  ipBlockPda: string
+  ipLeasePda: string
+  // poolIpV4: IpV4Bytes
+  // poolIpV4CidrMask: number
+  // poolIpV6: IpV6Bytes
+  // poolIpV6CidrMask: number
+  // leaseIpV4: IpV4Bytes
+  // leaseIpV4CidrMask: number
+  // leaseIpV6: IpV6Bytes
+  // leaseIpV6CidrMask: number
   // site
   siteName: string
   // device

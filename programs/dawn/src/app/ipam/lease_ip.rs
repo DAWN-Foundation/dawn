@@ -2,12 +2,10 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 use std::cmp::min;
 use crate::{
-    constants::*,
-    DawnApp, DawnError, IpLeased,
+    DawnApp, DawnError, IpLeased, Tier, Device, Subscription,
 };
 
 use super::{RootIpBlock, IpBlock, IpLease, IP_LEASE_SIZE};
-use crate::{Device, Subscription};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
@@ -16,7 +14,7 @@ pub struct LeaseSubscriberIp<'info> {
     pub caller: Signer<'info>,
 
     #[account(
-        constraint = device.owner == caller.key() && subscription.device.is_some() && subscription.device.unwrap() == device.key(),
+        constraint = device.owner == caller.key(),
         seeds = [
             b"device",
             device.owner.as_ref(),
@@ -43,7 +41,8 @@ pub struct LeaseSubscriberIp<'info> {
         space = IpBlock::calculate_size(Tier::Subscriber),
         seeds = [
             b"ip_block",
-            root_ip_block.first_available_block_idx().to_le_bytes().as_ref(),
+            root_ip_block.key().as_ref(),
+            root_ip_block.first_available_block_idx().unwrap().to_le_bytes().as_ref(),
         ],
         bump
     )]
@@ -56,7 +55,8 @@ pub struct LeaseSubscriberIp<'info> {
         space = IP_LEASE_SIZE,
         seeds = [
             b"ip_lease",
-            ip_block.first_available_ipv4().as_ref()
+            Tier::Subscriber.to_seed().as_ref(),
+            device.key().as_ref(),
         ],
         bump
     )]
@@ -65,7 +65,11 @@ pub struct LeaseSubscriberIp<'info> {
     /// Subscription account to update
     #[account(
         mut,
-        seeds = [b"subscription", device.owner.as_ref()],
+        seeds = [
+            b"subscription", 
+            subscription.plan.as_ref(),
+            subscription.subscriber.as_ref(),
+        ],
         bump = subscription.bump
     )]
     pub subscription: Account<'info, Subscription>,
@@ -88,21 +92,23 @@ impl DawnApp {
 
         let current_time = Clock::get()?.unix_timestamp;
 
+
         require!(subscription.expiration > current_time, DawnError::SubscriptionExpired);
         let lease_end = subscription.expiration;
 
-        let block_idx = root_ip_block.first_available_block_idx();
+        let block_idx = root_ip_block.first_available_block_idx().ok_or(DawnError::NoAvailableBlocks)?;
         let block_base = root_ip_block.get_block_base_ipv4(block_idx);
         // if block is not initialized, initialize it
         if ip_block.block_base == 0 {
+            msg!("Initializing ip block");
             ip_block.initialize(subscriber_tier, block_base, ctx.bumps.ip_block).unwrap();
-            root_ip_block.mark_block_non_full(block_idx);
+            // root_ip_block.mark_block_non_full(block_idx);
         }
 
-        // mark as allocated and get the ipv4
+        // // mark as allocated and get the ipv4
         let (unit_idx, ipv4) = ip_block.allocate_first_available()?;
 
-        // if we've allocated the last unit, mark the block as full
+        // // if we've allocated the last unit, mark the block as full
         if ip_block.is_full() {
             root_ip_block.mark_block_full(block_idx);
         }
@@ -128,6 +134,7 @@ impl DawnApp {
             ipv4,
             cidr,
             lease_end,
+            unit_index: unit_idx,
             block_index: block_idx,
         });
 

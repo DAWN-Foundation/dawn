@@ -222,4 +222,7 @@ pub enum DawnError {
 
     #[msg("IP lease not expired")]
     IpLeaseNotExpired,
+
+    #[msg("No available blocks")]
+    NoAvailableBlocks,
 }

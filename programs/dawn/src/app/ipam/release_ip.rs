@@ -26,6 +26,7 @@ pub struct ReleaseIp<'info> {
         mut,
         seeds = [
             b"ip_block",
+            root_ip_block.key().as_ref(),
             ip_lease.block_index.to_le_bytes().as_ref(),
         ],
         bump = ip_block.bump
@@ -39,7 +40,8 @@ pub struct ReleaseIp<'info> {
         constraint = ip_lease.is_expired() @ DawnError::IpLeaseNotExpired,
         seeds = [
             b"ip_lease",
-            ip_lease.ipv4.as_ref()
+            ip_lease.tier.to_seed().as_ref(),
+            ip_lease.device.as_ref(),
         ],
         bump = ip_lease.bump
     )]

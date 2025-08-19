@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::*,
     DawnApp, DawnError,
+    Tier,
 };
 
 use super::RootIpBlock;
@@ -48,12 +49,14 @@ impl IpBlock {
 
     /// Initialize a new IP Block
     pub fn initialize(&mut self, tier: Tier, block_base: u32, bump: u8) -> Result<()> {
+        let chunks_per_block = tier.chunks_per_block();
+
         self.tier = tier;
         self.block_base = block_base;
         self.block_prefix = BLOCK_PREFIX;
         self.unit_capacity = tier.unit_capacity();
         self.free_units = tier.unit_capacity();
-        self.slots_chunks = vec![0u64; tier.chunks_per_block()];
+        self.slots_chunks = vec![0u64; chunks_per_block];
         
         // Initialize chunk_free_bitmap with all chunks marked as free
         self.chunk_free_bitmap = match tier {
@@ -73,9 +76,9 @@ impl IpBlock {
             return None;
         }
 
-        let chunk_idx = self.chunk_free_bitmap.trailing_zeros() as u32;
+        let chunk_idx = self.chunk_free_bitmap.trailing_zeros();
         let chunk = self.slots_chunks[chunk_idx as usize];
-        let bit_idx = (!chunk).trailing_zeros() as u32;
+        let bit_idx = self.get_first_zero_bit(chunk);
         
         if bit_idx >= 64 {
             return None; // This shouldn't happen if chunk_free_bitmap is correct
@@ -85,12 +88,28 @@ impl IpBlock {
         Some((unit_idx, chunk_idx, bit_idx))
     }
 
-    pub fn first_available_ipv4(&self) -> [u8; 4] {
-        let chunk_idx = self.chunk_free_bitmap.trailing_zeros() as u32;
-        let chunk = self.slots_chunks[chunk_idx as usize];
-        let bit_idx = (!chunk).trailing_zeros() as u32;
-        let unit_idx = (chunk_idx << 6) | bit_idx;
-        self.unit_idx_to_ipv4_bytes(unit_idx)
+    // pub fn first_available_ipv4(&self) -> [u8; 4] {
+    //     let chunk_idx = self.get_first_zero_bit_u16(self.chunk_free_bitmap);
+    //     let chunk = self.slots_chunks[chunk_idx as usize];
+    //     let bit_idx = self.get_first_zero_bit(chunk);
+    //     let unit_idx = (chunk_idx << 6) | bit_idx;
+    //     self.unit_idx_to_ipv4_bytes(unit_idx)
+    // }
+
+    // pub fn first_available_unit_idx(&self) -> u32 {
+    //     let chunk_idx = self.get_first_zero_bit_u16(self.chunk_free_bitmap);
+    //     let chunk = self.slots_chunks[chunk_idx as usize];
+    //     let bit_idx = self.get_first_zero_bit(chunk);
+    //     let unit_idx = (chunk_idx << 6) | bit_idx;
+    //     unit_idx
+    // }
+
+    fn get_first_zero_bit(&self, bitmap: u64) -> u32 {
+        (!bitmap).trailing_zeros() as u32
+    }
+
+    fn get_first_zero_bit_u16(&self, bitmap: u16) -> u32 {
+        (!bitmap).trailing_zeros() as u32
     }
 
     /// Allocate a unit by setting the corresponding bit
@@ -113,16 +132,7 @@ impl IpBlock {
 
     pub fn allocate_first_available(&mut self) -> Result<(u32, [u8; 4])> {
         let (unit_idx, chunk_idx, bit_idx) = self.select_unit().ok_or(DawnError::CapacityExhausted)?; 
-
-        // Set the bit
-        self.slots_chunks[chunk_idx as usize] |= 1u64 << bit_idx;
         self.allocate_unit(chunk_idx, bit_idx)?;
-        self.free_units = self.free_units.saturating_sub(1);
-
-        // If chunk became full, clear the corresponding bit in chunk_free_bitmap
-        if self.slots_chunks[chunk_idx as usize] == !0u64 {
-            self.chunk_free_bitmap &= !(1u16 << chunk_idx);
-        }
 
         Ok((unit_idx, self.unit_idx_to_ipv4_bytes(unit_idx)))
     }

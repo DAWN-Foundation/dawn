@@ -1,26 +1,7 @@
 import { BN, Program } from '@coral-xyz/anchor'
 import { Dawn } from '../../target/types/dawn'
 import { PublicKey } from '@solana/web3.js'
-import { IpV4Bytes, IpV6Bytes } from '..'
-
-export function getIpPoolPda(
-  program: Program<Dawn>,
-  poolIpV4: IpV4Bytes,
-  poolIpV4CidrMask: number,
-  poolIpV6: IpV6Bytes,
-  poolIpV6CidrMask: number,
-) {
-  return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_pool'),
-      Buffer.from(poolIpV4),
-      Buffer.from([poolIpV4CidrMask]),
-      Buffer.from(poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([poolIpV6CidrMask]),
-    ],
-    program.programId,
-  )
-}
+import { IpV4Bytes, IpV6Bytes, PROGRAM_ID } from '..'
 
 export function getIpLeasePda(
   program: Program<Dawn>,
@@ -42,5 +23,39 @@ export function getIpLeasePda(
       Buffer.from([leaseIpV6CidrMask]),
     ],
     program.programId,
+  )
+}
+
+// New IPAM system PDA functions
+
+export function getRootIpBlockPda(tier: number) {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('root_ip_block'),
+      Buffer.from([tier]),
+    ],
+    PROGRAM_ID,
+  )
+}
+
+export function getIpBlockPda(rootIpBlockPda: PublicKey, blockIndex: number) {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_block'),
+      Buffer.from(rootIpBlockPda.toBytes()),
+      new Uint8Array(new Uint32Array([blockIndex]).buffer),
+    ],
+    PROGRAM_ID,
+  )
+}
+
+export function getIpLeasePdaNew(tier: number, devicePda: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_lease'),
+      Buffer.from([tier]),
+      Buffer.from(devicePda.toBytes()),
+    ],
+    PROGRAM_ID,
   )
 }

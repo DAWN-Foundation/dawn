@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::constants::Tier;
+use crate::Tier;
 
 /// Minimal IP Lease for IPAM strict-first allocation
 /// Represents a single IP address lease to a device
@@ -29,6 +29,8 @@ pub const IP_LEASE_SIZE: usize = 8 // discriminator
     + 32 // device
     + 4 // ipv4
     + 1 // prefix
+    + 4 // block_index
+    + 4 // unit_index
     + 8 // lease_end
     + 1; // bump
 

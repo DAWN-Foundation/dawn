@@ -3,6 +3,7 @@ use crate::{
     constants::*,
     app::Config,
     DawnApp, DawnError, RootIpBlockInitialized,
+    Tier,
 };
 
 /// Root IP Block that tracks fixed-size IP Blocks for a specific tier
@@ -41,8 +42,8 @@ impl RootIpBlock {
             + 4 // base_ipv4
             + 1 // base_prefix
             + 1 // block_prefix
-            + 2 // blocks_total
-            + 2 // blocks_created
+            // + 2 // blocks_total
+            // + 2 // blocks_created
             + 4 + (chunk_count * 8) // root_chunks Vec<u64>
             + 8 // root_summary64
             + 1 // bump
@@ -57,33 +58,21 @@ impl RootIpBlock {
         // self.blocks_total = tier.max_blocks();
         // self.blocks_created = 0;
         self.root_chunks = vec![0u64; tier.root_chunks_count()];
-        self.root_summary64 = 0;
         self.bump = bump;
 
         Ok(())
     }
 
-    /// Find the first non-full IP Block using chunk operations
-    /// Returns (block_idx, chunk_idx, bit_idx) or None if all created blocks are full
-    pub fn select_block(&self) -> Option<(u32, u32, u32)> {
-        if self.root_summary64 == 0 {
+    pub fn first_available_block_idx(&self) -> Option<u32> {
+        if self.root_summary64 == u64::MAX {
             return None;
         }
 
-        let j = self.root_summary64.trailing_zeros() as u32; // chunk index in root
+        let j = self.root_summary64.trailing_ones() as u32;
         let c = self.root_chunks[j as usize];
-        let k = c.trailing_zeros() as u32; // bit within that chunk
+        let k = c.trailing_ones() as u32; // bit within that chunk
         let block_idx = (j << 6) | k;
-
-        Some((block_idx, j, k))
-    }
-
-    pub fn first_available_block_idx(&self) -> u32 {
-        let j = self.root_summary64.trailing_zeros() as u32; // chunk index in root
-        let c = self.root_chunks[j as usize];
-        let k = c.trailing_zeros() as u32; // bit within that chunk
-        let block_idx = (j << 6) | k;
-        block_idx
+        Some(block_idx)
     }
 
     pub fn find_block_idx_by_ipv4(&self, ipv4: [u8; 4]) -> Option<u32> {
@@ -118,8 +107,8 @@ impl RootIpBlock {
         let k = (block_idx & 63) as usize; // bit within chunk
 
         if j < self.root_chunks.len() {
-            self.root_chunks[j] |= 1u64 << k;
-            self.root_summary64 |= 1u64 << j;
+            self.root_chunks[j] &= !(1u64 << k);
+            self.root_summary64 &= !(1u64 << j);
         }
     }
 
@@ -129,9 +118,9 @@ impl RootIpBlock {
         let k = (block_idx & 63) as usize; // bit within chunk
 
         if j < self.root_chunks.len() {
-            self.root_chunks[j] &= !(1u64 << k);
-            if self.root_chunks[j] == 0 {
-                self.root_summary64 &= !(1u64 << j);
+            self.root_chunks[j] |= 1u64 << k;
+            if self.root_chunks[j] == u64::MAX {
+                self.root_summary64 |= 1u64 << j;
             }
         }
     }

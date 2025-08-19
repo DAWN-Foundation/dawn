@@ -35,8 +35,8 @@ import {
   getDeviceModelPda,
   getDevicePda,
   getFeePoolDawnAccountPda,
-  getIpLeasePda,
-  getIpPoolPda,
+  getIpBlockPda,
+  getRootIpBlockPda,
   getLocalDomainPda,
   getMedallionDawnAccountPda,
   getOrganizationPda,
@@ -45,6 +45,7 @@ import {
   getSubscriptionPda,
   getTokenConfigPda,
   getValidatorDawnAccountPda,
+  getIpLeasePdaNew,
 } from '../pda'
 import { getSitePda } from '../pda/site'
 
@@ -241,21 +242,6 @@ export async function prepare(
   const siteName = 'Test Site'
   const sitePda = getSitePda(program, serviceProvider, siteName)
 
-  const poolIpV4: IpV4Bytes = [11, 11, 11, 1]
-  const poolIpV4CidrMask = 24
-  const poolIpV6: IpV6Bytes = [
-    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
-  ]
-  const poolIpV6CidrMask = 64
-
-  const [ipPoolPda] = getIpPoolPda(
-    program,
-    poolIpV4,
-    poolIpV4CidrMask,
-    poolIpV6,
-    poolIpV6CidrMask,
-  )
-
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -316,23 +302,6 @@ export async function prepare(
     program,
     serviceProvider.publicKey,
     localDomain,
-  )
-
-  const leaseIpV4: IpV4Bytes = [11, 11, 11, 11]
-  const leaseIpV4CidrMask = 32
-  const leaseIpV6: IpV6Bytes = [
-    0x2001, 0xdb8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334,
-  ]
-  const leaseIpV6CidrMask = 64
-
-  const [ipLeasePda] = getIpLeasePda(
-    program,
-    devicePda,
-    ipPoolPda,
-    leaseIpV4,
-    leaseIpV4CidrMask,
-    leaseIpV6,
-    leaseIpV6CidrMask,
   )
 
   const slaThreshold = new BN(100).mul(USDC_DECIMALS)
@@ -396,6 +365,11 @@ export async function prepare(
     true,
   )
 
+  // IPAM
+  const [rootSubscriberIpBlockPda] = getRootIpBlockPda(0)
+  const [ipBlockPda] = getIpBlockPda(rootSubscriberIpBlockPda, 0)
+  const [ipLeasePda] = getIpLeasePdaNew(0, devicePda)
+
   return {
     serviceProvider,
     customer,
@@ -430,7 +404,6 @@ export async function prepare(
     // PDAs
     tokenConfigPda,
     configPda,
-    ipPoolPda,
     deviceModelPda,
     deviceL2ModelPda,
     organizationPda,
@@ -440,20 +413,14 @@ export async function prepare(
     sitePda,
     devicePda,
     deviceL2Pda,
-    ipLeasePda,
     deviceLocationPda,
     serviceAgreementPda,
     planPda,
     planBump,
-    // ip pool
-    poolIpV4,
-    poolIpV4CidrMask,
-    poolIpV6,
-    poolIpV6CidrMask,
-    leaseIpV4,
-    leaseIpV4CidrMask,
-    leaseIpV6,
-    leaseIpV6CidrMask,
+    // IPAM
+    rootSubscriberIpBlockPda,
+    ipBlockPda,
+    ipLeasePda,
     // site
     siteName,
     // device

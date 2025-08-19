@@ -431,39 +431,6 @@ export const deviceTests = () =>
       }
     })
 
-    // test('cannot add L3 (Router) device without access domain', async () => {
-    //   try {
-    //     await program.methods
-    //       .addDevice(
-    //         mock.deviceName,
-    //         mock.deviceHeight,
-    //         mock.deviceLatitude,
-    //         mock.deviceLongitude,
-    //         mock.devicePlacement,
-    //         mock.deviceMacAddress,
-    //         mock.localDomain,
-    //       )
-    //       .accountsPartial({
-    //         caller: mock.serviceProvider.publicKey,
-    //         deviceModel: mock.deviceModelPda,
-    //         device: mock.devicePda,
-    //         organization: mock.organizationPda,
-    //         localDomain: mock.localDomainPda,
-    //         deviceLocation: mock.deviceLocationPda,
-    //         site: null,
-    //       })
-    //       .signers([mock.serviceProvider])
-    //       .rpc()
-    //     expect(false).toBeTruthy()
-    //   } catch (error) {
-    //     // console.log(error)
-    //     // expect(error).toBe("Access domain is required")
-    //     expect(error instanceof AnchorError).toBeTruthy()
-    //     const err: AnchorError = error
-    //     expect(err.error.errorMessage).toBe('Access domain is required')
-    //   }
-    // })
-
     test('adds the L3 (Router) device', async () => {
       const tx = await program.methods
         .addDevice(

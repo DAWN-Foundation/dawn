@@ -13,7 +13,7 @@ use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
 use crate::{
     app::{subscription::payment, PaymentAccounts},
     utils::optional_pubkey_seed,
-    DawnError, Subscribed, IpAllocationNeeded,
+    DawnError, Subscribed,
 };
 
 #[derive(Accounts)]
@@ -235,18 +235,6 @@ impl DawnApp {
             swap_price,
             created_at: subscription.created_at,
         });
-
-        // IPAM: Allocate IP address if device is present
-        if let Some(device) = &ctx.accounts.device {
-            // For now, emit an event indicating IP allocation is needed
-            // Client should follow up with lease_ip_strict_first instruction
-            emit!(IpAllocationNeeded {
-                subscription: subscription.key(),
-                device: device.key(),
-                tier: 0, // Tier::Subscriber
-                lease_duration: duration_in_seconds as i64,
-            });
-        }
 
         Ok(())
     }
