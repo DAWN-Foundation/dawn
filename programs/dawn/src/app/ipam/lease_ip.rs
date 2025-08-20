@@ -1,11 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
+use crate::{DawnApp, DawnError, Device, IpLeased, Subscription, Tier};
 use std::cmp::min;
-use crate::{
-    DawnApp, DawnError, IpLeased, Tier, Device, Subscription,
-};
 
-use super::{RootIpBlock, IpBlock, IpLease, IP_LEASE_SIZE};
+use super::{IpBlock, IpLease, RootIpBlock, IP_LEASE_SIZE};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
@@ -80,9 +78,7 @@ pub struct LeaseSubscriberIp<'info> {
 impl DawnApp {
     /// Lease IP using strict-first allocation algorithm
     /// Follows the IPAM bitmap specification for O(1) allocation
-    pub fn lease_subscription_ip(
-        ctx: Context<LeaseSubscriberIp>,
-    ) -> Result<()> {
+    pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
@@ -92,16 +88,22 @@ impl DawnApp {
 
         let current_time = Clock::get()?.unix_timestamp;
 
-
-        require!(subscription.expiration > current_time, DawnError::SubscriptionExpired);
+        require!(
+            subscription.expiration > current_time,
+            DawnError::SubscriptionExpired
+        );
         let lease_end = subscription.expiration;
 
-        let block_idx = root_ip_block.first_available_block_idx().ok_or(DawnError::NoAvailableBlocks)?;
+        let block_idx = root_ip_block
+            .first_available_block_idx()
+            .ok_or(DawnError::NoAvailableBlocks)?;
         let block_base = root_ip_block.get_block_base_ipv4(block_idx);
         // if block is not initialized, initialize it
         if ip_block.block_base == 0 {
             msg!("Initializing ip block");
-            ip_block.initialize(subscriber_tier, block_base, ctx.bumps.ip_block).unwrap();
+            ip_block
+                .initialize(subscriber_tier, block_base, ctx.bumps.ip_block)
+                .unwrap();
             // root_ip_block.mark_block_non_full(block_idx);
         }
 

@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
-use crate::{ DawnApp, DawnError, IpReleased };
+use crate::{DawnApp, DawnError, IpReleased};
 
-use super::{RootIpBlock, IpBlock, IpLease};
+use super::{IpBlock, IpLease, RootIpBlock};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
@@ -52,22 +52,19 @@ pub struct ReleaseIp<'info> {
 
 impl DawnApp {
     /// Release IP lease
-    pub fn release_ip(
-        ctx: Context<ReleaseIp>,
-    ) -> Result<()> {
+    pub fn release_ip(ctx: Context<ReleaseIp>) -> Result<()> {
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
 
-
         ip_block.release(ip_lease.unit_index)?;
 
-        // if we've allocated the last unit, mark the block as full
+        // if block was full before, mark it as not full
         if root_ip_block.is_block_full(ip_lease.block_index) {
-            root_ip_block.mark_block_full(ip_lease.block_index);
+            root_ip_block.mark_block_non_full(ip_lease.block_index);
         }
 
-        // Emit allocation event
+        // Emit release event
         emit!(IpReleased {
             ip_lease: ip_lease.key(),
             device: ip_lease.device,

@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::constants::*;
+use anchor_lang::prelude::*;
 
 /// IPAM Tier enum for different IP address allocation types
 #[derive(Clone, Copy, AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Eq)]
@@ -18,7 +18,7 @@ impl Tier {
         *self as u8
     }
 
-    /// Convert from u8 
+    /// Convert from u8
     pub fn from_u8(value: u8) -> Option<Self> {
         match value {
             0 => Some(Self::Subscriber),

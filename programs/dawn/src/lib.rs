@@ -16,7 +16,6 @@ mod events;
 mod utils;
 
 use app::*;
-use constants::*;
 use error::*;
 use events::*;
 
@@ -201,15 +200,11 @@ pub mod dawn {
         DawnApp::initialize_root_ip_block(ctx, tier_enum)
     }
 
-    pub fn initialize_all_root_ip_blocks(
-        ctx: Context<InitializeAllRootIpBlocks>,
-    ) -> Result<()> {
+    pub fn initialize_all_root_ip_blocks(ctx: Context<InitializeAllRootIpBlocks>) -> Result<()> {
         DawnApp::initialize_all_root_ip_blocks(ctx)
     }
 
-    pub fn lease_subscription_ip(
-        ctx: Context<LeaseSubscriberIp>,
-    ) -> Result<()> {
+    pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
         DawnApp::lease_subscription_ip(ctx)
     }
 

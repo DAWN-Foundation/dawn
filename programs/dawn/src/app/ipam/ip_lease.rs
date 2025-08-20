@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::Tier;
+use anchor_lang::prelude::*;
 
 /// Minimal IP Lease for IPAM strict-first allocation
 /// Represents a single IP address lease to a device

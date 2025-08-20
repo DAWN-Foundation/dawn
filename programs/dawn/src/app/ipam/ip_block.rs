@@ -1,11 +1,5 @@
+use crate::{constants::*, DawnError, Tier};
 use anchor_lang::prelude::*;
-use crate::{
-    constants::*,
-    DawnApp, DawnError,
-    Tier,
-};
-
-use super::RootIpBlock;
 
 /// IP Block with per-block bitmap and micro-index for O(1) discovery
 /// Lazily created when needed by the allocator
@@ -35,7 +29,7 @@ impl IpBlock {
     /// Calculate account size for a specific tier
     pub fn calculate_size(tier: Tier) -> usize {
         let chunks_per_block = tier.chunks_per_block();
-        
+
         8 // discriminator
             + 1 // tier (stored as u8)
             + 4 // block_base
@@ -57,13 +51,13 @@ impl IpBlock {
         self.unit_capacity = tier.unit_capacity();
         self.free_units = tier.unit_capacity();
         self.slots_chunks = vec![0u64; chunks_per_block];
-        
+
         // Initialize chunk_free_bitmap with all chunks marked as free
         self.chunk_free_bitmap = match tier {
             Tier::Subscriber | Tier::Loopback => 0xFFFF, // 16 bits all set
-            Tier::PtP => 0x00FF, // lower 8 bits set
+            Tier::PtP => 0x00FF,                         // lower 8 bits set
         };
-        
+
         self.bump = bump;
 
         Ok(())
@@ -78,38 +72,14 @@ impl IpBlock {
 
         let chunk_idx = self.chunk_free_bitmap.trailing_zeros();
         let chunk = self.slots_chunks[chunk_idx as usize];
-        let bit_idx = self.get_first_zero_bit(chunk);
-        
+        let bit_idx = chunk.trailing_ones() as u32;
+
         if bit_idx >= 64 {
             return None; // This shouldn't happen if chunk_free_bitmap is correct
         }
 
         let unit_idx = (chunk_idx << 6) | bit_idx;
         Some((unit_idx, chunk_idx, bit_idx))
-    }
-
-    // pub fn first_available_ipv4(&self) -> [u8; 4] {
-    //     let chunk_idx = self.get_first_zero_bit_u16(self.chunk_free_bitmap);
-    //     let chunk = self.slots_chunks[chunk_idx as usize];
-    //     let bit_idx = self.get_first_zero_bit(chunk);
-    //     let unit_idx = (chunk_idx << 6) | bit_idx;
-    //     self.unit_idx_to_ipv4_bytes(unit_idx)
-    // }
-
-    // pub fn first_available_unit_idx(&self) -> u32 {
-    //     let chunk_idx = self.get_first_zero_bit_u16(self.chunk_free_bitmap);
-    //     let chunk = self.slots_chunks[chunk_idx as usize];
-    //     let bit_idx = self.get_first_zero_bit(chunk);
-    //     let unit_idx = (chunk_idx << 6) | bit_idx;
-    //     unit_idx
-    // }
-
-    fn get_first_zero_bit(&self, bitmap: u64) -> u32 {
-        (!bitmap).trailing_zeros() as u32
-    }
-
-    fn get_first_zero_bit_u16(&self, bitmap: u16) -> u32 {
-        (!bitmap).trailing_zeros() as u32
     }
 
     /// Allocate a unit by setting the corresponding bit
@@ -131,15 +101,11 @@ impl IpBlock {
     }
 
     pub fn allocate_first_available(&mut self) -> Result<(u32, [u8; 4])> {
-        let (unit_idx, chunk_idx, bit_idx) = self.select_unit().ok_or(DawnError::CapacityExhausted)?; 
+        let (unit_idx, chunk_idx, bit_idx) =
+            self.select_unit().ok_or(DawnError::CapacityExhausted)?;
         self.allocate_unit(chunk_idx, bit_idx)?;
 
         Ok((unit_idx, self.unit_idx_to_ipv4_bytes(unit_idx)))
-    }
-
-    pub fn ipv4_bytes_to_unit(&self, ipv4: [u8; 4]) -> Option<u32> {
-        let ipv4 = u32::from_be_bytes(ipv4);
-        self.ipv4_to_unit(ipv4)
     }
 
     pub fn release(&mut self, unit_idx: u32) -> Result<bool> {
@@ -149,7 +115,7 @@ impl IpBlock {
         }
 
         let was_full_chunk = self.slots_chunks[chunk_idx as usize] == !0u64;
-        
+
         // Clear the bit
         self.slots_chunks[chunk_idx as usize] &= !(1u64 << bit_idx);
         self.free_units = self.free_units.saturating_add(1);
@@ -188,90 +154,10 @@ impl IpBlock {
         ipv4.to_be_bytes()
     }
 
-    /// Calculate unit index from IPv4 address
-    pub fn ipv4_to_unit(&self, ipv4: u32) -> Option<u32> {
-        if ipv4 < self.block_base {
-            return None;
-        }
-
-        let offset = ipv4 - self.block_base;
-        let unit_idx = match self.tier {
-            Tier::Subscriber | Tier::Loopback => offset,
-            Tier::PtP => offset >> 1, // For /31, divide by 2
-        };
-
-        if unit_idx >= self.unit_capacity as u32 {
-            None
-        } else {
-            Some(unit_idx)
-        }
-    }
-
     /// Get chunk and bit indices from unit index
     pub fn unit_to_indices(&self, unit_idx: u32) -> (u32, u32) {
         let chunk_idx = unit_idx >> 6; // divide by 64
-        let bit_idx = unit_idx & 63;   // modulo 64
+        let bit_idx = unit_idx & 63; // modulo 64
         (chunk_idx, bit_idx)
-    }
-}
-
-/// Account context for creating an IP Block
-#[derive(Accounts)]
-#[instruction(tier: Tier, block_idx: u32)]
-pub struct CreateIpBlock<'info> {
-    #[account(mut)]
-    pub caller: Signer<'info>,
-
-    /// The root IP block for this tier
-    #[account(
-        mut,
-        seeds = [b"root_ip_block", tier.to_seed().as_ref()],
-        bump = root_ip_block.bump
-    )]
-    pub root_ip_block: Account<'info, RootIpBlock>,
-
-    /// The IP block account to create
-    #[account(
-        init,
-        payer = caller,
-        space = IpBlock::calculate_size(tier),
-        seeds = [
-            b"ip_block",
-            tier.to_seed().as_ref(),
-            block_idx.to_le_bytes().as_ref(),
-        ],
-        bump
-    )]
-    pub ip_block: Account<'info, IpBlock>,
-
-    pub system_program: Program<'info, System>,
-}
-
-impl DawnApp {
-    /// Create a new IP Block for the specified tier and block index
-    /// This is called on-demand by the allocator when needed
-    pub fn create_ip_block(
-        ctx: Context<CreateIpBlock>,
-        tier: Tier,
-        block_idx: u32,
-    ) -> Result<()> {
-        let root_ip_block = &mut ctx.accounts.root_ip_block;
-        let ip_block = &mut ctx.accounts.ip_block;
-        let bump = ctx.bumps.ip_block;
-
-        // Validate tier matches
-        require!(root_ip_block.tier == tier, DawnError::InvalidTier);
-
-        // Calculate block base address
-        let block_base = root_ip_block.base_ipv4 + (block_idx << (32 - BLOCK_PREFIX as u32));
-
-        // Initialize the IP block
-        ip_block.initialize(tier, block_base, bump)?;
-
-        // Update root block tracking
-        root_ip_block.mark_block_non_full(block_idx);
-        // root_ip_block.increment_blocks_created();
-
-        Ok(())
     }
 }
