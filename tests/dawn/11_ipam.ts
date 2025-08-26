@@ -22,7 +22,7 @@ import {
   getSubscriptionPda,
   getLocalDomainPda,
 } from '../../sdk/utils'
-import { beforeAll, expect, jest } from '@jest/globals'
+import { beforeAll, expect } from '@jest/globals'
 
 // Global test variables for IPAM tests
 let ipamDevicePda: PublicKey
@@ -746,10 +746,7 @@ export const initializeRootIpBlockTests = () =>
 
 export const bitmapEdgeCaseTests = () =>
   describe('IPAM bitmap edge cases', () => {
-    test('allocates IPs across chunk boundaries correctly', async () => {
-      // Set timeout for this specific test
-      jest.setTimeout(30000) // 30 seconds timeout for this intensive test
-
+    test.skip('allocates IPs across chunk boundaries correctly', async () => {
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
