@@ -139,7 +139,6 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
-              mock.planAuthMethods,
             )
             .accounts({
               caller: wallet.payer.publicKey,

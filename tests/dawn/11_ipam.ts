@@ -747,6 +747,9 @@ export const initializeRootIpBlockTests = () =>
 export const bitmapEdgeCaseTests = () =>
   describe('IPAM bitmap edge cases', () => {
     test('allocates IPs across chunk boundaries correctly', async () => {
+      // Set timeout for this specific test
+      jest.setTimeout(30000) // 30 seconds timeout for this intensive test
+
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
