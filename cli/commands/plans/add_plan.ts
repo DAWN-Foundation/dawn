@@ -50,20 +50,13 @@ async function main() {
       program.programId,
     )
 
-    console.log({ 
+    console.log({
       planPda: planPda.toBase58(),
-      distributionDomainPda: distributionDomainPda.toBase58()
+      distributionDomainPda: distributionDomainPda.toBase58(),
     })
 
     const itx = await program.methods
-      .addL3Plan(
-        name,
-        price,
-        duration,
-        speed,
-        capacity,
-        null,
-      )
+      .addL3Plan(name, price, duration, speed, capacity, null)
       .accountsStrict({
         caller: wallet.payer.publicKey,
         serviceAgreement: mock.serviceAgreementPda,
@@ -73,11 +66,11 @@ async function main() {
         systemProgram: SystemProgram.programId,
       })
       .remainingAccounts(
-        mock.planAuthMethods.map(pubkey => ({
+        mock.planAuthMethods.map((pubkey) => ({
           pubkey,
           isWritable: false,
           isSigner: false,
-        }))
+        })),
       )
       .signers([wallet.payer])
       .instruction()
@@ -91,10 +84,12 @@ async function main() {
   } else if (planType.toUpperCase() === 'L2') {
     // Create L2 plan (derived plan with access domain)
     const parentPlanAddress = getFlag('--parent-plan')
-    if (!parentPlanAddress) throw new Error('--parent-plan is required for L2 plans')
+    if (!parentPlanAddress)
+      throw new Error('--parent-plan is required for L2 plans')
 
     const subscriptionAddress = getFlag('--subscription')
-    if (!subscriptionAddress) throw new Error('--subscription is required for L2 plans')
+    if (!subscriptionAddress)
+      throw new Error('--subscription is required for L2 plans')
 
     const [planPda] = getPlanPda(
       program,
@@ -118,22 +113,15 @@ async function main() {
       program.programId,
     )
 
-    console.log({ 
+    console.log({
       planPda: planPda.toBase58(),
       accessDomainPda: accessDomainPda.toBase58(),
       parentPlan: parentPlanAddress,
-      subscription: subscriptionAddress
+      subscription: subscriptionAddress,
     })
 
     const itx = await program.methods
-      .addL2Plan(
-        name,
-        price,
-        duration,
-        speed,
-        capacity,
-        null,
-      )
+      .addL2Plan(name, price, duration, speed, capacity, null)
       .accountsStrict({
         caller: wallet.payer.publicKey,
         serviceAgreement: mock.serviceAgreementPda,
@@ -145,11 +133,11 @@ async function main() {
         systemProgram: SystemProgram.programId,
       })
       .remainingAccounts(
-        mock.planAuthMethods.map(pubkey => ({
+        mock.planAuthMethods.map((pubkey) => ({
           pubkey,
           isWritable: false,
           isSigner: false,
-        }))
+        })),
       )
       .signers([wallet.payer])
       .instruction()

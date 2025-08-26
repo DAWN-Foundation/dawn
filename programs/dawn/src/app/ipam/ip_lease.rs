@@ -18,7 +18,7 @@ pub struct IpLease {
     /// ip index in block
     pub unit_index: u32,
     /// Lease expiration time (UNIX timestamp)
-    pub lease_end: i64,
+    // pub lease_end: i64,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -31,7 +31,7 @@ pub const IP_LEASE_SIZE: usize = 8 // discriminator
     + 1 // prefix
     + 4 // block_index
     + 4 // unit_index
-    + 8 // lease_end
+    // + 8 // lease_end
     + 1; // bump
 
 impl IpLease {
@@ -44,7 +44,7 @@ impl IpLease {
         cidr: u8,
         block_index: u32,
         unit_index: u32,
-        lease_end: i64,
+        // lease_end: i64,
         bump: u8,
     ) {
         self.tier = tier;
@@ -53,12 +53,7 @@ impl IpLease {
         self.ip_v4_cidr_mask = cidr;
         self.block_index = block_index;
         self.unit_index = unit_index;
-        self.lease_end = lease_end;
+        // self.lease_end = lease_end;
         self.bump = bump;
-    }
-
-    /// Check if the lease has expired
-    pub fn is_expired(&self) -> bool {
-        Clock::get().unwrap().unix_timestamp > self.lease_end
     }
 }

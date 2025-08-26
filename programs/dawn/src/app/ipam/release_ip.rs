@@ -1,21 +1,42 @@
 use anchor_lang::prelude::*;
 
-use crate::{DawnApp, DawnError, IpReleased};
+use crate::{app::Config, DawnApp, DawnError, IpRegistry, IpReleased, Tier};
 
 use super::{IpBlock, IpLease, RootIpBlock};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
+#[instruction(tier: Tier)]
 pub struct ReleaseIp<'info> {
-    #[account(mut)]
+    #[account(mut, constraint = caller.key() == config.authority @ DawnError::Unauthorized)]
     pub caller: Signer<'info>,
+
+    /// The config account to validate authority
+    #[account(
+        seeds = [b"config"],
+        bump = config.bump
+    )]
+    pub config: Account<'info, Config>,
+
+    /// The root block registry for this tier
+    #[account(
+        mut,
+        seeds = [
+            b"ip_registry", 
+            tier.to_seed().as_ref()
+            ],
+        bump = ip_registry.bump
+    )]
+    pub ip_registry: Account<'info, IpRegistry>,
 
     /// The root IP block for the specified tier
     #[account(
         mut,
+        constraint = config.authority == caller.key() @ DawnError::Unauthorized,
         seeds = [
             b"root_ip_block", 
-            ip_lease.tier.to_seed().as_ref()
+            tier.to_seed().as_ref(),
+            ip_block.root_block_index.to_le_bytes().as_ref()
         ],
         bump = root_ip_block.bump
     )]
@@ -37,10 +58,10 @@ pub struct ReleaseIp<'info> {
     #[account(
         mut,
         close = caller,
-        constraint = ip_lease.is_expired() @ DawnError::IpLeaseNotExpired,
+        // constraint = ip_lease.is_expired() @ DawnError::IpLeaseNotExpired,
         seeds = [
             b"ip_lease",
-            ip_lease.tier.to_seed().as_ref(),
+            tier.to_seed().as_ref(),
             ip_lease.device.as_ref(),
         ],
         bump = ip_lease.bump
@@ -52,7 +73,7 @@ pub struct ReleaseIp<'info> {
 
 impl DawnApp {
     /// Release IP lease
-    pub fn release_ip(ctx: Context<ReleaseIp>) -> Result<()> {
+    pub fn release_ip(ctx: Context<ReleaseIp>, _tier: Tier) -> Result<()> {
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;

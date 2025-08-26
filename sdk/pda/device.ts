@@ -97,10 +97,7 @@ export function getDistributionDomainPda(
   localDomainPda: PublicKey,
 ): PublicKey {
   const [distributionDomainPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('distribution_domain'),
-      Buffer.from(localDomainPda.toBytes()),
-    ],
+    [Buffer.from('distribution_domain'), Buffer.from(localDomainPda.toBytes())],
     program.programId,
   )
 

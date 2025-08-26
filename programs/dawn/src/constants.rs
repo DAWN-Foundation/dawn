@@ -10,20 +10,8 @@ pub const MAX_DEVICE_MANUFACTURER_LEN: usize = 64;
 /// Maximum length of a site name
 pub const MAX_SITE_NAME_LEN: usize = 64;
 
-/// Subscriber address space: 10.64.0.0/10
-pub const SUBSCRIBER_BASE: u32 = 0x0A400000; // 10.64.0.0
-pub const SUBSCRIBER_PREFIX: u8 = 10;
-
-/// Loopback address space: 100.64.0.0/11  
-pub const LOOPBACK_BASE: u32 = 0x64400000; // 100.64.0.0
-pub const LOOPBACK_PREFIX: u8 = 11;
-
-/// Point-to-Point address space: 100.96.0.0/11
-pub const PTP_BASE: u32 = 0x64600000; // 100.96.0.0
-pub const PTP_PREFIX: u8 = 11;
-
 /// IP Block size: /22 (1024 /32 units or 512 /31 pairs)
-pub const BLOCK_PREFIX: u8 = 22;
+pub const BLOCK_CIDR: u8 = 22;
 
 /// Units per IP Block for /32 tiers (Subscriber, Loopback)
 pub const UNITS_PER_BLOCK_32: u16 = 1024;
@@ -48,3 +36,5 @@ pub const MAX_BLOCKS_SUBSCRIBER: u16 = 4096;
 
 /// Maximum IP Blocks for Loopback/PtP tiers (/11 -> /22 = 2048 blocks)
 pub const MAX_BLOCKS_LOOPBACK_PTP: u16 = 2048;
+
+pub const MAX_ROOT_BLOCKS: u32 = 64;

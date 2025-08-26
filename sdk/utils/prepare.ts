@@ -45,7 +45,8 @@ import {
   getSubscriptionPda,
   getTokenConfigPda,
   getValidatorDawnAccountPda,
-  getIpLeasePdaNew,
+  getIpLeasePda,
+  getIpRegistryPda,
 } from '../pda'
 import { getSitePda } from '../pda/site'
 
@@ -366,9 +367,20 @@ export async function prepare(
   )
 
   // IPAM
-  const [rootSubscriberIpBlockPda] = getRootIpBlockPda(0)
-  const [ipBlockPda] = getIpBlockPda(rootSubscriberIpBlockPda, 0)
-  const [ipLeasePda] = getIpLeasePdaNew(0, devicePda)
+  const loopIpRegistryPda = getIpRegistryPda(1)
+  const rootSubscriberIpBlockPda = getRootIpBlockPda(0, 0)
+  const ipBlockPda = getIpBlockPda(rootSubscriberIpBlockPda, 0)
+  const ipLeasePda = getIpLeasePda(0, devicePda)
+
+  const ptpIpRegistryPda = getIpRegistryPda(2)
+  const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
+  const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
+  const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
+
+  const subscriberIpRegistryPda = getIpRegistryPda(0)
+  const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
+  const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
+  const ptpIpLeasePda = getIpLeasePda(2, deviceL2Pda)
 
   return {
     serviceProvider,
@@ -418,9 +430,18 @@ export async function prepare(
     planPda,
     planBump,
     // IPAM
+    loopIpRegistryPda,
+    ptpIpRegistryPda,
+    subscriberIpRegistryPda,
     rootSubscriberIpBlockPda,
     ipBlockPda,
     ipLeasePda,
+    rootLoopbackIpBlockPda,
+    loopbackIpBlockPda,
+    loopbackIpLeasePda,
+    rootPtpIpBlockPda,
+    ptpIpBlockPda,
+    ptpIpLeasePda,
     // site
     siteName,
     // device

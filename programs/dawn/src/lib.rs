@@ -195,20 +195,19 @@ pub mod dawn {
     pub fn initialize_root_ip_block(
         ctx: Context<InitializeRootIpBlock>,
         tier: u8, // Tier enum serialized as u8
+        base_ipv4: u32,
+        base_cidr: u8,
     ) -> Result<()> {
         let tier_enum = Tier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
-        DawnApp::initialize_root_ip_block(ctx, tier_enum)
-    }
-
-    pub fn initialize_all_root_ip_blocks(ctx: Context<InitializeAllRootIpBlocks>) -> Result<()> {
-        DawnApp::initialize_all_root_ip_blocks(ctx)
+        DawnApp::initialize_root_ip_block(ctx, tier_enum, base_ipv4, base_cidr)
     }
 
     pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
         DawnApp::lease_subscription_ip(ctx)
     }
 
-    pub fn release_ip(ctx: Context<ReleaseIp>) -> Result<()> {
-        DawnApp::release_ip(ctx)
+    pub fn release_ip(ctx: Context<ReleaseIp>, tier: u8) -> Result<()> {
+        let tier_enum = Tier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
+        DawnApp::release_ip(ctx, tier_enum)
     }
 }

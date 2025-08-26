@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::{DawnApp, DawnError, Device, IpLeased, Subscription, Tier};
+use crate::{DawnApp, DawnError, Device, IpLeased, IpRegistry, Subscription, Tier};
 use std::cmp::min;
 
 use super::{IpBlock, IpLease, RootIpBlock, IP_LEASE_SIZE};
@@ -12,7 +12,7 @@ pub struct LeaseSubscriberIp<'info> {
     pub caller: Signer<'info>,
 
     #[account(
-        constraint = device.owner == caller.key(),
+        constraint = device.owner == caller.key() @DawnError::InvalidDevice,
         seeds = [
             b"device",
             device.owner.as_ref(),
@@ -24,10 +24,22 @@ pub struct LeaseSubscriberIp<'info> {
     )]
     pub device: Account<'info, Device>,
 
+    /// The root block registry for this tier
+    #[account(
+        mut,
+        seeds = [b"ip_registry", Tier::Subscriber.to_seed().as_ref()],
+        bump = ip_registry.bump
+    )]
+    pub ip_registry: Account<'info, IpRegistry>,
+
     /// The root IP block for the specified tier
     #[account(
         mut,
-        seeds = [b"root_ip_block", Tier::Subscriber.to_seed().as_ref()],
+        seeds = [
+            b"root_ip_block", 
+            Tier::Subscriber.to_seed().as_ref(),
+            ip_registry.find_available_root_block().unwrap().to_le_bytes().as_ref()
+        ],
         bump = root_ip_block.bump
     )]
     pub root_ip_block: Account<'info, RootIpBlock>,
@@ -63,6 +75,7 @@ pub struct LeaseSubscriberIp<'info> {
     /// Subscription account to update
     #[account(
         mut,
+        constraint = subscription.device.is_some() && subscription.device.unwrap() == device.key() @DawnError::InvalidDevice,
         seeds = [
             b"subscription", 
             subscription.plan.as_ref(),
@@ -85,6 +98,8 @@ impl DawnApp {
         let device = &ctx.accounts.device;
         let subscription = &mut ctx.accounts.subscription;
         let subscriber_tier = Tier::Subscriber;
+        let ip_registry = &mut ctx.accounts.ip_registry;
+        let root_block_index = ip_registry.find_available_root_block().unwrap();
 
         let current_time = Clock::get()?.unix_timestamp;
 
@@ -92,7 +107,7 @@ impl DawnApp {
             subscription.expiration > current_time,
             DawnError::SubscriptionExpired
         );
-        let lease_end = subscription.expiration;
+        // let lease_end = subscription.expiration;
 
         let block_idx = root_ip_block
             .first_available_block_idx()
@@ -100,11 +115,14 @@ impl DawnApp {
         let block_base = root_ip_block.get_block_base_ipv4(block_idx);
         // if block is not initialized, initialize it
         if ip_block.block_base == 0 {
-            msg!("Initializing ip block");
             ip_block
-                .initialize(subscriber_tier, block_base, ctx.bumps.ip_block)
+                .initialize(
+                    subscriber_tier,
+                    root_block_index,
+                    block_base,
+                    ctx.bumps.ip_block,
+                )
                 .unwrap();
-            // root_ip_block.mark_block_non_full(block_idx);
         }
 
         // // mark as allocated and get the ipv4
@@ -113,6 +131,10 @@ impl DawnApp {
         // // if we've allocated the last unit, mark the block as full
         if ip_block.is_full() {
             root_ip_block.mark_block_full(block_idx);
+        }
+
+        if !root_ip_block.has_free_blocks() {
+            ip_registry.update_root_availability(root_block_index, false);
         }
 
         let cidr = subscriber_tier.unit_prefix();
@@ -124,7 +146,7 @@ impl DawnApp {
             cidr,
             block_idx,
             unit_idx,
-            lease_end,
+            // lease_end,
             ctx.bumps.ip_lease,
         );
 
@@ -135,7 +157,7 @@ impl DawnApp {
             tier: subscriber_tier.to_u8(),
             ipv4,
             cidr,
-            lease_end,
+            // lease_end,
             unit_index: unit_idx,
             block_index: block_idx,
         });

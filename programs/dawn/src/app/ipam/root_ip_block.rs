@@ -7,15 +7,18 @@ use anchor_lang::prelude::*;
 pub struct RootIpBlock {
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: Tier,
-    /// Base IPv4 address for this tier
+    /// Root block index within this tier
+    pub index: u32,
+    /// Authority that can lease IP blocks
+    // pub authority: Pubkey,
+    /// Base IPv4 address for this specific root block
     pub base_ipv4: u32,
-    /// Base prefix length (/10, /11, /11)
-    pub base_prefix: u8,
-    /// Block prefix length (/22 - 1024 /32 or 512 /31 per IP Block)
-    pub block_prefix: u8,
+    /// Base CIDR length for this root block
+    pub base_cidr: u8,
+    /// Block CIDR length (/22 - 1024 /32 or 512 /31 per IP Block)
+    pub block_cidr: u8,
     /// Bitmap chunks - 1 bit per IP Block (1 = has free unit)
-    /// Subscriber: 4096 blocks / 64 = 64 chunks
-    /// Loopback/PtP: 2048 blocks / 64 = 32 chunks
+    /// Each root block now handles fewer blocks due to subdivision
     pub root_chunks: Vec<u64>,
     /// Summary bitmap - 1 bit per root chunk (1 = that chunk != 0)
     pub root_summary64: u64,
@@ -24,27 +27,39 @@ pub struct RootIpBlock {
 }
 
 impl RootIpBlock {
-    /// Calculate account size for a specific tier
+    /// Calculate account size for a specific tier (updated for subdivided root blocks)
     pub fn calculate_size(tier: Tier) -> usize {
         let chunk_count = tier.root_chunks_count();
 
         8 // discriminator
             + 1 // tier (stored as u8)
+            + 4 // index
+            // + 32 // authority
             + 4 // base_ipv4
-            + 1 // base_prefix
-            + 1 // block_prefix
+            + 1 // base_cidr
+            + 1 // block_cidr
             + 4 + (chunk_count * 8) // root_chunks Vec<u64>
             + 8 // root_summary64
             + 1 // bump
     }
 
-    /// Initialize a new RootIpBlock for the given tier
-    pub fn initialize(&mut self, tier: Tier, bump: u8) -> Result<()> {
+    /// Initialize a new RootIpBlock for the given tier and sequence
+    pub fn initialize(
+        &mut self,
+        tier: Tier,
+        index: u32,
+        base_ipv4: u32,
+        base_cidr: u8,
+        bump: u8,
+    ) -> Result<()> {
         self.tier = tier;
-        self.base_ipv4 = tier.base_ipv4();
-        self.base_prefix = tier.base_prefix();
-        self.block_prefix = BLOCK_PREFIX;
+        self.index = index;
+        // self.authority = authority;
+        self.base_ipv4 = base_ipv4;
+        self.base_cidr = base_cidr;
+        self.block_cidr = BLOCK_CIDR;
         self.root_chunks = vec![0u64; tier.root_chunks_count()];
+        self.root_summary64 = 0;
         self.bump = bump;
 
         Ok(())
@@ -63,7 +78,7 @@ impl RootIpBlock {
     }
 
     pub fn get_block_base_ipv4(&self, block_idx: u32) -> u32 {
-        self.base_ipv4 + (block_idx << (32 - self.block_prefix as u32))
+        self.base_ipv4 + (block_idx << (32 - self.block_cidr as u32))
     }
 
     /// Mark a block as having free units
@@ -95,5 +110,9 @@ impl RootIpBlock {
         let k = (block_idx & 63) as usize; // bit within chunk
 
         self.root_chunks[j] & (1u64 << k) == 0
+    }
+
+    pub fn has_free_blocks(&self) -> bool {
+        self.root_summary64 != u64::MAX
     }
 }

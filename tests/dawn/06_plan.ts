@@ -20,7 +20,7 @@ import {
   getAuthMethodPda,
   MacAddress,
   getDevicePda,
-  getAccessDomainPda,
+  getIpLeasePda,
 } from '../../sdk/utils'
 import {
   createPSKMethodParams,
@@ -632,8 +632,6 @@ export const planTests = () =>
         mock.localDomain,
       )
 
-      // Auth method validation will allow empty accounts for now
-
       // Create distribution domain PDA for L3 plan
       const [distributionDomainPda] = PublicKey.findProgramAddressSync(
         [
@@ -1210,32 +1208,30 @@ export const planTests = () =>
       )
 
       await program.methods
-      .addL3Plan(
-        planName,
-        mock.planPrice,
-        mock.planDuration,
-        mock.planSpeed,
-        mock.planCapacity,
-        null,
-      )
-      .accountsStrict({
-        caller: mock.serviceProvider.publicKey,
-        localDomain: mock.localDomainPda,
-        serviceAgreement: mock.serviceAgreementPda,
-        plan: planPda,
-        distributionDomain: distributionDomainPda,
-        systemProgram: SystemProgram.programId,
-      })
-      .remainingAccounts(
-        [
+        .addL3Plan(
+          planName,
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          null,
+        )
+        .accountsStrict({
+          caller: mock.serviceProvider.publicKey,
+          localDomain: mock.localDomainPda,
+          serviceAgreement: mock.serviceAgreementPda,
+          plan: planPda,
+          distributionDomain: distributionDomainPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .remainingAccounts([
           {
             pubkey: authMethods[0],
             isWritable: false,
             isSigner: false,
-          }
-        ]
-      )
-    .rpc();
+          },
+        ])
+        .rpc()
 
       try {
         await program.methods
@@ -1403,7 +1399,6 @@ export const planTests = () =>
       )
 
       const [distributionDomainPda] = PublicKey.findProgramAddressSync(
-
         [
           Buffer.from('distribution_domain'),
           planPda.toBuffer(),
@@ -1454,8 +1449,12 @@ export const planTests = () =>
         { endUser: {} },
         'end_user_organization',
       )
-      const wrongDomainDeviceAccessDomainPda = getAccessDomainPda(program, wrongDomainDevicePda)
-      const wrongDomainDeviceLocationPda = getDeviceLocationPda(program, wrongDomainDevicePda)
+      const wrongDomainDeviceLocationPda = getDeviceLocationPda(
+        program,
+        wrongDomainDevicePda,
+      )
+
+      const loopbackIpLeasePda = getIpLeasePda(1, wrongDomainDevicePda)
 
       // The addDevice call will create the local domain if it doesn't exist
       await program.methods
@@ -1475,6 +1474,12 @@ export const planTests = () =>
           organization: wrongDomainDeviceOrganizationPda,
           deviceLocation: wrongDomainDeviceLocationPda,
           localDomain: differentLocalDomainPda,
+          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
+          loopbackIpBlock: mock.loopbackIpBlockPda,
+          loopbackIpLease: loopbackIpLeasePda,
+          rootPtpIpBlock: null,
+          ptpIpBlock: null,
+          ptpIpLease: null,
           site: null,
         })
         .signers([mock.customer])
@@ -1649,7 +1654,6 @@ export const planTests = () =>
       )
 
       const [distributionDomainPda] = PublicKey.findProgramAddressSync(
-
         [
           Buffer.from('distribution_domain'),
           planPda.toBuffer(),
@@ -1804,7 +1808,9 @@ export const planTests = () =>
       expect(plan.authMethods[0].equals(sameDomainAuthMethodPda)).toBeTruthy()
 
       // Verify the auth method points to the correct device
-      const authMethod = await program.account.authMethod.fetch(sameDomainAuthMethodPda)
+      const authMethod = await program.account.authMethod.fetch(
+        sameDomainAuthMethodPda,
+      )
       expect(authMethod.device.equals(mock.devicePda)).toBeTruthy()
     })
   })
@@ -1858,6 +1864,8 @@ export const parentPlanTests = () =>
         mock.localDomain,
       )
 
+      const loopbackIpLeasePda = getIpLeasePda(1, mock.deviceL2Pda)
+
       await program.methods
         .addDevice(
           mock.deviceNameL2,
@@ -1872,6 +1880,12 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceL2ModelPda,
           device: mock.deviceL2Pda,
+          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
+          loopbackIpBlock: mock.loopbackIpBlockPda,
+          loopbackIpLease: loopbackIpLeasePda,
+          rootPtpIpBlock: mock.rootPtpIpBlockPda,
+          ptpIpBlock: mock.ptpIpBlockPda,
+          ptpIpLease: mock.ptpIpLeasePda,
           organization: organizationPda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
@@ -1916,7 +1930,7 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           config: mock.configPda,
           authMethod: pskAuthMethodPda1,
-          device: mock.deviceL2Pda
+          device: mock.deviceL2Pda,
         })
         .signers([mock.customer])
         .rpc()
@@ -1944,8 +1958,6 @@ export const parentPlanTests = () =>
 
     test('cannot add plan that resells the parent plan if caller is not subscribed to parent plan', async () => {
       provider.wallet = new Wallet(mock.serviceProvider)
-      // const program2 = new Program<Dawn>(IDL, PROGRAM_ID, provider)
-      // create new plan
       const speed = 240
       const [plan2Pda] = getPlanPda(
         program,
@@ -2051,9 +2063,6 @@ export const parentPlanTests = () =>
           .rpc()
         assert.ok(false)
       } catch (error) {
-        console.log('myError', error)
-        // This will likely fail due to missing subscription account, not the custom error
-        // The error will be different since we're using accountsStrict with null subscription
         expect(error instanceof Error).toBeTruthy()
       }
     })
@@ -2255,7 +2264,6 @@ export const parentPlanTests = () =>
           .rpc()
         assert.ok(false)
       } catch (error) {
-        console.log('myError', error)
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
         assert.strictEqual(err.error.errorMessage, 'Outside parent bounds')

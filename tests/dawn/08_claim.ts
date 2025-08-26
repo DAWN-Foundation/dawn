@@ -13,7 +13,6 @@ import {
   getEvent,
   mock,
   getProvider,
-  PROGRAM_ID,
   confirmTx,
   getPlanPda,
   getSubscriptionPda,

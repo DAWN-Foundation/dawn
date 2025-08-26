@@ -75,7 +75,9 @@ export const pskAmfTests = () =>
       // Verify the account was created correctly
       const authMethod = await program.account.authMethod.fetch(authMethodPda)
       expect(authMethod.methodType).toStrictEqual({ psk: {} })
-      expect(authMethod.authority.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(
+        authMethod.authority.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
       expect(authMethod.device.equals(mock.devicePda)).toBeTruthy()
 
       console.log({

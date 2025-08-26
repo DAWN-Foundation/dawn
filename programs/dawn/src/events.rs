@@ -132,7 +132,7 @@ pub struct IpLeased {
     pub tier: u8,
     pub ipv4: [u8; 4],
     pub cidr: u8,
-    pub lease_end: i64,
+    // pub lease_end: i64,
     pub unit_index: u32,
     pub block_index: u32,
 }
@@ -146,12 +146,21 @@ pub struct IpReleased {
 }
 
 #[event]
+pub struct IpRegistryInitialized {
+    pub ip_registry: Pubkey,
+    pub tier: u8,
+    pub authority: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct RootIpBlockInitialized {
     pub root_ip_block: Pubkey,
     pub tier: u8,
+    pub root_block_index: u32,
+    pub authority: Pubkey,
     pub base_ipv4: u32,
-    pub base_prefix: u8,
-    // pub blocks_total: u16,
+    pub base_cidr: u8,
     pub created_at: i64,
 }
 

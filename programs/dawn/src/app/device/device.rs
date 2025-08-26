@@ -2,8 +2,11 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    app::{OrganizationType, LOCAL_DOMAIN_SIZE, ORGANIZATION_SIZE},
-    DawnApp, DawnError, DeviceAdded,
+    app::{
+        ipam::{IpBlock, IpLease, IP_LEASE_SIZE},
+        OrganizationType, LOCAL_DOMAIN_SIZE, ORGANIZATION_SIZE,
+    },
+    DawnApp, DawnError, DeviceAdded, DeviceType, IpLeased, IpRegistry, RootIpBlock, Tier,
 };
 
 use super::{DeviceLocation, DeviceModel, LocalDomain, Organization, Site, DEVICE_LOCATION_SIZE};
@@ -143,6 +146,95 @@ pub struct AddDevice<'info> {
     )]
     pub local_domain: Box<Account<'info, LocalDomain>>,
 
+    /// The root block registry for this tier
+    #[account(
+        mut,
+        seeds = [b"ip_registry", Tier::Loopback.to_seed().as_ref()],
+        bump = loopback_ip_registry.bump
+    )]
+    pub loopback_ip_registry: Account<'info, IpRegistry>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"root_ip_block", 
+            Tier::Loopback.to_seed().as_ref(),
+            loopback_ip_registry.find_available_root_block().unwrap().to_le_bytes().as_ref()
+        ],
+        bump = root_loopback_ip_block.bump
+    )]
+    pub root_loopback_ip_block: Account<'info, RootIpBlock>,
+
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = IpBlock::calculate_size(Tier::Loopback),
+        seeds = [
+            b"ip_block",
+            root_loopback_ip_block.key().as_ref(),
+            root_loopback_ip_block.first_available_block_idx().unwrap().to_le_bytes().as_ref(),
+        ],
+        bump
+    )]
+    pub loopback_ip_block: Account<'info, IpBlock>,
+
+    #[account(
+        init,
+        payer = caller,
+        space = IP_LEASE_SIZE,
+        seeds = [
+            b"ip_lease",
+            Tier::Loopback.to_seed().as_ref(),
+            device.key().as_ref(),
+        ],
+        bump
+    )]
+    pub loopback_ip_lease: Account<'info, IpLease>,
+
+    #[account(
+        mut,
+        seeds = [b"ip_registry", Tier::PtP.to_seed().as_ref()],
+        bump = ptp_ip_registry.bump
+    )]
+    pub ptp_ip_registry: Option<Account<'info, IpRegistry>>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"root_ip_block", 
+            Tier::PtP.to_seed().as_ref(),
+            ptp_ip_registry.as_ref().unwrap().find_available_root_block().unwrap().to_le_bytes().as_ref()
+        ],
+        bump = root_ptp_ip_block.bump
+    )]
+    pub root_ptp_ip_block: Option<Account<'info, RootIpBlock>>,
+
+    #[account(
+        init_if_needed,
+        payer = caller,
+        space = IpBlock::calculate_size(Tier::PtP),
+        seeds = [
+            b"ip_block",
+            root_ptp_ip_block.as_ref().unwrap().key().as_ref(),
+            root_ptp_ip_block.as_ref().unwrap().first_available_block_idx().unwrap().to_le_bytes().as_ref(),
+        ],
+        bump
+    )]
+    pub ptp_ip_block: Option<Account<'info, IpBlock>>,
+
+    #[account(
+        init,
+        payer = caller,
+        space = IP_LEASE_SIZE,
+        seeds = [
+            b"ip_lease",
+            Tier::PtP.to_seed().as_ref(),
+            device.key().as_ref(),
+        ],
+        bump
+    )]
+    pub ptp_ip_lease: Option<Account<'info, IpLease>>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -192,9 +284,18 @@ impl DawnApp {
         );
 
         let device = &mut ctx.accounts.device;
+        let device_model = &mut ctx.accounts.device_model;
         let device_location = &mut ctx.accounts.device_location;
         let organization = &mut ctx.accounts.organization;
         let caller = ctx.accounts.caller.key();
+        let root_loopback_ip_block = &mut ctx.accounts.root_loopback_ip_block;
+        let loopback_ip_registry = &mut ctx.accounts.loopback_ip_registry;
+        let loopback_ip_block = &mut ctx.accounts.loopback_ip_block;
+        let loopback_ip_lease = &mut ctx.accounts.loopback_ip_lease;
+        let ptp_ip_registry = &mut ctx.accounts.ptp_ip_registry;
+        let root_ptp_ip_block = &mut ctx.accounts.root_ptp_ip_block;
+        let ptp_ip_block = &mut ctx.accounts.ptp_ip_block;
+        let ptp_ip_lease = &mut ctx.accounts.ptp_ip_lease;
 
         // Initialize local_domain if not already created
         if ctx.accounts.local_domain.created_at == 0 {
@@ -218,7 +319,7 @@ impl DawnApp {
         device.created_at = created_at;
         device.owner = caller;
         device.site = site;
-        device.model = ctx.accounts.device_model.key();
+        device.model = device_model.key();
         device.organization = organization.key();
         device.name.clone_from(&name);
         device.local_domain = ctx.accounts.local_domain.key();
@@ -242,6 +343,42 @@ impl DawnApp {
         device_location.verified = false;
         device_location.bump = ctx.bumps.device_location;
 
+        // Lease loopback IP for all devices
+        lease_ip_for_device(
+            loopback_ip_registry,
+            root_loopback_ip_block,
+            loopback_ip_block,
+            loopback_ip_lease,
+            device,
+            Tier::Loopback,
+            ctx.bumps.loopback_ip_block,
+            ctx.bumps.loopback_ip_lease,
+        )?;
+
+        // Set the infra_ip field to the loopback lease
+        device.infra_ip = Some(loopback_ip_lease.key());
+
+        // Lease PtP IP only for WirelessRadio devices
+        if device_model.device_type == DeviceType::WirelessRadio {
+            require!(
+                root_ptp_ip_block.is_some(),
+                DawnError::BlockAccountIsMissing
+            );
+            require!(ptp_ip_block.is_some(), DawnError::BlockAccountIsMissing);
+            require!(ptp_ip_lease.is_some(), DawnError::NoAvailableBlocks);
+
+            lease_ip_for_device(
+                ptp_ip_registry.as_mut().unwrap(),
+                root_ptp_ip_block.as_mut().unwrap(),
+                ptp_ip_block.as_mut().unwrap(),
+                ptp_ip_lease.as_mut().unwrap(),
+                device,
+                Tier::PtP,
+                ctx.bumps.ptp_ip_block.unwrap(),
+                ctx.bumps.ptp_ip_lease.unwrap(),
+            )?;
+        }
+
         // Emit event
         emit!(DeviceAdded {
             device: device.key(),
@@ -262,4 +399,62 @@ impl DawnApp {
 
         Ok(())
     }
+}
+
+fn lease_ip_for_device<'info>(
+    ip_registry: &mut Account<'info, IpRegistry>,
+    root_block: &mut Account<'info, RootIpBlock>,
+    ip_block: &mut Account<'info, IpBlock>,
+    ip_lease: &mut Account<'info, IpLease>,
+    device: &mut Account<'info, Device>,
+    tier: Tier,
+    ip_block_bump: u8,
+    ip_lease_bump: u8,
+) -> Result<()> {
+    let block_idx = root_block
+        .first_available_block_idx()
+        .ok_or(DawnError::NoAvailableBlocks)?;
+    let block_base = root_block.get_block_base_ipv4(block_idx);
+    let root_block_index = root_block.index;
+
+    // If block is not initialized, initialize it
+    if ip_block.block_base == 0 {
+        ip_block.initialize(tier, root_block_index, block_base, ip_block_bump)?;
+    }
+
+    // Mark as allocated and get the ipv4
+    let (unit_idx, ipv4) = ip_block.allocate_first_available()?;
+
+    // If we've allocated the last unit, mark the block as full
+    if ip_block.is_full() {
+        root_block.mark_block_full(block_idx);
+    }
+
+    if !root_block.has_free_blocks() {
+        ip_registry.update_root_availability(root_block_index, false);
+    }
+
+    // Initialize the IP lease
+    ip_lease.initialize(
+        tier,
+        device.key(),
+        ipv4,
+        tier.unit_prefix(),
+        block_idx,
+        unit_idx,
+        ip_lease_bump,
+    );
+
+    // Emit IP lease event
+    emit!(IpLeased {
+        ip_lease: ip_lease.key(),
+        device: device.key(),
+        tier: tier.to_u8(),
+        ipv4,
+        cidr: tier.unit_prefix(),
+        unit_index: unit_idx,
+        block_index: block_idx,
+    });
+
+    Ok(())
 }

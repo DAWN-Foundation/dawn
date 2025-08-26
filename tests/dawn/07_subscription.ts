@@ -26,6 +26,7 @@ import {
   getDeviceLocationPda,
   getOrganizationPda,
   getLocalDomainPda,
+  getIpLeasePda,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -622,13 +623,14 @@ export const subscriptionTests = () =>
         { endUser: {} },
         'end_user_organization',
       )
-      const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const localDomainPda = getLocalDomainPda(
         program,
         wallet.publicKey,
         mock.localDomain,
       )
+
+      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
 
       await program.methods
         .addDevice(
@@ -646,8 +648,14 @@ export const subscriptionTests = () =>
           device: devicePda,
           organization: organizationPda,
           deviceLocation: deviceLocationPda,
-          site: null,
           localDomain: localDomainPda,
+          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
+          loopbackIpBlock: mock.loopbackIpBlockPda,
+          loopbackIpLease: loopbackIpLeasePda,
+          rootPtpIpBlock: null,
+          ptpIpBlock: null,
+          ptpIpLease: null,
+          site: null,
         })
         .signers([wallet.payer])
         .rpc()

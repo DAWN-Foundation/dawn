@@ -53,7 +53,8 @@ import {
   getSubscriptionPda,
   getTokenConfigPda,
   getValidatorDawnAccountPda,
-  getIpLeasePdaNew,
+  getIpLeasePda,
+  getIpRegistryPda,
 } from '../pda'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -456,11 +457,23 @@ export async function setup(
     planPda,
   )
 
-    // IPAM
-    const [rootSubscriberIpBlockPda] = getRootIpBlockPda(0)
-    const [ipBlockPda] = getIpBlockPda(rootSubscriberIpBlockPda, 0)
-    const [ipLeasePda] = getIpLeasePdaNew(0, devicePda)
-  
+  // IPAM - Loopback tier (tier 1)
+  const loopIpRegistryPda = getIpRegistryPda(1)
+  const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
+  const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
+  const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
+
+  // IPAM - PtP tier (tier 2) for WirelessRadio devices
+  const ptpIpRegistryPda = getIpRegistryPda(2)
+  const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
+  const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
+  const ptpIpLeasePda = getIpLeasePda(2, deviceL2Pda)
+
+  // IPAM - Subscriber tier (tier 0) for future use
+  const subscriberIpRegistryPda = getIpRegistryPda(0)
+  const rootSubscriberIpBlockPda = getRootIpBlockPda(0, 0)
+  const ipBlockPda = getIpBlockPda(rootSubscriberIpBlockPda, 0)
+  const ipLeasePda = getIpLeasePda(0, devicePda)
 
   mock = {
     serviceProvider,
@@ -510,18 +523,19 @@ export async function setup(
     serviceAgreementPda,
     planPda,
     planBump,
-    // ip pool
+    // IPAM - IP blocks and leases
+    loopIpRegistryPda,
+    ptpIpRegistryPda,
+    subscriberIpRegistryPda,
+    rootLoopbackIpBlockPda,
+    loopbackIpBlockPda,
+    loopbackIpLeasePda,
+    rootPtpIpBlockPda,
+    ptpIpBlockPda,
+    ptpIpLeasePda,
     rootSubscriberIpBlockPda,
     ipBlockPda,
     ipLeasePda,
-    // poolIpV4,
-    // poolIpV4CidrMask,
-    // poolIpV6,
-    // poolIpV6CidrMask,
-    // leaseIpV4,
-    // leaseIpV4CidrMask,
-    // leaseIpV6,
-    // leaseIpV6CidrMask,
     // site
     siteName,
     // device

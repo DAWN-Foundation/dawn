@@ -7,10 +7,12 @@ use anchor_lang::prelude::*;
 pub struct IpBlock {
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: Tier,
+    /// Root block index within this tier
+    pub root_block_index: u32,
     /// Block base IP address (aligned to block_prefix /22)
     pub block_base: u32,
-    /// Block prefix length (/22)
-    pub block_prefix: u8,
+    /// Block CIDR length (/22)
+    pub block_cidr: u8,
     /// Unit capacity: /32 tiers: 1024; PtP: 512
     pub unit_capacity: u16,
     /// Current number of free units in this block
@@ -32,8 +34,9 @@ impl IpBlock {
 
         8 // discriminator
             + 1 // tier (stored as u8)
+            + 4 // root_block_index
             + 4 // block_base
-            + 1 // block_prefix
+            + 1 // block_cidr
             + 2 // unit_capacity
             + 2 // free_units
             + 4 + (chunks_per_block * 8) // slots_chunks Vec<u64>
@@ -42,12 +45,19 @@ impl IpBlock {
     }
 
     /// Initialize a new IP Block
-    pub fn initialize(&mut self, tier: Tier, block_base: u32, bump: u8) -> Result<()> {
+    pub fn initialize(
+        &mut self,
+        tier: Tier,
+        root_block_index: u32,
+        block_base: u32,
+        bump: u8,
+    ) -> Result<()> {
         let chunks_per_block = tier.chunks_per_block();
 
         self.tier = tier;
+        self.root_block_index = root_block_index;
         self.block_base = block_base;
-        self.block_prefix = BLOCK_PREFIX;
+        self.block_cidr = BLOCK_CIDR;
         self.unit_capacity = tier.unit_capacity();
         self.free_units = tier.unit_capacity();
         self.slots_chunks = vec![0u64; chunks_per_block];

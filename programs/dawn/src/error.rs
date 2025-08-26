@@ -225,4 +225,29 @@ pub enum DawnError {
 
     #[msg("No available blocks")]
     NoAvailableBlocks,
+
+    #[msg("Block account is missing")]
+    BlockAccountIsMissing,
+
+    #[msg("Invalid device")]
+    InvalidDevice,
+
+    // Registry errors
+    #[msg("Invalid sequence number")]
+    InvalidSequence,
+
+    #[msg("Registry not found")]
+    RegistryNotFound,
+
+    #[msg("All tiers exhausted")]
+    AllTiersExhausted,
+
+    #[msg("Root block already exists")]
+    RootBlockAlreadyExists,
+
+    #[msg("Maximum root blocks reached")]
+    MaxRootBlocksReached,
+
+    #[msg("Sequence out of bounds")]
+    SequenceOutOfBounds,
 }

@@ -5,7 +5,13 @@ import { deviceTests, deviceSiteTests } from './04_device'
 import { serviceAgreementTests } from './05_service_agreement'
 import { parentPlanTests, planTests } from './06_plan'
 import { subscriptionTests } from './07_subscription'
-import { leaseIpTests, releaseIpTests } from './11_ipam'
+import {
+  initializeRootIpBlockTests,
+  bitmapEdgeCaseTests,
+  multiTierIpamTests,
+  leaseIpTests,
+  releaseIpTests,
+} from './11_ipam'
 import { claimTests } from './08_claim'
 import { amfTests } from './09_amf'
 import { pskAmfTests } from './10_psk_amf'
@@ -31,9 +37,12 @@ deviceSiteTests()
 serviceAgreementTests()
 planTests()
 subscriptionTests()
+initializeRootIpBlockTests()
+bitmapEdgeCaseTests()
+multiTierIpamTests()
 leaseIpTests()
 releaseIpTests()
-// parentPlanTests()
-// claimTests()
-// amfTests()
-// pskAmfTests()
+parentPlanTests()
+claimTests()
+amfTests()
+pskAmfTests()

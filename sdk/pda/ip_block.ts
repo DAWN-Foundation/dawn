@@ -3,43 +3,28 @@ import { Dawn } from '../../target/types/dawn'
 import { PublicKey } from '@solana/web3.js'
 import { IpV4Bytes, IpV6Bytes, PROGRAM_ID } from '..'
 
-export function getIpLeasePda(
-  program: Program<Dawn>,
-  devicePda: PublicKey,
-  ipPoolPda: PublicKey,
-  leaseIpV4: IpV4Bytes,
-  leaseIpV4CidrMask: number,
-  leaseIpV6: IpV6Bytes,
-  leaseIpV6CidrMask: number,
-) {
-  return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_lease'),
-      Buffer.from(devicePda.toBytes()),
-      Buffer.from(ipPoolPda.toBytes()),
-      Buffer.from(leaseIpV4),
-      Buffer.from([leaseIpV4CidrMask]),
-      Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([leaseIpV6CidrMask]),
-    ],
-    program.programId,
+export function getIpRegistryPda(tier: number) {
+  const [ipRegistryPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ip_registry'), Buffer.from([tier])],
+    PROGRAM_ID,
   )
+  return ipRegistryPda
 }
 
-// New IPAM system PDA functions
-
-export function getRootIpBlockPda(tier: number) {
-  return PublicKey.findProgramAddressSync(
+export function getRootIpBlockPda(tier: number, index: number) {
+  const [rootIpBlockPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('root_ip_block'),
       Buffer.from([tier]),
+      new Uint8Array(new Uint32Array([index]).buffer),
     ],
     PROGRAM_ID,
   )
+  return rootIpBlockPda
 }
 
 export function getIpBlockPda(rootIpBlockPda: PublicKey, blockIndex: number) {
-  return PublicKey.findProgramAddressSync(
+  const [ipBlockPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('ip_block'),
       Buffer.from(rootIpBlockPda.toBytes()),
@@ -47,10 +32,11 @@ export function getIpBlockPda(rootIpBlockPda: PublicKey, blockIndex: number) {
     ],
     PROGRAM_ID,
   )
+  return ipBlockPda
 }
 
-export function getIpLeasePdaNew(tier: number, devicePda: PublicKey) {
-  return PublicKey.findProgramAddressSync(
+export function getIpLeasePda(tier: number, devicePda: PublicKey) {
+  const [ipLeasePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('ip_lease'),
       Buffer.from([tier]),
@@ -58,4 +44,5 @@ export function getIpLeasePdaNew(tier: number, devicePda: PublicKey) {
     ],
     PROGRAM_ID,
   )
+  return ipLeasePda
 }

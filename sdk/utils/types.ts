@@ -58,9 +58,18 @@ export interface Mock {
   planPda: PublicKey
   planBump: number
   // IPAM
+  loopIpRegistryPda: PublicKey
+  rootLoopbackIpBlockPda: PublicKey
+  loopbackIpBlockPda: PublicKey
+  loopbackIpLeasePda: PublicKey
+  rootPtpIpBlockPda: PublicKey
+  ptpIpRegistryPda: PublicKey
+  ptpIpBlockPda: PublicKey
+  ptpIpLeasePda: PublicKey
   rootSubscriberIpBlockPda: PublicKey
   ipBlockPda: PublicKey
   ipLeasePda: PublicKey
+  subscriberIpRegistryPda: PublicKey
 
   // site
   siteName: string
@@ -148,17 +157,18 @@ export interface RawMock {
   planPda: string
   planBump: number
   // ip pool
+  loopIpRegistryPda: string
+  ptpIpRegistryPda: string
+  subscriberIpRegistryPda: string
   rootSubscriberIpBlockPda: string
   ipBlockPda: string
   ipLeasePda: string
-  // poolIpV4: IpV4Bytes
-  // poolIpV4CidrMask: number
-  // poolIpV6: IpV6Bytes
-  // poolIpV6CidrMask: number
-  // leaseIpV4: IpV4Bytes
-  // leaseIpV4CidrMask: number
-  // leaseIpV6: IpV6Bytes
-  // leaseIpV6CidrMask: number
+  rootLoopbackIpBlockPda: string
+  loopbackIpBlockPda: string
+  loopbackIpLeasePda: string
+  rootPtpIpBlockPda: string
+  ptpIpBlockPda: string
+  ptpIpLeasePda: string
   // site
   siteName: string
   // device

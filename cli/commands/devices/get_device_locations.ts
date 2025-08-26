@@ -14,9 +14,9 @@ async function main() {
         latitude: a.account.latitude.toString(),
         longitude: a.account.longitude.toString(),
         verifiedAt:
-         a.account.verifiedAt?.toNumber() > 0
+          a.account.verifiedAt?.toNumber() > 0
             ? new Date(a.account.verifiedAt.toNumber() * 1000).toISOString()
-            : "0",
+            : '0',
         device: a.account.device.toBase58(),
         createdAt: new Date(
           a.account.createdAt.toNumber() * 1000,
