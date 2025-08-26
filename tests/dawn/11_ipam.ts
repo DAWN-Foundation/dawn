@@ -22,7 +22,7 @@ import {
   getSubscriptionPda,
   getLocalDomainPda,
 } from '../../sdk/utils'
-import { beforeAll, expect } from '@jest/globals'
+import { beforeAll, expect, jest } from '@jest/globals'
 
 // Global test variables for IPAM tests
 let ipamDevicePda: PublicKey
