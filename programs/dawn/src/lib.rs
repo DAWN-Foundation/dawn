@@ -13,11 +13,13 @@ mod app;
 mod constants;
 mod error;
 mod events;
+mod state;
 mod utils;
 
 use app::*;
 use error::*;
 use events::*;
+use state::*;
 
 #[program]
 pub mod dawn {
@@ -198,7 +200,7 @@ pub mod dawn {
         base_ipv4: u32,
         base_cidr: u8,
     ) -> Result<()> {
-        let tier_enum = Tier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
+        let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
         DawnApp::initialize_root_ip_block(ctx, tier_enum, base_ipv4, base_cidr)
     }
 
@@ -207,7 +209,7 @@ pub mod dawn {
     }
 
     pub fn release_ip(ctx: Context<ReleaseIp>, tier: u8) -> Result<()> {
-        let tier_enum = Tier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
+        let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
         DawnApp::release_ip(ctx, tier_enum)
     }
 }

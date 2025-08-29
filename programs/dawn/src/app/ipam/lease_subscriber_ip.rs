@@ -1,9 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::{DawnApp, DawnError, Device, IpLeased, IpRegistry, Subscription, Tier};
+use crate::{state::Device, DawnApp, DawnError, IpLeased, IpRegistry, IpTier, Subscription};
+
 use std::cmp::min;
 
-use super::{IpBlock, IpLease, RootIpBlock, IP_LEASE_SIZE};
+use crate::{IpBlock, IpLease, RootIpBlock};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
@@ -14,7 +15,7 @@ pub struct LeaseSubscriberIp<'info> {
     #[account(
         constraint = device.owner == caller.key() @DawnError::InvalidDevice,
         seeds = [
-            b"device",
+            Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
             &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
@@ -27,7 +28,7 @@ pub struct LeaseSubscriberIp<'info> {
     /// The root block registry for this tier
     #[account(
         mut,
-        seeds = [b"ip_registry", Tier::Subscriber.to_seed().as_ref()],
+        seeds = [IpRegistry::SEED_PREFIX.as_ref(), IpTier::Subscriber.to_seed().as_ref()],
         bump = ip_registry.bump
     )]
     pub ip_registry: Account<'info, IpRegistry>,
@@ -36,8 +37,8 @@ pub struct LeaseSubscriberIp<'info> {
     #[account(
         mut,
         seeds = [
-            b"root_ip_block", 
-            Tier::Subscriber.to_seed().as_ref(),
+            RootIpBlock::SEED_PREFIX.as_ref(),
+            IpTier::Subscriber.to_seed().as_ref(),
             ip_registry.find_available_root_block().unwrap().to_le_bytes().as_ref()
         ],
         bump = root_ip_block.bump
@@ -48,9 +49,9 @@ pub struct LeaseSubscriberIp<'info> {
     #[account(
         init_if_needed,
         payer = caller,
-        space = IpBlock::calculate_size(Tier::Subscriber),
+        space = IpBlock::SIZE,
         seeds = [
-            b"ip_block",
+            IpBlock::SEED_PREFIX.as_ref(),
             root_ip_block.key().as_ref(),
             root_ip_block.first_available_block_idx().unwrap().to_le_bytes().as_ref(),
         ],
@@ -62,10 +63,10 @@ pub struct LeaseSubscriberIp<'info> {
     #[account(
         init,
         payer = caller,
-        space = IP_LEASE_SIZE,
+        space = IpLease::SIZE,
         seeds = [
-            b"ip_lease",
-            Tier::Subscriber.to_seed().as_ref(),
+            IpLease::SEED_PREFIX.as_ref(),
+            IpTier::Subscriber.to_seed().as_ref(),
             device.key().as_ref(),
         ],
         bump
@@ -77,7 +78,7 @@ pub struct LeaseSubscriberIp<'info> {
         mut,
         constraint = subscription.device.is_some() && subscription.device.unwrap() == device.key() @DawnError::InvalidDevice,
         seeds = [
-            b"subscription", 
+            Subscription::SEED_PREFIX.as_ref(),
             subscription.plan.as_ref(),
             subscription.subscriber.as_ref(),
         ],
@@ -97,7 +98,7 @@ impl DawnApp {
         let ip_lease = &mut ctx.accounts.ip_lease;
         let device = &ctx.accounts.device;
         let subscription = &mut ctx.accounts.subscription;
-        let subscriber_tier = Tier::Subscriber;
+        let subscriber_tier = IpTier::Subscriber;
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_block_index = ip_registry.find_available_root_block().unwrap();
 
@@ -146,7 +147,6 @@ impl DawnApp {
             cidr,
             block_idx,
             unit_idx,
-            // lease_end,
             ctx.bumps.ip_lease,
         );
 
@@ -157,7 +157,6 @@ impl DawnApp {
             tier: subscriber_tier.to_u8(),
             ipv4,
             cidr,
-            // lease_end,
             unit_index: unit_idx,
             block_index: block_idx,
         });

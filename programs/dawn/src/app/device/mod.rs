@@ -1,37 +1,10 @@
-use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
-
-mod access_domain;
 #[allow(clippy::module_inception)]
-mod device;
-mod distribution_domain;
-mod local_domain;
-mod location;
-mod model;
-mod organization;
-mod site;
+mod add_device;
+mod add_device_model;
+mod add_site;
+mod verify_device_location;
 
-pub use access_domain::*;
-pub use device::*;
-pub use distribution_domain::*;
-pub use local_domain::*;
-pub use location::*;
-pub use model::*;
-pub use organization::*;
-pub use site::*;
-
-#[derive(Clone, AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Eq)]
-pub enum DeviceType {
-    /// router device type
-    Router,
-    /// wireless radio device type
-    WirelessRadio,
-}
-
-impl DeviceType {
-    pub fn to_seed(&self) -> &[u8] {
-        match self {
-            Self::Router => &[0],
-            Self::WirelessRadio => &[1],
-        }
-    }
-}
+pub use add_device::*;
+pub use add_device_model::*;
+pub use add_site::*;
+pub use verify_device_location::*;

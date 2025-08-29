@@ -5,12 +5,15 @@ use anchor_spl::{
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
 
-use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
     app::{subscription::payment, PaymentAccounts},
     error::DawnError,
     events::SubscriptionExtended,
     utils::optional_pubkey_seed,
+};
+use crate::{
+    state::{Config, Plan, Subscription},
+    DawnApp,
 };
 
 #[derive(Accounts)]
@@ -20,7 +23,7 @@ pub struct ExtendSubscription<'info> {
 
     /// The config with fees and accounts
     #[account(
-        seeds = [b"config"],
+        seeds = [Config::SEED_PREFIX.as_ref()],
         bump = config.bump,
     )]
     pub config: Box<Account<'info, Config>>,
@@ -28,7 +31,7 @@ pub struct ExtendSubscription<'info> {
     /// The plan account
     #[account(
         seeds = [
-            b"plan",
+            Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
@@ -47,7 +50,7 @@ pub struct ExtendSubscription<'info> {
     #[account(
         mut,
         seeds = [
-            b"subscription",
+            Subscription::SEED_PREFIX.as_ref(),
             plan.key().as_ref(),
             caller.key().as_ref(),
         ],

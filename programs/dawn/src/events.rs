@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::DeviceType;
+use crate::state::DeviceType;
 
 #[event]
 pub struct SiteAdded {

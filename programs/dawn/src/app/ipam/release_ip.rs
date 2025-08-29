@@ -1,19 +1,20 @@
 use anchor_lang::prelude::*;
 
-use crate::{app::Config, DawnApp, DawnError, IpRegistry, IpReleased, Tier};
+use crate::state::Config;
+use crate::{DawnApp, DawnError, IpRegistry, IpReleased, IpTier};
 
-use super::{IpBlock, IpLease, RootIpBlock};
+use crate::{IpBlock, IpLease, RootIpBlock};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
-#[instruction(tier: Tier)]
+#[instruction(tier: IpTier)]
 pub struct ReleaseIp<'info> {
     #[account(mut, constraint = caller.key() == config.authority @ DawnError::Unauthorized)]
     pub caller: Signer<'info>,
 
     /// The config account to validate authority
     #[account(
-        seeds = [b"config"],
+        seeds = [Config::SEED_PREFIX.as_ref()],
         bump = config.bump
     )]
     pub config: Account<'info, Config>,
@@ -22,7 +23,7 @@ pub struct ReleaseIp<'info> {
     #[account(
         mut,
         seeds = [
-            b"ip_registry", 
+            IpRegistry::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref()
             ],
         bump = ip_registry.bump
@@ -34,7 +35,7 @@ pub struct ReleaseIp<'info> {
         mut,
         constraint = config.authority == caller.key() @ DawnError::Unauthorized,
         seeds = [
-            b"root_ip_block", 
+            RootIpBlock::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref(),
             ip_block.root_block_index.to_le_bytes().as_ref()
         ],
@@ -46,7 +47,7 @@ pub struct ReleaseIp<'info> {
     #[account(
         mut,
         seeds = [
-            b"ip_block",
+            IpBlock::SEED_PREFIX.as_ref(),
             root_ip_block.key().as_ref(),
             ip_lease.block_index.to_le_bytes().as_ref(),
         ],
@@ -58,9 +59,8 @@ pub struct ReleaseIp<'info> {
     #[account(
         mut,
         close = caller,
-        // constraint = ip_lease.is_expired() @ DawnError::IpLeaseNotExpired,
         seeds = [
-            b"ip_lease",
+            IpLease::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref(),
             ip_lease.device.as_ref(),
         ],
@@ -73,7 +73,7 @@ pub struct ReleaseIp<'info> {
 
 impl DawnApp {
     /// Release IP lease
-    pub fn release_ip(ctx: Context<ReleaseIp>, _tier: Tier) -> Result<()> {
+    pub fn release_ip(ctx: Context<ReleaseIp>, _tier: IpTier) -> Result<()> {
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;

@@ -5,10 +5,10 @@ use anchor_spl::{
 };
 use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState};
 
-use super::{Config, DawnApp, Plan, Subscription};
 use crate::{
+    state::{Config, Plan, Subscription},
     utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
-    Claimed, DawnError,
+    Claimed, DawnApp, DawnError,
 };
 
 #[derive(Accounts)]
@@ -18,7 +18,7 @@ pub struct Claim<'info> {
 
     /// The config with fees and accounts
     #[account(
-        seeds = [b"config"],
+        seeds = [Config::SEED_PREFIX.as_ref()],
         bump = config.bump,
     )]
     pub config: Box<Account<'info, Config>>,
@@ -28,7 +28,7 @@ pub struct Claim<'info> {
         address = subscription.plan,
         constraint = caller.key() == plan.owner,
         seeds = [
-            b"plan",
+            Plan::SEED_PREFIX.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
@@ -47,7 +47,7 @@ pub struct Claim<'info> {
     #[account(
         mut,
         seeds = [
-            b"subscription",
+            Subscription::SEED_PREFIX.as_ref(),
             plan.key().as_ref(),
             subscription.subscriber.as_ref(),
         ],
@@ -158,7 +158,7 @@ impl DawnApp {
 
         // Signer seeds for the subscription account
         let seeds = &[
-            b"plan".as_ref(),
+            Plan::SEED_PREFIX.as_ref(),
             ctx.accounts.plan.local_domain.as_ref(),
             &optional_pubkey_seed(ctx.accounts.plan.parent_plan),
             ctx.accounts.plan.name.as_bytes(),

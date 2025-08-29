@@ -5,9 +5,9 @@ use raydium_cp_swap::program::RaydiumCpSwap;
 use raydium_cp_swap::states::{PoolState, Q32};
 
 use crate::{
-    app::{Config, Plan},
     constants::BPS_DENOMINATOR,
     error::DawnError,
+    state::{Config, Plan},
     utils::{sort_accounts, swap_amounts},
 };
 

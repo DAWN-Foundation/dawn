@@ -38,3 +38,5 @@ pub const MAX_BLOCKS_SUBSCRIBER: u16 = 4096;
 pub const MAX_BLOCKS_LOOPBACK_PTP: u16 = 2048;
 
 pub const MAX_ROOT_BLOCKS: u32 = 64;
+
+pub const DISCRIMINATOR_SIZE: usize = 8;

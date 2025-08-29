@@ -1,20 +1,20 @@
 import { configTests } from './00_config'
-import { deviceModelTests } from './02_device_model'
-import { siteTests } from './03_site'
-import { deviceTests, deviceSiteTests } from './04_device'
-import { serviceAgreementTests } from './05_service_agreement'
-import { parentPlanTests, planTests } from './06_plan'
-import { subscriptionTests } from './07_subscription'
+import { deviceModelTests } from './01_device_model'
+import { siteTests } from './02_site'
+import { deviceTests, deviceSiteTests } from './03_device'
+import { serviceAgreementTests } from './04_service_agreement'
+import { parentPlanTests, planTests } from './05_plan'
+import { subscriptionTests } from './06_subscription'
+import { claimTests } from './07_claim'
+import { amfTests } from './08_amf'
+import { pskAmfTests } from './09_psk_amf'
 import {
   initializeRootIpBlockTests,
   bitmapEdgeCaseTests,
   multiTierIpamTests,
   leaseIpTests,
   releaseIpTests,
-} from './11_ipam'
-import { claimTests } from './08_claim'
-import { amfTests } from './09_amf'
-import { pskAmfTests } from './10_psk_amf'
+} from './10_ipam'
 
 // order is important here
 // because tests are dependent on the previous ones
