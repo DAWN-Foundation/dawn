@@ -1,7 +1,11 @@
 use anchor_lang::prelude::*;
 
-use crate::state::Config;
-use crate::{DawnApp, DawnError, IpRegistry, IpReleased, IpTier};
+use crate::{
+    app::DawnApp,
+    error::DawnError,
+    events::{IpBlockNonFull, IpReleased, RootIpBlockNonFull},
+    state::{Config, IpRegistry, IpTier},
+};
 
 use crate::{IpBlock, IpLease, RootIpBlock};
 
@@ -74,6 +78,7 @@ pub struct ReleaseIp<'info> {
 impl DawnApp {
     /// Release IP lease
     pub fn release_ip(ctx: Context<ReleaseIp>, _tier: IpTier) -> Result<()> {
+        let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
@@ -83,6 +88,16 @@ impl DawnApp {
         // if block was full before, mark it as not full
         if root_ip_block.is_block_full(ip_lease.block_index) {
             root_ip_block.mark_block_non_full(ip_lease.block_index);
+            emit!(IpBlockNonFull {
+                ip_block: ip_block.key(),
+            });
+        }
+
+        if !root_ip_block.has_free_blocks() {
+            ip_registry.update_root_availability(ip_lease.block_index, true);
+            emit!(RootIpBlockNonFull {
+                root_ip_block: root_ip_block.key(),
+            });
         }
 
         // Emit release event

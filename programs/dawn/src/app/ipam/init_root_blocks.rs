@@ -1,5 +1,5 @@
 use crate::state::Config;
-use crate::{app::DawnApp, DawnError, IpRegistry, IpTier, RootIpBlock, RootIpBlockInitialized};
+use crate::{app::DawnApp, DawnError, IpRegistry, IpTier, RootIpBlock, RootIpBlockInitialized, IpRegistryInitialized};
 use anchor_lang::prelude::*;
 
 /// Account context for initializing a Root IP Block with sequence (authority required)
@@ -58,6 +58,12 @@ impl DawnApp {
 
         if ip_registry.bump == 0 {
             ip_registry.initialize(tier, caller.key(), ctx.bumps.ip_registry)?;
+            emit!(IpRegistryInitialized {
+                ip_registry: ip_registry.key(),
+                tier: tier.to_u8(),
+                authority: caller.key(),
+                created_at: Clock::get()?.unix_timestamp,
+            });
         }
 
         // Validate sequence number
@@ -78,6 +84,7 @@ impl DawnApp {
             authority: caller.key(),
             base_ipv4,
             base_cidr,
+            block_cidr: root_ip_block.block_cidr,
             created_at: Clock::get()?.unix_timestamp,
         });
 

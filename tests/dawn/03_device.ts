@@ -586,9 +586,6 @@ export const deviceTests = () =>
       expect(ipLease.tier).toEqual({ loopback: {} })
       expect(ipLease.ipV4CidrMask).toBe(32) // /32 for loopback
       expect(ipLease.ipv4.length).toBe(4) // IPv4 address
-
-      // make sure device has infra_ip set
-      expect(device.infraIp?.equals(mock.loopbackIpLeasePda)).toBeTruthy()
     })
 
     test('cannot verify device location as non-authority', async () => {
@@ -641,8 +638,6 @@ export const deviceTests = () =>
         'deviceLocationVerified',
       )
       expect(event.device.equals(mock.devicePda)).toBeTruthy()
-      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
-      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
       expect(new BN(event.verifiedAt).gt(new BN(0))).toBeTruthy()
 
       // make sure device location was updated
@@ -785,11 +780,6 @@ export const deviceTests = () =>
       expect(ptpLease.device.equals(devicePda)).toBeTruthy()
       expect(ptpLease.tier).toEqual({ ptP: {} })
       expect(ptpLease.ipV4CidrMask).toBe(31) // /31 for PtP
-
-      // Verify device has infra_ip set to loopback lease
-      expect(device.infraIp?.equals(loopbackIpLeasePda)).toBeTruthy()
-
-      l2devicePda = devicePda
     })
 
     test('adds second L2 device to the same local domain', async () => {

@@ -1,6 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::{state::Device, DawnApp, DawnError, IpLeased, IpRegistry, IpTier, Subscription};
+use crate::{
+    app::DawnApp,
+    events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
+    state::Device, DawnError, IpRegistry, IpTier, Subscription};
 
 use std::cmp::min;
 
@@ -124,6 +127,16 @@ impl DawnApp {
                     ctx.bumps.ip_block,
                 )
                 .unwrap();
+            emit!(IpBlockAdded {
+                ip_block: ip_block.key(),
+                tier: subscriber_tier.to_u8(),
+                root_block_index: root_block_index,
+                block_base: block_base,
+                block_cidr: ip_block.block_cidr,
+                unit_capacity: ip_block.unit_capacity,
+                free_units: ip_block.free_units,
+                created_at: Clock::get()?.unix_timestamp,
+            });
         }
 
         // // mark as allocated and get the ipv4
@@ -134,8 +147,15 @@ impl DawnApp {
             root_ip_block.mark_block_full(block_idx);
         }
 
+        emit!(IpBlockFull {
+            ip_block: ip_block.key(),
+        });
+
         if !root_ip_block.has_free_blocks() {
             ip_registry.update_root_availability(root_block_index, false);
+            emit!(RootIpBlockFull {
+                root_ip_block: root_ip_block.key(),
+            });
         }
 
         let cidr = subscriber_tier.unit_prefix();
@@ -159,6 +179,7 @@ impl DawnApp {
             cidr,
             unit_index: unit_idx,
             block_index: block_idx,
+            leased_at: Clock::get()?.unix_timestamp,
         });
 
         Ok(())

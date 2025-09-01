@@ -2,9 +2,10 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    state::{DistributionDomain, LocalDomain, ServiceAgreement},
+    events::{DistributionDomainAdded, PlanAdded},
+    state::{DistributionDomain, LocalDomain, Plan, ServiceAgreement},
     utils::{optional_pubkey_seed, trim_null_bytes},
-    DawnApp, DawnError, Plan, PlanAdded,
+    DawnApp, DawnError,
 };
 
 /// Context for adding an L3 plan (original plan with distribution domain)
@@ -109,6 +110,13 @@ impl DawnApp {
         distribution_domain.owner = ctx.accounts.caller.key();
         distribution_domain.local_domain = ctx.accounts.local_domain.key();
         distribution_domain.bump = ctx.bumps.distribution_domain;
+
+        emit!(DistributionDomainAdded {
+            distribution_domain: distribution_domain.key(),
+            owner: distribution_domain.owner,
+            local_domain: distribution_domain.local_domain,
+            created_at: distribution_domain.created_at,
+        });
 
         // Set plan fields for L3 plan
         plan.created_at = now;

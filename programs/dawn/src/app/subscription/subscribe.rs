@@ -235,6 +235,9 @@ impl DawnApp {
             subscriber: ctx.accounts.caller.key(),
             device: subscription.device,
             expiration: subscription.expiration,
+            last_claim: subscription.last_claim,
+            claimable_dawn: subscription.claimable_dawn,
+            daily_usdc: subscription.daily_usdc,
             swap_price,
             created_at: subscription.created_at,
         });

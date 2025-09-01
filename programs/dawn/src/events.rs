@@ -18,6 +18,34 @@ pub struct DeviceAssignedToSite {
 }
 
 #[event]
+pub struct DeviceLocationAdded {
+    pub device_location: Pubkey,
+    pub device: Pubkey,
+    pub height: u16,
+    pub longitude: i64,
+    pub latitude: i64,
+    pub placement: [i32; 2],
+    pub created_at: i64,
+}
+
+#[event]
+pub struct DeviceLocationVerified {
+    pub device_location: Pubkey,
+    pub device: Pubkey,
+    pub verified_at: i64,
+}
+
+
+#[event]
+pub struct OrganizationAdded {
+    pub organization: Pubkey,
+    pub owner: Pubkey,
+    pub organization_type: u8,
+    pub name: String,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct ServiceAgreementAdded {
     pub service_agreement: Pubkey,
     pub threshold: u64,
@@ -45,11 +73,13 @@ pub struct PlanAdded {
 }
 
 #[event]
-pub struct PlanRemoved {
+pub struct AuthMethodAdded {
+    pub auth_method: Pubkey,
     pub plan: Pubkey,
-    pub device: Pubkey,
+    pub created_at: i64,
 }
 
+/// TODO: Add claimable_dawn and daily_usdc
 #[event]
 pub struct Subscribed {
     pub subscription: Pubkey,
@@ -57,6 +87,9 @@ pub struct Subscribed {
     pub subscriber: Pubkey,
     pub device: Option<Pubkey>,
     pub expiration: i64,
+    pub last_claim: i64,
+    pub claimable_dawn: u64,
+    pub daily_usdc: u64,
     pub swap_price: u128,
     pub created_at: i64,
 }
@@ -108,21 +141,59 @@ pub struct DeviceAdded {
 }
 
 #[event]
-pub struct DeviceLocationVerified {
-    pub device: Pubkey,
-    pub latitude: i64,
-    pub longitude: i64,
-    pub verified_at: i64,
+pub struct LocalDomainAdded {
+    pub local_domain: Pubkey,
+    pub owner: Pubkey,
+    pub name: String,
+    pub created_at: i64,
 }
 
 #[event]
-pub struct IpPoolAdded {
-    pub ip_pool: Pubkey,
-    pub ip_v4: [u8; 4],
-    pub ip_v4_cidr_mask: u8,
-    pub ip_v6: [u16; 16],
-    pub ip_v6_cidr_mask: u8,
+pub struct AccessDomainAdded {
+    pub access_domain: Pubkey,
+    pub owner: Pubkey,
+    pub local_domain: Pubkey,
     pub created_at: i64,
+}
+
+#[event]
+pub struct DistributionDomainAdded {
+    pub distribution_domain: Pubkey,
+    pub owner: Pubkey,
+    pub local_domain: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct IpBlockAdded {
+    pub ip_block: Pubkey,
+    pub tier: u8,
+    pub root_block_index: u32,
+    pub block_base: u32,
+    pub block_cidr: u8,
+    pub unit_capacity: u16,
+    pub free_units: u16,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct IpBlockFull {
+    pub ip_block: Pubkey,
+}
+
+#[event]
+pub struct IpBlockNonFull {
+    pub ip_block: Pubkey,
+}
+
+#[event]
+pub struct RootIpBlockFull {
+    pub root_ip_block: Pubkey,
+}
+
+#[event]
+pub struct RootIpBlockNonFull {
+    pub root_ip_block: Pubkey,
 }
 
 #[event]
@@ -132,9 +203,9 @@ pub struct IpLeased {
     pub tier: u8,
     pub ipv4: [u8; 4],
     pub cidr: u8,
-    // pub lease_end: i64,
     pub unit_index: u32,
     pub block_index: u32,
+    pub leased_at: i64,
 }
 
 #[event]
@@ -161,13 +232,49 @@ pub struct RootIpBlockInitialized {
     pub authority: Pubkey,
     pub base_ipv4: u32,
     pub base_cidr: u8,
+    pub block_cidr: u8,
     pub created_at: i64,
 }
 
 #[event]
-pub struct IpAllocationNeeded {
-    pub subscription: Pubkey,
+pub struct AuthMethodRegistered {
+    pub auth_method: Pubkey,
+    pub method_type: u8,
     pub device: Pubkey,
-    pub tier: u8,
-    pub lease_duration: i64,
+    pub parameters: [u8; 256],
+    pub created_at: i64,
+}
+
+#[event]
+pub struct CredentialRegistered {
+    pub credential: Pubkey,
+    pub auth_method: Pubkey,
+    pub client: Pubkey,
+    pub credential_data: [u8; 128],
+    pub created_at: i64,
+}
+
+#[event]
+pub struct CredentialRevoked {
+    pub credential: Pubkey,
+    pub auth_method: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct ConnectionRegistered {
+    pub connection: Pubkey,
+    pub auth_method: Pubkey,
+    pub entity_a: Pubkey,
+    pub entity_b: Pubkey,
+    pub credential_data_a: [u8; 64],
+    pub credential_data_b: [u8; 64],
+    pub created_at: i64,
+}
+
+#[event]
+pub struct ConnectionRevoked {
+    pub connection: Pubkey,
+    pub auth_method: Pubkey,
+    pub created_at: i64,
 }

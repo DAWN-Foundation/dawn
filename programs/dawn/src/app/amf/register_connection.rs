@@ -1,7 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::app::DawnApp;
-use crate::state::{AuthMethod, Connection};
+use crate::{
+    app::DawnApp,
+    events::ConnectionRegistered,
+    state::{AuthMethod, Connection},
+};
 
 /// Context for registering connection credentials
 #[derive(Accounts)]
@@ -62,6 +65,16 @@ impl DawnApp {
         connection.credential_data_a = credential_data_a;
         connection.credential_data_b = credential_data_b;
         connection.bump = ctx.bumps.connection;
+
+        emit!(ConnectionRegistered {
+            connection: connection.key(),
+            auth_method: connection.auth_method,
+            entity_a: connection.entity_a,
+            entity_b: connection.entity_b,
+            credential_data_a: connection.credential_data_a,
+            credential_data_b: connection.credential_data_b,
+            created_at: connection.created_at,
+        });
 
         Ok(())
     }

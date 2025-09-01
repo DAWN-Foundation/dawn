@@ -1,5 +1,9 @@
-use crate::{constants::*, DawnError, IpTier};
 use anchor_lang::prelude::*;
+
+use crate::{
+    constants::{DISCRIMINATOR_SIZE, BLOCK_CIDR}, 
+    DawnError, IpTier
+};
 
 /// IP Block with per-block bitmap and micro-index for O(1) discovery
 /// Lazily created when needed by the allocator

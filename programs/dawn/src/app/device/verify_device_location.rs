@@ -50,8 +50,7 @@ impl DawnApp {
 
         emit!(DeviceLocationVerified {
             device: device_location.device,
-            latitude: device_location.latitude,
-            longitude: device_location.longitude,
+            device_location: device_location.key(),
             verified_at: device_location.verified_at,
         });
 
