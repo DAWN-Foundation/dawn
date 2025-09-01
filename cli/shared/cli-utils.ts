@@ -27,7 +27,6 @@ import {
   loadWallet,
   MacAddress,
   Mock,
-  PROGRAM_ID,
   RawMock,
 } from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -98,7 +97,6 @@ export function getMock(): Mock {
     // PDAs
     tokenConfigPda: new PublicKey(mock.tokenConfigPda),
     configPda: new PublicKey(mock.configPda),
-    // ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     deviceL2ModelPda: new PublicKey(mock.deviceL2ModelPda),
     organizationPda: new PublicKey(mock.organizationPda),
@@ -108,7 +106,6 @@ export function getMock(): Mock {
     sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     deviceL2Pda: new PublicKey(mock.deviceL2Pda),
-    // ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     serviceAgreementPda: new PublicKey(mock.serviceAgreementPda),
     planPda: new PublicKey(mock.planPda),
