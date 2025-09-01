@@ -4,7 +4,10 @@ import { PublicKey, SystemProgram } from '@solana/web3.js'
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import {
   COORD_DENOMINATOR,
-  getAccessDomainPda,
+  getIpLeasePda,
+  getIpRegistryPda,
+  getIpBlockPda,
+  getRootIpBlockPda,
   getDeviceLocationPda,
   getDevicePda,
   getLocalDomainPda,
@@ -72,13 +75,41 @@ async function main() {
     { endUser: {} } as OrganizationType,
     'end_user_organization',
   )
-  const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
   const localDomainPda = getLocalDomainPda(
     program,
     wallet.payer.publicKey,
     localDomainName,
   )
+  const loopbackIpRegistryPda = getIpRegistryPda(0)
+  const rootLoopbackIpBlockPda = getRootIpBlockPda(0, 0)
+  const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
+  const loopbackIpLeasePda = getIpLeasePda(0, devicePda)
+
+  const accounts = {
+    loopbackIpRegistry: loopbackIpRegistryPda,
+    rootLoopbackIpBlock: rootLoopbackIpBlockPda,
+    loopbackIpBlock: loopbackIpBlockPda,
+    loopbackIpLease: loopbackIpLeasePda,
+    ptpIpRegistry: null,
+    rootPtpIpBlock: null,
+    ptpIpBlock: null,
+    ptpIpLease: null,
+  }
+
+  const deviceModelType = await program.account.deviceModel.fetch(deviceModel)
+
+  if ('wirelessRadio' in deviceModelType.deviceType) {
+    const ptpIpRegistryPda = getIpRegistryPda(1)
+    const rootPtpIpBlockPda = getRootIpBlockPda(1, 0)
+    const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
+    const ptpIpLeasePda = getIpLeasePda(1, devicePda)
+
+    accounts.ptpIpRegistry = ptpIpRegistryPda
+    accounts.rootPtpIpBlock = rootPtpIpBlockPda
+    accounts.ptpIpBlock = ptpIpBlockPda
+    accounts.ptpIpLease = ptpIpLeasePda
+  }
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ organizationPda: organizationPda.toBase58() })
@@ -97,11 +128,11 @@ async function main() {
       localDomainName,
     )
     .accountsStrict({
+      ...accounts,
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
       organization: organizationPda,
-      accessDomain: accessDomainPda,
       deviceLocation: deviceLocationPda,
       site: null,
       localDomain: localDomainPda,

@@ -9,11 +9,14 @@ use anchor_spl::{
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
 use std::cmp::min;
 
-use super::{Config, DawnApp, Device, Plan, Subscription, SUBSCRIPTION_SIZE};
 use crate::{
     app::{subscription::payment, PaymentAccounts},
     utils::optional_pubkey_seed,
     DawnError, Subscribed,
+};
+use crate::{
+    state::{Config, Device, Plan, Subscription},
+    DawnApp,
 };
 
 #[derive(Accounts)]
@@ -23,7 +26,7 @@ pub struct Subscribe<'info> {
 
     /// The config with fees and accounts
     #[account(
-        seeds = [b"config"],
+        seeds = [Config::SEED_PREFIX.as_ref()],
         bump = config.bump,
     )]
     pub config: Box<Account<'info, Config>>,
@@ -31,7 +34,7 @@ pub struct Subscribe<'info> {
     /// The plan account
     #[account(
         seeds = [
-            b"plan",
+            Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &plan.name.as_bytes(),
@@ -50,7 +53,7 @@ pub struct Subscribe<'info> {
     #[account(
         constraint = device.owner == caller.key(),
         seeds = [
-            b"device",
+            Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
             &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
@@ -64,9 +67,9 @@ pub struct Subscribe<'info> {
     #[account(
         init,
         payer = caller,
-        space = SUBSCRIPTION_SIZE,
+        space = Subscription::SIZE,
         seeds = [
-            b"subscription",
+            Subscription::SEED_PREFIX.as_ref(),
             plan.key().as_ref(),
             caller.key().as_ref(),
         ],

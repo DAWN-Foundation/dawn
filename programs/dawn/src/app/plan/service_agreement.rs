@@ -1,25 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{events::ServiceAgreementAdded, Config, DawnApp, DawnError};
-
-/// The plan account, representing a subscription plan tied to a device
-#[account]
-pub struct ServiceAgreement {
-    /// The creation timestamp
-    pub created_at: i64,
-    /// The percentage threshold for the service agreement
-    pub threshold: u64,
-    /// The payout ratio for the service agreement
-    pub payout_ratio: u64,
-    /// PDA bump seed
-    pub bump: u8,
-}
-
-const SERVICE_AGREEMENT_SIZE: usize = 8 // id
-    + 8 // created_at
-    + 8 // threshold
-    + 8 // payout_ratio
-    + 1; // bump
+use crate::{events::ServiceAgreementAdded, Config, DawnApp, DawnError, ServiceAgreement};
 
 #[derive(Accounts)]
 #[instruction(threshold: u64, payout_ratio: u64)]
@@ -29,7 +10,7 @@ pub struct AddServiceAgreement<'info> {
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
-        seeds = [b"config"],
+        seeds = [Config::SEED_PREFIX.as_ref()],
         bump = config.bump,
     )]
     pub config: Account<'info, Config>,
@@ -38,9 +19,9 @@ pub struct AddServiceAgreement<'info> {
     #[account(
         init,
         payer = caller,
-        space = SERVICE_AGREEMENT_SIZE,
+        space = ServiceAgreement::SIZE,
         seeds = [
-            b"service_agreement",
+            ServiceAgreement::SEED_PREFIX.as_ref(),
             &threshold.to_le_bytes()[..],
             &payout_ratio.to_le_bytes()[..],
         ],

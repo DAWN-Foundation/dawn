@@ -5,8 +5,6 @@ import {
   submitTx,
   DeviceGenerator,
   getRandomInt,
-  IpV4Generator,
-  IpV6Generator,
   planNames,
 } from '../../shared/cli-utils'
 import { BN } from '@coral-xyz/anchor'
@@ -16,14 +14,9 @@ import {
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
-  getIpLeasePda,
-  getIpPoolPda,
   getLocalDomainPda,
   getOrganizationPda,
   getPlanPda,
-  getServiceAgreementPda,
-  IpV4Bytes,
-  IpV6Bytes,
 } from '../../../sdk'
 
 // CONSTANTS
@@ -158,7 +151,6 @@ async function main() {
           )
           .accountsPartial({
             caller: wallet.publicKey,
-            accessDomain: accessDomainPda,
             device: devicePda,
             organization: organizationPda,
             deviceModel: deviceModelPda,
@@ -199,7 +191,6 @@ async function main() {
               planParams.speed,
               planParams.capacity,
               null,
-              mock.planAuthMethods,
             )
             .accounts({
               caller: wallet.payer.publicKey,

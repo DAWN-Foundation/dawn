@@ -1,0 +1,162 @@
+use crate::{constants::*, DawnError, IpTier};
+use anchor_lang::prelude::*;
+
+/// IP Block with per-block bitmap and micro-index for O(1) discovery
+/// Lazily created when needed by the allocator
+#[account]
+#[derive(InitSpace)]
+pub struct IpBlock {
+    /// Tier identifier (Subscriber, Loopback, PtP)
+    pub tier: IpTier,
+    /// Root block index within this tier
+    pub root_block_index: u32,
+    /// Block base IP address (aligned to block_prefix /22)
+    pub block_base: u32,
+    /// Block CIDR length (/22)
+    pub block_cidr: u8,
+    /// Unit capacity: /32 tiers: 1024; PtP: 512
+    pub unit_capacity: u16,
+    /// Current number of free units in this block
+    pub free_units: u16,
+    /// Bitmap chunks for unit allocation
+    /// /32: 1024 bits → 16 chunks; PtP: 512 bits → 8 chunks
+    #[max_len(16)]
+    pub slots_chunks: Vec<u64>,
+    /// Chunk free bitmap: 1 bit per chunk (1 = chunk has free units)
+    /// /32 uses 16 bits; PtP uses lower 8 bits
+    pub chunk_free_bitmap: u16,
+    /// PDA bump seed
+    pub bump: u8,
+}
+
+impl IpBlock {
+    pub const SEED_PREFIX: &'static [u8] = b"ip_block";
+    pub const SIZE: usize = DISCRIMINATOR_SIZE + Self::INIT_SPACE;
+
+    /// Initialize a new IP Block
+    pub fn initialize(
+        &mut self,
+        tier: IpTier,
+        root_block_index: u32,
+        block_base: u32,
+        bump: u8,
+    ) -> Result<()> {
+        let chunks_per_block = tier.chunks_per_block();
+
+        self.tier = tier;
+        self.root_block_index = root_block_index;
+        self.block_base = block_base;
+        self.block_cidr = BLOCK_CIDR;
+        self.unit_capacity = tier.unit_capacity();
+        self.free_units = tier.unit_capacity();
+        self.slots_chunks = vec![0u64; chunks_per_block];
+
+        // Initialize chunk_free_bitmap with all chunks marked as free
+        self.chunk_free_bitmap = match tier {
+            IpTier::Subscriber | IpTier::Loopback => 0xFFFF, // 16 bits all set
+            IpTier::PtP => 0x00FF,                           // lower 8 bits set
+        };
+
+        self.bump = bump;
+
+        Ok(())
+    }
+
+    /// Select the first free unit in this block using chunk operations
+    /// Returns (unit_idx, chunk_idx, bit_idx) or None if block is full
+    pub fn select_unit(&self) -> Option<(u32, u32, u32)> {
+        if self.chunk_free_bitmap == 0 {
+            return None;
+        }
+
+        let chunk_idx = self.chunk_free_bitmap.trailing_zeros();
+        let chunk = self.slots_chunks[chunk_idx as usize];
+        let bit_idx = chunk.trailing_ones() as u32;
+
+        if bit_idx >= 64 {
+            return None; // This shouldn't happen if chunk_free_bitmap is correct
+        }
+
+        let unit_idx = (chunk_idx << 6) | bit_idx;
+        Some((unit_idx, chunk_idx, bit_idx))
+    }
+
+    /// Allocate a unit by setting the corresponding bit
+    pub fn allocate_unit(&mut self, chunk_idx: u32, bit_idx: u32) -> Result<()> {
+        if chunk_idx as usize >= self.slots_chunks.len() || bit_idx >= 64 {
+            return Err(DawnError::InvalidUnitIndex.into());
+        }
+
+        // Set the bit
+        self.slots_chunks[chunk_idx as usize] |= 1u64 << bit_idx;
+        self.free_units = self.free_units.saturating_sub(1);
+
+        // If chunk became full, clear the corresponding bit in chunk_free_bitmap
+        if self.slots_chunks[chunk_idx as usize] == !0u64 {
+            self.chunk_free_bitmap &= !(1u16 << chunk_idx);
+        }
+
+        Ok(())
+    }
+
+    pub fn allocate_first_available(&mut self) -> Result<(u32, [u8; 4])> {
+        let (unit_idx, chunk_idx, bit_idx) =
+            self.select_unit().ok_or(DawnError::CapacityExhausted)?;
+        self.allocate_unit(chunk_idx, bit_idx)?;
+
+        Ok((unit_idx, self.unit_idx_to_ipv4_bytes(unit_idx)))
+    }
+
+    pub fn release(&mut self, unit_idx: u32) -> Result<bool> {
+        let (chunk_idx, bit_idx) = self.unit_to_indices(unit_idx);
+        if chunk_idx as usize >= self.slots_chunks.len() || bit_idx >= 64 {
+            return Err(DawnError::InvalidUnitIndex.into());
+        }
+
+        let was_full_chunk = self.slots_chunks[chunk_idx as usize] == !0u64;
+
+        // Clear the bit
+        self.slots_chunks[chunk_idx as usize] &= !(1u64 << bit_idx);
+        self.free_units = self.free_units.saturating_add(1);
+
+        // If chunk was full before, mark it as having free space
+        if was_full_chunk {
+            self.chunk_free_bitmap |= 1u16 << chunk_idx;
+        }
+
+        // Return true if this was the first free unit (block was full before)
+        Ok(self.free_units == 1)
+    }
+
+    /// Check if this block is full
+    pub fn is_full(&self) -> bool {
+        self.free_units == 0
+    }
+
+    /// Calculate the IPv4 address for a given unit index
+    pub fn unit_idx_to_ipv4(&self, unit_idx: u32) -> u32 {
+        match self.tier {
+            IpTier::Subscriber | IpTier::Loopback => {
+                // For /32 tiers, each unit is a /32 address
+                self.block_base + unit_idx
+            }
+            IpTier::PtP => {
+                // For /31 tier, each unit represents a /31 pair
+                // Return the base address of the /31 pair (even address)
+                self.block_base + (unit_idx << 1)
+            }
+        }
+    }
+
+    pub fn unit_idx_to_ipv4_bytes(&self, unit_idx: u32) -> [u8; 4] {
+        let ipv4 = self.unit_idx_to_ipv4(unit_idx);
+        ipv4.to_be_bytes()
+    }
+
+    /// Get chunk and bit indices from unit index
+    pub fn unit_to_indices(&self, unit_idx: u32) -> (u32, u32) {
+        let chunk_idx = unit_idx >> 6; // divide by 64
+        let bit_idx = unit_idx & 63; // modulo 64
+        (chunk_idx, bit_idx)
+    }
+}

@@ -1,17 +1,21 @@
 mod amf;
 mod claim;
-mod config;
+mod configure;
 mod device;
+mod init_fee_accounts;
+mod init_token;
+mod ipam;
 mod plan;
 mod subscription;
-mod token;
 
 pub use amf::*;
 pub use claim::*;
-pub use config::*;
+pub use configure::*;
 pub use device::*;
+pub use init_fee_accounts::*;
+pub use init_token::*;
+pub use ipam::*;
 pub use plan::*;
 pub use subscription::*;
-pub use token::*;
 
 pub struct DawnApp;

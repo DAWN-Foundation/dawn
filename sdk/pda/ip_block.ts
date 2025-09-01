@@ -1,46 +1,48 @@
 import { BN, Program } from '@coral-xyz/anchor'
 import { Dawn } from '../../target/types/dawn'
 import { PublicKey } from '@solana/web3.js'
-import { IpV4Bytes, IpV6Bytes } from '..'
+import { IpV4Bytes, IpV6Bytes, PROGRAM_ID } from '..'
 
-export function getIpPoolPda(
-  program: Program<Dawn>,
-  poolIpV4: IpV4Bytes,
-  poolIpV4CidrMask: number,
-  poolIpV6: IpV6Bytes,
-  poolIpV6CidrMask: number,
-) {
-  return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('ip_pool'),
-      Buffer.from(poolIpV4),
-      Buffer.from([poolIpV4CidrMask]),
-      Buffer.from(poolIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([poolIpV6CidrMask]),
-    ],
-    program.programId,
+export function getIpRegistryPda(tier: number) {
+  const [ipRegistryPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ip_registry'), Buffer.from([tier])],
+    PROGRAM_ID,
   )
+  return ipRegistryPda
 }
 
-export function getIpLeasePda(
-  program: Program<Dawn>,
-  devicePda: PublicKey,
-  ipPoolPda: PublicKey,
-  leaseIpV4: IpV4Bytes,
-  leaseIpV4CidrMask: number,
-  leaseIpV6: IpV6Bytes,
-  leaseIpV6CidrMask: number,
-) {
-  return PublicKey.findProgramAddressSync(
+export function getRootIpBlockPda(tier: number, index: number) {
+  const [rootIpBlockPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('root_ip_block'),
+      Buffer.from([tier]),
+      new Uint8Array(new Uint32Array([index]).buffer),
+    ],
+    PROGRAM_ID,
+  )
+  return rootIpBlockPda
+}
+
+export function getIpBlockPda(rootIpBlockPda: PublicKey, blockIndex: number) {
+  const [ipBlockPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_block'),
+      Buffer.from(rootIpBlockPda.toBytes()),
+      new Uint8Array(new Uint32Array([blockIndex]).buffer),
+    ],
+    PROGRAM_ID,
+  )
+  return ipBlockPda
+}
+
+export function getIpLeasePda(tier: number, devicePda: PublicKey) {
+  const [ipLeasePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('ip_lease'),
+      Buffer.from([tier]),
       Buffer.from(devicePda.toBytes()),
-      Buffer.from(ipPoolPda.toBytes()),
-      Buffer.from(leaseIpV4),
-      Buffer.from([leaseIpV4CidrMask]),
-      Buffer.from(leaseIpV6.flatMap((byte) => new BN(byte).toArray('le', 2))),
-      Buffer.from([leaseIpV6CidrMask]),
     ],
-    program.programId,
+    PROGRAM_ID,
   )
+  return ipLeasePda
 }

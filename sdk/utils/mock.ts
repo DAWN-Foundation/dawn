@@ -1,13 +1,7 @@
 import fs from 'fs'
 import * as anchor from '@coral-xyz/anchor'
-import { AnchorProvider, BN, IdlTypes, Wallet } from '@coral-xyz/anchor'
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from '@solana/web3.js'
+import { BN, Wallet } from '@coral-xyz/anchor'
+import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
 import { AddedAccount, startAnchor } from 'solana-bankrun'
 import {
@@ -17,16 +11,7 @@ import {
 } from 'spl-token-bankrun'
 
 import { Mock } from './types'
-import {
-  COORD_DENOMINATOR,
-  IpV4Bytes,
-  IpV6Bytes,
-  MacAddress,
-  PROGRAM_ID,
-  AuthMethodType,
-  organizationTypeSeed,
-  OrganizationType,
-} from './helpers'
+import { COORD_DENOMINATOR, MacAddress, PROGRAM_ID } from './helpers'
 import {
   RAYDIUM_CONFIG,
   RAYDIUM_POOL_FEE_RECEIVER,
@@ -43,8 +28,8 @@ import {
   getDeviceModelPda,
   getDevicePda,
   getFeePoolDawnAccountPda,
-  getIpLeasePda,
-  getIpPoolPda,
+  getIpBlockPda,
+  getRootIpBlockPda,
   getLocalDomainPda,
   getMedallionDawnAccountPda,
   getOrganizationPda,
@@ -53,13 +38,14 @@ import {
   getSubscriptionPda,
   getTokenConfigPda,
   getValidatorDawnAccountPda,
+  getIpLeasePda,
+  getIpRegistryPda,
 } from '../pda'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import { Dawn } from '../../target/types/dawn'
 import { createPSKMethodParams, serializePSKMethodParams } from './auth'
 import { getPskAuthMethodPda } from '../pda/amf'
 
@@ -388,46 +374,6 @@ export async function setup(
     localDomain,
   )
 
-  // Pool IP V4
-  const poolIpV4: IpV4Bytes = [11, 11, 11, 0]
-  const poolIpV4CidrMask = 24
-
-  // Pool IP V6 (2001:db8::/64 - a documentation prefix)
-  const poolIpV6: IpV6Bytes = [
-    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  ]
-  const poolIpV6CidrMask = 64
-
-  const [ipPoolPda] = getIpPoolPda(
-    program,
-    poolIpV4,
-    poolIpV4CidrMask,
-    poolIpV6,
-    poolIpV6CidrMask,
-  )
-
-  // Lease IP V4
-  const leaseIpV4: IpV4Bytes = [11, 11, 11, 2]
-  const leaseIpV4CidrMask = 32
-
-  // Lease IP V6 (2001:db8::1 - a valid address within the pool)
-  const leaseIpV6: IpV6Bytes = [
-    0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001,
-  ]
-  const leaseIpV6CidrMask = 128 // Single address
-
-  const [ipLeasePda] = getIpLeasePda(
-    program,
-    devicePda,
-    ipPoolPda,
-    leaseIpV4,
-    leaseIpV4CidrMask,
-    leaseIpV6,
-    leaseIpV6CidrMask,
-  )
-
   const slaThreshold = new BN(100).mul(USDC_DECIMALS)
   const slaPayoutRatio = new BN(100)
 
@@ -495,6 +441,24 @@ export async function setup(
     planPda,
   )
 
+  // IPAM - Loopback tier (tier 1)
+  const loopIpRegistryPda = getIpRegistryPda(1)
+  const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
+  const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
+  const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
+
+  // IPAM - PtP tier (tier 2) for WirelessRadio devices
+  const ptpIpRegistryPda = getIpRegistryPda(2)
+  const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
+  const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
+  const ptpIpLeasePda = getIpLeasePda(2, deviceL2Pda)
+
+  // IPAM - Subscriber tier (tier 0) for future use
+  const subscriberIpRegistryPda = getIpRegistryPda(0)
+  const rootSubscriberIpBlockPda = getRootIpBlockPda(0, 0)
+  const ipBlockPda = getIpBlockPda(rootSubscriberIpBlockPda, 0)
+  const ipLeasePda = getIpLeasePda(0, devicePda)
+
   mock = {
     serviceProvider,
     customer,
@@ -529,7 +493,7 @@ export async function setup(
     // PDAs
     tokenConfigPda,
     configPda,
-    ipPoolPda,
+    // ipPoolPda,
     deviceModelPda,
     deviceL2ModelPda,
     organizationPda,
@@ -539,20 +503,23 @@ export async function setup(
     sitePda,
     devicePda,
     deviceL2Pda,
-    ipLeasePda,
     deviceLocationPda,
     serviceAgreementPda,
     planPda,
     planBump,
-    // ip pool
-    poolIpV4,
-    poolIpV4CidrMask,
-    poolIpV6,
-    poolIpV6CidrMask,
-    leaseIpV4,
-    leaseIpV4CidrMask,
-    leaseIpV6,
-    leaseIpV6CidrMask,
+    // IPAM - IP blocks and leases
+    loopIpRegistryPda,
+    ptpIpRegistryPda,
+    subscriberIpRegistryPda,
+    rootLoopbackIpBlockPda,
+    loopbackIpBlockPda,
+    loopbackIpLeasePda,
+    rootPtpIpBlockPda,
+    ptpIpBlockPda,
+    ptpIpLeasePda,
+    rootSubscriberIpBlockPda,
+    ipBlockPda,
+    ipLeasePda,
     // site
     siteName,
     // device

@@ -99,7 +99,6 @@ async function main() {
         deviceModel,
         organization: organizationPda,
         deviceLocation: deviceLocationPda,
-        accessDomain: null,
         site: null,
       })
       .rpc()

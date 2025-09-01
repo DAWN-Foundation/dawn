@@ -27,7 +27,6 @@ import {
   loadWallet,
   MacAddress,
   Mock,
-  PROGRAM_ID,
   RawMock,
 } from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -98,7 +97,6 @@ export function getMock(): Mock {
     // PDAs
     tokenConfigPda: new PublicKey(mock.tokenConfigPda),
     configPda: new PublicKey(mock.configPda),
-    ipPoolPda: new PublicKey(mock.ipPoolPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     deviceL2ModelPda: new PublicKey(mock.deviceL2ModelPda),
     organizationPda: new PublicKey(mock.organizationPda),
@@ -108,20 +106,23 @@ export function getMock(): Mock {
     sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     deviceL2Pda: new PublicKey(mock.deviceL2Pda),
-    ipLeasePda: new PublicKey(mock.ipLeasePda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
     serviceAgreementPda: new PublicKey(mock.serviceAgreementPda),
     planPda: new PublicKey(mock.planPda),
     planBump: mock.planBump,
     // ip pool
-    poolIpV4: mock.poolIpV4,
-    poolIpV4CidrMask: mock.poolIpV4CidrMask,
-    poolIpV6: mock.poolIpV6,
-    poolIpV6CidrMask: mock.poolIpV6CidrMask,
-    leaseIpV4: mock.leaseIpV4,
-    leaseIpV4CidrMask: mock.leaseIpV4CidrMask,
-    leaseIpV6: mock.leaseIpV6,
-    leaseIpV6CidrMask: mock.leaseIpV6CidrMask,
+    rootSubscriberIpBlockPda: new PublicKey(mock.rootSubscriberIpBlockPda),
+    ipBlockPda: new PublicKey(mock.ipBlockPda),
+    ipLeasePda: new PublicKey(mock.ipLeasePda),
+    loopIpRegistryPda: new PublicKey(mock.loopIpRegistryPda),
+    ptpIpRegistryPda: new PublicKey(mock.ptpIpRegistryPda),
+    subscriberIpRegistryPda: new PublicKey(mock.subscriberIpRegistryPda),
+    rootLoopbackIpBlockPda: new PublicKey(mock.rootLoopbackIpBlockPda),
+    loopbackIpBlockPda: new PublicKey(mock.loopbackIpBlockPda),
+    loopbackIpLeasePda: new PublicKey(mock.loopbackIpLeasePda),
+    rootPtpIpBlockPda: new PublicKey(mock.rootPtpIpBlockPda),
+    ptpIpBlockPda: new PublicKey(mock.ptpIpBlockPda),
+    ptpIpLeasePda: new PublicKey(mock.ptpIpLeasePda),
     // site
     siteName: mock.siteName,
     // device
