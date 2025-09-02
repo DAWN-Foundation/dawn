@@ -2,9 +2,10 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
+    events::{AccessDomainAdded, PlanAdded},
     state::{AccessDomain, LocalDomain, ServiceAgreement},
     utils::{optional_pubkey_seed, trim_null_bytes},
-    DawnApp, DawnError, Plan, PlanAdded, Subscription,
+    DawnApp, DawnError, Plan, Subscription,
 };
 
 /// Context for adding an L2 plan (derived plan with access domain)
@@ -150,6 +151,13 @@ impl DawnApp {
         access_domain.owner = ctx.accounts.caller.key();
         access_domain.local_domain = ctx.accounts.local_domain.key();
         access_domain.bump = ctx.bumps.access_domain;
+
+        emit!(AccessDomainAdded {
+            access_domain: access_domain.key(),
+            owner: access_domain.owner,
+            local_domain: access_domain.local_domain,
+            created_at: access_domain.created_at,
+        });
 
         // Set plan fields for L2 plan
         plan.created_at = now;

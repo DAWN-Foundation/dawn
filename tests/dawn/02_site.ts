@@ -3,12 +3,7 @@ import { Program, AnchorError, Wallet, BN } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
-import {
-  getEvent,
-  mock,
-  getProvider,
-  confirmTx,
-} from '../../sdk/utils'
+import { getEvent, mock, getProvider, confirmTx } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
 import { getSitePda } from '../../sdk/pda/site'

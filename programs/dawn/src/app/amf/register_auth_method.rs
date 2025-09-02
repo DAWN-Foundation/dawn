@@ -1,5 +1,6 @@
 use crate::{
     app::DawnApp,
+    events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
     utils::optional_pubkey_seed,
 };
@@ -62,6 +63,14 @@ impl DawnApp {
         auth_method.device = ctx.accounts.device.key();
         auth_method.parameters = parameters;
         auth_method.bump = ctx.bumps.auth_method;
+
+        emit!(AuthMethodRegistered {
+            auth_method: auth_method.key(),
+            method_type: auth_method.method_type as u8,
+            device: auth_method.device,
+            parameters: auth_method.parameters,
+            created_at: Clock::get()?.unix_timestamp,
+        });
 
         Ok(())
     }

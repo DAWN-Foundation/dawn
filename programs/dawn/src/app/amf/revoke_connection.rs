@@ -1,7 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::app::DawnApp;
-use crate::state::{AuthMethod, Connection};
+use crate::{
+    app::DawnApp,
+    events::ConnectionRevoked,
+    state::{AuthMethod, Connection},
+};
 
 /// Context for revoking connection credentials
 #[derive(Accounts)]
@@ -40,8 +43,16 @@ pub struct RevokeConnection<'info> {
 
 impl DawnApp {
     /// Revoke connection credentials by closing the account
-    pub fn revoke_connection(_ctx: Context<RevokeConnection>) -> Result<()> {
+    pub fn revoke_connection(ctx: Context<RevokeConnection>) -> Result<()> {
         // Account will be automatically closed due to the `close = authority` constraint
+        let connection = &ctx.accounts.connection;
+        let auth_method = &ctx.accounts.auth_method;
+
+        emit!(ConnectionRevoked {
+            connection: connection.key(),
+            auth_method: auth_method.key(),
+            revoked_at: Clock::get()?.unix_timestamp,
+        });
         Ok(())
     }
 }

@@ -2,11 +2,15 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    state::{
-        Device, DeviceLocation, DeviceModel, DeviceType, IpBlock, IpLease, LocalDomain,
-        Organization, OrganizationType, Site,
+    events::{
+        DeviceAdded, DeviceLocationAdded, IpBlockAdded, IpBlockFull, IpLeased, LocalDomainAdded,
+        OrganizationAdded, RootIpBlockFull,
     },
-    DawnApp, DawnError, DeviceAdded, IpLeased, IpRegistry, IpTier, RootIpBlock,
+    state::{
+        Device, DeviceLocation, DeviceModel, DeviceType, IpBlock, IpLease, IpRegistry, IpTier,
+        LocalDomain, Organization, OrganizationType, RootIpBlock, Site,
+    },
+    DawnApp, DawnError,
 };
 
 const END_USER_ORG_NAME: &str = "end_user_organization";
@@ -271,6 +275,14 @@ impl DawnApp {
             let copy_len = domain_bytes.len().min(32);
             name_bytes[..copy_len].copy_from_slice(&domain_bytes[..copy_len]);
             local_domain.name = name_bytes;
+
+            // Emit event
+            emit!(LocalDomainAdded {
+                local_domain: local_domain.key(),
+                owner: local_domain.owner,
+                name: local_domain_name,
+                created_at: local_domain.created_at,
+            });
         }
 
         let created_at = Clock::get()?.unix_timestamp;
@@ -288,11 +300,21 @@ impl DawnApp {
         device.bump = ctx.bumps.device;
 
         // Set organization info
-        organization.created_at = created_at;
-        organization.owner = caller;
-        organization.organization_type = OrganizationType::EndUser;
-        organization.name = END_USER_ORG_NAME.into();
-        organization.bump = ctx.bumps.organization;
+        if organization.created_at == 0 {
+            organization.created_at = created_at;
+            organization.owner = caller;
+            organization.organization_type = OrganizationType::EndUser;
+            organization.name = END_USER_ORG_NAME.into();
+            organization.bump = ctx.bumps.organization;
+
+            emit!(OrganizationAdded {
+                organization: organization.key(),
+                owner: organization.owner,
+                organization_type: OrganizationType::EndUser as u8,
+                name: organization.name.clone(),
+                created_at: organization.created_at,
+            });
+        }
 
         // Set device location info
         device_location.created_at = created_at;
@@ -303,6 +325,16 @@ impl DawnApp {
         device_location.placement = placement;
         device_location.verified = false;
         device_location.bump = ctx.bumps.device_location;
+
+        emit!(DeviceLocationAdded {
+            device_location: device_location.key(),
+            device: device.key(),
+            height: device_location.height,
+            longitude: device_location.longitude,
+            latitude: device_location.latitude,
+            placement: device_location.placement,
+            created_at: device_location.created_at,
+        });
 
         // Lease loopback IP for all devices
         lease_ip_for_device(
@@ -315,9 +347,6 @@ impl DawnApp {
             ctx.bumps.loopback_ip_block,
             ctx.bumps.loopback_ip_lease,
         )?;
-
-        // Set the infra_ip field to the loopback lease
-        device.infra_ip = Some(loopback_ip_lease.key());
 
         // Lease PtP IP only for WirelessRadio devices
         if device_model.device_type == DeviceType::WirelessRadio {
@@ -350,10 +379,6 @@ impl DawnApp {
             organization: organization.key(),
             local_domain: device.local_domain,
             name,
-            latitude,
-            longitude,
-            height,
-            placement,
             mac_address,
             created_at,
         });
@@ -381,6 +406,16 @@ fn lease_ip_for_device<'info>(
     // If block is not initialized, initialize it
     if ip_block.block_base == 0 {
         ip_block.initialize(tier, root_block_index, block_base, ip_block_bump)?;
+        emit!(IpBlockAdded {
+            ip_block: ip_block.key(),
+            tier: tier.to_u8(),
+            root_block_index: root_block_index,
+            block_base: block_base,
+            block_cidr: ip_block.block_cidr,
+            unit_capacity: ip_block.unit_capacity,
+            free_units: ip_block.free_units,
+            created_at: Clock::get()?.unix_timestamp,
+        });
     }
 
     // Mark as allocated and get the ipv4
@@ -389,10 +424,16 @@ fn lease_ip_for_device<'info>(
     // If we've allocated the last unit, mark the block as full
     if ip_block.is_full() {
         root_block.mark_block_full(block_idx);
+        emit!(IpBlockFull {
+            ip_block: ip_block.key(),
+        });
     }
 
     if !root_block.has_free_blocks() {
         ip_registry.update_root_availability(root_block_index, false);
+        emit!(RootIpBlockFull {
+            root_ip_block: root_block.key(),
+        });
     }
 
     // Initialize the IP lease
@@ -415,6 +456,7 @@ fn lease_ip_for_device<'info>(
         cidr: tier.unit_prefix(),
         unit_index: unit_idx,
         block_index: block_idx,
+        leased_at: Clock::get()?.unix_timestamp,
     });
 
     Ok(())

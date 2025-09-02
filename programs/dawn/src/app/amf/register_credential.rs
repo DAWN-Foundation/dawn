@@ -1,7 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
-use crate::app::DawnApp;
-use crate::state::{AuthMethod, Credential};
+use crate::{
+    app::DawnApp,
+    events::CredentialRegistered,
+    state::{AuthMethod, Credential},
+};
 
 /// Context for registering client credentials
 #[derive(Accounts)]
@@ -53,6 +56,14 @@ impl DawnApp {
         credential.auth_method = ctx.accounts.auth_method.key();
         credential.credential_data = credential_data;
         credential.bump = ctx.bumps.credential;
+
+        emit!(CredentialRegistered {
+            credential: credential.key(),
+            auth_method: credential.auth_method,
+            client: credential.client,
+            credential_data: credential.credential_data,
+            created_at: credential.created_at,
+        });
 
         Ok(())
     }

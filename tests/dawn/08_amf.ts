@@ -1,5 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
-import { Program } from '@coral-xyz/anchor'
+import { Program, Wallet } from '@coral-xyz/anchor'
 import { assert } from 'chai'
 import { Dawn } from '../../target/types/dawn'
 import {
@@ -28,9 +28,50 @@ import {
   generateIPsecAHCredential,
   serializeIPsecAHCredential,
   deserializeIPsecAHCredential,
+  getEvent,
+  confirmTx,
 } from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
+import { PublicKey } from '@solana/web3.js'
+
+interface CredentialRegistered {
+  credential: PublicKey
+  authMethod: PublicKey
+  client: PublicKey
+  credentialData: number[]
+  createdAt: number
+}
+
+interface CredentialRevoked {
+  credential: PublicKey
+  authMethod: PublicKey
+  revokedAt: number
+}
+
+interface AuthMethodRegistered {
+  authMethod: PublicKey
+  methodType: AuthMethodType
+  device: PublicKey
+  parameters: number[]
+  createdAt: number
+}
+
+interface ConnectionRegistered {
+  connection: PublicKey
+  authMethod: PublicKey
+  entityA: PublicKey
+  entityB: PublicKey
+  credentialDataA: number[]
+  credentialDataB: number[]
+  createdAt: number
+}
+
+interface ConnectionRevoked {
+  connection: PublicKey
+  authMethod: PublicKey
+  revokedAt: number
+}
 
 export const amfTests = () =>
   describe('dawn::amf', () => {
@@ -48,7 +89,7 @@ export const amfTests = () =>
 
     beforeAll(async () => {
       provider = await getProvider()
-      provider.wallet = wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
       anchor.setProvider(provider as any)
 
       program = anchor.workspace.DAWN as Program<Dawn>
@@ -105,8 +146,11 @@ export const amfTests = () =>
         paramsBuffer,
       )
 
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
-      await program.methods
+      const tx = await program.methods
         .registerAuthMethod(authMethodType as any, paramsArray)
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -115,7 +159,20 @@ export const amfTests = () =>
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+      provider.wallet = providerWallet
+
+      const authMethodEvent = await getEvent<AuthMethodRegistered>(
+        program,
+        txDetails,
+        'authMethodRegistered',
+      )
+      expect(authMethodEvent.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(authMethodEvent.methodType).toStrictEqual(3) // EAP type
+      expect(authMethodEvent.device.equals(mock.devicePda)).toBeTruthy()
+      expect(authMethodEvent.parameters).toStrictEqual(paramsArray)
 
       // make sure the account was created
       const authMethod = await program.account.authMethod.fetch(authMethodPda)
@@ -228,6 +285,9 @@ export const amfTests = () =>
         clientKeypair.publicKey,
       )
 
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
       const tx = await program.methods
         .registerCredential(clientKeypair.publicKey, credentialData)
         .accountsPartial({
@@ -236,7 +296,22 @@ export const amfTests = () =>
           credential: credentialPda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+      provider.wallet = providerWallet
+
+      const credentialEvent = await getEvent<CredentialRegistered>(
+        program,
+        txDetails,
+        'credentialRegistered',
+      )
+      expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
+      expect(
+        credentialEvent.client.equals(clientKeypair.publicKey),
+      ).toBeTruthy()
+      expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(credentialEvent.credentialData).toStrictEqual(credentialData)
 
       // Fetch and verify the credential was created correctly
       const credential = await program.account.credential.fetch(credentialPda)
@@ -285,7 +360,7 @@ export const amfTests = () =>
       expect(credentialBefore).toBeTruthy()
 
       // Revoke the credential
-      await program.methods
+      const tx = await program.methods
         .revokeCredential()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -293,7 +368,17 @@ export const amfTests = () =>
           credential: credentialPda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      const credentialEvent = await getEvent<CredentialRevoked>(
+        program,
+        txDetails,
+        'credentialRevoked',
+      )
+      expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
+      expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
 
       // Verify credential account is closed (should throw error when trying to fetch)
       try {
@@ -398,7 +483,10 @@ export const amfTests = () =>
         entityBKeypair.publicKey,
       )
 
-      await program.methods
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
+      const tx = await program.methods
         .registerConnection(
           entityAKeypair.publicKey,
           entityBKeypair.publicKey,
@@ -412,7 +500,26 @@ export const amfTests = () =>
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+      provider.wallet = providerWallet
+
+      const connectionEvent = await getEvent<ConnectionRegistered>(
+        program,
+        txDetails,
+        'connectionRegistered',
+      )
+      expect(connectionEvent.connection.equals(connectionPda)).toBeTruthy()
+      expect(connectionEvent.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
+      expect(
+        connectionEvent.entityA.equals(entityAKeypair.publicKey),
+      ).toBeTruthy()
+      expect(
+        connectionEvent.entityB.equals(entityBKeypair.publicKey),
+      ).toBeTruthy()
+      expect(connectionEvent.credentialDataA).toStrictEqual(credentialDataA)
+      expect(connectionEvent.credentialDataB).toStrictEqual(credentialDataB)
 
       // Fetch and verify the connection was created correctly
       const connection = await program.account.connection.fetch(connectionPda)
@@ -468,8 +575,11 @@ export const amfTests = () =>
       )
       expect(connectionBefore).toBeTruthy()
 
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
       // Revoke the connection
-      await program.methods
+      const tx = await program.methods
         .revokeConnection()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -477,7 +587,17 @@ export const amfTests = () =>
           connection: connectionPda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      const connectionEvent = await getEvent<ConnectionRevoked>(
+        program,
+        txDetails,
+        'connectionRevoked',
+      )
+      expect(connectionEvent.connection.equals(connectionPda)).toBeTruthy()
+      expect(connectionEvent.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
 
       // Verify connection account is closed (should throw error when trying to fetch)
       try {
@@ -487,5 +607,6 @@ export const amfTests = () =>
       } catch (error) {
         expect(error).toBeTruthy()
       }
+      provider.wallet = providerWallet
     })
   })

@@ -16,8 +16,6 @@ pub struct Device {
     pub model: Pubkey,
     /// Reference to the Organization account
     pub organization: Pubkey,
-    /// Optional reference to the IpLease account
-    pub infra_ip: Option<Pubkey>,
     /// Name of the device
     #[max_len(32)]
     pub name: String,

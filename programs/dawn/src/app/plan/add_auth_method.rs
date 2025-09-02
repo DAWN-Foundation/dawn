@@ -2,6 +2,7 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
+    events::AuthMethodAdded,
     state::{AuthMethod, Device},
     utils::optional_pubkey_seed,
     DawnApp, DawnError, Plan,
@@ -74,6 +75,12 @@ impl DawnApp {
 
         // Add the auth method to the plan
         plan.auth_methods.push(auth_method.key());
+
+        emit!(AuthMethodAdded {
+            auth_method: auth_method.key(),
+            plan: plan.key(),
+            created_at: Clock::get()?.unix_timestamp,
+        });
 
         Ok(())
     }
