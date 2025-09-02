@@ -11,6 +11,7 @@ import {
   web3,
 } from '@coral-xyz/anchor'
 import {
+  Commitment,
   Connection,
   Keypair,
   PublicKey,
@@ -219,11 +220,12 @@ export async function submitTx(
   wallet: Wallet,
   itx: web3.TransactionInstruction,
   logs: boolean = true,
+  commitment: Commitment = 'finalized',
 ) {
   const latestBlockHash = await connection.getLatestBlockhash({
-    commitment: 'confirmed',
+    commitment,
   })
-  console.log({ latestBlockHash })
+  // console.log({ latestBlockHash })
 
   const tx = new Transaction({
     ...latestBlockHash,
@@ -240,7 +242,7 @@ export async function submitTx(
 
   const confirmationResult = await connection.confirmTransaction(
     { signature: txSignature, ...latestBlockHash },
-    'confirmed',
+    commitment,
   )
 
   logs &&
