@@ -81,10 +81,10 @@ async function main() {
     wallet.payer.publicKey,
     localDomainName,
   )
-  const loopbackIpRegistryPda = getIpRegistryPda(0)
-  const rootLoopbackIpBlockPda = getRootIpBlockPda(0, 0)
+  const loopbackIpRegistryPda = getIpRegistryPda(1)
+  const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
   const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
-  const loopbackIpLeasePda = getIpLeasePda(0, devicePda)
+  const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
 
   const accounts = {
     loopbackIpRegistry: loopbackIpRegistryPda,
@@ -100,10 +100,10 @@ async function main() {
   const deviceModelType = await program.account.deviceModel.fetch(deviceModel)
 
   if ('wirelessRadio' in deviceModelType.deviceType) {
-    const ptpIpRegistryPda = getIpRegistryPda(1)
-    const rootPtpIpBlockPda = getRootIpBlockPda(1, 0)
+    const ptpIpRegistryPda = getIpRegistryPda(2)
+    const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
     const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
-    const ptpIpLeasePda = getIpLeasePda(1, devicePda)
+    const ptpIpLeasePda = getIpLeasePda(2, devicePda)
 
     accounts.ptpIpRegistry = ptpIpRegistryPda
     accounts.rootPtpIpBlock = rootPtpIpBlockPda

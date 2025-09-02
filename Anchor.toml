@@ -10,7 +10,7 @@ skip-lint = false
 dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
 
 [programs.devnet]
-dawn = "Fgnro1Xh59RyYiArHHEmNZ1TryTXsLtdu9fKDeQ86thz"
+dawn = "dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ"
 
 [registry]
 url = "https://api.apr.dev"

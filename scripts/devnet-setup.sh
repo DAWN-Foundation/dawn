@@ -6,7 +6,7 @@ anchor build -- --features devnet
 # # Wallet (~/.config/solana/id.json) must have at least 10 SOL
 
 # # Deploy the program to Devnet with fixture keypair
-anchor deploy --provider.cluster devnet --program-name dawn --program-keypair dawn_devnet.json
+anchor deploy --provider.cluster devnet --program-name dawn --program-keypair dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ.json
 
 # Run the testnet script (this takes a while)
 yarn devnet

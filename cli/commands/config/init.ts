@@ -1,4 +1,4 @@
-import { PublicKey } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 import {
   connect,
   getMock,
@@ -7,7 +7,7 @@ import {
   getRandomInt,
   planNames,
 } from '../../shared/cli-utils'
-import { BN } from '@coral-xyz/anchor'
+import { BN, Program, Wallet } from '@coral-xyz/anchor'
 import {
   COORD_DENOMINATOR,
   getAccessDomainPda,
@@ -17,11 +17,14 @@ import {
   getLocalDomainPda,
   getOrganizationPda,
   getPlanPda,
-} from '../../../sdk'
-
-// CONSTANTS
-const MANUFACTURER = 'MikroTik'
-const MODEL = 'GG69420'
+  getIpLeasePda,
+  getConfigPda,
+  getIpRegistryPda,
+  getIpBlockPda,
+  getRootIpBlockPda,
+  OrganizationType,
+} from '../../../sdk/utils'
+import { Dawn } from '../../../target/types/dawn'
 
 // Plan constants
 const MIN_PRICE = 50_000_000 // 50 USDC
@@ -47,6 +50,49 @@ function generateRandomPlanParams() {
     ),
     name: planNames[Math.floor(Math.random() * planNames.length)],
   }
+}
+
+async function ensureRootBlockInitialized(
+  program: Program<Dawn>,
+  wallet: Wallet,
+  connection: Connection,
+  tier: number,
+  baseIpv4: number,
+  baseCidr: number,
+) {
+  const [configPda] = getConfigPda(program)
+  const ipRegistryPda = getIpRegistryPda(tier)
+
+  // If registry exists and has at least one root block, skip
+  try {
+    const registry = await program.account.ipRegistry.fetch(ipRegistryPda)
+    if (registry.rootBlockCount && registry.rootBlockCount > 0) return
+  } catch (_) {
+    // continue to initialize
+  }
+
+  let nextIndex = 0
+  try {
+    const registry = await program.account.ipRegistry.fetch(ipRegistryPda)
+    nextIndex = registry.nextIndex ?? 0
+  } catch (_) {
+    nextIndex = 0
+  }
+
+  const rootIpBlockPda = getRootIpBlockPda(tier, nextIndex)
+
+  const itx = await program.methods
+    .initializeRootIpBlock(tier, baseIpv4, baseCidr)
+    .accountsStrict({
+      caller: wallet.payer.publicKey,
+      config: configPda,
+      ipRegistry: ipRegistryPda,
+      rootIpBlock: rootIpBlockPda,
+      systemProgram: SystemProgram.programId,
+    })
+    .instruction()
+
+  await submitTx(connection, wallet, itx, false)
 }
 
 async function main() {
@@ -96,6 +142,34 @@ async function main() {
     }
 
     // --------------------------------------------------------------------
+    // Initialize IPAM root blocks (subscriber=0, loopback=1, ptp=2)
+    console.log('Initialize IPAM root blocks (if needed)')
+    await ensureRootBlockInitialized(
+      program,
+      wallet,
+      connection,
+      0,
+      0x0a400000,
+      14,
+    ) // 10.64.0.0/14
+    await ensureRootBlockInitialized(
+      program,
+      wallet,
+      connection,
+      1,
+      0x64400000,
+      14,
+    ) // 100.64.0.0/14
+    await ensureRootBlockInitialized(
+      program,
+      wallet,
+      connection,
+      2,
+      0x64600000,
+      14,
+    ) // 100.96.0.0/14
+
+    // --------------------------------------------------------------------
     console.log('Add devices')
 
     const devices = DeviceGenerator.generate(
@@ -126,16 +200,46 @@ async function main() {
       const organizationPda = getOrganizationPda(
         program,
         wallet.publicKey,
-        { endUser: {} },
+        { endUser: {} } as OrganizationType,
         'end_user_organization',
       )
-      const accessDomainPda = getAccessDomainPda(program, devicePda)
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const localDomainPda = getLocalDomainPda(
         program,
         wallet.publicKey,
         device.localDomain,
       )
+      const loopbackIpRegistryPda = getIpRegistryPda(1)
+      const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
+      const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
+      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
+
+      const accounts = {
+        loopbackIpRegistry: loopbackIpRegistryPda,
+        rootLoopbackIpBlock: rootLoopbackIpBlockPda,
+        loopbackIpBlock: loopbackIpBlockPda,
+        loopbackIpLease: loopbackIpLeasePda,
+        ptpIpRegistry: null,
+        rootPtpIpBlock: null,
+        ptpIpBlock: null,
+        ptpIpLease: null,
+      }
+
+      const deviceModelType = await program.account.deviceModel.fetch(
+        deviceModelPda,
+      )
+
+      if ('wirelessRadio' in deviceModelType.deviceType) {
+        const ptpIpRegistryPda = getIpRegistryPda(2)
+        const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
+        const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
+        const ptpIpLeasePda = getIpLeasePda(2, devicePda)
+
+        accounts.ptpIpRegistry = ptpIpRegistryPda
+        accounts.rootPtpIpBlock = rootPtpIpBlockPda
+        accounts.ptpIpBlock = ptpIpBlockPda
+        accounts.ptpIpLease = ptpIpLeasePda
+      }
 
       try {
         // Add device
@@ -149,19 +253,20 @@ async function main() {
             Array.from(Buffer.from(device.mac)),
             device.localDomain,
           )
-          .accountsPartial({
-            caller: wallet.publicKey,
+          .accountsStrict({
+            ...accounts,
+            caller: wallet.payer.publicKey,
             device: devicePda,
-            organization: organizationPda,
             deviceModel: deviceModelPda,
+            organization: organizationPda,
             deviceLocation: deviceLocationPda,
-            localDomain: localDomainPda,
             site: null,
+            localDomain: localDomainPda,
+            systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
           .instruction()
 
-        await submitTx(connection, wallet, deviceItx, false)
+        await submitTx(connection, wallet, deviceItx, true, 'confirmed')
         console.log('Device added', { devicePda: devicePda.toBase58() })
 
         // Add plans if flag is enabled
@@ -203,109 +308,13 @@ async function main() {
             .signers([wallet.payer])
             .instruction()
 
-          await submitTx(connection, wallet, planItx, false)
+          await submitTx(connection, wallet, planItx, false, 'confirmed')
           console.log('Plan added', { planPda: planPda.toBase58() })
         }
       } catch (error) {
         console.error(error)
       }
     }
-
-    // // --------------------------------------------------------------------
-    // console.log('Add ip pool')
-
-    // // Pool IP V4
-    // const poolIpV4: IpV4Bytes = [11, 11, getRandomInt(1, 255), 0]
-    // const poolIpV4CidrMask = 24
-    // const ipV4List: IpV4Bytes[] = IpV4Generator.generateIPList(
-    //   poolIpV4.join('.'),
-    //   poolIpV4CidrMask,
-    // )
-
-    // // Pool IP V6 (2001:db8::/64 - a documentation prefix)
-    // const poolIpV6: IpV6Bytes = [
-    //   +`0x${getRandomInt(1, 255).toString(16)}`,
-    //   +`0x${getRandomInt(1, 255).toString(16)}`,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    //   0x0000,
-    // ]
-
-    // const poolIpV6CidrMask = 108 // For less ips
-    // const ipV6List: IpV6Bytes[] = IpV6Generator.generateIPList(
-    //   poolIpV6.join(':'),
-    //   poolIpV6CidrMask,
-    // )
-
-    // const [ipPoolPda] = getIpPoolPda(
-    //   program,
-    //   poolIpV4,
-    //   poolIpV4CidrMask,
-    //   poolIpV6,
-    //   poolIpV6CidrMask,
-    // )
-
-    // itx = await program.methods
-    //   .addIpPool(poolIpV4, poolIpV4CidrMask, poolIpV6, poolIpV6CidrMask)
-    //   .accounts({
-    //     caller: wallet.publicKey,
-    //     config: mock.configPda,
-    //     ipPool: ipPoolPda,
-    //   })
-    //   .signers([wallet.payer])
-    //   .instruction()
-
-    // await submitTx(connection, wallet, itx, false)
-    // console.log('Ip pool added', { ipPoolPda: ipPoolPda.toBase58() })
-
-    // // --------------------------------------------------------------------
-    // console.log('Lease ip')
-
-    // for (let i = 0; i < devicesPda.length; i++) {
-    //   // Lease IP V4
-    //   const leaseIpV4: IpV4Bytes = ipV4List[i]
-    //   const leaseIpV4CidrMask = 24
-
-    //   // Lease IP V6 (2001:db8::1 - a valid address within the pool)
-    //   const leaseIpV6: IpV6Bytes = ipV6List[i]
-    //   const leaseIpV6CidrMask = 108 // Single address
-
-    //   const [ipLeasePda] = getIpLeasePda(
-    //     program,
-    //     devicesPda[i],
-    //     ipPoolPda,
-    //     leaseIpV4,
-    //     leaseIpV4CidrMask,
-    //     leaseIpV6,
-    //     leaseIpV6CidrMask,
-    //   )
-
-    //   const itx = await program.methods
-    //     .leaseIp(leaseIpV4, leaseIpV4CidrMask, leaseIpV6, leaseIpV6CidrMask)
-    //     .accounts({
-    //       caller: wallet.publicKey,
-    //       config: mock.configPda,
-    //       device: devicesPda[i],
-    //       ipPool: ipPoolPda,
-    //       ipLease: ipLeasePda,
-    //     })
-    //     .signers([wallet.payer])
-    //     .instruction()
-
-    //   await submitTx(connection, wallet, itx, false)
-    //   console.log('Leased ip', { ipLeasePda: ipLeasePda.toBase58() })
-    // }
   } catch (error) {
     console.error(error)
   }
