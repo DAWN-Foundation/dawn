@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("Fgnro1Xh59RyYiArHHEmNZ1TryTXsLtdu9fKDeQ86thz");
+declare_id!("dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ");
 
 mod app;
 mod constants;
@@ -86,16 +86,6 @@ pub mod dawn {
         DawnApp::revoke_connection(ctx)
     }
 
-    // pub fn add_ip_pool(
-    //     ctx: Context<AddIpPool>,
-    //     ip_v4: [u8; 4],
-    //     ip_v4_cidr_mask: u8,
-    //     ip_v6: [u16; 16],
-    //     ip_v6_cidr_mask: u8,
-    // ) -> Result<()> {
-    //     DawnApp::add_ip_pool(ctx, ip_v4, ip_v4_cidr_mask, ip_v6, ip_v6_cidr_mask)
-    // }
-
     pub fn add_device_model(
         ctx: Context<AddDeviceModel>,
         device_type: DeviceType,
@@ -134,16 +124,6 @@ pub mod dawn {
     pub fn assign_device_to_site(ctx: Context<AssignDeviceToSite>) -> Result<()> {
         DawnApp::assign_device_to_site(ctx)
     }
-
-    // pub fn lease_ip(
-    //     ctx: Context<LeaseIp>,
-    //     ip_v4: [u8; 4],
-    //     ip_v4_cidr_mask: u8,
-    //     ip_v6: [u16; 16],
-    //     ip_v6_cidr_mask: u8,
-    // ) -> Result<()> {
-    //     DawnApp::lease_ip(ctx, ip_v4, ip_v4_cidr_mask, ip_v6, ip_v6_cidr_mask)
-    // }
 
     pub fn verify_device_location(ctx: Context<VerifyDeviceLocation>) -> Result<()> {
         DawnApp::verify_device_location(ctx)
