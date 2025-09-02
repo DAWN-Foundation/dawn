@@ -21,13 +21,15 @@
     "dawn:get_devices": "yarn build && node dist/cli/commands/devices/get_devices.js",
     "dawn:add_plan": "yarn build && node dist/cli/commands/plans/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/cli/commands/plans/get_plans.js",
-    "dawn:add_ip_pool": "yarn build && node dist/cli/commands/network/add_ip_pool.js",
-    "dawn:lease_ip": "yarn build && node dist/cli/commands/network/lease_ip.js",
     "dawn:subscribe": "yarn build && node dist/cli/commands/subscriptions/subscribe.js",
     "dawn:get_subscriptions": "yarn build && node dist/cli/commands/subscriptions/get_subscriptions.js",
     "dawn:get_service_agreements": "yarn build && node dist/cli/commands/services/get_service_agreements.js",
     "dawn:claim": "yarn build && node dist/cli/commands/subscriptions/claim.js",
-    "dawn:get_device_locations": "yarn build && node dist/cli/commands/devices/get_device_locations.js"
+    "dawn:get_device_locations": "yarn build && node dist/cli/commands/devices/get_device_locations.js",
+    "dawn:get_registries": "yarn build && node dist/cli/commands/ipam/get_registries.js",
+    "dawn:get_root_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_root_ip_blocks.js",
+    "dawn:get_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_ip_blocks.js",
+    "dawn:get_ip_leases": "yarn build && node dist/cli/commands/ipam/get_ip_leases.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
