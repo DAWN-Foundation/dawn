@@ -138,10 +138,6 @@ pub struct DeviceAdded {
     pub organization: Pubkey,
     pub local_domain: Pubkey,
     pub name: String,
-    pub longitude: i64,
-    pub latitude: i64,
-    pub height: u16,
-    pub placement: [i32; 2],
     pub mac_address: [u8; 6],
     pub created_at: i64,
 }

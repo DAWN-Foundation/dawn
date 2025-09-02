@@ -379,10 +379,6 @@ impl DawnApp {
             organization: organization.key(),
             local_domain: device.local_domain,
             name,
-            latitude,
-            longitude,
-            height,
-            placement,
             mac_address,
             created_at,
         });

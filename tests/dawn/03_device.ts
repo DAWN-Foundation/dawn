@@ -573,9 +573,6 @@ export const deviceTests = () =>
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
       expect(event.organization.equals(mock.organizationPda)).toBeTruthy()
       expect(event.name).toBe(mock.deviceName)
-      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
-      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
-      expect(event.height.toString()).toBe(mock.deviceHeight.toString())
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       const localDomainEvent = await getEvent<LocalDomainAdded>(
@@ -1267,8 +1264,6 @@ export const deviceSiteTests = () =>
       expect(event.site.equals(mock.sitePda)).toBeTruthy()
       expect(event.model.equals(mock.deviceModelPda)).toBeTruthy()
       expect(event.organization.equals(mock.organizationPda)).toBeTruthy()
-      expect(event.latitude.toString()).toBe(mock.deviceLatitude.toString())
-      expect(event.longitude.toString()).toBe(mock.deviceLongitude.toString())
       expect(event.macAddress).toEqual(macAddress)
     })
   })
