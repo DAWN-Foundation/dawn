@@ -712,10 +712,20 @@ export const planTests = () =>
         txDetails,
         'distributionDomainAdded',
       )
-      expect(distributionDomainEvent.distributionDomain.equals(distributionDomainPda)).toBeTruthy()
-      expect(distributionDomainEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
-      expect(distributionDomainEvent.localDomain.equals(mock.localDomainPda)).toBeTruthy()
-      expect(new BN(distributionDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
+      expect(
+        distributionDomainEvent.distributionDomain.equals(
+          distributionDomainPda,
+        ),
+      ).toBeTruthy()
+      expect(
+        distributionDomainEvent.owner.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
+      expect(
+        distributionDomainEvent.localDomain.equals(mock.localDomainPda),
+      ).toBeTruthy()
+      expect(
+        new BN(distributionDomainEvent.createdAt).gt(new BN(0)),
+      ).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(mock.planPda)
@@ -1209,7 +1219,11 @@ export const planTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // make sure event was emitted
-      const event = await getEvent<AuthMethodAdded>(program, txDetails, 'authMethodAdded')
+      const event = await getEvent<AuthMethodAdded>(
+        program,
+        txDetails,
+        'authMethodAdded',
+      )
       expect(event.authMethod.equals(authMethodPda)).toBeTruthy()
       expect(event.plan.equals(planPda)).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
@@ -2387,9 +2401,17 @@ export const parentPlanTests = () =>
       ).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
-      const accessDomainEvent = await getEvent<AccessDomainAdded>(program, txDetails, 'accessDomainAdded')
-      expect(accessDomainEvent.accessDomain.equals(accessDomainPda)).toBeTruthy()
-      expect(accessDomainEvent.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      const accessDomainEvent = await getEvent<AccessDomainAdded>(
+        program,
+        txDetails,
+        'accessDomainAdded',
+      )
+      expect(
+        accessDomainEvent.accessDomain.equals(accessDomainPda),
+      ).toBeTruthy()
+      expect(
+        accessDomainEvent.owner.equals(mock.customer.publicKey),
+      ).toBeTruthy()
       expect(accessDomainEvent.localDomain.equals(localDomainPda)).toBeTruthy()
       expect(new BN(accessDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
 

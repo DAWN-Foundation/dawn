@@ -583,8 +583,12 @@ export const deviceTests = () =>
         txDetails,
         'localDomainAdded',
       )
-      expect(localDomainEvent.localDomain.equals(mock.localDomainPda)).toBeTruthy()
-      expect(localDomainEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(
+        localDomainEvent.localDomain.equals(mock.localDomainPda),
+      ).toBeTruthy()
+      expect(
+        localDomainEvent.owner.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
       expect(localDomainEvent.name).toBe(mock.localDomain)
       expect(new BN(localDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
 
@@ -593,8 +597,12 @@ export const deviceTests = () =>
         txDetails,
         'organizationAdded',
       )
-      expect(organizationEvent.organization.equals(mock.organizationPda)).toBeTruthy()
-      expect(organizationEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(
+        organizationEvent.organization.equals(mock.organizationPda),
+      ).toBeTruthy()
+      expect(
+        organizationEvent.owner.equals(mock.serviceProvider.publicKey),
+      ).toBeTruthy()
       expect(organizationEvent.organizationType).toBe(3) // EndUser
       expect(organizationEvent.name).toBe('end_user_organization')
       expect(new BN(organizationEvent.createdAt).gt(new BN(0))).toBeTruthy()
@@ -622,11 +630,19 @@ export const deviceTests = () =>
         txDetails,
         'deviceLocationAdded',
       )
-      expect(deviceLocationEvent.deviceLocation.equals(mock.deviceLocationPda)).toBeTruthy()
+      expect(
+        deviceLocationEvent.deviceLocation.equals(mock.deviceLocationPda),
+      ).toBeTruthy()
       expect(deviceLocationEvent.device.equals(mock.devicePda)).toBeTruthy()
-      expect(deviceLocationEvent.height.toString()).toBe(mock.deviceHeight.toString())
-      expect(deviceLocationEvent.longitude.toString()).toBe(mock.deviceLongitude.toString())
-      expect(deviceLocationEvent.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(deviceLocationEvent.height.toString()).toBe(
+        mock.deviceHeight.toString(),
+      )
+      expect(deviceLocationEvent.longitude.toString()).toBe(
+        mock.deviceLongitude.toString(),
+      )
+      expect(deviceLocationEvent.latitude.toString()).toBe(
+        mock.deviceLatitude.toString(),
+      )
       expect(deviceLocationEvent.placement).toEqual(mock.devicePlacement)
       expect(new BN(deviceLocationEvent.createdAt).gt(new BN(0))).toBeTruthy()
 
@@ -662,7 +678,9 @@ export const deviceTests = () =>
         txDetails,
         'ipLeased',
       )
-      expect(loopbackIpLeaseEvent.ipLease.equals(mock.loopbackIpLeasePda)).toBeTruthy()
+      expect(
+        loopbackIpLeaseEvent.ipLease.equals(mock.loopbackIpLeasePda),
+      ).toBeTruthy()
       expect(loopbackIpLeaseEvent.device.equals(mock.devicePda)).toBeTruthy()
       expect(loopbackIpLeaseEvent.tier).toBe(1) // Loopback
       expect(loopbackIpLeaseEvent.ipv4).toEqual(ipLease.ipv4)
@@ -871,11 +889,7 @@ export const deviceTests = () =>
       expect(ptpLease.tier).toEqual({ ptP: {} })
       expect(ptpLease.ipV4CidrMask).toBe(31) // /31 for PtP
 
-      const ipLeases = await getEvents<IpLeased>(
-        program,
-        txDetails,
-        'ipLeased',
-      )
+      const ipLeases = await getEvents<IpLeased>(program, txDetails, 'ipLeased')
 
       const ptpIpLeaseEvent = ipLeases.find((event) => event.tier === 2)
       if (!ptpIpLeaseEvent) {

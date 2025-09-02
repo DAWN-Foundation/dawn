@@ -164,7 +164,11 @@ export const amfTests = () =>
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
 
-      const authMethodEvent = await getEvent<AuthMethodRegistered>(program, txDetails, 'authMethodRegistered')
+      const authMethodEvent = await getEvent<AuthMethodRegistered>(
+        program,
+        txDetails,
+        'authMethodRegistered',
+      )
       expect(authMethodEvent.authMethod.equals(authMethodPda)).toBeTruthy()
       expect(authMethodEvent.methodType).toStrictEqual(3) // EAP type
       expect(authMethodEvent.device.equals(mock.devicePda)).toBeTruthy()
@@ -297,9 +301,15 @@ export const amfTests = () =>
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
 
-      const credentialEvent = await getEvent<CredentialRegistered>(program, txDetails, 'credentialRegistered')
+      const credentialEvent = await getEvent<CredentialRegistered>(
+        program,
+        txDetails,
+        'credentialRegistered',
+      )
       expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
-      expect(credentialEvent.client.equals(clientKeypair.publicKey)).toBeTruthy()
+      expect(
+        credentialEvent.client.equals(clientKeypair.publicKey),
+      ).toBeTruthy()
       expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
       expect(credentialEvent.credentialData).toStrictEqual(credentialData)
 
@@ -362,7 +372,11 @@ export const amfTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const credentialEvent = await getEvent<CredentialRevoked>(program, txDetails, 'credentialRevoked')
+      const credentialEvent = await getEvent<CredentialRevoked>(
+        program,
+        txDetails,
+        'credentialRevoked',
+      )
       expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
       expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
 
@@ -491,11 +505,19 @@ export const amfTests = () =>
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
 
-      const connectionEvent = await getEvent<ConnectionRegistered>(program, txDetails, 'connectionRegistered')
+      const connectionEvent = await getEvent<ConnectionRegistered>(
+        program,
+        txDetails,
+        'connectionRegistered',
+      )
       expect(connectionEvent.connection.equals(connectionPda)).toBeTruthy()
       expect(connectionEvent.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
-      expect(connectionEvent.entityA.equals(entityAKeypair.publicKey)).toBeTruthy()
-      expect(connectionEvent.entityB.equals(entityBKeypair.publicKey)).toBeTruthy()
+      expect(
+        connectionEvent.entityA.equals(entityAKeypair.publicKey),
+      ).toBeTruthy()
+      expect(
+        connectionEvent.entityB.equals(entityBKeypair.publicKey),
+      ).toBeTruthy()
       expect(connectionEvent.credentialDataA).toStrictEqual(credentialDataA)
       expect(connectionEvent.credentialDataB).toStrictEqual(credentialDataB)
 
@@ -569,7 +591,11 @@ export const amfTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      const connectionEvent = await getEvent<ConnectionRevoked>(program, txDetails, 'connectionRevoked')
+      const connectionEvent = await getEvent<ConnectionRevoked>(
+        program,
+        txDetails,
+        'connectionRevoked',
+      )
       expect(connectionEvent.connection.equals(connectionPda)).toBeTruthy()
       expect(connectionEvent.authMethod.equals(ipsecAuthMethodPda)).toBeTruthy()
 

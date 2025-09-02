@@ -42,7 +42,6 @@ pub struct DeviceLocationVerified {
     pub verified_at: i64,
 }
 
-
 #[event]
 pub struct OrganizationAdded {
     pub organization: Pubkey,

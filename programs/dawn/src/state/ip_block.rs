@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{DISCRIMINATOR_SIZE, BLOCK_CIDR}, 
-    DawnError, IpTier
+    constants::{BLOCK_CIDR, DISCRIMINATOR_SIZE},
+    DawnError, IpTier,
 };
 
 /// IP Block with per-block bitmap and micro-index for O(1) discovery

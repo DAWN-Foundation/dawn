@@ -2,8 +2,8 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use std::cmp::min;
 
 use crate::{
-    state::{AuthMethod, Device},
     events::AuthMethodAdded,
+    state::{AuthMethod, Device},
     utils::optional_pubkey_seed,
     DawnApp, DawnError, Plan,
 };

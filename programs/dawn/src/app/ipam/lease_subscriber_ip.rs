@@ -3,7 +3,9 @@ use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 use crate::{
     app::DawnApp,
     events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
-    state::Device, DawnError, IpRegistry, IpTier, Subscription};
+    state::Device,
+    DawnError, IpRegistry, IpTier, Subscription,
+};
 
 use std::cmp::min;
 

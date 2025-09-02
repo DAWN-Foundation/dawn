@@ -1,5 +1,8 @@
 use crate::state::Config;
-use crate::{app::DawnApp, DawnError, IpRegistry, IpTier, RootIpBlock, RootIpBlockInitialized, IpRegistryInitialized};
+use crate::{
+    app::DawnApp, DawnError, IpRegistry, IpRegistryInitialized, IpTier, RootIpBlock,
+    RootIpBlockInitialized,
+};
 use anchor_lang::prelude::*;
 
 /// Account context for initializing a Root IP Block with sequence (authority required)
