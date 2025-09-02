@@ -5,6 +5,7 @@ import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js'
 import { Dawn } from '../../target/types/dawn'
 import {
   getEvent,
+  getEvents,
   mock,
   getProvider,
   confirmTx,
@@ -18,9 +19,17 @@ import {
   getOrganizationPda,
   getLocalDomainPda,
   getIpLeasePda,
+  IpV4Bytes,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
+
+interface LocalDomainAdded {
+  localDomain: PublicKey
+  owner: PublicKey
+  name: string
+  createdAt: number
+}
 
 interface DeviceAdded {
   device: PublicKey
@@ -37,6 +46,16 @@ interface DeviceAdded {
   createdAt: number
 }
 
+interface DeviceLocationAdded {
+  deviceLocation: PublicKey
+  device: PublicKey
+  height: number
+  longitude: BN
+  latitude: BN
+  placement: number[]
+  createdAt: number
+}
+
 interface DeviceLocationVerified {
   device: PublicKey
   latitude: BN
@@ -44,10 +63,28 @@ interface DeviceLocationVerified {
   verifiedAt: number
 }
 
+interface OrganizationAdded {
+  organization: PublicKey
+  owner: PublicKey
+  organizationType: number
+  name: string
+  createdAt: number
+}
+
 interface DeviceAssignedToSite {
   device: PublicKey
   site: PublicKey
   createdAt: number
+}
+
+interface IpLeased {
+  ipLease: PublicKey
+  device: PublicKey
+  tier: number
+  ipv4: IpV4Bytes
+  cidr: number
+  blockIndex: number
+  unitIndex: number
 }
 
 export let l2devicePda: PublicKey
@@ -145,7 +182,6 @@ export const deviceTests = () =>
           .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
-        console.log('my error', error)
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Latitude coordinate is invalid')
@@ -542,6 +578,27 @@ export const deviceTests = () =>
       expect(event.height.toString()).toBe(mock.deviceHeight.toString())
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
+      const localDomainEvent = await getEvent<LocalDomainAdded>(
+        program,
+        txDetails,
+        'localDomainAdded',
+      )
+      expect(localDomainEvent.localDomain.equals(mock.localDomainPda)).toBeTruthy()
+      expect(localDomainEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(localDomainEvent.name).toBe(mock.localDomain)
+      expect(new BN(localDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
+
+      const organizationEvent = await getEvent<OrganizationAdded>(
+        program,
+        txDetails,
+        'organizationAdded',
+      )
+      expect(organizationEvent.organization.equals(mock.organizationPda)).toBeTruthy()
+      expect(organizationEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(organizationEvent.organizationType).toBe(3) // EndUser
+      expect(organizationEvent.name).toBe('end_user_organization')
+      expect(new BN(organizationEvent.createdAt).gt(new BN(0))).toBeTruthy()
+
       // make sure device was created
       const device = await program.account.device.fetch(mock.devicePda)
       expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
@@ -559,6 +616,19 @@ export const deviceTests = () =>
         organization.owner.equals(mock.serviceProvider.publicKey),
       ).toBeTruthy()
       expect(organization.name).toBe('end_user_organization')
+
+      const deviceLocationEvent = await getEvent<DeviceLocationAdded>(
+        program,
+        txDetails,
+        'deviceLocationAdded',
+      )
+      expect(deviceLocationEvent.deviceLocation.equals(mock.deviceLocationPda)).toBeTruthy()
+      expect(deviceLocationEvent.device.equals(mock.devicePda)).toBeTruthy()
+      expect(deviceLocationEvent.height.toString()).toBe(mock.deviceHeight.toString())
+      expect(deviceLocationEvent.longitude.toString()).toBe(mock.deviceLongitude.toString())
+      expect(deviceLocationEvent.latitude.toString()).toBe(mock.deviceLatitude.toString())
+      expect(deviceLocationEvent.placement).toEqual(mock.devicePlacement)
+      expect(new BN(deviceLocationEvent.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure device location was created
       const deviceLocation = await program.account.deviceLocation.fetch(
@@ -586,6 +656,19 @@ export const deviceTests = () =>
       expect(ipLease.tier).toEqual({ loopback: {} })
       expect(ipLease.ipV4CidrMask).toBe(32) // /32 for loopback
       expect(ipLease.ipv4.length).toBe(4) // IPv4 address
+
+      const loopbackIpLeaseEvent = await getEvent<IpLeased>(
+        program,
+        txDetails,
+        'ipLeased',
+      )
+      expect(loopbackIpLeaseEvent.ipLease.equals(mock.loopbackIpLeasePda)).toBeTruthy()
+      expect(loopbackIpLeaseEvent.device.equals(mock.devicePda)).toBeTruthy()
+      expect(loopbackIpLeaseEvent.tier).toBe(1) // Loopback
+      expect(loopbackIpLeaseEvent.ipv4).toEqual(ipLease.ipv4)
+      expect(loopbackIpLeaseEvent.cidr).toBe(32) // /32 for loopback
+      expect(loopbackIpLeaseEvent.blockIndex).toBe(ipLease.blockIndex)
+      expect(loopbackIpLeaseEvent.unitIndex).toBe(ipLease.unitIndex)
     })
 
     test('cannot verify device location as non-authority', async () => {
@@ -737,7 +820,10 @@ export const deviceTests = () =>
       const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
       const ptpIpLeasePda = getIpLeasePda(2, devicePda)
 
-      await program.methods
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
+      const tx = await program.methods
         .addDevice(
           mock.deviceName,
           mock.deviceHeight,
@@ -763,7 +849,11 @@ export const deviceTests = () =>
           ptpIpLease: ptpIpLeasePda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      provider.wallet = providerWallet
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.model.equals(deviceModelPda)).toBeTruthy()
@@ -780,6 +870,24 @@ export const deviceTests = () =>
       expect(ptpLease.device.equals(devicePda)).toBeTruthy()
       expect(ptpLease.tier).toEqual({ ptP: {} })
       expect(ptpLease.ipV4CidrMask).toBe(31) // /31 for PtP
+
+      const ipLeases = await getEvents<IpLeased>(
+        program,
+        txDetails,
+        'ipLeased',
+      )
+
+      const ptpIpLeaseEvent = ipLeases.find((event) => event.tier === 2)
+      if (!ptpIpLeaseEvent) {
+        throw new Error('PtP IP lease event not found')
+      }
+      expect(ptpIpLeaseEvent.ipLease.equals(ptpIpLeasePda)).toBeTruthy()
+      expect(ptpIpLeaseEvent.device.equals(devicePda)).toBeTruthy()
+      expect(ptpIpLeaseEvent.tier).toBe(2) // PtP
+      expect(ptpIpLeaseEvent.ipv4).toEqual(ptpLease.ipv4)
+      expect(ptpIpLeaseEvent.cidr).toBe(31) // /31 for PtP
+      expect(ptpIpLeaseEvent.blockIndex).toBe(ptpLease.blockIndex)
+      expect(ptpIpLeaseEvent.unitIndex).toBe(ptpLease.unitIndex)
     })
 
     test('adds second L2 device to the same local domain', async () => {

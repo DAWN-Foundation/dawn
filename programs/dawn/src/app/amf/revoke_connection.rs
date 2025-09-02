@@ -51,7 +51,7 @@ impl DawnApp {
         emit!(ConnectionRevoked {
             connection: connection.key(),
             auth_method: auth_method.key(),
-            created_at: connection.created_at,
+            revoked_at: Clock::get()?.unix_timestamp,
         });
         Ok(())
     }

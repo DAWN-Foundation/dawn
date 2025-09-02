@@ -69,16 +69,38 @@ export async function getEvent<T>(
   name: string,
 ): Promise<T> {
   const logs = tx.logMessages.filter((msg) => msg.startsWith('Program data: '))
-  const log = logs[logs.length - 1]
 
-  const logEncoded = log.split('Program data: ')[1]
-  const event = program.coder.events.decode(logEncoded)
-
-  if (event.name !== name) {
-    throw new Error(`Event name mismatch: ${event.name} !== ${name}`)
+  for (const log of logs) {
+    const logEncoded = log.split('Program data: ')[1]
+    const event = program.coder.events.decode(logEncoded)
+    if (!event) continue
+    if (event.name === name) {
+      return event.data as T
+    }
   }
 
-  return event.data as T
+  throw new Error(`Event with name ${name} not found`)
+}
+
+export async function getEvents<T>(
+  program: Program<Dawn>,
+  tx: BanksTransactionMeta,
+  name: string,
+): Promise<T[]> {
+  const logs = tx.logMessages.filter((msg) => msg.startsWith('Program data: '))
+
+  const events: T[] = []
+
+  for (const log of logs) {
+    const logEncoded = log.split('Program data: ')[1]
+    const event = program.coder.events.decode(logEncoded)
+    if (!event) continue
+    if (event.name === name) {
+      events.push(event.data as T)
+    }
+  }
+
+  return events
 }
 
 export function deviceTypeSeed(deviceType: DeviceType) {

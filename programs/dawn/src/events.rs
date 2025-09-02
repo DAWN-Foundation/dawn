@@ -3,6 +3,13 @@ use anchor_lang::prelude::*;
 use crate::state::DeviceType;
 
 #[event]
+pub struct TokenConfigInitialized {
+    pub token_config: Pubkey,
+    pub dawn_mint: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
 pub struct SiteAdded {
     pub site: Pubkey,
     pub owner: Pubkey,
@@ -258,7 +265,7 @@ pub struct CredentialRegistered {
 pub struct CredentialRevoked {
     pub credential: Pubkey,
     pub auth_method: Pubkey,
-    pub created_at: i64,
+    pub revoked_at: i64,
 }
 
 #[event]
@@ -276,5 +283,5 @@ pub struct ConnectionRegistered {
 pub struct ConnectionRevoked {
     pub connection: Pubkey,
     pub auth_method: Pubkey,
-    pub created_at: i64,
+    pub revoked_at: i64,
 }

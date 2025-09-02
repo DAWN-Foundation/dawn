@@ -300,19 +300,21 @@ impl DawnApp {
         device.bump = ctx.bumps.device;
 
         // Set organization info
-        organization.created_at = created_at;
-        organization.owner = caller;
-        organization.organization_type = OrganizationType::EndUser;
-        organization.name = END_USER_ORG_NAME.into();
-        organization.bump = ctx.bumps.organization;
+        if organization.created_at == 0 {
+            organization.created_at = created_at;
+            organization.owner = caller;
+            organization.organization_type = OrganizationType::EndUser;
+            organization.name = END_USER_ORG_NAME.into();
+            organization.bump = ctx.bumps.organization;
 
-        emit!(OrganizationAdded {
-            organization: organization.key(),
-            owner: organization.owner,
-            organization_type: OrganizationType::EndUser as u8,
-            name: organization.name.clone(),
-            created_at: organization.created_at,
-        });
+            emit!(OrganizationAdded {
+                organization: organization.key(),
+                owner: organization.owner,
+                organization_type: OrganizationType::EndUser as u8,
+                name: organization.name.clone(),
+                created_at: organization.created_at,
+            });
+        }
 
         // Set device location info
         device_location.created_at = created_at;

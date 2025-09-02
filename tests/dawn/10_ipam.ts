@@ -208,42 +208,6 @@ export const leaseIpTests = () =>
       expect(mock).toBeDefined()
     })
 
-    test('createSubscriber helper function works correctly', async () => {
-      // Test the helper function to ensure it creates a complete subscriber setup
-      const subscriberSetup = await createSubscriber(
-        program,
-        provider,
-        'test-subscriber',
-        'test-device',
-      )
-
-      // Verify all components were created
-      expect(subscriberSetup.wallet).toBeDefined()
-      expect(subscriberSetup.devicePda).toBeDefined()
-      expect(subscriberSetup.subscriptionPda).toBeDefined()
-      expect(subscriberSetup.usdcAccount).toBeDefined()
-      expect(subscriberSetup.dawnAccount).toBeDefined()
-
-      // Verify the subscription was created
-      const subscriptionAccount = await program.account.subscription.fetch(
-        subscriberSetup.subscriptionPda,
-      )
-      expect(subscriptionAccount.subscriber?.toString()).toBe(
-        subscriberSetup.wallet.publicKey.toString(),
-      )
-
-      // Verify token accounts have correct balances
-      const usdcBalance = await provider.context.banksClient.getAccount(
-        subscriberSetup.usdcAccount,
-      )
-      expect(usdcBalance).toBeDefined()
-
-      const dawnBalance = await provider.context.banksClient.getAccount(
-        subscriberSetup.dawnAccount,
-      )
-      expect(dawnBalance).toBeDefined()
-    })
-
     test('cannot lease IP with expired subscription', async () => {
       // Create a dedicated subscriber for this test
       const subscriberSetup = await createSubscriber(

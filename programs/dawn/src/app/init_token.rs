@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{self, Mint, MintTo, Token, TokenAccount},
 };
 
-use crate::state::TokenConfig;
+use crate::{state::TokenConfig, TokenConfigInitialized};
 
 use super::DawnApp;
 
@@ -82,6 +82,12 @@ impl DawnApp {
         token_config.dawn_mint = ctx.accounts.dawn_mint.key();
         token_config.mint_bump = ctx.bumps.dawn_mint;
         token_config.bump = ctx.bumps.token_config;
+
+        emit!(TokenConfigInitialized {
+            token_config: token_config.key(),
+            dawn_mint: token_config.dawn_mint,
+            created_at: token_config.created_at,
+        });
 
         Ok(())
     }

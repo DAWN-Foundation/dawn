@@ -48,6 +48,26 @@ interface PlanAdded {
   startAt: BN
 }
 
+interface AuthMethodAdded {
+  authMethod: PublicKey
+  plan: PublicKey
+  createdAt: number
+}
+
+interface DistributionDomainAdded {
+  distributionDomain: PublicKey
+  owner: PublicKey
+  localDomain: PublicKey
+  createdAt: number
+}
+
+interface AccessDomainAdded {
+  accessDomain: PublicKey
+  owner: PublicKey
+  localDomain: PublicKey
+  createdAt: number
+}
+
 export const planTests = () =>
   describe('dawn::plan', () => {
     let program: Program<Dawn>
@@ -687,6 +707,16 @@ export const planTests = () =>
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
       assert.ok(event.startAt.eq(new BN(0)))
 
+      const distributionDomainEvent = await getEvent<DistributionDomainAdded>(
+        program,
+        txDetails,
+        'distributionDomainAdded',
+      )
+      expect(distributionDomainEvent.distributionDomain.equals(distributionDomainPda)).toBeTruthy()
+      expect(distributionDomainEvent.owner.equals(mock.serviceProvider.publicKey)).toBeTruthy()
+      expect(distributionDomainEvent.localDomain.equals(mock.localDomainPda)).toBeTruthy()
+      expect(new BN(distributionDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
+
       // make sure account was created
       const plan = await program.account.plan.fetch(mock.planPda)
       assert.ok(plan.owner.equals(mock.serviceProvider.publicKey))
@@ -1165,7 +1195,7 @@ export const planTests = () =>
         .rpc()
 
       // Add the auth method to the plan
-      await program.methods
+      const tx = await program.methods
         .addAuthMethod()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
@@ -1174,7 +1204,15 @@ export const planTests = () =>
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
-        .rpc()
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<AuthMethodAdded>(program, txDetails, 'authMethodAdded')
+      expect(event.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(event.plan.equals(planPda)).toBeTruthy()
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // Verify the auth method was added to the plan
       const plan = await program.account.plan.fetch(planPda)
@@ -2348,6 +2386,12 @@ export const parentPlanTests = () =>
         event.serviceAgreement.equals(mock.serviceAgreementPda),
       ).toBeTruthy()
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      const accessDomainEvent = await getEvent<AccessDomainAdded>(program, txDetails, 'accessDomainAdded')
+      expect(accessDomainEvent.accessDomain.equals(accessDomainPda)).toBeTruthy()
+      expect(accessDomainEvent.owner.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(accessDomainEvent.localDomain.equals(localDomainPda)).toBeTruthy()
+      expect(new BN(accessDomainEvent.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure account was created
       const plan = await program.account.plan.fetch(planPda)

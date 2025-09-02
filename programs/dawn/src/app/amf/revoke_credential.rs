@@ -48,7 +48,7 @@ impl DawnApp {
         emit!(CredentialRevoked {
             credential: credential.key(),
             auth_method: auth_method.key(),
-            created_at: credential.created_at,
+            revoked_at: Clock::get()?.unix_timestamp,
         });
         Ok(())
     }
