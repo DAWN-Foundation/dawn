@@ -14,7 +14,6 @@ tests/fixtures/dawn.so
 /dvwn**.json
 /ddwn**.json
 /test**.json
-devnet.json
 
 .env
 devices.csv
