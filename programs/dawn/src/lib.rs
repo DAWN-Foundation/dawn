@@ -3,10 +3,10 @@
 
 use anchor_lang::prelude::*;
 
-// #[cfg(not(feature = "devnet"))]
-// declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+#[cfg(not(feature = "devnet"))]
+declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
-// #[cfg(feature = "devnet")]
+#[cfg(feature = "devnet")]
 declare_id!("dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ");
 
 mod app;
