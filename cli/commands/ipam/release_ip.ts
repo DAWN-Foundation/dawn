@@ -1,7 +1,11 @@
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getFlag, submitTx } from '../../shared/cli-utils'
-import { getIpRegistryPda, getRootIpBlockPda, getIpBlockPda } from '../../../sdk/utils'
+import {
+  getIpRegistryPda,
+  getRootIpBlockPda,
+  getIpBlockPda,
+} from '../../../sdk/utils'
 
 async function main() {
   const deviceFlag = getFlag('--device')
@@ -48,5 +52,3 @@ async function main() {
 }
 
 main().catch(console.error)
-
-

@@ -103,7 +103,6 @@ async function main() {
           deviceModel: mock.deviceModelPda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
-          site: null,
         })
         .signers([wallet.payer])
         .instruction()

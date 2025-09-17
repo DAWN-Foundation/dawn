@@ -135,7 +135,6 @@ const createSubscriber = async (
       deviceModel: mock.deviceL2ModelPda,
       localDomain: localDomainPda,
       deviceLocation: deviceLocationPda,
-      site: null,
       rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
       loopbackIpBlock: mock.loopbackIpBlockPda,
       loopbackIpLease: loopbackIpLeasePda,

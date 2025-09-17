@@ -46,11 +46,9 @@ export interface Mock {
   // ipPoolPda: PublicKey§
   deviceModelPda: PublicKey
   deviceL2ModelPda: PublicKey
-  organizationPda: PublicKey
   distributionDomainPda: PublicKey
   accessDomainPda: PublicKey
   localDomainPda: PublicKey
-  sitePda: PublicKey
   devicePda: PublicKey
   deviceL2Pda: PublicKey
   deviceLocationPda: PublicKey
@@ -70,9 +68,6 @@ export interface Mock {
   ipBlockPda: PublicKey
   ipLeasePda: PublicKey
   subscriberIpRegistryPda: PublicKey
-
-  // site
-  siteName: string
   // device
   deviceType: DeviceType
   deviceManufacturer: string
@@ -145,11 +140,9 @@ export interface RawMock {
   ipPoolPda: string
   deviceModelPda: string
   deviceL2ModelPda: string
-  organizationPda: string
   distributionDomainPda: string
   accessDomainPda: string
   localDomainPda: string
-  sitePda: string
   devicePda: string
   deviceL2Pda: string
   deviceLocationPda: string
@@ -169,8 +162,6 @@ export interface RawMock {
   rootPtpIpBlockPda: string
   ptpIpBlockPda: string
   ptpIpLeasePda: string
-  // site
-  siteName: string
   // device
   deviceType: string
   deviceManufacturer: string

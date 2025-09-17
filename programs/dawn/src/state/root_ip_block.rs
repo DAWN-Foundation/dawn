@@ -6,6 +6,8 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct RootIpBlock {
+    /// The creation timestamp
+    pub created_at: i64,
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: IpTier,
     /// Root block index within this tier
@@ -39,6 +41,7 @@ impl RootIpBlock {
         base_cidr: u8,
         bump: u8,
     ) -> Result<()> {
+        self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
         self.index = index;
         self.base_ipv4 = base_ipv4;

@@ -22,14 +22,13 @@ import {
   getDevicePda,
   MacAddress,
   getDeviceLocationPda,
-  getOrganizationPda,
   getLocalDomainPda,
   getIpLeasePda,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
 import { getBalance } from '../../cli/shared/cli-utils'
-import { oneDayLaterPlanPda } from './05_plan'
+import { oneDayLaterPlanPda } from './04_plan'
 
 const SECONDS_PER_DAY = 86_400
 const BPS_DENOMINATOR = new BN(10_000)
@@ -615,12 +614,7 @@ export const subscriptionTests = () =>
         mock.deviceName,
         macAddress,
       )
-      const organizationPda = getOrganizationPda(
-        program,
-        wallet.publicKey,
-        { endUser: {} },
-        'end_user_organization',
-      )
+
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const localDomainPda = getLocalDomainPda(
         program,
@@ -644,7 +638,6 @@ export const subscriptionTests = () =>
           caller: wallet.publicKey,
           deviceModel: mock.deviceModelPda,
           device: devicePda,
-          organization: organizationPda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
           rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
@@ -653,7 +646,6 @@ export const subscriptionTests = () =>
           rootPtpIpBlock: null,
           ptpIpBlock: null,
           ptpIpLease: null,
-          site: null,
         })
         .signers([wallet.payer])
         .rpc()

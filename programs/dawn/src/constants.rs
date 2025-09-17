@@ -7,9 +7,6 @@ pub const MAX_DEVICE_MODEL_LEN: usize = 64;
 /// Maximum length of a device manufacturer
 pub const MAX_DEVICE_MANUFACTURER_LEN: usize = 64;
 
-/// Maximum length of a site name
-pub const MAX_SITE_NAME_LEN: usize = 64;
-
 /// IP Block size: /22 (1024 /32 units or 512 /31 pairs)
 pub const BLOCK_CIDR: u8 = 22;
 

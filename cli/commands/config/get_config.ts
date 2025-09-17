@@ -1,5 +1,3 @@
-import { PublicKey } from '@solana/web3.js'
-import { getOrganizationPda, OrganizationType } from '../../../sdk/utils'
 import { getMock, connect } from '../../shared/cli-utils'
 
 async function main() {

@@ -10,12 +10,8 @@ pub struct Device {
     pub created_at: i64,
     /// The owner's public key who registered this device
     pub owner: Pubkey,
-    /// Reference to the Site account
-    pub site: Option<Pubkey>,
     /// Reference to the DeviceModel account
     pub model: Pubkey,
-    /// Reference to the Organization account
-    pub organization: Pubkey,
     /// Name of the device
     #[max_len(32)]
     pub name: String,

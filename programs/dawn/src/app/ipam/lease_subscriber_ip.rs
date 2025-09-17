@@ -137,7 +137,7 @@ impl DawnApp {
                 block_cidr: ip_block.block_cidr,
                 unit_capacity: ip_block.unit_capacity,
                 free_units: ip_block.free_units,
-                created_at: Clock::get()?.unix_timestamp,
+                created_at: current_time,
             });
         }
 
@@ -147,16 +147,17 @@ impl DawnApp {
         // // if we've allocated the last unit, mark the block as full
         if ip_block.is_full() {
             root_ip_block.mark_block_full(block_idx);
+            emit!(IpBlockFull {
+                ip_block: ip_block.key(),
+                timestamp: current_time,
+            });
         }
-
-        emit!(IpBlockFull {
-            ip_block: ip_block.key(),
-        });
 
         if !root_ip_block.has_free_blocks() {
             ip_registry.update_root_availability(root_block_index, false);
             emit!(RootIpBlockFull {
                 root_ip_block: root_ip_block.key(),
+                timestamp: current_time,
             });
         }
 
@@ -181,7 +182,7 @@ impl DawnApp {
             cidr,
             unit_index: unit_idx,
             block_index: block_idx,
-            leased_at: Clock::get()?.unix_timestamp,
+            leased_at: current_time,
         });
 
         Ok(())

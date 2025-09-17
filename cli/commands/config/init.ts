@@ -10,19 +10,16 @@ import {
 import { BN, Program, Wallet } from '@coral-xyz/anchor'
 import {
   COORD_DENOMINATOR,
-  getAccessDomainPda,
   getDeviceLocationPda,
   getDeviceModelPda,
   getDevicePda,
   getLocalDomainPda,
-  getOrganizationPda,
   getPlanPda,
   getIpLeasePda,
   getConfigPda,
   getIpRegistryPda,
   getIpBlockPda,
   getRootIpBlockPda,
-  OrganizationType,
 } from '../../../sdk/utils'
 import { Dawn } from '../../../target/types/dawn'
 
@@ -197,12 +194,6 @@ async function main() {
 
       devicesPda.push(devicePda)
 
-      const organizationPda = getOrganizationPda(
-        program,
-        wallet.publicKey,
-        { endUser: {} } as OrganizationType,
-        'end_user_organization',
-      )
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
       const localDomainPda = getLocalDomainPda(
         program,
@@ -258,9 +249,7 @@ async function main() {
             caller: wallet.payer.publicKey,
             device: devicePda,
             deviceModel: deviceModelPda,
-            organization: organizationPda,
             deviceLocation: deviceLocationPda,
-            site: null,
             localDomain: localDomainPda,
             systemProgram: SystemProgram.programId,
           })

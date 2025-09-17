@@ -82,6 +82,7 @@ impl DawnApp {
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
+        let current_time = Clock::get()?.unix_timestamp;
 
         ip_block.release(ip_lease.unit_index)?;
 
@@ -90,6 +91,7 @@ impl DawnApp {
             root_ip_block.mark_block_non_full(ip_lease.block_index);
             emit!(IpBlockNonFull {
                 ip_block: ip_block.key(),
+                timestamp: current_time,
             });
         }
 
@@ -97,6 +99,7 @@ impl DawnApp {
             ip_registry.update_root_availability(ip_lease.block_index, true);
             emit!(RootIpBlockNonFull {
                 root_ip_block: root_ip_block.key(),
+                timestamp: current_time,
             });
         }
 
@@ -106,6 +109,7 @@ impl DawnApp {
             device: ip_lease.device,
             ipv4: ip_lease.ipv4,
             block_index: ip_lease.block_index,
+            released_at: current_time,
         });
 
         Ok(())

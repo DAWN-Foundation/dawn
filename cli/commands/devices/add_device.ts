@@ -11,9 +11,7 @@ import {
   getDeviceLocationPda,
   getDevicePda,
   getLocalDomainPda,
-  getOrganizationPda,
   MacAddress,
-  OrganizationType,
 } from '../../../sdk/utils'
 
 // CONSTANTS
@@ -69,12 +67,6 @@ async function main() {
     macAddress,
   )
 
-  const organizationPda = getOrganizationPda(
-    program,
-    wallet.publicKey,
-    { endUser: {} } as OrganizationType,
-    'end_user_organization',
-  )
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
   const localDomainPda = getLocalDomainPda(
     program,
@@ -112,7 +104,6 @@ async function main() {
   }
 
   console.log({ devicePda: devicePda.toBase58() })
-  console.log({ organizationPda: organizationPda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })
   console.log({ localDomainPda: localDomainPda.toBase58() })
   console.log({ deviceModelPda: deviceModel.toBase58() })
@@ -132,9 +123,7 @@ async function main() {
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
-      organization: organizationPda,
       deviceLocation: deviceLocationPda,
-      site: null,
       localDomain: localDomainPda,
       systemProgram: SystemProgram.programId,
     })

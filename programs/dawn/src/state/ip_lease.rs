@@ -8,6 +8,8 @@ use crate::constants::DISCRIMINATOR_SIZE;
 #[account]
 #[derive(InitSpace)]
 pub struct IpLease {
+    /// The creation timestamp
+    pub created_at: i64,
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: IpTier,
     /// Device this IP is leased to
@@ -39,6 +41,7 @@ impl IpLease {
         unit_index: u32,
         bump: u8,
     ) {
+        self.created_at = Clock::get().unwrap().unix_timestamp;
         self.tier = tier;
         self.device = device;
         self.ipv4 = ipv4;

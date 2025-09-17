@@ -10,21 +10,6 @@ pub struct TokenConfigInitialized {
 }
 
 #[event]
-pub struct SiteAdded {
-    pub site: Pubkey,
-    pub owner: Pubkey,
-    pub name: String,
-    pub created_at: i64,
-}
-
-#[event]
-pub struct DeviceAssignedToSite {
-    pub device: Pubkey,
-    pub site: Pubkey,
-    pub created_at: i64,
-}
-
-#[event]
 pub struct DeviceLocationAdded {
     pub device_location: Pubkey,
     pub device: Pubkey,
@@ -40,15 +25,6 @@ pub struct DeviceLocationVerified {
     pub device_location: Pubkey,
     pub device: Pubkey,
     pub verified_at: i64,
-}
-
-#[event]
-pub struct OrganizationAdded {
-    pub organization: Pubkey,
-    pub owner: Pubkey,
-    pub organization_type: u8,
-    pub name: String,
-    pub created_at: i64,
 }
 
 #[event]
@@ -85,7 +61,6 @@ pub struct AuthMethodAdded {
     pub created_at: i64,
 }
 
-/// TODO: Add claimable_dawn and daily_usdc
 #[event]
 pub struct Subscribed {
     pub subscription: Pubkey,
@@ -117,6 +92,7 @@ pub struct Claimed {
     pub plan: Pubkey,
     pub swap_price: u128,
     pub dawn_claimed: u64,
+    pub claimed_at: i64,
 }
 
 #[event]
@@ -133,9 +109,7 @@ pub struct DeviceAdded {
     pub device: Pubkey,
     pub device_location: Pubkey,
     pub owner: Pubkey,
-    pub site: Option<Pubkey>,
     pub model: Pubkey,
-    pub organization: Pubkey,
     pub local_domain: Pubkey,
     pub name: String,
     pub mac_address: [u8; 6],
@@ -181,21 +155,25 @@ pub struct IpBlockAdded {
 #[event]
 pub struct IpBlockFull {
     pub ip_block: Pubkey,
+    pub timestamp: i64,
 }
 
 #[event]
 pub struct IpBlockNonFull {
     pub ip_block: Pubkey,
+    pub timestamp: i64,
 }
 
 #[event]
 pub struct RootIpBlockFull {
     pub root_ip_block: Pubkey,
+    pub timestamp: i64,
 }
 
 #[event]
 pub struct RootIpBlockNonFull {
     pub root_ip_block: Pubkey,
+    pub timestamp: i64,
 }
 
 #[event]
@@ -216,6 +194,7 @@ pub struct IpReleased {
     pub device: Pubkey,
     pub ipv4: [u8; 4],
     pub block_index: u32,
+    pub released_at: i64,
 }
 
 #[event]

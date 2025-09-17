@@ -10,6 +10,8 @@ use crate::{
 #[account]
 #[derive(InitSpace)]
 pub struct IpBlock {
+    /// The creation timestamp
+    pub created_at: i64,
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: IpTier,
     /// Root block index within this tier
@@ -47,6 +49,7 @@ impl IpBlock {
     ) -> Result<()> {
         let chunks_per_block = tier.chunks_per_block();
 
+        self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
         self.root_block_index = root_block_index;
         self.block_base = block_base;

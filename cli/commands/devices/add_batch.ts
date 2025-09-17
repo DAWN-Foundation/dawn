@@ -7,9 +7,7 @@ import {
   COORD_DENOMINATOR,
   getDeviceLocationPda,
   getDevicePda,
-  getOrganizationPda,
   MacAddress,
-  OrganizationType,
 } from '../../../sdk/utils'
 
 async function main() {
@@ -65,22 +63,6 @@ async function main() {
       macAddress,
     )
 
-    // try {
-    //   const deviceAccount = await program.account.device.fetch(devicePda)
-    // } catch (e) {
-    //   console.log('missing device', {
-    //     devicePda: devicePda.toBase58(),
-    //     macAddress,
-    //     name,
-    //   })
-    // }
-
-    const organizationPda = getOrganizationPda(
-      program,
-      wallet.publicKey,
-      { endUser: {} } as OrganizationType,
-      'end_user_organization',
-    )
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
     const itx = await program.methods
@@ -97,9 +79,7 @@ async function main() {
         caller: wallet.payer.publicKey,
         device: devicePda,
         deviceModel,
-        organization: organizationPda,
         deviceLocation: deviceLocationPda,
-        site: null,
       })
       .rpc()
 

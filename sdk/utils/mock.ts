@@ -32,7 +32,6 @@ import {
   getRootIpBlockPda,
   getLocalDomainPda,
   getMedallionDawnAccountPda,
-  getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
@@ -301,16 +300,6 @@ export async function setup(
 
   const [configPda] = getConfigPda(program)
 
-  const siteName = 'Test Site'
-  const [sitePda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('site'),
-      Buffer.from(serviceProvider.publicKey.toBytes()),
-      Buffer.from(siteName),
-    ],
-    program.programId,
-  )
-
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -359,12 +348,6 @@ export async function setup(
     deviceMacAddressL2,
   )
 
-  const organizationPda = getOrganizationPda(
-    program,
-    serviceProvider.publicKey,
-    { endUser: {} },
-    'end_user_organization',
-  )
   const distributionDomainPda = getDistributionDomainPda(program, devicePda)
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
@@ -496,11 +479,9 @@ export async function setup(
     // ipPoolPda,
     deviceModelPda,
     deviceL2ModelPda,
-    organizationPda,
     distributionDomainPda,
     accessDomainPda,
     localDomainPda,
-    sitePda,
     devicePda,
     deviceL2Pda,
     deviceLocationPda,
@@ -520,8 +501,6 @@ export async function setup(
     rootSubscriberIpBlockPda,
     ipBlockPda,
     ipLeasePda,
-    // site
-    siteName,
     // device
     deviceType,
     deviceManufacturer,

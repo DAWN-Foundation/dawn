@@ -39,7 +39,6 @@ import {
   getRootIpBlockPda,
   getLocalDomainPda,
   getMedallionDawnAccountPda,
-  getOrganizationPda,
   getPlanPda,
   getServiceAgreementPda,
   getSubscriptionPda,
@@ -48,7 +47,6 @@ import {
   getIpLeasePda,
   getIpRegistryPda,
 } from '../pda'
-import { getSitePda } from '../pda/site'
 
 async function fundAccounts(
   provider: AnchorProvider,
@@ -240,9 +238,6 @@ export async function prepare(
 
   const [configPda] = getConfigPda(program)
 
-  const siteName = 'Test Site'
-  const sitePda = getSitePda(program, serviceProvider, siteName)
-
   const deviceType = { router: {} }
   const deviceManufacturer = 'MikroTik'
   const deviceModel = 'GG69420'
@@ -290,12 +285,6 @@ export async function prepare(
     deviceMacAddressL2,
   )
 
-  const organizationPda = getOrganizationPda(
-    program,
-    serviceProvider.publicKey,
-    { endUser: {} },
-    'end_user_organization',
-  )
   const distributionDomainPda = getDistributionDomainPda(program, devicePda)
   const accessDomainPda = getAccessDomainPda(program, devicePda)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
@@ -418,11 +407,9 @@ export async function prepare(
     configPda,
     deviceModelPda,
     deviceL2ModelPda,
-    organizationPda,
     distributionDomainPda,
     accessDomainPda,
     localDomainPda,
-    sitePda,
     devicePda,
     deviceL2Pda,
     deviceLocationPda,
@@ -442,8 +429,6 @@ export async function prepare(
     rootPtpIpBlockPda,
     ptpIpBlockPda,
     ptpIpLeasePda,
-    // site
-    siteName,
     // device
     deviceType,
     deviceManufacturer,

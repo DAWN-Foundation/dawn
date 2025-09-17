@@ -5,6 +5,8 @@ use crate::constants::DISCRIMINATOR_SIZE;
 #[account]
 #[derive(InitSpace)]
 pub struct Config {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The authority that can update the config
     pub authority: Pubkey,
 
