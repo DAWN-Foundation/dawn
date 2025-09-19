@@ -8,6 +8,8 @@ use super::AuthMethodType;
 #[account]
 #[derive(InitSpace)]
 pub struct AuthMethod {
+    /// The creation timestamp
+    pub created_at: i64,
     /// The authority of the auth method
     pub authority: Pubkey,
     /// Which method this represents (maps to AuthMethodType enum)

@@ -99,6 +99,7 @@ impl DawnApp {
         let config = &mut ctx.accounts.config;
 
         // make caller the authority
+        config.created_at = Clock::get()?.unix_timestamp;
         config.authority = ctx.accounts.caller.key();
 
         // mints

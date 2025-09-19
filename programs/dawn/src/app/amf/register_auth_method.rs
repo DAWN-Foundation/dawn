@@ -57,7 +57,9 @@ impl DawnApp {
         parameters: [u8; 256],
     ) -> Result<()> {
         let auth_method = &mut ctx.accounts.auth_method;
+        let now = Clock::get()?.unix_timestamp;
 
+        auth_method.created_at = now;
         auth_method.authority = ctx.accounts.caller.key();
         auth_method.method_type = method_type;
         auth_method.device = ctx.accounts.device.key();
@@ -69,7 +71,7 @@ impl DawnApp {
             method_type: auth_method.method_type as u8,
             device: auth_method.device,
             parameters: auth_method.parameters,
-            created_at: Clock::get()?.unix_timestamp,
+            created_at: now,
         });
 
         Ok(())

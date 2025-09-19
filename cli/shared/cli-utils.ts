@@ -100,11 +100,9 @@ export function getMock(): Mock {
     configPda: new PublicKey(mock.configPda),
     deviceModelPda: new PublicKey(mock.deviceModelPda),
     deviceL2ModelPda: new PublicKey(mock.deviceL2ModelPda),
-    organizationPda: new PublicKey(mock.organizationPda),
     distributionDomainPda: new PublicKey(mock.distributionDomainPda),
     accessDomainPda: new PublicKey(mock.accessDomainPda),
     localDomainPda: new PublicKey(mock.localDomainPda),
-    sitePda: new PublicKey(mock.sitePda),
     devicePda: new PublicKey(mock.devicePda),
     deviceL2Pda: new PublicKey(mock.deviceL2Pda),
     deviceLocationPda: new PublicKey(mock.deviceLocationPda),
@@ -124,8 +122,6 @@ export function getMock(): Mock {
     rootPtpIpBlockPda: new PublicKey(mock.rootPtpIpBlockPda),
     ptpIpBlockPda: new PublicKey(mock.ptpIpBlockPda),
     ptpIpLeasePda: new PublicKey(mock.ptpIpLeasePda),
-    // site
-    siteName: mock.siteName,
     // device
     deviceName: mock.deviceName,
     deviceType: JSON.parse(mock.deviceType),

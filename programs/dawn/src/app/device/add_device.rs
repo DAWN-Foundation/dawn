@@ -4,16 +4,14 @@ use std::cmp::min;
 use crate::{
     events::{
         DeviceAdded, DeviceLocationAdded, IpBlockAdded, IpBlockFull, IpLeased, LocalDomainAdded,
-        OrganizationAdded, RootIpBlockFull,
+        RootIpBlockFull,
     },
     state::{
         Device, DeviceLocation, DeviceModel, DeviceType, IpBlock, IpLease, IpRegistry, IpTier,
-        LocalDomain, Organization, OrganizationType, RootIpBlock, Site,
+        LocalDomain, RootIpBlock,
     },
     DawnApp, DawnError,
 };
-
-const END_USER_ORG_NAME: &str = "end_user_organization";
 
 #[derive(Accounts)]
 #[instruction(
@@ -69,33 +67,6 @@ pub struct AddDevice<'info> {
         bump
     )]
     pub device_location: Box<Account<'info, DeviceLocation>>,
-
-    /// The organization account
-    #[account(
-        init_if_needed,
-        payer = caller,
-        space = Organization::SIZE,
-        seeds = [
-            Organization::SEED_PREFIX.as_ref(),
-            caller.key().as_ref(),
-            OrganizationType::EndUser.to_seed(),
-            END_USER_ORG_NAME.as_bytes(),
-        ],
-        bump
-    )]
-    pub organization: Box<Account<'info, Organization>>,
-
-    /// The site account
-    #[account(
-        seeds = [
-            Site::SEED_PREFIX.as_ref(),
-            site.owner.as_ref(),
-            &site.name.as_bytes()[..min(site.name.len(), MAX_SEED_LEN)],
-        ],
-        bump = site.bump,
-        constraint = site.owner == caller.key(),
-    )]
-    pub site: Option<Box<Account<'info, Site>>>,
 
     /// The local domain account
     #[account(
@@ -251,7 +222,6 @@ impl DawnApp {
         let device = &mut ctx.accounts.device;
         let device_model = &mut ctx.accounts.device_model;
         let device_location = &mut ctx.accounts.device_location;
-        let organization = &mut ctx.accounts.organization;
         let caller = ctx.accounts.caller.key();
         let root_loopback_ip_block = &mut ctx.accounts.root_loopback_ip_block;
         let loopback_ip_registry = &mut ctx.accounts.loopback_ip_registry;
@@ -286,35 +256,15 @@ impl DawnApp {
         }
 
         let created_at = Clock::get()?.unix_timestamp;
-        let site = ctx.accounts.site.as_ref().map(|site| site.key());
 
         // Set device info
         device.created_at = created_at;
         device.owner = caller;
-        device.site = site;
         device.model = device_model.key();
-        device.organization = organization.key();
         device.name.clone_from(&name);
         device.local_domain = ctx.accounts.local_domain.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;
-
-        // Set organization info
-        if organization.created_at == 0 {
-            organization.created_at = created_at;
-            organization.owner = caller;
-            organization.organization_type = OrganizationType::EndUser;
-            organization.name = END_USER_ORG_NAME.into();
-            organization.bump = ctx.bumps.organization;
-
-            emit!(OrganizationAdded {
-                organization: organization.key(),
-                owner: organization.owner,
-                organization_type: OrganizationType::EndUser as u8,
-                name: organization.name.clone(),
-                created_at: organization.created_at,
-            });
-        }
 
         // Set device location info
         device_location.created_at = created_at;
@@ -374,9 +324,7 @@ impl DawnApp {
             device: device.key(),
             device_location: device_location.key(),
             owner: device.owner,
-            site,
             model: device.model,
-            organization: organization.key(),
             local_domain: device.local_domain,
             name,
             mac_address,
@@ -402,6 +350,7 @@ fn lease_ip_for_device<'info>(
         .ok_or(DawnError::NoAvailableBlocks)?;
     let block_base = root_block.get_block_base_ipv4(block_idx);
     let root_block_index = root_block.index;
+    let current_time = Clock::get()?.unix_timestamp;
 
     // If block is not initialized, initialize it
     if ip_block.block_base == 0 {
@@ -414,7 +363,7 @@ fn lease_ip_for_device<'info>(
             block_cidr: ip_block.block_cidr,
             unit_capacity: ip_block.unit_capacity,
             free_units: ip_block.free_units,
-            created_at: Clock::get()?.unix_timestamp,
+            created_at: current_time,
         });
     }
 
@@ -426,6 +375,7 @@ fn lease_ip_for_device<'info>(
         root_block.mark_block_full(block_idx);
         emit!(IpBlockFull {
             ip_block: ip_block.key(),
+            timestamp: current_time,
         });
     }
 
@@ -433,6 +383,7 @@ fn lease_ip_for_device<'info>(
         ip_registry.update_root_availability(root_block_index, false);
         emit!(RootIpBlockFull {
             root_ip_block: root_block.key(),
+            timestamp: current_time,
         });
     }
 
@@ -456,7 +407,7 @@ fn lease_ip_for_device<'info>(
         cidr: tier.unit_prefix(),
         unit_index: unit_idx,
         block_index: block_idx,
-        leased_at: Clock::get()?.unix_timestamp,
+        leased_at: current_time,
     });
 
     Ok(())

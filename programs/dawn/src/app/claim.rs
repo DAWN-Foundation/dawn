@@ -289,6 +289,7 @@ impl DawnApp {
             plan: plan_key,
             dawn_claimed: claimable_dawn,
             swap_price,
+            claimed_at: current_time,
         });
 
         Ok(())

@@ -15,7 +15,6 @@ import {
   loadWallet,
   getDeviceLocationPda,
   AuthMethodType,
-  getOrganizationPda,
   getLocalDomainPda,
   getAuthMethodPda,
   MacAddress,
@@ -1495,12 +1494,7 @@ export const planTests = () =>
         wrongDomainDeviceName,
         wrongDomainDeviceMac,
       )
-      const wrongDomainDeviceOrganizationPda = getOrganizationPda(
-        program,
-        mock.customer.publicKey,
-        { endUser: {} },
-        'end_user_organization',
-      )
+
       const wrongDomainDeviceLocationPda = getDeviceLocationPda(
         program,
         wrongDomainDevicePda,
@@ -1523,7 +1517,6 @@ export const planTests = () =>
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceModelPda,
           device: wrongDomainDevicePda,
-          organization: wrongDomainDeviceOrganizationPda,
           deviceLocation: wrongDomainDeviceLocationPda,
           localDomain: differentLocalDomainPda,
           rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
@@ -1532,7 +1525,6 @@ export const planTests = () =>
           rootPtpIpBlock: null,
           ptpIpBlock: null,
           ptpIpLease: null,
-          site: null,
         })
         .signers([mock.customer])
         .rpc()
@@ -1875,7 +1867,6 @@ export const parentPlanTests = () =>
     let subscription: Awaited<
       ReturnType<typeof program.account.subscription.fetch>
     >
-    let organizationPda: PublicKey
     let deviceLocationPda: PublicKey
     let localDomainPda: PublicKey
     let authMethods: PublicKey[]
@@ -1903,12 +1894,6 @@ export const parentPlanTests = () =>
         Buffer.from(subscriptionAccount.data),
       )
 
-      organizationPda = getOrganizationPda(
-        program,
-        mock.customer.publicKey,
-        { endUser: {} },
-        'end_user_organization',
-      )
       deviceLocationPda = getDeviceLocationPda(program, mock.deviceL2Pda)
       localDomainPda = getLocalDomainPda(
         program,
@@ -1938,10 +1923,8 @@ export const parentPlanTests = () =>
           rootPtpIpBlock: mock.rootPtpIpBlockPda,
           ptpIpBlock: mock.ptpIpBlockPda,
           ptpIpLease: mock.ptpIpLeasePda,
-          organization: organizationPda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
-          site: null,
         })
         .signers([mock.customer])
         .rpc()

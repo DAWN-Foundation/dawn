@@ -30,7 +30,6 @@ async function main() {
         ).toISOString(),
         owner: b.account.owner.toBase58(),
         model: b.account.model.toBase58(),
-        organization: b.account.organization.toBase58(),
         localDomain: b.account.localDomain.toBase58(),
         macAddress: b.account.macAddress
           .map((n) => n.toString(16).padStart(2, '0'))

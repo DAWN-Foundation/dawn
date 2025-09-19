@@ -8,6 +8,8 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct IpRegistry {
+    /// The creation timestamp
+    pub created_at: i64,
     /// Tier identifier
     pub tier: IpTier,
     /// Authority that can manage root blocks
@@ -29,6 +31,7 @@ impl IpRegistry {
 
     /// Initialize a new IpRegistry
     pub fn initialize(&mut self, tier: IpTier, authority: Pubkey, bump: u8) -> Result<()> {
+        self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
         self.authority = authority;
         self.root_block_count = 0;

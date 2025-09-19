@@ -24,7 +24,6 @@ export const PROGRAM_ID = getProgramId()
 export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['deviceType']
-export type OrganizationType = anchor.IdlTypes<Dawn>['organizationType']
 export type AuthMethodType = anchor.IdlTypes<Dawn>['authMethodType']
 
 export type IpV4Bytes = [number, number, number, number]
@@ -106,15 +105,6 @@ export async function getEvents<T>(
 export function deviceTypeSeed(deviceType: DeviceType) {
   if (deviceType.wirelessRadio) return Buffer.from([1])
   return Buffer.from([0])
-}
-
-export function organizationTypeSeed(organizationType: OrganizationType) {
-  const key = Object.keys(organizationType)[0]
-  if (key === 'endUser') return Buffer.from([3])
-  if (key === 'rir') return Buffer.from([2])
-  if (key === 'registry') return Buffer.from([1])
-  if (key === 'numberAuthority') return Buffer.from([0])
-  throw new Error(`Invalid organization type: ${key}`)
 }
 
 // Helper to get all plans for a device
