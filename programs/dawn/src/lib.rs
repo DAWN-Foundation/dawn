@@ -186,8 +186,8 @@ pub mod dawn {
         DawnApp::lease_subscription_ip(ctx)
     }
 
-    pub fn release_ip(ctx: Context<ReleaseIp>, tier: u8) -> Result<()> {
+    pub fn revoke_ip(ctx: Context<RevokeIp>, tier: u8) -> Result<()> {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
-        DawnApp::release_ip(ctx, tier_enum)
+        DawnApp::revoke_ip(ctx, tier_enum)
     }
 }

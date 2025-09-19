@@ -472,11 +472,12 @@ export const leaseIpTests = () =>
     })
   })
 
-interface IpReleased {
+interface IpRevoked {
   ipLease: PublicKey
   device: PublicKey
   ipv4: IpV4Bytes
   blockIndex: number
+  revokedAt: number
 }
 
 export const allocateIpTests = () =>
@@ -1161,12 +1162,12 @@ export const bitmapEdgeCaseTests = () =>
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const initialFreeUnits = ipBlockBefore.freeUnits
 
-      // Release the IP
+      // Revoke the IP
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1628,8 +1629,8 @@ export const multiTierIpamTests = () =>
     })
   })
 
-export const releaseIpTests = () =>
-  describe('dawn::release_ip', () => {
+export const revokeIpTests = () =>
+  describe('dawn::revoke_ip', () => {
     let provider: BankrunProvider
     let program: Program<Dawn>
 
@@ -1639,14 +1640,14 @@ export const releaseIpTests = () =>
       program = anchor.workspace.DAWN as Program<Dawn>
     })
 
-    test('cannot release IP lease with wrong caller', async () => {
+    test('cannot revoke IP lease with wrong caller', async () => {
       const unauthorizedWallet = new Wallet(anchor.web3.Keypair.generate())
 
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'release-ip-subscriber',
-        'release-ip-device',
+        'revoke-ip-subscriber',
+        'revoke-ip-device',
       )
 
       const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
@@ -1667,7 +1668,7 @@ export const releaseIpTests = () =>
 
       try {
         await program.methods
-          .releaseIp(0)
+          .revokeIp(0)
           .accountsPartial({
             caller: unauthorizedWallet.publicKey,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
@@ -1690,12 +1691,12 @@ export const releaseIpTests = () =>
       }
     })
 
-    test('successfully releases IP lease', async () => {
+    test('successfully revokes IP lease', async () => {
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'release-ip-subscriber',
-        'release-ip-device',
+        'revoke-ip-subscriber',
+        'revoke-ip-device',
       )
 
       // const originalWallet = provider.wallet
@@ -1717,14 +1718,14 @@ export const releaseIpTests = () =>
         .signers([subscriberSetup.wallet])
         .rpc()
 
-      // Get current state before release
+      // Get current state before revoke
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
 
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       const tx = await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1740,7 +1741,7 @@ export const releaseIpTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // Verify event was emitted
-      const event = await getEvent<IpReleased>(program, txDetails, 'ipReleased')
+      const event = await getEvent<IpRevoked>(program, txDetails, 'ipRevoked')
       expect(event.ipLease).toEqual(ipLeasePda)
       expect(event.device).toEqual(subscriberSetup.devicePda)
       expect(event.blockIndex).toBe(0)
@@ -1756,20 +1757,20 @@ export const releaseIpTests = () =>
       expect(ipBlockAfter.freeUnits).toBe(ipBlockBefore.freeUnits + 1)
     })
 
-    test('cannot lease IP for device that already has a lease', async () => {
+    test('cannot revoke IP for device that already has a lease', async () => {
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'duplicate-lease-subscriber',
-        'duplicate-lease-device',
+        'duplicate-revoke-subscriber',
+        'duplicate-revoke-device',
       )
 
       const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
 
-      // First lease should succeed
+      // First revoke should succeed
       await program.methods
         .leaseSubscriptionIp()
         .accountsPartial({
@@ -1894,7 +1895,7 @@ export const releaseIpTests = () =>
       expect(ipLease.device).toEqual(subscriberSetup.devicePda)
     })
 
-    test('IP release updates block state for reuse', async () => {
+    test('IP revoke updates block state for reuse', async () => {
       const subscriberSetup = await createSubscriber(
         program,
         provider,
@@ -1924,9 +1925,9 @@ export const releaseIpTests = () =>
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
-      // Release the IP
+      // Revoke the IP
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1939,20 +1940,21 @@ export const releaseIpTests = () =>
         .rpc()
 
       // Verify the IP lease account was closed
-      const releasedLeaseAccount =
-        await provider.context.banksClient.getAccount(ipLeasePda)
-      expect(releasedLeaseAccount).toBeNull()
+      const revokedLeaseAccount = await provider.context.banksClient.getAccount(
+        ipLeasePda,
+      )
+      expect(revokedLeaseAccount).toBeNull()
 
-      // Check IP block state after release
-      const ipBlockAfterRelease = await program.account.ipBlock.fetch(
+      // Check IP block state after revoke
+      const ipBlockAfterRevoke = await program.account.ipBlock.fetch(
         mock.ipBlockPda,
       )
 
       // The free units should have increased by 1
-      expect(ipBlockAfterRelease.freeUnits).toBe(ipBlockBeforeLease.freeUnits)
+      expect(ipBlockAfterRevoke.freeUnits).toBe(ipBlockBeforeLease.freeUnits)
     })
 
-    test('cannot release non-existent IP lease', async () => {
+    test('cannot revoke non-existent IP lease', async () => {
       const unauthorizedWallet = Keypair.generate()
       const wallet = loadWallet()
 
@@ -1987,7 +1989,7 @@ export const releaseIpTests = () =>
 
       try {
         await program.methods
-          .releaseIp(0)
+          .revokeIp(0)
           .accountsPartial({
             caller: authority.publicKey,
             ipRegistry: mock.subscriberIpRegistryPda,
@@ -2006,7 +2008,7 @@ export const releaseIpTests = () =>
       }
     })
 
-    test('release IP correctly updates bitmap state', async () => {
+    test('revoke IP correctly updates bitmap state', async () => {
       // Create subscriber and allocate IP
       const subscriberSetup = await createSubscriber(
         program,
@@ -2032,19 +2034,19 @@ export const releaseIpTests = () =>
         .signers([subscriberSetup.wallet])
         .rpc()
 
-      // Get IP lease details before release
+      // Get IP lease details before revoke
       const ipLease = await program.account.ipLease.fetch(ipLeasePda)
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const rootIpBlockBefore = await program.account.rootIpBlock.fetch(
         mock.rootSubscriberIpBlockPda,
       )
 
-      // Release the IP
+      // Revoke the IP
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -2056,7 +2058,7 @@ export const releaseIpTests = () =>
         .signers([authority])
         .rpc()
 
-      // Verify bitmap state after release
+      // Verify bitmap state after revoke
       const ipBlockAfter = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const rootIpBlockAfter = await program.account.rootIpBlock.fetch(
         mock.rootSubscriberIpBlockPda,
@@ -2065,7 +2067,7 @@ export const releaseIpTests = () =>
       // Free units should have increased
       expect(ipBlockAfter.freeUnits).toBe(ipBlockBefore.freeUnits + 1)
 
-      // If the block was full before release, verify root block state changed
+      // If the block was full before revoke, verify root block state changed
       if (ipBlockBefore.freeUnits === 0) {
         // Block went from full to having free space
         expect(rootIpBlockAfter.rootSummary64).not.toBe(

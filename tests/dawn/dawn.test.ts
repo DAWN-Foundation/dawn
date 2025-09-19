@@ -13,7 +13,7 @@ import {
   bitmapEdgeCaseTests,
   multiTierIpamTests,
   leaseIpTests,
-  releaseIpTests,
+  revokeIpTests,
 } from './09_ipam'
 
 // order is important here
@@ -39,7 +39,7 @@ allocateIpTests()
 bitmapEdgeCaseTests()
 multiTierIpamTests()
 leaseIpTests()
-releaseIpTests()
+revokeIpTests()
 parentPlanTests()
 claimTests()
 amfTests()

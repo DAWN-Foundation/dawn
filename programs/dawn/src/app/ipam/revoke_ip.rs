@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     app::DawnApp,
     error::DawnError,
-    events::{IpBlockNonFull, IpReleased, RootIpBlockNonFull},
+    events::{IpBlockNonFull, IpRevoked, RootIpBlockNonFull},
     state::{Config, IpRegistry, IpTier},
 };
 
@@ -12,7 +12,7 @@ use crate::{IpBlock, IpLease, RootIpBlock};
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
 #[instruction(tier: IpTier)]
-pub struct ReleaseIp<'info> {
+pub struct RevokeIp<'info> {
     #[account(mut, constraint = caller.key() == config.authority @ DawnError::Unauthorized)]
     pub caller: Signer<'info>,
 
@@ -77,7 +77,7 @@ pub struct ReleaseIp<'info> {
 
 impl DawnApp {
     /// Release IP lease
-    pub fn release_ip(ctx: Context<ReleaseIp>, _tier: IpTier) -> Result<()> {
+    pub fn revoke_ip(ctx: Context<RevokeIp>, _tier: IpTier) -> Result<()> {
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
@@ -104,12 +104,12 @@ impl DawnApp {
         }
 
         // Emit release event
-        emit!(IpReleased {
+        emit!(IpRevoked {
             ip_lease: ip_lease.key(),
             device: ip_lease.device,
             ipv4: ip_lease.ipv4,
             block_index: ip_lease.block_index,
-            released_at: current_time,
+            revoked_at: current_time,
         });
 
         Ok(())
