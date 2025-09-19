@@ -4,10 +4,6 @@ import { PublicKey, SystemProgram } from '@solana/web3.js'
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import {
   COORD_DENOMINATOR,
-  getIpLeasePda,
-  getIpRegistryPda,
-  getIpBlockPda,
-  getRootIpBlockPda,
   getDeviceLocationPda,
   getDevicePda,
   getLocalDomainPda,
@@ -73,35 +69,6 @@ async function main() {
     wallet.payer.publicKey,
     localDomainName,
   )
-  const loopbackIpRegistryPda = getIpRegistryPda(1)
-  const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)
-  const loopbackIpBlockPda = getIpBlockPda(rootLoopbackIpBlockPda, 0)
-  const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
-
-  const accounts = {
-    loopbackIpRegistry: loopbackIpRegistryPda,
-    rootLoopbackIpBlock: rootLoopbackIpBlockPda,
-    loopbackIpBlock: loopbackIpBlockPda,
-    loopbackIpLease: loopbackIpLeasePda,
-    ptpIpRegistry: null,
-    rootPtpIpBlock: null,
-    ptpIpBlock: null,
-    ptpIpLease: null,
-  }
-
-  const deviceModelType = await program.account.deviceModel.fetch(deviceModel)
-
-  if ('wirelessRadio' in deviceModelType.deviceType) {
-    const ptpIpRegistryPda = getIpRegistryPda(2)
-    const rootPtpIpBlockPda = getRootIpBlockPda(2, 0)
-    const ptpIpBlockPda = getIpBlockPda(rootPtpIpBlockPda, 0)
-    const ptpIpLeasePda = getIpLeasePda(2, devicePda)
-
-    accounts.ptpIpRegistry = ptpIpRegistryPda
-    accounts.rootPtpIpBlock = rootPtpIpBlockPda
-    accounts.ptpIpBlock = ptpIpBlockPda
-    accounts.ptpIpLease = ptpIpLeasePda
-  }
 
   console.log({ devicePda: devicePda.toBase58() })
   console.log({ deviceLocationPda: deviceLocationPda.toBase58() })
@@ -119,7 +86,6 @@ async function main() {
       localDomainName,
     )
     .accountsStrict({
-      ...accounts,
       caller: wallet.payer.publicKey,
       device: devicePda,
       deviceModel,
@@ -131,9 +97,22 @@ async function main() {
 
   try {
     const txResult = await submitTx(connection, wallet, itx, false)
-    console.log('Tx submitted', { txResult })
+    console.log('Device created successfully!', { txResult })
+    console.log('Device PDA:', devicePda.toBase58())
+    console.log('')
+    console.log('📌 Note: IP allocation is now separated from device creation.')
+    console.log('To allocate IPs for this device, use:')
+    console.log(
+      `  - For Loopback IP: npx ts-node cli/commands/ipam/allocate_ip.ts --tier 1 --device ${devicePda.toBase58()}`,
+    )
+    console.log(
+      `  - For PtP IP: npx ts-node cli/commands/ipam/allocate_ip.ts --tier 2 --device ${devicePda.toBase58()}`,
+    )
+    console.log(
+      `  - For Subscriber IP: Use lease_subscription_ip.ts after subscribing to a plan`,
+    )
   } catch (error) {
-    console.error(error)
+    console.error('Failed to create device:', error)
   }
 }
 

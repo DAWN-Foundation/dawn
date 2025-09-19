@@ -1,4 +1,4 @@
-import { SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getFlag, submitTx } from '../../shared/cli-utils'
 import {
@@ -28,6 +28,7 @@ async function main() {
   const tierFlag = getFlag('--tier')
   const baseIpv4Flag = getFlag('--base-ipv4')
   const baseCidrFlag = getFlag('--base-cidr')
+  const authorityFlag = getFlag('--authority')
 
   const tier = tierFlag ? parseInt(tierFlag) : 0
   const defaults: Record<number, number> = {
@@ -40,6 +41,9 @@ async function main() {
     ? ipv4ToNumber(baseIpv4Flag)
     : defaults[tier] ?? defaults[0]
   const baseCidr = baseCidrFlag ? parseInt(baseCidrFlag) : 14
+  const authority = authorityFlag
+    ? new PublicKey(authorityFlag)
+    : wallet.payer.publicKey // Default to caller as authority
 
   const [configPda] = getConfigPda(program)
   const ipRegistryPda = getIpRegistryPda(tier)
@@ -61,12 +65,13 @@ async function main() {
     tier,
     baseIpv4,
     baseCidr,
+    authority: authority.toBase58(),
     ipRegistryPda: ipRegistryPda.toBase58(),
     rootIpBlockPda: rootIpBlockPda.toBase58(),
   })
 
   const itx = await program.methods
-    .initializeRootIpBlock(tier, baseIpv4, baseCidr)
+    .initializeRootIpBlock(tier, authority, baseIpv4, baseCidr)
     .accountsStrict({
       caller: wallet.payer.publicKey,
       config: configPda,

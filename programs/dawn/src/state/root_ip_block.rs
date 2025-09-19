@@ -10,6 +10,8 @@ pub struct RootIpBlock {
     pub created_at: i64,
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: IpTier,
+    /// Authority that can approve or reject allocation requests
+    pub authority: Pubkey,
     /// Root block index within this tier
     pub index: u32,
     /// Base IPv4 address for this specific root block
@@ -24,6 +26,8 @@ pub struct RootIpBlock {
     pub root_chunks: Vec<u64>,
     /// Summary bitmap - 1 bit per root chunk (1 = that chunk != 0)
     pub root_summary64: u64,
+    /// Index of the first available block (cached for O(1) lookup)
+    pub first_available_block_idx: Option<u32>,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -36,6 +40,7 @@ impl RootIpBlock {
     pub fn initialize(
         &mut self,
         tier: IpTier,
+        authority: Pubkey,
         index: u32,
         base_ipv4: u32,
         base_cidr: u8,
@@ -43,27 +48,35 @@ impl RootIpBlock {
     ) -> Result<()> {
         self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
+        self.authority = authority;
         self.index = index;
         self.base_ipv4 = base_ipv4;
         self.base_cidr = base_cidr;
         self.block_cidr = BLOCK_CIDR;
         self.root_chunks = vec![0u64; tier.root_chunks_count()];
         self.root_summary64 = 0;
+        self.first_available_block_idx = Some(0); // Start with block 0 as first available
         self.bump = bump;
 
         Ok(())
     }
 
-    pub fn first_available_block_idx(&self) -> Option<u32> {
+    pub fn find_first_available_block_idx(&self) -> Option<u32> {
         if self.root_summary64 == u64::MAX {
             return None;
         }
 
-        let j = self.root_summary64.trailing_ones() as u32;
-        let c = self.root_chunks[j as usize];
-        let k = c.trailing_ones() as u32; // bit within that chunk
-        let block_idx = (j << 6) | k;
-        Some(block_idx)
+        // Find first chunk that is not completely full
+        for j in 0..self.root_chunks.len() {
+            let chunk = self.root_chunks[j];
+            if chunk != u64::MAX {
+                // Found a chunk with available blocks, find first 0 bit (available)
+                let k = chunk.trailing_zeros() as u32;
+                let block_idx = (j as u32) << 6 | k;
+                return Some(block_idx);
+            }
+        }
+        None
     }
 
     pub fn get_block_base_ipv4(&self, block_idx: u32) -> u32 {
@@ -78,6 +91,7 @@ impl RootIpBlock {
         if j < self.root_chunks.len() {
             self.root_chunks[j] &= !(1u64 << k);
             self.root_summary64 &= !(1u64 << j);
+            self.first_available_block_idx = self.find_first_available_block_idx();
         }
     }
 
@@ -91,6 +105,8 @@ impl RootIpBlock {
             if self.root_chunks[j] == u64::MAX {
                 self.root_summary64 |= 1u64 << j;
             }
+
+            self.first_available_block_idx = self.find_first_available_block_idx();
         }
     }
 
@@ -98,7 +114,7 @@ impl RootIpBlock {
         let j = (block_idx >> 6) as usize; // chunk index
         let k = (block_idx & 63) as usize; // bit within chunk
 
-        self.root_chunks[j] & (1u64 << k) == 0
+        self.root_chunks[j] & (1u64 << k) != 0
     }
 
     pub fn has_free_blocks(&self) -> bool {

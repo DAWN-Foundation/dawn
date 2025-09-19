@@ -1519,12 +1519,6 @@ export const planTests = () =>
           device: wrongDomainDevicePda,
           deviceLocation: wrongDomainDeviceLocationPda,
           localDomain: differentLocalDomainPda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: loopbackIpLeasePda,
-          rootPtpIpBlock: null,
-          ptpIpBlock: null,
-          ptpIpLease: null,
         })
         .signers([mock.customer])
         .rpc()
@@ -1901,8 +1895,6 @@ export const parentPlanTests = () =>
         mock.localDomain,
       )
 
-      const loopbackIpLeasePda = getIpLeasePda(1, mock.deviceL2Pda)
-
       await program.methods
         .addDevice(
           mock.deviceNameL2,
@@ -1917,12 +1909,6 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           deviceModel: mock.deviceL2ModelPda,
           device: mock.deviceL2Pda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: loopbackIpLeasePda,
-          rootPtpIpBlock: mock.rootPtpIpBlockPda,
-          ptpIpBlock: mock.ptpIpBlockPda,
-          ptpIpLease: mock.ptpIpLeasePda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
         })

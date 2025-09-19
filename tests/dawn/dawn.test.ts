@@ -8,6 +8,7 @@ import { claimTests } from './06_claim'
 import { amfTests } from './07_amf'
 import { pskAmfTests } from './08_psk_amf'
 import {
+  allocateIpTests,
   initializeRootIpBlockTests,
   bitmapEdgeCaseTests,
   multiTierIpamTests,
@@ -34,6 +35,7 @@ serviceAgreementTests()
 planTests()
 subscriptionTests()
 initializeRootIpBlockTests()
+allocateIpTests()
 bitmapEdgeCaseTests()
 multiTierIpamTests()
 leaseIpTests()

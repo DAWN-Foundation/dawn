@@ -52,6 +52,7 @@ impl DawnApp {
     pub fn initialize_root_ip_block(
         ctx: Context<InitializeRootIpBlock>,
         tier: IpTier,
+        authority: Pubkey,
         base_ipv4: u32,
         base_cidr: u8,
     ) -> Result<()> {
@@ -74,7 +75,14 @@ impl DawnApp {
         require!(index < tier.max_root_blocks(), DawnError::InvalidSequence);
 
         // Initialize the root IP block
-        root_ip_block.initialize(tier, index, base_ipv4, base_cidr, ctx.bumps.root_ip_block)?;
+        root_ip_block.initialize(
+            tier,
+            authority,
+            index,
+            base_ipv4,
+            base_cidr,
+            ctx.bumps.root_ip_block,
+        )?;
 
         // Register the root block in the registry
         ip_registry.register_root_block().unwrap();
@@ -84,7 +92,7 @@ impl DawnApp {
             root_ip_block: root_ip_block.key(),
             tier: tier.to_u8(),
             root_block_index: index,
-            authority: caller.key(),
+            authority: authority,
             base_ipv4,
             base_cidr,
             block_cidr: root_ip_block.block_cidr,
