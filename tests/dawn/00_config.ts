@@ -169,9 +169,10 @@ export const configTests = () =>
       const loopbackRootPda = getRootIpBlockPda(1, 0) // Loopback tier
 
       const tx = await program.methods
-        .initializeRootIpBlock(1, wallet.payer.publicKey, 0x64400000, 11)
+        .initializeRootIpBlock(1, 0x64400000, 11)
         .accountsPartial({
           caller: wallet.payer.publicKey,
+          authority: wallet.payer.publicKey,
           config: configPda,
           rootIpBlock: loopbackRootPda,
         })
@@ -219,10 +220,11 @@ export const configTests = () =>
       const subscriberIpRegistryPda = getIpRegistryPda(0)
 
       const tx = await program.methods
-        .initializeRootIpBlock(0, wallet.payer.publicKey, 0x0a400000, 10)
+        .initializeRootIpBlock(0, 0x0a400000, 10)
         .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
+          authority: wallet.payer.publicKey,
           rootIpBlock: subscriberRootPda,
           ipRegistry: subscriberIpRegistryPda,
         })
@@ -269,10 +271,11 @@ export const configTests = () =>
       const ptpRootPda = getRootIpBlockPda(2, 0) // PtP tier
 
       const tx = await program.methods
-        .initializeRootIpBlock(2, wallet.payer.publicKey, 0x64600000, 11)
+        .initializeRootIpBlock(2, 0x64600000, 11)
         .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
+          authority: wallet.payer.publicKey,
           rootIpBlock: ptpRootPda,
         })
         .signers([wallet.payer])

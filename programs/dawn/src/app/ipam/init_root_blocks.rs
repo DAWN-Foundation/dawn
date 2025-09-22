@@ -43,6 +43,10 @@ pub struct InitializeRootIpBlock<'info> {
     )]
     pub root_ip_block: Account<'info, RootIpBlock>,
 
+    /// CHECK: Root IP Block authority
+    #[account()]
+    pub authority: UncheckedAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -52,12 +56,12 @@ impl DawnApp {
     pub fn initialize_root_ip_block(
         ctx: Context<InitializeRootIpBlock>,
         tier: IpTier,
-        authority: Pubkey,
         base_ipv4: u32,
         base_cidr: u8,
     ) -> Result<()> {
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
+        let authority = &ctx.accounts.authority;
         let caller = &ctx.accounts.caller;
 
         if ip_registry.bump == 0 {
@@ -77,7 +81,7 @@ impl DawnApp {
         // Initialize the root IP block
         root_ip_block.initialize(
             tier,
-            authority,
+            authority.key(),
             index,
             base_ipv4,
             base_cidr,
@@ -92,7 +96,7 @@ impl DawnApp {
             root_ip_block: root_ip_block.key(),
             tier: tier.to_u8(),
             root_block_index: index,
-            authority: authority,
+            authority: authority.key(),
             base_ipv4,
             base_cidr,
             block_cidr: root_ip_block.block_cidr,

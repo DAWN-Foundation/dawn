@@ -71,12 +71,13 @@ async function main() {
   })
 
   const itx = await program.methods
-    .initializeRootIpBlock(tier, authority, baseIpv4, baseCidr)
+    .initializeRootIpBlock(tier, baseIpv4, baseCidr)
     .accountsStrict({
       caller: wallet.payer.publicKey,
       config: configPda,
       ipRegistry: ipRegistryPda,
       rootIpBlock: rootIpBlockPda,
+      authority: authority,
       systemProgram: SystemProgram.programId,
     })
     .instruction()

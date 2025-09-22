@@ -169,12 +169,11 @@ pub mod dawn {
     pub fn initialize_root_ip_block(
         ctx: Context<InitializeRootIpBlock>,
         tier: u8, // Tier enum serialized as u8
-        authority: Pubkey,
         base_ipv4: u32,
         base_cidr: u8,
     ) -> Result<()> {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
-        DawnApp::initialize_root_ip_block(ctx, tier_enum, authority, base_ipv4, base_cidr)
+        DawnApp::initialize_root_ip_block(ctx, tier_enum, base_ipv4, base_cidr)
     }
 
     pub fn allocate_ip(ctx: Context<AllocateIp>, tier: u8) -> Result<()> {

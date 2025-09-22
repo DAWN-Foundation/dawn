@@ -884,10 +884,11 @@ export const initializeRootIpBlockTests = () =>
 
       try {
         await program.methods
-          .initializeRootIpBlock(tier, wallet.payer.publicKey, 0x0a400000, 14)
+          .initializeRootIpBlock(tier, 0x0a400000, 14)
           .accountsPartial({
             caller: unauthorizedWallet.publicKey,
             config: mock.configPda,
+            authority: wallet.payer.publicKey,
             systemProgram: SystemProgram.programId,
           })
           .signers([unauthorizedWallet])
@@ -915,10 +916,11 @@ export const initializeRootIpBlockTests = () =>
       const baseCidr = 14
 
       const tx = await program.methods
-        .initializeRootIpBlock(tier, authority.publicKey, baseIpv4, baseCidr)
+        .initializeRootIpBlock(tier, baseIpv4, baseCidr)
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -959,10 +961,11 @@ export const initializeRootIpBlockTests = () =>
       const baseCidr = 14
 
       const tx = await program.methods
-        .initializeRootIpBlock(tier, authority.publicKey, baseIpv4, baseCidr)
+        .initializeRootIpBlock(tier, baseIpv4, baseCidr)
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -993,10 +996,11 @@ export const initializeRootIpBlockTests = () =>
       const baseCidr = 14
 
       const tx = await program.methods
-        .initializeRootIpBlock(tier, authority.publicKey, baseIpv4, baseCidr)
+        .initializeRootIpBlock(tier, baseIpv4, baseCidr)
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -1038,10 +1042,11 @@ export const initializeRootIpBlockTests = () =>
         for (let i = 0; i < remainingSlots; i++) {
           const baseIpv4 = 0x0a400000 + (currentCount + i) * 0x400000 // Increment by 4M addresses
           await program.methods
-            .initializeRootIpBlock(tier, authority.publicKey, baseIpv4, 14)
+            .initializeRootIpBlock(tier, baseIpv4, 14)
             .accountsPartial({
               caller: authority.publicKey,
               config: mock.configPda,
+              authority: authority.publicKey,
               systemProgram: SystemProgram.programId,
             })
             .signers([authority])
@@ -1052,10 +1057,11 @@ export const initializeRootIpBlockTests = () =>
       // Now try to create one more root block (should fail)
       try {
         await program.methods
-          .initializeRootIpBlock(tier, authority.publicKey, 0x0f400000, 14)
+          .initializeRootIpBlock(tier, 0x0f400000, 14)
           .accountsPartial({
             caller: authority.publicKey,
             config: mock.configPda,
+            authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
           .signers([authority])
