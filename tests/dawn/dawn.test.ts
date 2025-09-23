@@ -8,11 +8,12 @@ import { claimTests } from './06_claim'
 import { amfTests } from './07_amf'
 import { pskAmfTests } from './08_psk_amf'
 import {
+  allocateIpTests,
   initializeRootIpBlockTests,
   bitmapEdgeCaseTests,
   multiTierIpamTests,
   leaseIpTests,
-  releaseIpTests,
+  revokeIpTests,
 } from './09_ipam'
 
 // order is important here
@@ -34,10 +35,11 @@ serviceAgreementTests()
 planTests()
 subscriptionTests()
 initializeRootIpBlockTests()
+allocateIpTests()
 bitmapEdgeCaseTests()
 multiTierIpamTests()
 leaseIpTests()
-releaseIpTests()
+revokeIpTests()
 parentPlanTests()
 claimTests()
 amfTests()

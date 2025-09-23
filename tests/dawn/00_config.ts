@@ -172,6 +172,7 @@ export const configTests = () =>
         .initializeRootIpBlock(1, 0x64400000, 11)
         .accountsPartial({
           caller: wallet.payer.publicKey,
+          authority: wallet.payer.publicKey,
           config: configPda,
           rootIpBlock: loopbackRootPda,
         })
@@ -223,6 +224,7 @@ export const configTests = () =>
         .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
+          authority: wallet.payer.publicKey,
           rootIpBlock: subscriberRootPda,
           ipRegistry: subscriberIpRegistryPda,
         })
@@ -273,6 +275,7 @@ export const configTests = () =>
         .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
+          authority: wallet.payer.publicKey,
           rootIpBlock: ptpRootPda,
         })
         .signers([wallet.payer])

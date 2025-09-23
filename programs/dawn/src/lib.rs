@@ -176,12 +176,17 @@ pub mod dawn {
         DawnApp::initialize_root_ip_block(ctx, tier_enum, base_ipv4, base_cidr)
     }
 
+    pub fn allocate_ip(ctx: Context<AllocateIp>, tier: u8) -> Result<()> {
+        let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
+        DawnApp::allocate_ip(ctx, tier_enum)
+    }
+
     pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
         DawnApp::lease_subscription_ip(ctx)
     }
 
-    pub fn release_ip(ctx: Context<ReleaseIp>, tier: u8) -> Result<()> {
+    pub fn revoke_ip(ctx: Context<RevokeIp>, tier: u8) -> Result<()> {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
-        DawnApp::release_ip(ctx, tier_enum)
+        DawnApp::revoke_ip(ctx, tier_enum)
     }
 }

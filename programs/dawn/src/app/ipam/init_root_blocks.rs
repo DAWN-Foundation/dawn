@@ -43,6 +43,10 @@ pub struct InitializeRootIpBlock<'info> {
     )]
     pub root_ip_block: Account<'info, RootIpBlock>,
 
+    /// CHECK: Root IP Block authority
+    #[account()]
+    pub authority: UncheckedAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -57,6 +61,7 @@ impl DawnApp {
     ) -> Result<()> {
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
+        let authority = &ctx.accounts.authority;
         let caller = &ctx.accounts.caller;
 
         if ip_registry.bump == 0 {
@@ -74,7 +79,14 @@ impl DawnApp {
         require!(index < tier.max_root_blocks(), DawnError::InvalidSequence);
 
         // Initialize the root IP block
-        root_ip_block.initialize(tier, index, base_ipv4, base_cidr, ctx.bumps.root_ip_block)?;
+        root_ip_block.initialize(
+            tier,
+            authority.key(),
+            index,
+            base_ipv4,
+            base_cidr,
+            ctx.bumps.root_ip_block,
+        )?;
 
         // Register the root block in the registry
         ip_registry.register_root_block().unwrap();
@@ -84,7 +96,7 @@ impl DawnApp {
             root_ip_block: root_ip_block.key(),
             tier: tier.to_u8(),
             root_block_index: index,
-            authority: caller.key(),
+            authority: authority.key(),
             base_ipv4,
             base_cidr,
             block_cidr: root_ip_block.block_cidr,

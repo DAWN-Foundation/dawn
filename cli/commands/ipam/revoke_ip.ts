@@ -36,7 +36,7 @@ async function main() {
   })
 
   const itx = await program.methods
-    .releaseIp(unitIndex)
+    .revokeIp(unitIndex)
     .accountsPartial({
       caller: wallet.payer.publicKey,
       ipRegistry,

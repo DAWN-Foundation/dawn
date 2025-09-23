@@ -189,12 +189,12 @@ pub struct IpLeased {
 }
 
 #[event]
-pub struct IpReleased {
+pub struct IpRevoked {
     pub ip_lease: Pubkey,
     pub device: Pubkey,
     pub ipv4: [u8; 4],
     pub block_index: u32,
-    pub released_at: i64,
+    pub revoked_at: i64,
 }
 
 #[event]

@@ -110,12 +110,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -149,12 +143,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -186,12 +174,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -231,12 +213,6 @@ export const deviceTests = () =>
             device: devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -260,7 +236,6 @@ export const deviceTests = () =>
       )
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
 
       try {
         await program.methods
@@ -279,12 +254,6 @@ export const deviceTests = () =>
             device: devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -308,7 +277,6 @@ export const deviceTests = () =>
       )
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
 
       try {
         await program.methods
@@ -327,12 +295,6 @@ export const deviceTests = () =>
             device: devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -364,12 +326,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -401,12 +357,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -438,12 +388,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -475,12 +419,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -509,12 +447,6 @@ export const deviceTests = () =>
           device: mock.devicePda,
           deviceLocation: mock.deviceLocationPda,
           localDomain: mock.localDomainPda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: mock.loopbackIpLeasePda,
-          rootPtpIpBlock: null,
-          ptpIpBlock: null,
-          ptpIpLease: null,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -594,29 +526,8 @@ export const deviceTests = () =>
       expect(deviceLocation.placement).toEqual(mock.devicePlacement)
       expect(deviceLocation.verified).toBeFalsy()
 
-      // make sure IP lease was created for loopback
-      const ipLease = await program.account.ipLease.fetch(
-        mock.loopbackIpLeasePda,
-      )
-      expect(ipLease.device.equals(mock.devicePda)).toBeTruthy()
-      expect(ipLease.tier).toEqual({ loopback: {} })
-      expect(ipLease.ipV4CidrMask).toBe(32) // /32 for loopback
-      expect(ipLease.ipv4.length).toBe(4) // IPv4 address
-
-      const loopbackIpLeaseEvent = await getEvent<IpLeased>(
-        program,
-        txDetails,
-        'ipLeased',
-      )
-      expect(
-        loopbackIpLeaseEvent.ipLease.equals(mock.loopbackIpLeasePda),
-      ).toBeTruthy()
-      expect(loopbackIpLeaseEvent.device.equals(mock.devicePda)).toBeTruthy()
-      expect(loopbackIpLeaseEvent.tier).toBe(1) // Loopback
-      expect(loopbackIpLeaseEvent.ipv4).toEqual(ipLease.ipv4)
-      expect(loopbackIpLeaseEvent.cidr).toBe(32) // /32 for loopback
-      expect(loopbackIpLeaseEvent.blockIndex).toBe(ipLease.blockIndex)
-      expect(loopbackIpLeaseEvent.unitIndex).toBe(ipLease.unitIndex)
+      // Note: IP allocation is now separated from device creation
+      // IP leases should be created separately using allocate_ip instruction
     })
 
     test('cannot verify device location as non-authority', async () => {
@@ -703,12 +614,6 @@ export const deviceTests = () =>
             device: mock.devicePda,
             localDomain: mock.localDomainPda,
             deviceLocation: mock.deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: mock.loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -762,9 +667,7 @@ export const deviceTests = () =>
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
-      // Get IPAM PDAs for this specific device
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
-      const ptpIpLeasePda = getIpLeasePda(2, devicePda)
+      // Note: IP allocation is now separated from device creation
 
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
@@ -785,12 +688,6 @@ export const deviceTests = () =>
           device: devicePda,
           deviceLocation: deviceLocationPda,
           localDomain: mock.localDomainPda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: loopbackIpLeasePda,
-          rootPtpIpBlock: mock.rootPtpIpBlockPda,
-          ptpIpBlock: mock.ptpIpBlockPda,
-          ptpIpLease: ptpIpLeasePda,
         })
         .signers([mock.serviceProvider])
         .transaction()
@@ -802,32 +699,8 @@ export const deviceTests = () =>
       const device = await program.account.device.fetch(devicePda)
       expect(device.model.equals(deviceModelPda)).toBeTruthy()
 
-      // Verify both loopback and PtP IP leases were created for WirelessRadio
-      const loopbackLease = await program.account.ipLease.fetch(
-        loopbackIpLeasePda,
-      )
-      expect(loopbackLease.device.equals(devicePda)).toBeTruthy()
-      expect(loopbackLease.tier).toEqual({ loopback: {} })
-      expect(loopbackLease.ipV4CidrMask).toBe(32)
-
-      const ptpLease = await program.account.ipLease.fetch(ptpIpLeasePda)
-      expect(ptpLease.device.equals(devicePda)).toBeTruthy()
-      expect(ptpLease.tier).toEqual({ ptP: {} })
-      expect(ptpLease.ipV4CidrMask).toBe(31) // /31 for PtP
-
-      const ipLeases = await getEvents<IpLeased>(program, txDetails, 'ipLeased')
-
-      const ptpIpLeaseEvent = ipLeases.find((event) => event.tier === 2)
-      if (!ptpIpLeaseEvent) {
-        throw new Error('PtP IP lease event not found')
-      }
-      expect(ptpIpLeaseEvent.ipLease.equals(ptpIpLeasePda)).toBeTruthy()
-      expect(ptpIpLeaseEvent.device.equals(devicePda)).toBeTruthy()
-      expect(ptpIpLeaseEvent.tier).toBe(2) // PtP
-      expect(ptpIpLeaseEvent.ipv4).toEqual(ptpLease.ipv4)
-      expect(ptpIpLeaseEvent.cidr).toBe(31) // /31 for PtP
-      expect(ptpIpLeaseEvent.blockIndex).toBe(ptpLease.blockIndex)
-      expect(ptpIpLeaseEvent.unitIndex).toBe(ptpLease.unitIndex)
+      // Note: IP allocation is now separated from device creation
+      // IP leases should be created separately using allocate_ip instruction
     })
 
     test('adds second L2 device to the same local domain', async () => {
@@ -859,10 +732,6 @@ export const deviceTests = () =>
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
-      // Get IPAM PDAs for this specific device
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
-      const ptpIpLeasePda = getIpLeasePda(2, devicePda)
-
       await program.methods
         .addDevice(
           deviceName,
@@ -879,12 +748,6 @@ export const deviceTests = () =>
           device: devicePda,
           deviceLocation: deviceLocationPda,
           localDomain: mock.localDomainPda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: loopbackIpLeasePda,
-          rootPtpIpBlock: mock.rootPtpIpBlockPda,
-          ptpIpBlock: mock.ptpIpBlockPda,
-          ptpIpLease: ptpIpLeasePda,
         })
         .signers([mock.serviceProvider])
         .rpc()
@@ -915,7 +778,6 @@ export const deviceTests = () =>
         mock.deviceMacAddress,
       )
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
       const localDomainPda = getLocalDomainPda(
         program,
         mock.serviceProvider.publicKey,
@@ -939,12 +801,6 @@ export const deviceTests = () =>
             device: devicePda,
             localDomain: localDomainPda,
             deviceLocation: deviceLocationPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()
@@ -974,8 +830,6 @@ export const deviceTests = () =>
         localDomainName,
       )
 
-      const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
-
       try {
         await program.methods
           .addDevice(
@@ -993,12 +847,6 @@ export const deviceTests = () =>
             device: devicePda,
             deviceLocation: deviceLocationPda,
             localDomain: localDomainPda,
-            rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-            loopbackIpBlock: mock.loopbackIpBlockPda,
-            loopbackIpLease: loopbackIpLeasePda,
-            rootPtpIpBlock: null,
-            ptpIpBlock: null,
-            ptpIpLease: null,
           })
           .signers([mock.serviceProvider])
           .rpc()

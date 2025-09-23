@@ -640,12 +640,6 @@ export const subscriptionTests = () =>
           device: devicePda,
           deviceLocation: deviceLocationPda,
           localDomain: localDomainPda,
-          rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-          loopbackIpBlock: mock.loopbackIpBlockPda,
-          loopbackIpLease: loopbackIpLeasePda,
-          rootPtpIpBlock: null,
-          ptpIpBlock: null,
-          ptpIpLease: null,
         })
         .signers([wallet.payer])
         .rpc()

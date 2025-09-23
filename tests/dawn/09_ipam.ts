@@ -110,8 +110,6 @@ const createSubscriber = async (
 
   // 5. Add device (this also creates IP leases for loopback and PTP)
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
-  const loopbackIpLeasePda = getIpLeasePda(1, devicePda) // Loopback tier
-  const ptpIpLeasePda = getIpLeasePda(2, devicePda) // PTP tier
 
   const localDomainPda = getLocalDomainPda(
     program,
@@ -135,12 +133,6 @@ const createSubscriber = async (
       deviceModel: mock.deviceL2ModelPda,
       localDomain: localDomainPda,
       deviceLocation: deviceLocationPda,
-      rootLoopbackIpBlock: mock.rootLoopbackIpBlockPda,
-      loopbackIpBlock: mock.loopbackIpBlockPda,
-      loopbackIpLease: loopbackIpLeasePda,
-      rootPtpIpBlock: mock.rootPtpIpBlockPda,
-      ptpIpBlock: mock.ptpIpBlockPda,
-      ptpIpLease: ptpIpLeasePda,
     })
     .signers([subscriberWallet])
     .rpc()
@@ -480,12 +472,388 @@ export const leaseIpTests = () =>
     })
   })
 
-interface IpReleased {
+interface IpRevoked {
   ipLease: PublicKey
   device: PublicKey
   ipv4: IpV4Bytes
   blockIndex: number
+  revokedAt: number
 }
+
+export const allocateIpTests = () =>
+  describe('dawn::allocate_ip', () => {
+    let provider: BankrunProvider
+    let program: Program<Dawn>
+
+    beforeAll(async () => {
+      provider = anchor.getProvider() as BankrunProvider
+      program = anchor.workspace.DAWN as Program<Dawn>
+    })
+
+    test('cannot allocate IP without root block authority', async () => {
+      const unauthorizedWallet = Keypair.generate()
+      const wallet = loadWallet()
+
+      // Fund unauthorized wallet
+      const currentSlot = await provider.context.banksClient.getSlot()
+      await provider.context.warpToSlot(currentSlot + BigInt(1))
+
+      const transferIx = SystemProgram.transfer({
+        fromPubkey: wallet.payer.publicKey,
+        toPubkey: unauthorizedWallet.publicKey,
+        lamports: 1000_000_000,
+      })
+
+      const transferTx = new Transaction().add(transferIx)
+      transferTx.feePayer = wallet.payer.publicKey
+      transferTx.recentBlockhash = provider.context.lastBlockhash
+      transferTx.sign(wallet.payer)
+      await provider.context.banksClient.processTransaction(transferTx)
+
+      // Create a device for testing
+      const devicePda = getDevicePda(
+        program,
+        unauthorizedWallet,
+        mock.deviceModelPda,
+        'test-device',
+        mock.deviceMacAddress,
+      )
+
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        unauthorizedWallet.publicKey,
+        mock.localDomain,
+      )
+
+      // First create the device
+      await program.methods
+        .addDevice(
+          'test-device',
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.devicePlacement,
+          mock.deviceMacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: unauthorizedWallet.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
+        })
+        .signers([unauthorizedWallet])
+        .rpc()
+
+      const loopbackIpLeasePda = getIpLeasePda(1, devicePda) // Loopback tier
+
+      try {
+        await program.methods
+          .allocateIp(1) // Loopback tier
+          .accountsPartial({
+            authority: unauthorizedWallet.publicKey,
+            device: devicePda,
+            ipRegistry: mock.loopIpRegistryPda,
+            rootIpBlock: mock.rootLoopbackIpBlockPda,
+            ipBlock: mock.loopbackIpBlockPda,
+            ipLease: loopbackIpLeasePda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([unauthorizedWallet])
+          .rpc()
+
+        expect(false).toBeTruthy() // Should not reach here
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe(
+          'Unauthorized: caller is not the authority',
+        )
+      }
+    })
+
+    test('successfully allocates loopback IP with proper authority', async () => {
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      // Create a device for testing
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        'loopback-test-device',
+        mock.deviceMacAddress,
+      )
+
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.localDomain,
+      )
+
+      // Create the device first
+      await program.methods
+        .addDevice(
+          'loopback-test-device',
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.devicePlacement,
+          mock.deviceMacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      const loopbackIpLeasePda = getIpLeasePda(1, devicePda) // Loopback tier
+
+      // Allocate IP with proper authority (assuming wallet.payer is the root block authority)
+      const tx = await program.methods
+        .allocateIp(1) // Loopback tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: devicePda,
+          ipRegistry: mock.loopIpRegistryPda,
+          rootIpBlock: mock.rootLoopbackIpBlockPda,
+          ipBlock: mock.loopbackIpBlockPda,
+          ipLease: loopbackIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // Verify IP lease was created
+      const ipLease = await program.account.ipLease.fetch(loopbackIpLeasePda)
+      expect(ipLease.device).toEqual(devicePda)
+      expect(ipLease.tier).toEqual({ loopback: {} })
+      expect(ipLease.ipV4CidrMask).toBe(32) // /32 for loopback
+      expect(ipLease.ipv4[0]).toBe(100) // First octet should be 100 for loopback
+      expect(ipLease.ipv4[1]).toBe(64) // Second octet should be 64
+
+      // Verify event was emitted
+      const event = await getEvent<IpLeased>(program, txDetails, 'ipLeased')
+      expect(event.device).toEqual(devicePda)
+      expect(event.tier).toBe(1) // Loopback
+      expect(event.ipv4).toEqual(ipLease.ipv4)
+      expect(event.cidr).toBe(32) // /32 for loopback
+    })
+
+    test('successfully allocates PtP IP with proper authority', async () => {
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      // Create a device for testing
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        'ptp-test-device',
+        mock.deviceMacAddress,
+      )
+
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.localDomain,
+      )
+
+      // Create the device first
+      await program.methods
+        .addDevice(
+          'ptp-test-device',
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.devicePlacement,
+          mock.deviceMacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      const ptpIpLeasePda = getIpLeasePda(2, devicePda) // PtP tier
+
+      // Allocate IP with proper authority
+      const tx = await program.methods
+        .allocateIp(2) // PtP tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: devicePda,
+          ipRegistry: mock.ptpIpRegistryPda,
+          rootIpBlock: mock.rootPtpIpBlockPda,
+          ipBlock: mock.ptpIpBlockPda,
+          ipLease: ptpIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // Verify IP lease was created
+      const ipLease = await program.account.ipLease.fetch(ptpIpLeasePda)
+      expect(ipLease.device).toEqual(devicePda)
+      expect(ipLease.tier).toEqual({ ptP: {} })
+      expect(ipLease.ipV4CidrMask).toBe(31) // /31 for PtP
+      expect(ipLease.ipv4[0]).toBe(100) // First octet should be 100 for PtP
+      expect(ipLease.ipv4[1]).toBe(96) // Second octet should be 96 for PtP
+
+      // For PtP, IP should be even (base of /31 pair)
+      const ipAsNumber =
+        (ipLease.ipv4[0] << 24) |
+        (ipLease.ipv4[1] << 16) |
+        (ipLease.ipv4[2] << 8) |
+        ipLease.ipv4[3]
+      expect(ipAsNumber % 2).toBe(0) // Should be even
+
+      // Verify event was emitted
+      const event = await getEvent<IpLeased>(program, txDetails, 'ipLeased')
+      expect(event.device).toEqual(devicePda)
+      expect(event.tier).toBe(2) // PtP
+      expect(event.ipv4).toEqual(ipLease.ipv4)
+      expect(event.cidr).toBe(31) // /31 for PtP
+    })
+
+    test('cannot allocate IP for invalid tier', async () => {
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        'invalid-tier-device',
+        mock.deviceMacAddress,
+      )
+
+      const invalidIpLeasePda = getIpLeasePda(0, devicePda) // Subscriber tier - not allowed for allocate_ip
+
+      try {
+        await program.methods
+          .allocateIp(0) // Subscriber tier - should be rejected
+          .accountsPartial({
+            authority: wallet.payer.publicKey,
+            device: devicePda,
+            ipRegistry: mock.subscriberIpRegistryPda,
+            rootIpBlock: mock.rootSubscriberIpBlockPda,
+            ipBlock: mock.ipBlockPda,
+            ipLease: invalidIpLeasePda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        expect(false).toBeTruthy() // Should not reach here
+      } catch (error) {
+        expect(error instanceof AnchorError).toBeTruthy()
+        const err: AnchorError = error
+        expect(err.error.errorMessage).toBe(
+          'The program expected this account to be already initialized',
+        )
+      }
+    })
+
+    test('cannot allocate IP twice for same device and tier', async () => {
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      // Create a device for testing
+      const devicePda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        'duplicate-ip-device',
+        mock.deviceMacAddress,
+      )
+
+      const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+      const localDomainPda = getLocalDomainPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.localDomain,
+      )
+
+      // Create the device first
+      await program.methods
+        .addDevice(
+          'duplicate-ip-device',
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.devicePlacement,
+          mock.deviceMacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: devicePda,
+          deviceLocation: deviceLocationPda,
+          localDomain: localDomainPda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      const loopbackIpLeasePda = getIpLeasePda(1, devicePda) // Loopback tier
+
+      // First allocation should succeed
+      await program.methods
+        .allocateIp(1) // Loopback tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: devicePda,
+          ipRegistry: mock.loopIpRegistryPda,
+          rootIpBlock: mock.rootLoopbackIpBlockPda,
+          ipBlock: mock.loopbackIpBlockPda,
+          ipLease: loopbackIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Second allocation should fail (account already exists)
+      try {
+        await program.methods
+          .allocateIp(1) // Loopback tier
+          .accountsPartial({
+            authority: wallet.payer.publicKey,
+            device: devicePda,
+            ipRegistry: mock.loopIpRegistryPda,
+            rootIpBlock: mock.rootLoopbackIpBlockPda,
+            ipBlock: mock.loopbackIpBlockPda,
+            ipLease: loopbackIpLeasePda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        expect(false).toBeTruthy() // Should not reach here
+      } catch (error) {
+        // Should fail because the IP lease account already exists
+        expect(error).toBeDefined()
+      }
+    })
+  })
 
 export const initializeRootIpBlockTests = () =>
   describe('dawn::initialize_root_ip_block', () => {
@@ -520,6 +888,7 @@ export const initializeRootIpBlockTests = () =>
           .accountsPartial({
             caller: unauthorizedWallet.publicKey,
             config: mock.configPda,
+            authority: wallet.payer.publicKey,
             systemProgram: SystemProgram.programId,
           })
           .signers([unauthorizedWallet])
@@ -551,6 +920,7 @@ export const initializeRootIpBlockTests = () =>
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -595,6 +965,7 @@ export const initializeRootIpBlockTests = () =>
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -629,6 +1000,7 @@ export const initializeRootIpBlockTests = () =>
         .accountsPartial({
           caller: authority.publicKey,
           config: mock.configPda,
+          authority: authority.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([authority])
@@ -674,6 +1046,7 @@ export const initializeRootIpBlockTests = () =>
             .accountsPartial({
               caller: authority.publicKey,
               config: mock.configPda,
+              authority: authority.publicKey,
               systemProgram: SystemProgram.programId,
             })
             .signers([authority])
@@ -688,6 +1061,7 @@ export const initializeRootIpBlockTests = () =>
           .accountsPartial({
             caller: authority.publicKey,
             config: mock.configPda,
+            authority: authority.publicKey,
             systemProgram: SystemProgram.programId,
           })
           .signers([authority])
@@ -794,12 +1168,12 @@ export const bitmapEdgeCaseTests = () =>
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const initialFreeUnits = ipBlockBefore.freeUnits
 
-      // Release the IP
+      // Revoke the IP
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -911,9 +1285,6 @@ export const multiTierIpamTests = () =>
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
-      // Note: Loopback IPs are automatically allocated during device creation
-      // This test verifies the existing loopback allocation from device setup
-
       const subscriberSetup = await createSubscriber(
         program,
         provider,
@@ -921,8 +1292,26 @@ export const multiTierIpamTests = () =>
         'loopback-test-device',
       )
 
-      // Get the loopback IP lease that was created during device setup
+      // Get the loopback IP lease PDA
       const loopbackIpLeasePda = getIpLeasePda(1, subscriberSetup.devicePda) // Loopback tier = 1
+
+      // Allocate loopback IP using the new separate instruction
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      await program.methods
+        .allocateIp(1) // Loopback tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.loopIpRegistryPda,
+          rootIpBlock: mock.rootLoopbackIpBlockPda,
+          ipBlock: mock.loopbackIpBlockPda,
+          ipLease: loopbackIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
 
       // Verify the loopback lease exists and has correct properties
       const loopbackLease = await program.account.ipLease.fetch(
@@ -950,9 +1339,6 @@ export const multiTierIpamTests = () =>
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
-      // Note: PtP IPs are automatically allocated during device creation
-      // This test verifies the existing PtP allocation from device setup
-
       const subscriberSetup = await createSubscriber(
         program,
         provider,
@@ -960,8 +1346,26 @@ export const multiTierIpamTests = () =>
         'ptp-test-device',
       )
 
-      // Get the PtP IP lease that was created during device setup
+      // Get the PtP IP lease PDA
       const ptpIpLeasePda = getIpLeasePda(2, subscriberSetup.devicePda) // PtP tier = 2
+
+      // Allocate PtP IP using the new separate instruction
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      await program.methods
+        .allocateIp(2) // PtP tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.ptpIpRegistryPda,
+          rootIpBlock: mock.rootPtpIpBlockPda,
+          ipBlock: mock.ptpIpBlockPda,
+          ipLease: ptpIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
 
       // Verify the PtP lease exists and has correct properties
       const ptpLease = await program.account.ipLease.fetch(ptpIpLeasePda)
@@ -1023,13 +1427,48 @@ export const multiTierIpamTests = () =>
         mock.ipBlockPda,
       )
 
-      // Get loopback and PtP leases (created during device setup)
+      // Allocate loopback and PtP IPs using the new separate instruction
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      const loopbackIpLeasePda = getIpLeasePda(1, subscriberSetup.devicePda)
+      const ptpIpLeasePda = getIpLeasePda(2, subscriberSetup.devicePda)
+
+      // Allocate loopback IP
+      await program.methods
+        .allocateIp(1) // Loopback tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.loopIpRegistryPda,
+          rootIpBlock: mock.rootLoopbackIpBlockPda,
+          ipBlock: mock.loopbackIpBlockPda,
+          ipLease: loopbackIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Allocate PtP IP
+      await program.methods
+        .allocateIp(2) // PtP tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.ptpIpRegistryPda,
+          rootIpBlock: mock.rootPtpIpBlockPda,
+          ipBlock: mock.ptpIpBlockPda,
+          ipLease: ptpIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Get the allocated leases
       const loopbackLease = await program.account.ipLease.fetch(
-        getIpLeasePda(1, subscriberSetup.devicePda),
+        loopbackIpLeasePda,
       )
-      const ptpLease = await program.account.ipLease.fetch(
-        getIpLeasePda(2, subscriberSetup.devicePda),
-      )
+      const ptpLease = await program.account.ipLease.fetch(ptpIpLeasePda)
 
       const loopbackBlock = await program.account.ipBlock.fetch(
         mock.loopbackIpBlockPda,
@@ -1079,16 +1518,51 @@ export const multiTierIpamTests = () =>
         .signers([subscriberSetup.wallet])
         .rpc()
 
+      // Allocate loopback and PtP IPs using the new separate instruction
+      const wallet = loadWallet()
+      provider.wallet = new Wallet(wallet.payer)
+
+      const loopbackIpLeasePda = getIpLeasePda(1, subscriberSetup.devicePda)
+      const ptpIpLeasePda = getIpLeasePda(2, subscriberSetup.devicePda)
+
+      // Allocate loopback IP
+      await program.methods
+        .allocateIp(1) // Loopback tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.loopIpRegistryPda,
+          rootIpBlock: mock.rootLoopbackIpBlockPda,
+          ipBlock: mock.loopbackIpBlockPda,
+          ipLease: loopbackIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Allocate PtP IP
+      await program.methods
+        .allocateIp(2) // PtP tier
+        .accountsPartial({
+          authority: wallet.payer.publicKey,
+          device: subscriberSetup.devicePda,
+          ipRegistry: mock.ptpIpRegistryPda,
+          rootIpBlock: mock.rootPtpIpBlockPda,
+          ipBlock: mock.ptpIpBlockPda,
+          ipLease: ptpIpLeasePda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
       // Get all three tier leases
       const subscriberLease = await program.account.ipLease.fetch(
         subscriberIpLeasePda,
       )
       const loopbackLease = await program.account.ipLease.fetch(
-        getIpLeasePda(1, subscriberSetup.devicePda),
+        loopbackIpLeasePda,
       )
-      const ptpLease = await program.account.ipLease.fetch(
-        getIpLeasePda(2, subscriberSetup.devicePda),
-      )
+      const ptpLease = await program.account.ipLease.fetch(ptpIpLeasePda)
 
       // Verify address ranges for each tier
 
@@ -1161,8 +1635,8 @@ export const multiTierIpamTests = () =>
     })
   })
 
-export const releaseIpTests = () =>
-  describe('dawn::release_ip', () => {
+export const revokeIpTests = () =>
+  describe('dawn::revoke_ip', () => {
     let provider: BankrunProvider
     let program: Program<Dawn>
 
@@ -1172,14 +1646,14 @@ export const releaseIpTests = () =>
       program = anchor.workspace.DAWN as Program<Dawn>
     })
 
-    test('cannot release IP lease with wrong caller', async () => {
+    test('cannot revoke IP lease with wrong caller', async () => {
       const unauthorizedWallet = new Wallet(anchor.web3.Keypair.generate())
 
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'release-ip-subscriber',
-        'release-ip-device',
+        'revoke-ip-subscriber',
+        'revoke-ip-device',
       )
 
       const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
@@ -1200,7 +1674,7 @@ export const releaseIpTests = () =>
 
       try {
         await program.methods
-          .releaseIp(0)
+          .revokeIp(0)
           .accountsPartial({
             caller: unauthorizedWallet.publicKey,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
@@ -1223,12 +1697,12 @@ export const releaseIpTests = () =>
       }
     })
 
-    test('successfully releases IP lease', async () => {
+    test('successfully revokes IP lease', async () => {
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'release-ip-subscriber',
-        'release-ip-device',
+        'revoke-ip-subscriber',
+        'revoke-ip-device',
       )
 
       // const originalWallet = provider.wallet
@@ -1250,14 +1724,14 @@ export const releaseIpTests = () =>
         .signers([subscriberSetup.wallet])
         .rpc()
 
-      // Get current state before release
+      // Get current state before revoke
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
 
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       const tx = await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1273,7 +1747,7 @@ export const releaseIpTests = () =>
       const txDetails = await confirmTx(provider, tx)
 
       // Verify event was emitted
-      const event = await getEvent<IpReleased>(program, txDetails, 'ipReleased')
+      const event = await getEvent<IpRevoked>(program, txDetails, 'ipRevoked')
       expect(event.ipLease).toEqual(ipLeasePda)
       expect(event.device).toEqual(subscriberSetup.devicePda)
       expect(event.blockIndex).toBe(0)
@@ -1289,20 +1763,20 @@ export const releaseIpTests = () =>
       expect(ipBlockAfter.freeUnits).toBe(ipBlockBefore.freeUnits + 1)
     })
 
-    test('cannot lease IP for device that already has a lease', async () => {
+    test('cannot revoke IP for device that already has a lease', async () => {
       const provider = anchor.getProvider() as BankrunProvider
       const program = anchor.workspace.DAWN as Program<Dawn>
 
       const subscriberSetup = await createSubscriber(
         program,
         provider,
-        'duplicate-lease-subscriber',
-        'duplicate-lease-device',
+        'duplicate-revoke-subscriber',
+        'duplicate-revoke-device',
       )
 
       const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
 
-      // First lease should succeed
+      // First revoke should succeed
       await program.methods
         .leaseSubscriptionIp()
         .accountsPartial({
@@ -1427,7 +1901,7 @@ export const releaseIpTests = () =>
       expect(ipLease.device).toEqual(subscriberSetup.devicePda)
     })
 
-    test('IP release updates block state for reuse', async () => {
+    test('IP revoke updates block state for reuse', async () => {
       const subscriberSetup = await createSubscriber(
         program,
         provider,
@@ -1457,9 +1931,9 @@ export const releaseIpTests = () =>
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
-      // Release the IP
+      // Revoke the IP
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1472,20 +1946,21 @@ export const releaseIpTests = () =>
         .rpc()
 
       // Verify the IP lease account was closed
-      const releasedLeaseAccount =
-        await provider.context.banksClient.getAccount(ipLeasePda)
-      expect(releasedLeaseAccount).toBeNull()
+      const revokedLeaseAccount = await provider.context.banksClient.getAccount(
+        ipLeasePda,
+      )
+      expect(revokedLeaseAccount).toBeNull()
 
-      // Check IP block state after release
-      const ipBlockAfterRelease = await program.account.ipBlock.fetch(
+      // Check IP block state after revoke
+      const ipBlockAfterRevoke = await program.account.ipBlock.fetch(
         mock.ipBlockPda,
       )
 
       // The free units should have increased by 1
-      expect(ipBlockAfterRelease.freeUnits).toBe(ipBlockBeforeLease.freeUnits)
+      expect(ipBlockAfterRevoke.freeUnits).toBe(ipBlockBeforeLease.freeUnits)
     })
 
-    test('cannot release non-existent IP lease', async () => {
+    test('cannot revoke non-existent IP lease', async () => {
       const unauthorizedWallet = Keypair.generate()
       const wallet = loadWallet()
 
@@ -1520,7 +1995,7 @@ export const releaseIpTests = () =>
 
       try {
         await program.methods
-          .releaseIp(0)
+          .revokeIp(0)
           .accountsPartial({
             caller: authority.publicKey,
             ipRegistry: mock.subscriberIpRegistryPda,
@@ -1539,7 +2014,7 @@ export const releaseIpTests = () =>
       }
     })
 
-    test('release IP correctly updates bitmap state', async () => {
+    test('revoke IP correctly updates bitmap state', async () => {
       // Create subscriber and allocate IP
       const subscriberSetup = await createSubscriber(
         program,
@@ -1565,19 +2040,19 @@ export const releaseIpTests = () =>
         .signers([subscriberSetup.wallet])
         .rpc()
 
-      // Get IP lease details before release
+      // Get IP lease details before revoke
       const ipLease = await program.account.ipLease.fetch(ipLeasePda)
       const ipBlockBefore = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const rootIpBlockBefore = await program.account.rootIpBlock.fetch(
         mock.rootSubscriberIpBlockPda,
       )
 
-      // Release the IP
+      // Revoke the IP
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
 
       await program.methods
-        .releaseIp(0)
+        .revokeIp(0)
         .accountsPartial({
           caller: authority.publicKey,
           ipRegistry: mock.subscriberIpRegistryPda,
@@ -1589,7 +2064,7 @@ export const releaseIpTests = () =>
         .signers([authority])
         .rpc()
 
-      // Verify bitmap state after release
+      // Verify bitmap state after revoke
       const ipBlockAfter = await program.account.ipBlock.fetch(mock.ipBlockPda)
       const rootIpBlockAfter = await program.account.rootIpBlock.fetch(
         mock.rootSubscriberIpBlockPda,
@@ -1598,7 +2073,7 @@ export const releaseIpTests = () =>
       // Free units should have increased
       expect(ipBlockAfter.freeUnits).toBe(ipBlockBefore.freeUnits + 1)
 
-      // If the block was full before release, verify root block state changed
+      // If the block was full before revoke, verify root block state changed
       if (ipBlockBefore.freeUnits === 0) {
         // Block went from full to having free space
         expect(rootIpBlockAfter.rootSummary64).not.toBe(
