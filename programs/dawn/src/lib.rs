@@ -4,7 +4,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+declare_id!("AHvnbnT3oeRSui4V1E47UsntZxtk9LuVfK7qmusJCeU8");
 
 #[cfg(feature = "devnet")]
 declare_id!("dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ");
@@ -20,6 +20,7 @@ use app::*;
 use error::*;
 use events::*;
 use state::*;
+use utils::{MerkleProof, SessionLeaf};
 
 #[program]
 pub mod dawn {
@@ -188,5 +189,58 @@ pub mod dawn {
     pub fn revoke_ip(ctx: Context<RevokeIp>, tier: u8) -> Result<()> {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
         DawnApp::revoke_ip(ctx, tier_enum)
+    }
+
+    // Proof of Bandwidth Instructions
+    pub fn register_prover(ctx: Context<RegisterProver>) -> Result<()> {
+        DawnApp::register_prover(ctx)
+    }
+
+    pub fn register_challenger(ctx: Context<RegisterChallenger>) -> Result<()> {
+        DawnApp::register_challenger(ctx)
+    }
+
+    pub fn init_challenge_round(
+        ctx: Context<InitChallengeRound>,
+        seed: [u8; 32],
+        n_packets: u32,
+        n_rounds: u16,
+        start_slot: u64,
+        end_slot: u64,
+        data_anchor_root: [u8; 32],
+    ) -> Result<()> {
+        DawnApp::init_challenge_round(ctx, seed, n_packets, n_rounds, start_slot, end_slot, data_anchor_root)
+    }
+
+    pub fn emit_session_commitment(
+        ctx: Context<EmitSessionCommitment>,
+        da_pointer: [u8; 32],
+    ) -> Result<()> {
+        DawnApp::emit_session_commitment(ctx, da_pointer)
+    }
+
+    pub fn submit_min_hash(
+        ctx: Context<SubmitMinHash>,
+        leaf: SessionLeaf,
+        proof: MerkleProof,
+        min_token: [u8; 32],
+        da_timestamp: u64,
+    ) -> Result<()> {
+        DawnApp::submit_min_hash(ctx, leaf, proof, min_token, da_timestamp)
+    }
+
+    pub fn finalize_aggregator(
+        ctx: Context<FinalizeAggregator>,
+        da_snapshot_pointer: [u8; 32],
+    ) -> Result<()> {
+        DawnApp::finalize_aggregator(ctx, da_snapshot_pointer)
+    }
+
+    pub fn close_round(ctx: Context<CloseRound>) -> Result<()> {
+        DawnApp::close_round(ctx)
+    }
+
+    pub fn close_aggregator(ctx: Context<CloseAggregator>) -> Result<()> {
+        DawnApp::close_aggregator(ctx)
     }
 }

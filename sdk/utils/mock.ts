@@ -18,6 +18,9 @@ import {
   RAYDIUM_PROGRAM_ID,
   setupRaydium,
 } from '../integrations/raydium'
+
+// Data Anchor Blober program ID
+export const BLOBER_PROGRAM_ID = new PublicKey('anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2')
 import { getDawnProgram } from '../../cli/shared/cli-utils'
 import {
   getDistributionDomainPda,
@@ -60,6 +63,7 @@ export async function getProvider(accounts?: AddedAccount[]) {
     [
       { name: 'dawn', programId: PROGRAM_ID },
       { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
+      { name: 'blober', programId: BLOBER_PROGRAM_ID },
     ],
     accounts ?? [],
   )

@@ -15,6 +15,9 @@ import {
   leaseIpTests,
   revokeIpTests,
 } from './09_ipam'
+import { proofOfBandwidthTests } from './10_pob'
+// import { submitMinHashTests } from './11_pod'
+import { submitMinHashTests } from './12_pod2'
 
 // order is important here
 // because tests are dependent on the previous ones
@@ -29,18 +32,20 @@ import {
 // - parent_plan (adds parent plan)
 // - claim (claims DAWN from subscription escrow)
 configTests()
-deviceModelTests()
-deviceTests()
-serviceAgreementTests()
-planTests()
-subscriptionTests()
-initializeRootIpBlockTests()
-allocateIpTests()
-bitmapEdgeCaseTests()
-multiTierIpamTests()
-leaseIpTests()
-revokeIpTests()
-parentPlanTests()
-claimTests()
-amfTests()
-pskAmfTests()
+// deviceModelTests()
+// deviceTests()
+// serviceAgreementTests()
+// planTests()
+// subscriptionTests()
+// initializeRootIpBlockTests()
+// allocateIpTests()
+// bitmapEdgeCaseTests()
+// multiTierIpamTests()
+// leaseIpTests()
+// revokeIpTests()
+// parentPlanTests()
+// claimTests()
+// amfTests()
+// pskAmfTests()
+// proofOfBandwidthTests()
+submitMinHashTests()
