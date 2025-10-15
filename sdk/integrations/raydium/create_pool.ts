@@ -75,7 +75,7 @@ export async function createPool(
       associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
       rent: SYSVAR_RENT_PUBKEY,
     })
-    .rpc()
+    .rpc({ commitment: 'finalized' })
 
   console.log({
     pool: pool.toBase58(),
