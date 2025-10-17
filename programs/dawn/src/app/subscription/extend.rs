@@ -3,7 +3,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
+use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
 
 use crate::{
     app::{subscription::payment, PaymentAccounts},
@@ -67,8 +67,11 @@ pub struct ExtendSubscription<'info> {
     pub usdc_mint: Box<Account<'info, Mint>>,
 
     // RAYDIUM
-    /// The Raydium program account
-    #[account(address = config.raydium)]
+    /// The Raydium program account - MUST be the official Raydium CP Swap program
+    #[account(
+        address = config.raydium,
+        constraint = raydium.key() == RAYDIUM_CP_SWAP_ID @ DawnError::InvalidRaydiumProgram
+    )]
     pub raydium: Program<'info, RaydiumCpSwap>,
 
     /// The Raydium authority account
@@ -81,9 +84,13 @@ pub struct ExtendSubscription<'info> {
     #[account(address = config.raydium_config)]
     pub raydium_config: UncheckedAccount<'info>,
 
-    /// The Raydium pool account
-    /// CHECK: Address checked to match the pool from config
-    #[account(mut, address = config.raydium_pool)]
+    /// The Raydium pool account - MUST be owned by Raydium program
+    #[account(
+        mut, 
+        address = config.raydium_pool,
+        constraint = raydium_pool.to_account_info().owner == &RAYDIUM_CP_SWAP_ID 
+            @ DawnError::InvalidRaydiumPoolOwner
+    )]
     pub raydium_pool: AccountLoader<'info, PoolState>,
 
     /// The Raydium observation account

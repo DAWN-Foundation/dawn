@@ -250,4 +250,10 @@ pub enum DawnError {
 
     #[msg("Total fees exceed 100% (10,000 BPS)")]
     TotalFeesExceedMax,
+
+    #[msg("Invalid Raydium program ID")]
+    InvalidRaydiumProgram,
+
+    #[msg("Invalid Raydium pool owner")]
+    InvalidRaydiumPoolOwner,
 }
