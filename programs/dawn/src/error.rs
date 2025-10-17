@@ -243,4 +243,11 @@ pub enum DawnError {
 
     #[msg("Sequence out of bounds")]
     SequenceOutOfBounds,
+
+    // CONFIG ERRORS
+    #[msg("Fee BPS exceeds maximum (10,000)")]
+    InvalidFeeBps,
+
+    #[msg("Total fees exceed 100% (10,000 BPS)")]
+    TotalFeesExceedMax,
 }
