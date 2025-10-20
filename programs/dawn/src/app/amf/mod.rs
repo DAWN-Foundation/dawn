@@ -3,6 +3,7 @@
 #[allow(clippy::module_inception)]
 mod amf;
 mod eap_method;
+mod ipsec_method;
 mod psk_method;
 mod register_auth_method;
 mod register_connection;
@@ -13,6 +14,7 @@ mod wpa2e_method;
 
 pub use amf::*;
 pub use eap_method::*;
+pub use ipsec_method::*;
 pub use psk_method::*;
 pub use register_auth_method::*;
 pub use register_connection::*;

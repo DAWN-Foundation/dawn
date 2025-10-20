@@ -21,11 +21,9 @@ import {
   getDevicePda,
   getIpLeasePda,
 } from '../../sdk/utils'
-import {
-  createPSKMethodParams,
-  serializePSKMethodParams,
-} from '../../sdk/utils/auth'
+import { AuthParamsSerializer } from '../../sdk/utils/auth-borsh'
 import { getPskAuthMethodPda } from '../../sdk/pda/amf'
+import { createPSKMethodParamsBorsh } from '../../sdk/utils/auth-borsh'
 import { beforeAll, expect } from '@jest/globals'
 
 export let oneDayLaterPlanPda: PublicKey
@@ -84,21 +82,20 @@ export const planTests = () =>
 
       authMethods = []
 
-      // Create PSK method parameters
-      const params1 = createPSKMethodParams({
+      // Create PSK method parameters using Borsh serialization
+      const serializer = new AuthParamsSerializer(program)
+      const parametersBuffer1 = serializer.serializePSKParams({
         ssid: 'DawnTestNetwork1',
         securityStandard: 'WPA3_PSK',
         encryptionAlgorithm: 'AES_GCMP',
         pskRotationInterval: 86400, // 24 hours
       })
-      const params2 = createPSKMethodParams({
+      const parametersBuffer2 = serializer.serializePSKParams({
         ssid: 'DawnTestNetwork2',
         securityStandard: 'WPA3_PSK',
         encryptionAlgorithm: 'AES_GCMP',
         pskRotationInterval: 86400, // 24 hours
       })
-      const parametersBuffer1 = serializePSKMethodParams(params1)
-      const parametersBuffer2 = serializePSKMethodParams(params2)
       const [pskAuthMethodPda1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
@@ -385,42 +382,37 @@ export const planTests = () =>
     })
 
     test('cannot add more than 2 auth methods', async () => {
-      const p2 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test1',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
+      const serializer = new AuthParamsSerializer(program)
+      const p2 = serializer.serializePSKParams({
+        ssid: 'test1',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
       const [m1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         p2,
       )
 
-      const p3 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test2',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
+      const p3 = serializer.serializePSKParams({
+        ssid: 'test2',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
       const [m2] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         p3,
       )
 
-      const p4 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test3',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
+      const p4 = serializer.serializePSKParams({
+        ssid: 'test3',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
       const [m3] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
@@ -1182,18 +1174,22 @@ export const planTests = () =>
 
       // Create an auth method for this specific device
       const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 1) // Simple test parameters
-      const paramsArray = Array.from(paramsBuffer)
 
-      const authMethodPda = getAuthMethodPda(
+      const paramsArray = createPSKMethodParamsBorsh(program, {
+        ssid: 'test ssid',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
+
+      const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
-        authMethodType,
-        paramsBuffer,
+        paramsArray,
       )
 
       await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
+        .registerAuthMethod(authMethodType as any, Array.from(paramsArray))
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -1307,28 +1303,25 @@ export const planTests = () =>
       // Create a plan with 2 auth methods
       const planName = 'test plan multiple auth methods'
 
-      const p1 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test1',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
+      const serializer = new AuthParamsSerializer(program)
+      const p1 = serializer.serializePSKParams({
+        ssid: 'test1',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
       const [m1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         p1,
       )
 
-      const p2 = serializePSKMethodParams(
-        createPSKMethodParams({
-          ssid: 'test2',
-          securityStandard: 'WPA3_PSK',
-          encryptionAlgorithm: 'AES_GCMP',
-          pskRotationInterval: 86400, // 24 hours
-        }),
-      )
+      const p2 = serializer.serializePSKParams({
+        ssid: 'test2',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
 
       const [m2] = getPskAuthMethodPda(
         program,
@@ -1525,21 +1518,26 @@ export const planTests = () =>
 
       // Create an auth method for this device (in different domain)
       const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 2)
 
-      const wrongDomainAuthMethodPda = getAuthMethodPda(
+      const paramsArray = createPSKMethodParamsBorsh(program, {
+        ssid: 'test ssid',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
+
+      const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
-        authMethodType,
-        paramsBuffer,
+        paramsArray,
       )
 
       await program.methods
-        .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+        .registerAuthMethod(authMethodType as any, Array.from(paramsArray))
         .accountsPartial({
           caller: mock.customer.publicKey,
           config: mock.configPda,
-          authMethod: wrongDomainAuthMethodPda,
+          authMethod: authMethodPda,
           device: wrongDomainDevicePda,
         })
         .signers([mock.customer])
@@ -1552,7 +1550,7 @@ export const planTests = () =>
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             plan: planPda,
-            authMethod: wrongDomainAuthMethodPda,
+            authMethod: authMethodPda,
             device: wrongDomainDevicePda,
           })
           .signers([mock.serviceProvider])
@@ -1614,12 +1612,16 @@ export const planTests = () =>
 
       for (let i = 0; i < 4; i++) {
         const authMethodType: AuthMethodType = { psk: {} }
-        const paramsBuffer = Buffer.alloc(256, i + 10)
-
-        const authMethodPda = getAuthMethodPda(
+        const paramsBuffer = createPSKMethodParamsBorsh(program, {
+          ssid: 'new test ssid ' + i,
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        })
+  
+        const [authMethodPda] = getPskAuthMethodPda(
           program,
           mock.serviceProvider.publicKey,
-          authMethodType,
           paramsBuffer,
         )
 
@@ -1720,12 +1722,16 @@ export const planTests = () =>
         .rpc()
 
       const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 8)
+      const paramsBuffer = createPSKMethodParamsBorsh(program, {
+        ssid: 'unauthorized test ssid ',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
 
-      const unauthorizedAuthMethodPda = getAuthMethodPda(
+      const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
-        authMethodType,
         paramsBuffer,
       )
 
@@ -1734,7 +1740,7 @@ export const planTests = () =>
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
-          authMethod: unauthorizedAuthMethodPda,
+          authMethod: authMethodPda,
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
@@ -1747,7 +1753,7 @@ export const planTests = () =>
           .accountsPartial({
             caller: mock.customer.publicKey,
             plan: planPda,
-            authMethod: unauthorizedAuthMethodPda,
+            authMethod: authMethodPda,
             device: mock.devicePda,
           })
           .signers([mock.customer])
@@ -1808,12 +1814,16 @@ export const planTests = () =>
 
       // Create an auth method for this device
       const authMethodType: AuthMethodType = { psk: {} }
-      const paramsBuffer = Buffer.alloc(256, 9)
+      const paramsBuffer = createPSKMethodParamsBorsh(program, {
+        ssid: 'test ssid same domain',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
 
-      const sameDomainAuthMethodPda = getAuthMethodPda(
+      const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
-        authMethodType,
         paramsBuffer,
       )
 
@@ -1822,7 +1832,7 @@ export const planTests = () =>
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
-          authMethod: sameDomainAuthMethodPda,
+          authMethod: authMethodPda,
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
@@ -1834,7 +1844,7 @@ export const planTests = () =>
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           plan: planPda,
-          authMethod: sameDomainAuthMethodPda,
+          authMethod: authMethodPda,
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
@@ -1843,11 +1853,11 @@ export const planTests = () =>
       // Verify the auth method was added to the plan
       const plan = await program.account.plan.fetch(planPda)
       expect(plan.authMethods.length).toBe(1)
-      expect(plan.authMethods[0].equals(sameDomainAuthMethodPda)).toBeTruthy()
+      expect(plan.authMethods[0].equals(authMethodPda)).toBeTruthy()
 
       // Verify the auth method points to the correct device
       const authMethod = await program.account.authMethod.fetch(
-        sameDomainAuthMethodPda,
+        authMethodPda,
       )
       expect(authMethod.device.equals(mock.devicePda)).toBeTruthy()
     })
@@ -1917,22 +1927,20 @@ export const parentPlanTests = () =>
 
       authMethods = []
 
-      // Create PSK method parameters
-      // Create PSK method parameters
-      const params1 = createPSKMethodParams({
+      // Create PSK method parameters using Borsh serialization
+      const serializer = new AuthParamsSerializer(program)
+      const parametersBuffer1 = serializer.serializePSKParams({
         ssid: 'DawnTestNetwork1',
         securityStandard: 'WPA3_PSK',
         encryptionAlgorithm: 'AES_GCMP',
         pskRotationInterval: 86400, // 24 hours
       })
-      const params2 = createPSKMethodParams({
+      const parametersBuffer2 = serializer.serializePSKParams({
         ssid: 'DawnTestNetwork2',
         securityStandard: 'WPA3_PSK',
         encryptionAlgorithm: 'AES_GCMP',
         pskRotationInterval: 86400, // 24 hours
       })
-      const parametersBuffer1 = serializePSKMethodParams(params1)
-      const parametersBuffer2 = serializePSKMethodParams(params2)
       const [pskAuthMethodPda1] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,

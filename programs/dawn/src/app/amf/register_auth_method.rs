@@ -1,10 +1,17 @@
+use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+
 use crate::{
-    app::DawnApp,
+    DawnApp,
+    app::amf::{
+        psk_method::PSKMethodParams,
+        eap_method::EAPMethodParams,
+        ipsec_method::IPsecAHParams,
+    },
+    error::DawnError,
     events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
     utils::optional_pubkey_seed,
 };
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 /// Context for registering a new authentication method
 #[derive(Accounts)]
@@ -56,6 +63,9 @@ impl DawnApp {
         method_type: AuthMethodType,
         parameters: [u8; 256],
     ) -> Result<()> {
+        // VALIDATE parameters before storing
+        validate_auth_params(method_type, &parameters)?;
+        
         let auth_method = &mut ctx.accounts.auth_method;
         let now = Clock::get()?.unix_timestamp;
 
@@ -76,4 +86,35 @@ impl DawnApp {
 
         Ok(())
     }
+}
+
+pub fn validate_auth_params(
+    method_type: AuthMethodType,
+    parameters: &[u8; 256],
+) -> Result<()> {
+    match method_type {
+        AuthMethodType::Psk | AuthMethodType::Mpsk => {
+            // PSK params: 32 + 1 + 1 + 4 + 64 = 102 bytes
+            let params = PSKMethodParams::try_from_slice(&parameters[..102])
+                .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
+            params.validate()?;
+        }
+        AuthMethodType::Eap | AuthMethodType::Wpa2Enterprise | AuthMethodType::Wpa3Enterprise => {
+            // EAP params: Calculate exact size (32 + 1 + 1 + 32 + 2 + 4 + 1 + 1 + 64 = 138 bytes)
+            let params = EAPMethodParams::try_from_slice(&parameters[..138])
+                .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
+            params.validate()?;
+        }
+        AuthMethodType::IpsecAh => {
+            // IPsec AH params: 1 + 4 + 1 + 4 + 1 + 1 + (1+1+1+1+1+4) + 64 = 85 bytes
+            let params = IPsecAHParams::try_from_slice(&parameters[..85])
+                .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
+            params.validate()?;
+        }
+        _ => {
+            return Err(error!(DawnError::InvalidAuthMethodType));
+        }
+    }
+    
+    Ok(())
 }

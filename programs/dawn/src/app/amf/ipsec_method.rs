@@ -26,7 +26,7 @@ pub enum IPsecMode {
 }
 
 /// IKEv2 parameters for key exchange
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct IKEv2Params {
     /// Diffie-Hellman group number
     pub dh_group: u8,
@@ -124,9 +124,9 @@ impl IPsecAHParams {
             return Err(error!(DawnError::InvalidIPsecMode));
         }
 
-        // Check replay window size is valid (must be power of 2)
+        // Check replay window size is valid (must be power of 2, max 128 for u8)
         if self.replay_window_size < 4 
-            || self.replay_window_size > 256 
+            || self.replay_window_size > 128 
             || (self.replay_window_size & (self.replay_window_size - 1)) != 0 {
             return Err(error!(DawnError::InvalidReplayWindowSize));
         }
