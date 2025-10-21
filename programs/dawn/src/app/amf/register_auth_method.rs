@@ -1,14 +1,15 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 use crate::{
+    DawnApp,
     app::amf::{
-        eap_method::EAPMethodParams, ipsec_method::IPsecAHParams, psk_method::PSKMethodParams,
+        psk_method::PSKMethodParams,
+        eap_method::EAPMethodParams,
     },
     error::DawnError,
     events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
     utils::optional_pubkey_seed,
-    DawnApp,
 };
 
 /// Context for registering a new authentication method
@@ -63,7 +64,7 @@ impl DawnApp {
     ) -> Result<()> {
         // VALIDATE parameters before storing
         validate_auth_params(method_type, &parameters)?;
-
+        
         let auth_method = &mut ctx.accounts.auth_method;
         let now = Clock::get()?.unix_timestamp;
 
@@ -86,7 +87,10 @@ impl DawnApp {
     }
 }
 
-pub fn validate_auth_params(method_type: AuthMethodType, parameters: &[u8; 256]) -> Result<()> {
+pub fn validate_auth_params(
+    method_type: AuthMethodType,
+    parameters: &[u8; 256],
+) -> Result<()> {
     match method_type {
         AuthMethodType::Psk | AuthMethodType::Mpsk => {
             // PSK params: 32 + 1 + 1 + 4 + 64 = 102 bytes
@@ -100,16 +104,10 @@ pub fn validate_auth_params(method_type: AuthMethodType, parameters: &[u8; 256])
                 .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
             params.validate()?;
         }
-        AuthMethodType::IpsecAh => {
-            // IPsec AH params: 1 + 4 + 1 + 4 + 1 + 1 + (1+1+1+1+1+4) + 64 = 85 bytes
-            let params = IPsecAHParams::try_from_slice(&parameters[..85])
-                .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
-            params.validate()?;
-        }
         _ => {
             return Err(error!(DawnError::InvalidAuthMethodType));
         }
     }
-
+    
     Ok(())
 }
