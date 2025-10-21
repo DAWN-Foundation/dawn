@@ -1,15 +1,12 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
 
 use crate::{
-    DawnApp,
-    app::amf::{
-        psk_method::PSKMethodParams,
-        eap_method::EAPMethodParams,
-    },
+    app::amf::{eap_method::EAPMethodParams, psk_method::PSKMethodParams},
     error::DawnError,
     events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
     utils::optional_pubkey_seed,
+    DawnApp,
 };
 
 /// Context for registering a new authentication method
@@ -64,7 +61,7 @@ impl DawnApp {
     ) -> Result<()> {
         // VALIDATE parameters before storing
         validate_auth_params(method_type, &parameters)?;
-        
+
         let auth_method = &mut ctx.accounts.auth_method;
         let now = Clock::get()?.unix_timestamp;
 
@@ -87,10 +84,7 @@ impl DawnApp {
     }
 }
 
-pub fn validate_auth_params(
-    method_type: AuthMethodType,
-    parameters: &[u8; 256],
-) -> Result<()> {
+pub fn validate_auth_params(method_type: AuthMethodType, parameters: &[u8; 256]) -> Result<()> {
     match method_type {
         AuthMethodType::Psk | AuthMethodType::Mpsk => {
             // PSK params: 32 + 1 + 1 + 4 + 64 = 102 bytes
@@ -108,6 +102,6 @@ pub fn validate_auth_params(
             return Err(error!(DawnError::InvalidAuthMethodType));
         }
     }
-    
+
     Ok(())
 }
