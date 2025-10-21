@@ -78,6 +78,9 @@ impl DawnApp {
         let index = ip_registry.next_index;
         require!(index < tier.max_root_blocks(), DawnError::InvalidSequence);
 
+        // Validate base_ipv4 won't cause overflow during IP allocation
+        tier.validate_base_ipv4(base_ipv4, base_cidr)?;
+
         // Initialize the root IP block
         root_ip_block.initialize(
             tier,

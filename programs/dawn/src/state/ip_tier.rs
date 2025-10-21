@@ -112,4 +112,45 @@ impl IpTier {
     pub fn to_seed(&self) -> [u8; 1] {
         [self.to_u8()]
     }
+
+    /// Validate base_ipv4 and base_cidr are reasonable and won't cause overflow
+    /// This is a sanity check to prevent IPv4 calculation overflow
+    pub fn validate_base_ipv4(&self, base_ipv4: u32, base_cidr: u8) -> Result<()> {
+        use crate::DawnError;
+        
+        // Ensure CIDR is valid (between 0 and 32)
+        require!(base_cidr <= 32, DawnError::InvalidCidr);
+        
+        // Calculate the network size for this CIDR
+        let network_size = if base_cidr < 32 {
+            1u64 << (32 - base_cidr)
+        } else {
+            1u64
+        };
+        
+        // Ensure base_ipv4 is aligned to the network boundary
+        // For example, a /14 network should be aligned to 2^18 = 262144 addresses
+        if base_cidr < 32 {
+            let alignment = 1u32 << (32 - base_cidr);
+            let mask = !(alignment - 1);
+            
+            require!(
+                base_ipv4 == (base_ipv4 & mask),
+                DawnError::IPv4NotAligned
+            );
+        }
+        
+        // Verify that base_ipv4 + network_size won't overflow u32::MAX
+        let base_u64 = base_ipv4 as u64;
+        let max_ipv4 = base_u64
+            .checked_add(network_size)
+            .ok_or(DawnError::IPv4Overflow)?;
+        
+        require!(
+            max_ipv4 <= (u32::MAX as u64) + 1,
+            DawnError::IPv4RangeExceedsMax
+        );
+        
+        Ok(())
+    }
 }

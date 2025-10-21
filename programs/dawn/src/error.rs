@@ -244,6 +244,19 @@ pub enum DawnError {
     #[msg("Sequence out of bounds")]
     SequenceOutOfBounds,
 
+    // IPv4 OVERFLOW ERRORS
+    #[msg("IPv4 calculation would overflow u32::MAX")]
+    IPv4Overflow,
+
+    #[msg("IPv4 range exceeds maximum addressable space")]
+    IPv4RangeExceedsMax,
+
+    #[msg("IPv4 address not aligned to network boundary")]
+    IPv4NotAligned,
+
+    #[msg("Invalid CIDR prefix length")]
+    InvalidCidr,
+
     // CONFIG ERRORS
     #[msg("Fee BPS exceeds maximum (10,000)")]
     InvalidFeeBps,
