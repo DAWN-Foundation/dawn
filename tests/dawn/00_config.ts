@@ -244,7 +244,7 @@ export const configTests = () =>
       assert.equal(loopbackRoot.baseIpv4, 0x64400000) // 100.64.0.0
       assert.equal(loopbackRoot.baseCidr, 11)
       assert.equal(loopbackRoot.blockCidr, 22)
-      assert.ok(loopbackRoot.rootChunks.length === 64) // 2048 blocks / 64 = 32 chunks
+      assert.ok(loopbackRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
 
       // Verify all have empty bitmaps initially (all zeros)
       assert.equal(loopbackRoot.rootSummary64.toString(), '0')
