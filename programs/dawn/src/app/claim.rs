@@ -108,9 +108,9 @@ pub struct Claim<'info> {
 
     /// The Raydium pool account - MUST be owned by Raydium program
     #[account(
-        mut, 
+        mut,
         address = config.raydium_pool,
-        constraint = raydium_pool.to_account_info().owner == &RAYDIUM_CP_SWAP_ID 
+        constraint = raydium_pool.to_account_info().owner == &RAYDIUM_CP_SWAP_ID
             @ DawnError::InvalidRaydiumPoolOwner
     )]
     pub raydium_pool: AccountLoader<'info, PoolState>,

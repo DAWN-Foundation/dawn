@@ -99,18 +99,9 @@ impl DawnApp {
         medallion_fee: u64,
     ) -> Result<()> {
         // Validate fee bounds - each fee must be <= 10,000 BPS (100%)
-        require!(
-            dao_fee <= BPS_DENOMINATOR,
-            DawnError::InvalidFeeBps
-        );
-        require!(
-            validator_fee <= BPS_DENOMINATOR,
-            DawnError::InvalidFeeBps
-        );
-        require!(
-            medallion_fee <= BPS_DENOMINATOR,
-            DawnError::InvalidFeeBps
-        );
+        require!(dao_fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
+        require!(validator_fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
+        require!(medallion_fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
 
         // Validate total fees don't exceed 100%
         let total_fees = dao_fee
@@ -119,10 +110,7 @@ impl DawnApp {
             .checked_add(medallion_fee)
             .ok_or(DawnError::Overflow)?;
 
-        require!(
-            total_fees <= BPS_DENOMINATOR,
-            DawnError::TotalFeesExceedMax
-        );
+        require!(total_fees <= BPS_DENOMINATOR, DawnError::TotalFeesExceedMax);
 
         let config = &mut ctx.accounts.config;
 
@@ -159,5 +147,3 @@ impl DawnApp {
         Ok(())
     }
 }
-
-

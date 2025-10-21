@@ -68,7 +68,7 @@ const IPsecAHMethodParamsLayout = borsh.struct([
 
 /**
  * Authentication Parameters Serializer using Borsh (Anchor-compatible)
- * 
+ *
  * Uses @coral-xyz/borsh (buffer-layout) to serialize parameters matching the Rust struct format.
  */
 export class AuthParamsSerializer {
@@ -88,7 +88,7 @@ export class AuthParamsSerializer {
 
     // Pad to 256 bytes (instruction expects fixed-size array)
     const buffer = Buffer.alloc(256)
-    
+
     // Encode using buffer-layout
     // Note: Arrays must be regular JavaScript arrays, not Uint8Arrays for Borsh compatibility
     PSKMethodParamsLayout.encode(
@@ -101,7 +101,7 @@ export class AuthParamsSerializer {
       },
       buffer,
     )
-    
+
     return buffer
   }
 
@@ -112,7 +112,7 @@ export class AuthParamsSerializer {
    */
   serializeEAPParams(params: EAPParams): Buffer {
     const buffer = Buffer.alloc(256)
-    
+
     EAPMethodParamsLayout.encode(
       {
         certificate_authority: params.certificateAuthority,
@@ -127,7 +127,7 @@ export class AuthParamsSerializer {
       },
       buffer,
     )
-    
+
     return buffer
   }
 
@@ -138,7 +138,7 @@ export class AuthParamsSerializer {
    */
   serializeIPsecAHParams(params: IPsecAHParams): Buffer {
     const buffer = Buffer.alloc(256)
-    
+
     IPsecAHMethodParamsLayout.encode(
       {
         algorithm: params.algorithm,
@@ -158,7 +158,7 @@ export class AuthParamsSerializer {
       },
       buffer,
     )
-    
+
     return buffer
   }
 
@@ -180,4 +180,3 @@ export function createPSKMethodParamsBorsh(
   const serializer = new AuthParamsSerializer(program)
   return serializer.serializePSKParams(config)
 }
-

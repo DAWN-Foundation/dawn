@@ -5,10 +5,10 @@ import { BN } from '@coral-xyz/anchor'
 
 /**
  * Update protocol configuration (authority-gated)
- * 
+ *
  * This command updates the protocol configuration. Only the authority can call this.
  * All parameters are optional - pass null to keep existing values.
- * 
+ *
  * Usage:
  *   ts-node cli/commands/config/update-config.ts
  */
@@ -55,7 +55,7 @@ async function main() {
   try {
     const txResult = await submitTx(connection, wallet, itx)
     console.log('Config updated successfully', { txResult })
-    
+
     // Fetch and display updated config
     const config = await program.account.config.fetch(mock.configPda)
     console.log('\nUpdated Configuration:')
@@ -69,5 +69,3 @@ async function main() {
 }
 
 main().catch(console.error)
-
-

@@ -1618,7 +1618,7 @@ export const planTests = () =>
           encryptionAlgorithm: 'AES_GCMP',
           pskRotationInterval: 86400, // 24 hours
         })
-  
+
         const [authMethodPda] = getPskAuthMethodPda(
           program,
           mock.serviceProvider.publicKey,
@@ -1856,9 +1856,7 @@ export const planTests = () =>
       expect(plan.authMethods[0].equals(authMethodPda)).toBeTruthy()
 
       // Verify the auth method points to the correct device
-      const authMethod = await program.account.authMethod.fetch(
-        authMethodPda,
-      )
+      const authMethod = await program.account.authMethod.fetch(authMethodPda)
       expect(authMethod.device.equals(mock.devicePda)).toBeTruthy()
     })
   })

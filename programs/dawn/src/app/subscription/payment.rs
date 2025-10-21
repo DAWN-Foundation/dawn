@@ -62,12 +62,11 @@ pub(super) fn calculate_usdc_fee(
         .ok_or(DawnError::Underflow)?;
 
     // Convert back to u64 with overflow checks
-    let dao_usdc_fee = u64::try_from(dao_usdc_fee_u128)
-        .map_err(|_| DawnError::Overflow)?;
-    let validator_usdc_fee = u64::try_from(validator_usdc_fee_u128)
-        .map_err(|_| DawnError::Overflow)?;
-    let medallion_usdc_fee = u64::try_from(medallion_usdc_fee_u128)
-        .map_err(|_| DawnError::Overflow)?;
+    let dao_usdc_fee = u64::try_from(dao_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
+    let validator_usdc_fee =
+        u64::try_from(validator_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
+    let medallion_usdc_fee =
+        u64::try_from(medallion_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
 
     let total_usdc_fee = dao_usdc_fee
         .checked_add(validator_usdc_fee)
@@ -76,10 +75,7 @@ pub(super) fn calculate_usdc_fee(
         .ok_or(DawnError::Overflow)?;
 
     // Validate total fee doesn't exceed source
-    require!(
-        total_usdc_fee <= source,
-        DawnError::InsufficientFunds
-    );
+    require!(total_usdc_fee <= source, DawnError::InsufficientFunds);
 
     let remainder = source.saturating_sub(total_usdc_fee);
 

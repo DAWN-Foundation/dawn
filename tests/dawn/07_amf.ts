@@ -126,7 +126,9 @@ export const amfTests = () =>
       }
 
       // Serialize parameters using Borsh
-      const serializer = new (await import('../../sdk/utils/auth-borsh')).AuthParamsSerializer(program)
+      const serializer = new (
+        await import('../../sdk/utils/auth-borsh')
+      ).AuthParamsSerializer(program)
       const paramsBuffer = serializer.serializeEAPParams(eapParams)
 
       // Convert to array for the API
@@ -413,7 +415,9 @@ export const amfTests = () =>
       }
 
       // Serialize parameters using Borsh
-      const serializer = new (await import('../../sdk/utils/auth-borsh')).AuthParamsSerializer(program)
+      const serializer = new (
+        await import('../../sdk/utils/auth-borsh')
+      ).AuthParamsSerializer(program)
       const paramsBuffer = serializer.serializeIPsecAHParams(ipsecParams)
 
       // Convert to array for the API
