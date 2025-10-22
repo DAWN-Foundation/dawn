@@ -53,7 +53,20 @@ impl RootIpBlock {
         self.base_ipv4 = base_ipv4;
         self.base_cidr = base_cidr;
         self.block_cidr = BLOCK_CIDR;
-        self.root_chunks = vec![0u64; tier.root_chunks_count()];
+
+        // Calculate number of blocks dynamically based on base_cidr and block_cidr
+        // Number of blocks = 2^(block_cidr - base_cidr)
+        let num_blocks = if BLOCK_CIDR > base_cidr {
+            1u32 << (BLOCK_CIDR - base_cidr)
+        } else {
+            1u32
+        };
+
+        // Calculate number of chunks needed (1 bit per block, 64 blocks per chunk)
+        let num_chunks = ((num_blocks + 63) / 64) as usize;
+        let num_chunks_capped = num_chunks.min(64); // Cap at 64 chunks (4096 blocks max)
+
+        self.root_chunks = vec![0u64; num_chunks_capped];
         self.root_summary64 = 0;
         self.first_available_block_idx = Some(0); // Start with block 0 as first available
         self.bump = bump;

@@ -1,20 +1,20 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use crate::{state::Config, DawnApp, TokenConfig};
+use crate::{constants::BPS_DENOMINATOR, error::DawnError, state::Config, DawnApp, TokenConfig};
 
+/// Context for updating the protocol config (authority-gated)
 #[derive(Accounts)]
-pub struct Configure<'info> {
+pub struct UpdateConfig<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
-        init_if_needed,
-        payer = caller,
-        space = Config::SIZE,
+        mut,
         seeds = [Config::SEED_PREFIX.as_ref()],
-        bump
+        bump = config.bump,
+        constraint = caller.key() == config.authority @ DawnError::Unauthorized
     )]
     pub config: Account<'info, Config>,
 
@@ -90,43 +90,60 @@ pub struct Configure<'info> {
 }
 
 impl DawnApp {
-    pub fn configure(
-        ctx: Context<Configure>,
-        dao_fee: u64,
-        validator_fee: u64,
-        medallion_fee: u64,
+    /// Update the protocol config (authority-gated)
+    pub fn update_config(
+        ctx: Context<UpdateConfig>,
+        dao_fee: Option<u64>,
+        validator_fee: Option<u64>,
+        medallion_fee: Option<u64>,
+        raydium: Option<Pubkey>,
+        raydium_authority: Option<Pubkey>,
+        raydium_pool: Option<Pubkey>,
+        raydium_config: Option<Pubkey>,
+        raydium_observation: Option<Pubkey>,
     ) -> Result<()> {
         let config = &mut ctx.accounts.config;
 
-        // make caller the authority
-        config.created_at = Clock::get()?.unix_timestamp;
-        config.authority = ctx.accounts.caller.key();
+        // Update fees if provided, with validation
+        if let Some(fee) = dao_fee {
+            require!(fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
+            config.dao_fee = fee;
+        }
+        if let Some(fee) = validator_fee {
+            require!(fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
+            config.validator_fee = fee;
+        }
+        if let Some(fee) = medallion_fee {
+            require!(fee <= BPS_DENOMINATOR, DawnError::InvalidFeeBps);
+            config.medallion_fee = fee;
+        }
 
-        // mints
-        config.token_config = ctx.accounts.token_config.key();
-        config.usdc_mint = ctx.accounts.usdc_mint.key();
-        config.dawn_mint = ctx.accounts.dawn_mint.key();
+        // Validate total fees after any updates
+        let total_fees = config
+            .dao_fee
+            .checked_add(config.validator_fee)
+            .ok_or(DawnError::Overflow)?
+            .checked_add(config.medallion_fee)
+            .ok_or(DawnError::Overflow)?;
 
-        // token accounts
-        config.fee_pool_dawn_account = ctx.accounts.fee_pool_dawn_account.key();
-        config.dao_dawn_account = ctx.accounts.dao_dawn_account.key();
-        config.validator_dawn_account = ctx.accounts.validator_dawn_account.key();
-        config.medallion_dawn_account = ctx.accounts.medallion_dawn_account.key();
+        require!(total_fees <= BPS_DENOMINATOR, DawnError::TotalFeesExceedMax);
 
-        // raydium
-        config.raydium = ctx.accounts.raydium.key();
-        config.raydium_authority = ctx.accounts.raydium_authority.key();
-        config.raydium_pool = ctx.accounts.raydium_pool.key();
-        config.raydium_config = ctx.accounts.raydium_config.key();
-        config.raydium_observation = ctx.accounts.raydium_observation.key();
-
-        // fees
-        config.dao_fee = dao_fee;
-        config.validator_fee = validator_fee;
-        config.medallion_fee = medallion_fee;
-
-        // bump seed
-        config.bump = ctx.bumps.config;
+        // Update Raydium accounts if provided
+        if let Some(raydium_account) = raydium {
+            config.raydium = raydium_account;
+        }
+        if let Some(raydium_authority_account) = raydium_authority {
+            config.raydium_authority = raydium_authority_account;
+        }
+        if let Some(raydium_pool_account) = raydium_pool {
+            config.raydium_pool = raydium_pool_account;
+        }
+        if let Some(raydium_config_account) = raydium_config {
+            config.raydium_config = raydium_config_account;
+        }
+        if let Some(raydium_observation_account) = raydium_observation {
+            config.raydium_observation = raydium_observation_account;
+        }
 
         Ok(())
     }

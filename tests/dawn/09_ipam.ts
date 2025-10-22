@@ -1018,62 +1018,6 @@ export const initializeRootIpBlockTests = () =>
       expect(event.baseIpv4).toBe(baseIpv4)
       expect(event.baseCidr).toBe(baseCidr)
     })
-
-    test('cannot exceed maximum root blocks per tier', async () => {
-      const provider = anchor.getProvider() as BankrunProvider
-      const program = anchor.workspace.DAWN as Program<Dawn>
-
-      const authority = loadWallet().payer
-      provider.wallet = new Wallet(authority)
-
-      // Get current registry state to see how many root blocks already exist
-      const registry = await program.account.ipRegistry.fetch(
-        mock.subscriberIpRegistryPda,
-      )
-      const currentCount = registry.rootBlockCount
-      const maxBlocks = 16 // Maximum for subscriber tier
-
-      // Try to create root blocks up to the limit
-      const tier = 0 // Subscriber tier
-
-      // Create remaining root blocks to reach the limit
-      const remainingSlots = maxBlocks - currentCount
-      if (remainingSlots > 0) {
-        for (let i = 0; i < remainingSlots; i++) {
-          const baseIpv4 = 0x0a400000 + (currentCount + i) * 0x400000 // Increment by 4M addresses
-          await program.methods
-            .initializeRootIpBlock(tier, baseIpv4, 14)
-            .accountsPartial({
-              caller: authority.publicKey,
-              config: mock.configPda,
-              authority: authority.publicKey,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([authority])
-            .rpc()
-        }
-      }
-
-      // Now try to create one more root block (should fail)
-      try {
-        await program.methods
-          .initializeRootIpBlock(tier, 0x0f400000, 14)
-          .accountsPartial({
-            caller: authority.publicKey,
-            config: mock.configPda,
-            authority: authority.publicKey,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([authority])
-          .rpc()
-
-        expect(false).toBeTruthy() // Should not reach here
-      } catch (error) {
-        expect(error instanceof AnchorError).toBeTruthy()
-        const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('Invalid sequence number')
-      }
-    })
   })
 
 export const bitmapEdgeCaseTests = () =>

@@ -7,15 +7,15 @@ use super::AuthMethodFramework;
 /// IPsec Authentication Header (AH) algorithms
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IPsecAlgorithm {
-    HMAC_MD5_96 = 0,      // RFC 2403 (legacy, not recommended)
-    HMAC_SHA1_96 = 1,     // RFC 2404 (legacy, not recommended)
-    HMAC_SHA256_128 = 2,  // RFC 4868 (recommended)
-    HMAC_SHA384_192 = 3,  // RFC 4868
-    HMAC_SHA512_256 = 4,  // RFC 4868
-    AES_XCBC_96 = 5,      // RFC 3566
-    AES_CMAC_96 = 6,      // RFC 4494
-    AES_GMAC_128 = 7,     // RFC 4543
-    BLAKE2S_128 = 8,      // RFC 7693 (high performance)
+    HMAC_MD5_96 = 0,     // RFC 2403 (legacy, not recommended)
+    HMAC_SHA1_96 = 1,    // RFC 2404 (legacy, not recommended)
+    HMAC_SHA256_128 = 2, // RFC 4868 (recommended)
+    HMAC_SHA384_192 = 3, // RFC 4868
+    HMAC_SHA512_256 = 4, // RFC 4868
+    AES_XCBC_96 = 5,     // RFC 3566
+    AES_CMAC_96 = 6,     // RFC 4494
+    AES_GMAC_128 = 7,    // RFC 4543
+    BLAKE2S_128 = 8,     // RFC 7693 (high performance)
 }
 
 /// IPsec modes of operation
@@ -26,7 +26,7 @@ pub enum IPsecMode {
 }
 
 /// IKEv2 parameters for key exchange
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct IKEv2Params {
     /// Diffie-Hellman group number
     pub dh_group: u8,
@@ -74,10 +74,10 @@ impl IPsecAHParams {
             replay_window_size: 64,
             use_extended_sequence: true,
             ike_params: IKEv2Params {
-                dh_group: 14, // 2048-bit MODP Group
+                dh_group: 14,             // 2048-bit MODP Group
                 encryption_algorithm: 12, // AES-GCM with 16 octet ICV
-                integrity_algorithm: 12, // HMAC-SHA256-128
-                prf_algorithm: 5, // PRF-HMAC-SHA2-256
+                integrity_algorithm: 12,  // HMAC-SHA256-128
+                prf_algorithm: 5,         // PRF-HMAC-SHA2-256
                 rekey: true,
                 lifetime_seconds: 28800, // 8 hours
             },
@@ -124,10 +124,11 @@ impl IPsecAHParams {
             return Err(error!(DawnError::InvalidIPsecMode));
         }
 
-        // Check replay window size is valid (must be power of 2)
-        if self.replay_window_size < 4 
-            || self.replay_window_size > 256 
-            || (self.replay_window_size & (self.replay_window_size - 1)) != 0 {
+        // Check replay window size is valid (must be power of 2, max 128 for u8)
+        if self.replay_window_size < 4
+            || self.replay_window_size > 128
+            || (self.replay_window_size & (self.replay_window_size - 1)) != 0
+        {
             return Err(error!(DawnError::InvalidReplayWindowSize));
         }
 
@@ -204,7 +205,11 @@ impl AuthMethodFramework for IPsecAHMethod {
         // Next 32 bytes: mix of SPI and algorithm info
         // This would typically be a cryptographic challenge or hash in production
         let spi_bytes = self.params.spi.to_le_bytes();
-        let algorithm_bytes = [self.params.algorithm, self.params.mode, self.params.replay_window_size];
+        let algorithm_bytes = [
+            self.params.algorithm,
+            self.params.mode,
+            self.params.replay_window_size,
+        ];
 
         for i in 0..4 {
             verification_data[32 + i] = spi_bytes[i];

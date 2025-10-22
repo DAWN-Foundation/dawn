@@ -9,7 +9,7 @@ async function main() {
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const itx = await program.methods
-    .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
+    .initializeConfig(mock.daoFee, mock.validatorFee, mock.medallionFee)
     .accountsPartial({
       caller: wallet.payer.publicKey,
       tokenConfig: mock.tokenConfigPda,
@@ -31,9 +31,9 @@ async function main() {
 
   try {
     const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
+    console.log('Config initialized successfully', { txResult })
   } catch (error) {
-    console.error(error)
+    console.error('Failed to initialize config:', error)
   }
 }
 
