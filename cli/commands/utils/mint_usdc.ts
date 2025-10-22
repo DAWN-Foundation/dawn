@@ -4,15 +4,21 @@ const { mintTo } = require('@solana/spl-token')
 
 import { connect, getMock, getFlag } from '../../shared/cli-utils'
 import { USDC_DECIMALS } from '../../../sdk/utils'
+import {
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
+} from '@solana/spl-token'
 
 const AMOUNT = 1000
 
 async function main() {
   const amount = parseInt(getFlag('--amount')) || AMOUNT
-  const recipient = getFlag('--recipient')
-  if (!recipient) {
+  const recipientParam = getFlag('--recipient')
+  if (!recipientParam) {
     throw new Error('--recipient is required')
   }
+
+  const recipient = new PublicKey(recipientParam)
 
   const mintAmount = new BN(amount).mul(USDC_DECIMALS)
 
@@ -20,12 +26,23 @@ async function main() {
   const mock = getMock()
 
   const usdcMint = new PublicKey(mock.usdcMint)
+  const { address: recipientTokenAccount } =
+    await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet.payer,
+      usdcMint,
+      recipient,
+      false,
+    )
+  console.log({
+    recipientTokenAccount: recipientTokenAccount.toBase58(),
+  })
 
   const tx = await mintTo(
     connection,
     wallet.payer,
     usdcMint,
-    new PublicKey(recipient),
+    recipientTokenAccount,
     wallet.publicKey,
     mintAmount,
   )

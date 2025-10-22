@@ -11,6 +11,7 @@
     "devnet": "yarn build && node dist/cli/environments/devnet.js --devnet",
     "usdc:mint": "yarn build && node dist/cli/commands/utils/mint_usdc.js",
     "usdc:balance": "yarn build && node dist/cli/commands/utils/get_usdc_balance.js",
+    "key:parse": "yarn build && node dist/cli/commands/utils/parse_key.js",
     "dawn:init": "yarn build && node dist/cli/commands/config/init.js",
     "dawn:config": "yarn build && node dist/cli/commands/config/config.js",
     "dawn:get_config": "yarn build && node dist/cli/commands/config/get_config.js",
