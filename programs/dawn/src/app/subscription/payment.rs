@@ -38,29 +38,44 @@ pub(super) fn calculate_usdc_fee(
     medallion_fee_bps: u64,
     plan_duration: u16,
 ) -> Result<(u64, u64, u64)> {
-    let dao_usdc_fee = source
-        .checked_mul(dao_fee_bps)
+    // Use u128 for intermediate calculations to prevent overflow
+    let source_u128 = source as u128;
+    let bps_denom_u128 = BPS_DENOMINATOR as u128;
+
+    // Calculate individual fees using u128 arithmetic
+    let dao_usdc_fee_u128 = source_u128
+        .checked_mul(dao_fee_bps as u128)
         .ok_or(DawnError::Overflow)?
-        .checked_div(BPS_DENOMINATOR)
+        .checked_div(bps_denom_u128)
         .ok_or(DawnError::Underflow)?;
 
-    let validator_usdc_fee = source
-        .checked_mul(validator_fee_bps)
+    let validator_usdc_fee_u128 = source_u128
+        .checked_mul(validator_fee_bps as u128)
         .ok_or(DawnError::Overflow)?
-        .checked_div(BPS_DENOMINATOR)
+        .checked_div(bps_denom_u128)
         .ok_or(DawnError::Underflow)?;
 
-    let medallion_usdc_fee = source
-        .checked_mul(medallion_fee_bps)
+    let medallion_usdc_fee_u128 = source_u128
+        .checked_mul(medallion_fee_bps as u128)
         .ok_or(DawnError::Overflow)?
-        .checked_div(BPS_DENOMINATOR)
+        .checked_div(bps_denom_u128)
         .ok_or(DawnError::Underflow)?;
+
+    // Convert back to u64 with overflow checks
+    let dao_usdc_fee = u64::try_from(dao_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
+    let validator_usdc_fee =
+        u64::try_from(validator_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
+    let medallion_usdc_fee =
+        u64::try_from(medallion_usdc_fee_u128).map_err(|_| DawnError::Overflow)?;
 
     let total_usdc_fee = dao_usdc_fee
         .checked_add(validator_usdc_fee)
         .ok_or(DawnError::Overflow)?
         .checked_add(medallion_usdc_fee)
         .ok_or(DawnError::Overflow)?;
+
+    // Validate total fee doesn't exceed source
+    require!(total_usdc_fee <= source, DawnError::InsufficientFunds);
 
     let remainder = source.saturating_sub(total_usdc_fee);
 

@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ");
+declare_id!("dawnS9R8DTgNMCJKteCcweEyzp6NEvZNHqDTQq7YjNW");
 
 mod app;
 mod constants;
@@ -33,13 +33,37 @@ pub mod dawn {
         DawnApp::init_fee_accounts(ctx)
     }
 
-    pub fn configure(
-        ctx: Context<Configure>,
-        dawn_fee: u64,
+    pub fn initialize_config(
+        ctx: Context<InitializeConfig>,
+        dao_fee: u64,
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        DawnApp::configure(ctx, dawn_fee, validator_fee, medallion_fee)
+        DawnApp::initialize_config(ctx, dao_fee, validator_fee, medallion_fee)
+    }
+
+    pub fn update_config(
+        ctx: Context<UpdateConfig>,
+        dao_fee: Option<u64>,
+        validator_fee: Option<u64>,
+        medallion_fee: Option<u64>,
+        raydium: Option<Pubkey>,
+        raydium_authority: Option<Pubkey>,
+        raydium_pool: Option<Pubkey>,
+        raydium_config: Option<Pubkey>,
+        raydium_observation: Option<Pubkey>,
+    ) -> Result<()> {
+        DawnApp::update_config(
+            ctx,
+            dao_fee,
+            validator_fee,
+            medallion_fee,
+            raydium,
+            raydium_authority,
+            raydium_pool,
+            raydium_config,
+            raydium_observation,
+        )
     }
 
     pub fn register_auth_method(

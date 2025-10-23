@@ -63,7 +63,7 @@ export async function deposit(
       tokenProgram: TOKEN_PROGRAM_ID,
       tokenProgram2022: TOKEN_2022_PROGRAM_ID,
     })
-    .rpc()
+    .rpc({ commitment: 'finalized' })
 
   console.log('Successfully deposited more liquidity')
 }
