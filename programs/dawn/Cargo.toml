@@ -23,6 +23,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
+mpl-token-metadata = "5.1.1"
 raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", default-features = false, features = [
     "no-entrypoint",
     "cpi",

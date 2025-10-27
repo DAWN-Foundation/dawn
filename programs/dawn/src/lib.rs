@@ -42,6 +42,10 @@ pub mod dawn {
         DawnApp::initialize_config(ctx, dao_fee, validator_fee, medallion_fee)
     }
 
+    pub fn init_metadata(ctx: Context<InitializeMetadata>) -> Result<()> {
+        DawnApp::init_metadata(ctx)
+    }
+
     pub fn update_config(
         ctx: Context<UpdateConfig>,
         dao_fee: Option<u64>,

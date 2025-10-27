@@ -50,6 +50,10 @@ import { getPskAuthMethodPda } from '../pda/amf'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
+export const METADATA_PROGRAM_ID = new PublicKey(
+  'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+)
+
 export let mock: Mock
 let provider: BankrunProvider
 
@@ -60,6 +64,10 @@ export async function getProvider(accounts?: AddedAccount[]) {
     [
       { name: 'dawn', programId: PROGRAM_ID },
       { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
+      {
+        name: 'meta',
+        programId: METADATA_PROGRAM_ID,
+      },
     ],
     accounts ?? [],
   )
