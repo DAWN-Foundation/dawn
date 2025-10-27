@@ -1,6 +1,6 @@
 import { test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
-import { BN, Program, Wallet } from '@coral-xyz/anchor'
+import { AnchorError, BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
@@ -227,6 +227,41 @@ export const configTests = () =>
       assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
       assert.ok(config.raydiumPool.equals(mock.raydiumPool))
       assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    })
+
+    test('non-authority cannot add metadata', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      try {
+        await program.methods
+          .initMetadata()
+          .accountsPartial({
+            caller: mock.serviceProvider.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            config: configPda,
+            dawnMint: mock.dawnMint,
+            metadata: metadataPda,
+            tokenMetadataProgram: METADATA_PROGRAM_ID,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.fail('should not be able to add metadata as non-authority')
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.equal(
+          err.error.errorMessage,
+          'Unauthorized: caller is not the authority',
+        )
+      }
     })
 
     test('should add metadata to the token', async () => {
