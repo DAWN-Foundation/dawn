@@ -1,9 +1,3 @@
----
-description:
-globs:
-alwaysApply: true
----
-
 # DAWN Protocol - Complete System Documentation
 
 ## Overview
