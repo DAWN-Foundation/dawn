@@ -144,11 +144,7 @@ pub struct Claim<'info> {
 }
 
 impl DawnApp {
-    pub fn claim(
-        ctx: Context<Claim>,
-        min_dawn_out: u64,
-        deadline: i64,
-    ) -> Result<()> {
+    pub fn claim(ctx: Context<Claim>, min_dawn_out: u64, deadline: i64) -> Result<()> {
         let subscription_account = ctx.accounts.subscription.to_account_info();
         let plan_account = ctx.accounts.plan.to_account_info();
         let subscription_key = subscription_account.key();
@@ -161,11 +157,8 @@ impl DawnApp {
         let current_time = clock.unix_timestamp;
 
         // Validate deadline hasn't expired and isn't too far in the future
-        require!(
-            current_time <= deadline,
-            DawnError::TransactionExpired
-        );
-        
+        require!(current_time <= deadline, DawnError::TransactionExpired);
+
         let deadline_offset = deadline
             .checked_sub(current_time)
             .ok_or(DawnError::TransactionExpired)?;
@@ -175,10 +168,7 @@ impl DawnApp {
         );
 
         // Validate min_dawn_out is reasonable (not zero)
-        require!(
-            min_dawn_out > 0,
-            DawnError::InvalidMinimumOutput
-        );
+        require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
 
         // Check if 24 hours have passed since last claim
         require!(
@@ -222,7 +212,7 @@ impl DawnApp {
             token::transfer(transfer_cpi_ctx, claimable_dawn)?;
 
             subscription.claimable_dawn = 0;
-            
+
             // Reload escrow to get balance after transfer
             ctx.accounts.escrow_dawn_vault.reload()?;
         }

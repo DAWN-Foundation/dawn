@@ -193,11 +193,7 @@ pub mod dawn {
         DawnApp::extend_subscription(ctx, min_dawn_out, deadline)
     }
 
-    pub fn claim(
-        ctx: Context<Claim>,
-        min_dawn_out: u64,
-        deadline: i64,
-    ) -> Result<()> {
+    pub fn claim(ctx: Context<Claim>, min_dawn_out: u64, deadline: i64) -> Result<()> {
         DawnApp::claim(ctx, min_dawn_out, deadline)
     }
 

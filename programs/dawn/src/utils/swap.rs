@@ -72,11 +72,11 @@ pub fn sort_accounts<'info>(
 }
 
 /// Calculate expected swap amounts for USDC -> DAWN swap
-/// 
+///
 /// Returns:
 /// - `usdc_amount_in`: The amount of USDC to swap (same as input)
 /// - `expected_dawn_out`: The expected DAWN output based on current pool price
-/// 
+///
 /// Note: The expected output is calculated from the current pool state and may differ
 /// from actual output due to slippage, price movement, or pool updates between
 /// calculation and execution.

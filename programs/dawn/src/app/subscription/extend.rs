@@ -171,11 +171,8 @@ impl DawnApp {
 
         // Validate deadline hasn't expired and isn't too far in the future
         let current_time = Clock::get()?.unix_timestamp;
-        require!(
-            current_time <= deadline,
-            DawnError::TransactionExpired
-        );
-        
+        require!(current_time <= deadline, DawnError::TransactionExpired);
+
         let deadline_offset = deadline
             .checked_sub(current_time)
             .ok_or(DawnError::TransactionExpired)?;
@@ -185,10 +182,7 @@ impl DawnApp {
         );
 
         // Validate min_dawn_out is reasonable (not zero)
-        require!(
-            min_dawn_out > 0,
-            DawnError::InvalidMinimumOutput
-        );
+        require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -209,7 +203,8 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        let (_, _, actual_dawn_out) = payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
+        let (_, _, actual_dawn_out) =
+            payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
         let subscription = &mut ctx.accounts.subscription;
 

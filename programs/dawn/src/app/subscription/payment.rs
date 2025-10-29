@@ -95,15 +95,16 @@ pub(super) fn calculate_dawn_fees_proportional(
 ) -> Result<(u64, u64)> {
     // Prevent division by zero
     require!(total_usdc > 0, DawnError::InvalidAmount);
-    
+
     // Calculate escrow portion using checked math
     let escrow_dawn = u64::try_from(
         (actual_dawn_out as u128)
             .checked_mul(daily_usdc as u128)
             .ok_or(DawnError::Overflow)?
             .checked_div(total_usdc as u128)
-            .ok_or(DawnError::Underflow)?
-    ).map_err(|_| DawnError::Overflow)?;
+            .ok_or(DawnError::Underflow)?,
+    )
+    .map_err(|_| DawnError::Overflow)?;
 
     // Fee is remainder
     let total_dawn_fee = actual_dawn_out

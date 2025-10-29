@@ -225,7 +225,9 @@ export const subscriptionTests = () =>
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
         const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
         const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
         const remainder = plan.price.sub(totalFeeUsdc)
         const dailyUsdc = remainder.div(new BN(plan.duration))
@@ -268,15 +270,17 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        
+
         // Calculate USDC to swap: fees + daily amount (same calculation as program)
         const config = await program.account.config.fetch(mock.configPda)
-        const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
         const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
         const remainder = plan.price.sub(totalFeeUsdc)
         const dailyUsdc = remainder.div(new BN(plan.duration))
         const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        
+
         // Calculate minDawnOut based on actual usdc_to_swap amount
         const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
         const deadline = await getDeadline(provider)
@@ -329,7 +333,9 @@ export const subscriptionTests = () =>
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
         const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
-        const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
         const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
         const remainder = plan.price.sub(totalFeeUsdc)
         const dailyUsdc = remainder.div(new BN(plan.duration))
@@ -356,7 +362,6 @@ export const subscriptionTests = () =>
       }
     })
 
-
     test('cannot subscribe with expired deadline', async () => {
       const clock = await provider.context.banksClient.getClock()
       const currentTime = clock.unixTimestamp
@@ -376,7 +381,9 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
       const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+      const totalFeeBps = config.daoFee
+        .add(config.validatorFee)
+        .add(config.medallionFee)
       const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
       const remainder = plan.price.sub(totalFeeUsdc)
       const dailyUsdc = remainder.div(new BN(plan.duration))
@@ -405,7 +412,7 @@ export const subscriptionTests = () =>
       const currentTime = clock.unixTimestamp
       // MAX_DEADLINE_OFFSET_SECONDS is 3600 (1 hour), so use 3700 to exceed it
       const tooFarDeadline = new BN(currentTime.toString()).add(new BN(3700))
-      
+
       // Calculate valid minDawnOut for this test (expects deadline error, not validation error)
       const raydiumDawnVault = await getAccount(
         provider.connection,
@@ -420,13 +427,15 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
       const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+      const totalFeeBps = config.daoFee
+        .add(config.validatorFee)
+        .add(config.medallionFee)
       const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
       const remainder = plan.price.sub(totalFeeUsdc)
       const dailyUsdc = remainder.div(new BN(plan.duration))
       const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
-      
+
       try {
         await program.methods
           .subscribe(minDawnOut, tooFarDeadline)
@@ -575,7 +584,9 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
       const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
-      const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+      const totalFeeBps = config.daoFee
+        .add(config.validatorFee)
+        .add(config.medallionFee)
       const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
       const remainder = plan.price.sub(totalFeeUsdc)
       const dailyUsdc = remainder.div(new BN(plan.duration))
@@ -967,13 +978,15 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
       const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+      const totalFeeBps = config.daoFee
+        .add(config.validatorFee)
+        .add(config.medallionFee)
       const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
       const remainder = plan.price.sub(totalFeeUsdc)
       const dailyUsdc = remainder.div(new BN(plan.duration))
       const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
-      
+
       try {
         const deadline = await getDeadline(provider)
 
@@ -1054,8 +1067,12 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
       const config = await program.account.config.fetch(mock.configPda)
       const planAccount = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
-      const totalFeeUsdc = planAccount.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+      const totalFeeBps = config.daoFee
+        .add(config.validatorFee)
+        .add(config.medallionFee)
+      const totalFeeUsdc = planAccount.price
+        .mul(totalFeeBps)
+        .div(BPS_DENOMINATOR)
       const remainder = planAccount.price.sub(totalFeeUsdc)
       const dailyUsdc = remainder.div(new BN(planAccount.duration))
       const usdcToSwap = totalFeeUsdc.add(dailyUsdc)

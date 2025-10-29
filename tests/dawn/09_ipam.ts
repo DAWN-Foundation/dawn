@@ -155,7 +155,7 @@ const createSubscriber = async (
   const subscriptionPda = getSubscriptionPda(program, plan, subscriberWallet)[0]
 
   const clock = await provider.context.banksClient.getClock()
-  const currentTime = clock.unixTimestamp;
+  const currentTime = clock.unixTimestamp
 
   const raydiumDawnVault = await getAccount(
     provider.connection,
@@ -170,7 +170,9 @@ const createSubscriber = async (
   const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
   const config = await program.account.config.fetch(mock.configPda)
   const planData = await program.account.plan.fetch(plan)
-  const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+  const totalFeeBps = config.daoFee
+    .add(config.validatorFee)
+    .add(config.medallionFee)
   const totalFeeUsdc = planData.price.mul(totalFeeBps).div(new BN(10_000))
   const remainder = planData.price.sub(totalFeeUsdc)
   const dailyUsdc = remainder.div(new BN(planData.duration))
@@ -178,7 +180,7 @@ const createSubscriber = async (
   const minDawnOut = calculateMinDawnOut(usdcToSwap, price, 50) // Uses default 500 bps
 
   await program.methods
-    .subscribe(minDawnOut, new BN(currentTime.toString()).add(new BN(300))) 
+    .subscribe(minDawnOut, new BN(currentTime.toString()).add(new BN(300)))
     .accountsPartial({
       caller: subscriberWallet.publicKey,
       config: mock.configPda,

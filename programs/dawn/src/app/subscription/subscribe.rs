@@ -180,21 +180,14 @@ pub struct Subscribe<'info> {
 }
 
 impl DawnApp {
-    pub fn subscribe(
-        ctx: Context<Subscribe>,
-        min_dawn_out: u64,
-        deadline: i64,
-    ) -> Result<()> {
+    pub fn subscribe(ctx: Context<Subscribe>, min_dawn_out: u64, deadline: i64) -> Result<()> {
         let config = &ctx.accounts.config;
         let plan = &ctx.accounts.plan;
 
         // Validate deadline hasn't expired and isn't too far in the future
         let current_time = Clock::get()?.unix_timestamp;
-        require!(
-            current_time <= deadline,
-            DawnError::TransactionExpired
-        );
-        
+        require!(current_time <= deadline, DawnError::TransactionExpired);
+
         let deadline_offset = deadline
             .checked_sub(current_time)
             .ok_or(DawnError::TransactionExpired)?;
@@ -204,10 +197,7 @@ impl DawnApp {
         );
 
         // Validate min_dawn_out is reasonable (not zero)
-        require!(
-            min_dawn_out > 0,
-            DawnError::InvalidMinimumOutput
-        );
+        require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
 
         if plan.start_at > 0 {
             // Make sure the plan has already started
