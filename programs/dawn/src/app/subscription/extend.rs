@@ -9,7 +9,7 @@ use crate::{
     app::{subscription::payment, PaymentAccounts},
     error::DawnError,
     events::SubscriptionExtended,
-    utils::optional_pubkey_seed,
+    utils::{hash_string_seed, optional_pubkey_seed},
 };
 use crate::{
     state::{Config, Plan, Subscription},
@@ -34,7 +34,7 @@ pub struct ExtendSubscription<'info> {
             Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes(),
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),

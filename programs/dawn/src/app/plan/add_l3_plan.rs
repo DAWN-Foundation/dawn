@@ -1,10 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{DistributionDomainAdded, PlanAdded},
     state::{DistributionDomain, LocalDomain, Plan, ServiceAgreement},
-    utils::{optional_pubkey_seed, trim_null_bytes},
+    utils::{hash_bytes_seed, hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError,
 };
 
@@ -42,7 +41,7 @@ pub struct AddL3Plan<'info> {
             Plan::SEED_PREFIX.as_ref(),
             local_domain.key().as_ref(),
             &optional_pubkey_seed(None::<Pubkey>),
-            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&name),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
             &speed.to_le_bytes(),
@@ -59,7 +58,7 @@ pub struct AddL3Plan<'info> {
         seeds = [
             LocalDomain::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
-            trim_null_bytes(local_domain.name.as_ref()),
+            &hash_bytes_seed(local_domain.name.as_ref())?,
         ],
         bump = local_domain.bump,
     )]
@@ -125,7 +124,8 @@ impl DawnApp {
         plan.distribution_domain = Some(distribution_domain.key());
         plan.access_domain = None;
         plan.parent_plan = None;
-        plan.name.clone_from(&name);
+        // Store trimmed name to match PDA seeds
+        plan.name = name.trim().to_string();
         plan.price = price;
         plan.duration = duration;
         plan.speed = speed;

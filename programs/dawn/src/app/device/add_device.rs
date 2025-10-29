@@ -4,6 +4,7 @@ use std::cmp::min;
 use crate::{
     events::{DeviceAdded, DeviceLocationAdded, LocalDomainAdded},
     state::{Device, DeviceLocation, DeviceModel, LocalDomain},
+    utils::{hash_string_seed, string_to_fixed_bytes},
     DawnApp, DawnError,
 };
 
@@ -42,7 +43,7 @@ pub struct AddDevice<'info> {
             Device::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
             device_model.key().as_ref(),
-            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&name),
             &mac_address,
         ],
         bump
@@ -70,7 +71,7 @@ pub struct AddDevice<'info> {
         seeds = [
             LocalDomain::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
-            &local_domain_name.trim().as_bytes()[..min(local_domain_name.trim().len(), MAX_SEED_LEN)]
+            &hash_string_seed(&local_domain_name)
         ],
         bump
     )]
@@ -136,12 +137,8 @@ impl DawnApp {
             local_domain.owner = caller;
             local_domain.bump = ctx.bumps.local_domain;
 
-            // Convert domain name to fixed-size byte array
-            let domain_bytes = local_domain_name.as_bytes();
-            let mut name_bytes = [0u8; 32];
-            let copy_len = domain_bytes.len().min(32);
-            name_bytes[..copy_len].copy_from_slice(&domain_bytes[..copy_len]);
-            local_domain.name = name_bytes;
+            // Store trimmed domain name to match PDA seeds
+            local_domain.name = string_to_fixed_bytes(&local_domain_name);
 
             // Emit event
             emit!(LocalDomainAdded {
@@ -158,7 +155,8 @@ impl DawnApp {
         device.created_at = created_at;
         device.owner = caller;
         device.model = device_model.key();
-        device.name.clone_from(&name);
+        // Store trimmed name to match PDA seeds
+        device.name = name.trim().to_string();
         device.local_domain = ctx.accounts.local_domain.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;

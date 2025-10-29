@@ -269,4 +269,7 @@ pub enum DawnError {
 
     #[msg("Invalid Raydium pool owner")]
     InvalidRaydiumPoolOwner,
+
+    #[msg("Invalid UTF-8 in seed data")]
+    InvalidUtf8InSeed,
 }
