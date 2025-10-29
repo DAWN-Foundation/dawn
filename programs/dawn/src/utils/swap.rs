@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 use raydium_cp_swap::states::{PoolState, Q32};
 
-use crate::{constants::BPS_DENOMINATOR, DawnError};
+use crate::DawnError;
 
 #[allow(clippy::too_many_arguments)]
 pub fn sort_accounts<'info>(
@@ -71,15 +71,23 @@ pub fn sort_accounts<'info>(
     }
 }
 
+/// Calculate expected swap amounts for USDC -> DAWN swap
+/// 
+/// Returns:
+/// - `usdc_amount_in`: The amount of USDC to swap (same as input)
+/// - `expected_dawn_out`: The expected DAWN output based on current pool price
+/// 
+/// Note: The expected output is calculated from the current pool state and may differ
+/// from actual output due to slippage, price movement, or pool updates between
+/// calculation and execution.
 pub fn swap_amounts<'info>(
     raydium_pool: &AccountLoader<'info, PoolState>,
     raydium_usdc_vault: &Account<'info, TokenAccount>,
     raydium_dawn_vault: &Account<'info, TokenAccount>,
     is_usdc_base: bool,
     usdc_to_swap: u64,
-) -> Result<(u64, u64, u128)> {
+) -> Result<(u64, u64)> {
     let pool = raydium_pool.load()?;
-    let slippage_bps = 100; // 1% slippage tolerance
 
     // sort vaults (usdc and dawn) by key
     let (vault_0, vault_1) = {
@@ -109,11 +117,5 @@ pub fn swap_amounts<'info>(
         .checked_div(Q32)
         .ok_or(DawnError::Underflow)? as u64;
 
-    let minimum_dawn_amount_out = expected_out
-        .checked_mul(BPS_DENOMINATOR - slippage_bps)
-        .ok_or(DawnError::Overflow)?
-        .checked_div(BPS_DENOMINATOR)
-        .ok_or(DawnError::Underflow)?;
-
-    Ok((usdc_amount_in, minimum_dawn_amount_out, price))
+    Ok((usdc_amount_in, expected_out))
 }

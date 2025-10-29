@@ -5,6 +5,7 @@ import { BankrunProvider } from 'anchor-bankrun'
 import { Clock } from 'solana-bankrun'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAccount,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { mintTo, createAssociatedTokenAccount } from 'spl-token-bankrun'
@@ -40,6 +41,20 @@ interface SubscriberSetup {
   subscriptionPda: PublicKey
   usdcAccount: PublicKey
   dawnAccount: PublicKey
+}
+
+const Q32 = new BN(2).pow(new BN(32))
+
+function calculateMinDawnOut(
+  usdcAmount: BN,
+  price: BN,
+  slippageBps: number = 500,
+): BN {
+  // expectedOut = (usdcAmount * price) / Q32
+  const expectedOut = usdcAmount.mul(price).div(Q32)
+  // Apply slippage: minOut = expectedOut * (10000 - slippageBps) / 10000
+  const minOut = expectedOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
+  return minOut
 }
 
 // Helper function to create a complete subscriber setup for IPAM tests
@@ -139,8 +154,31 @@ const createSubscriber = async (
 
   const subscriptionPda = getSubscriptionPda(program, plan, subscriberWallet)[0]
 
+  const clock = await provider.context.banksClient.getClock()
+  const currentTime = clock.unixTimestamp;
+
+  const raydiumDawnVault = await getAccount(
+    provider.connection,
+    mock.raydiumDawnVault,
+  )
+  const raydiumUsdcVault = await getAccount(
+    provider.connection,
+    mock.raydiumUsdcVault,
+  )
+  const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+  const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+  const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+  const config = await program.account.config.fetch(mock.configPda)
+  const planData = await program.account.plan.fetch(plan)
+  const totalFeeBps = config.daoFee.add(config.validatorFee).add(config.medallionFee)
+  const totalFeeUsdc = planData.price.mul(totalFeeBps).div(new BN(10_000))
+  const remainder = planData.price.sub(totalFeeUsdc)
+  const dailyUsdc = remainder.div(new BN(planData.duration))
+  const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
+  const minDawnOut = calculateMinDawnOut(usdcToSwap, price, 50) // Uses default 500 bps
+
   await program.methods
-    .subscribe()
+    .subscribe(minDawnOut, new BN(currentTime.toString()).add(new BN(300))) 
     .accountsPartial({
       caller: subscriberWallet.publicKey,
       config: mock.configPda,

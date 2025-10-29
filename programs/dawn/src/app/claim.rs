@@ -6,12 +6,14 @@ use anchor_spl::{
 use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
 
 use crate::{
+    constants::MAX_DEADLINE_OFFSET_SECONDS,
     state::{Config, Plan, Subscription},
     utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
     Claimed, DawnApp, DawnError,
 };
 
 #[derive(Accounts)]
+#[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct Claim<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -142,7 +144,11 @@ pub struct Claim<'info> {
 }
 
 impl DawnApp {
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+    pub fn claim(
+        ctx: Context<Claim>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
         let subscription_account = ctx.accounts.subscription.to_account_info();
         let plan_account = ctx.accounts.plan.to_account_info();
         let subscription_key = subscription_account.key();
@@ -153,6 +159,26 @@ impl DawnApp {
 
         let clock = Clock::get()?;
         let current_time = clock.unix_timestamp;
+
+        // Validate deadline hasn't expired and isn't too far in the future
+        require!(
+            current_time <= deadline,
+            DawnError::TransactionExpired
+        );
+        
+        let deadline_offset = deadline
+            .checked_sub(current_time)
+            .ok_or(DawnError::TransactionExpired)?;
+        require!(
+            deadline_offset <= MAX_DEADLINE_OFFSET_SECONDS,
+            DawnError::DeadlineTooFarInFuture
+        );
+
+        // Validate min_dawn_out is reasonable (not zero)
+        require!(
+            min_dawn_out > 0,
+            DawnError::InvalidMinimumOutput
+        );
 
         // Check if 24 hours have passed since last claim
         require!(
@@ -181,7 +207,7 @@ impl DawnApp {
 
         let subscription = &mut ctx.accounts.subscription;
 
-        // Handle claiming available DAWN
+        // Handle claiming available DAWN (balance will be read before swap)
         if claimable_dawn > 0 {
             // Transfer claimable DAWN to subscriber
             let transfer_cpi_ctx = CpiContext::new_with_signer(
@@ -196,6 +222,9 @@ impl DawnApp {
             token::transfer(transfer_cpi_ctx, claimable_dawn)?;
 
             subscription.claimable_dawn = 0;
+            
+            // Reload escrow to get balance after transfer
+            ctx.accounts.escrow_dawn_vault.reload()?;
         }
 
         let mut swap_price = 0;
@@ -244,7 +273,8 @@ impl DawnApp {
                     ctx.accounts.escrow_dawn_vault.to_account_info(),
                 )?;
 
-                let (usdc_amount_in, minimum_dawn_amount_out, price) = swap_amounts(
+                // Get swap amounts for account ordering
+                let (usdc_amount_in, _expected_dawn_out) = swap_amounts(
                     &ctx.accounts.raydium_pool,
                     &ctx.accounts.raydium_usdc_vault,
                     &ctx.accounts.raydium_dawn_vault,
@@ -252,7 +282,9 @@ impl DawnApp {
                     usdc_to_swap,
                 )?;
 
-                swap_price = price;
+                // Read escrow DAWN vault balance before swap
+                // Use current balance which may have changed after claiming
+                let escrow_dawn_before_swap = ctx.accounts.escrow_dawn_vault.amount;
 
                 // Create CPI accounts for the swap
                 let swap_cpi = cpi::accounts::Swap {
@@ -276,16 +308,33 @@ impl DawnApp {
                     signer_seeds,
                 );
 
+                // Execute swap with user-supplied minimum
                 if is_usdc_base {
                     // USDC is the base token; use swap_base_input
-                    cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
+                    cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
                 } else {
                     // USDC is the quote token; use swap_base_output
-                    cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
+                    cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
                 }
 
-                // Set newly swapped DAWN as claimable after 24h
-                subscription.claimable_dawn = minimum_dawn_amount_out;
+                // Reload escrow DAWN vault to get actual received amount
+                ctx.accounts.escrow_dawn_vault.reload()?;
+                let escrow_dawn_after = ctx.accounts.escrow_dawn_vault.amount;
+
+                // Calculate actual DAWN received
+                let actual_dawn_out = escrow_dawn_after
+                    .checked_sub(escrow_dawn_before_swap)
+                    .ok_or(DawnError::Underflow)?;
+
+                // Validate we received at least min_dawn_out
+                require!(
+                    actual_dawn_out >= min_dawn_out,
+                    DawnError::InsufficientOutputAmount
+                );
+
+                // Store actual output for event and use actual amount for claimable
+                swap_price = actual_dawn_out as u128;
+                subscription.claimable_dawn = actual_dawn_out;
             }
         }
 

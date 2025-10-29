@@ -27,3 +27,11 @@ pub const CHUNKS_PER_BLOCK_31: usize = 8;
 pub const MAX_ROOT_BLOCKS: u32 = 256;
 
 pub const DISCRIMINATOR_SIZE: usize = 8;
+
+/// Maximum deadline offset from current time (1 hour in seconds)
+/// This prevents transactions from being valid too far in the future
+pub const MAX_DEADLINE_OFFSET_SECONDS: i64 = 3600;
+
+/// Minimum slippage tolerance for min_dawn_out validation (500 bps = 5%)
+/// Users must specify at least 5% below expected output to allow for some slippage
+pub const MIN_SLIPPAGE_TOLERANCE_BPS: u64 = 500;
