@@ -111,7 +111,7 @@ impl DawnApp {
         let subscription = &mut ctx.accounts.subscription;
         let subscriber_tier = IpTier::Subscriber;
         let ip_registry = &mut ctx.accounts.ip_registry;
-        
+
         let root_block_index = ip_registry
             .find_available_root_block()
             .ok_or(DawnError::NoAvailableBlocks)?;

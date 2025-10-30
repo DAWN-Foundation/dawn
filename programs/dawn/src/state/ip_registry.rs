@@ -50,7 +50,7 @@ impl IpRegistry {
                 // Found a word with available roots
                 let bit_idx = word.trailing_zeros();
                 let sequence = (word_idx as u32) * 64 + bit_idx;
-                
+
                 // Validate within MAX_ROOT_BLOCKS
                 if sequence < MAX_ROOT_BLOCKS {
                     return Some(sequence);
@@ -66,11 +66,11 @@ impl IpRegistry {
         if sequence >= MAX_ROOT_BLOCKS {
             return;
         }
-        
+
         // Determine which u64 word and bit position
         let word_idx = (sequence / 64) as usize;
         let bit_idx = sequence % 64;
-        
+
         if has_capacity {
             self.root_availability_bitmap[word_idx] |= 1u64 << bit_idx;
         } else {
