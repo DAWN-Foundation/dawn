@@ -1,5 +1,4 @@
 use anchor_lang::prelude::Pubkey;
-use std::cmp::min;
 
 // Helper function to convert Option<Pubkey> into a deterministic seed
 pub fn optional_pubkey_seed(optional_pubkey: Option<Pubkey>) -> [u8; 32] {
