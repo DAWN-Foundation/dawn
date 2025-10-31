@@ -182,11 +182,13 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        let (additional_claimable, new_daily_usdc, swap_price) = payment::process_payment(payment_accounts, config, plan)?;
+        let (additional_claimable, new_daily_usdc, swap_price) =
+            payment::process_payment(payment_accounts, config, plan)?;
 
         let subscription = &mut ctx.accounts.subscription;
 
-        subscription.claimable_dawn = subscription.claimable_dawn
+        subscription.claimable_dawn = subscription
+            .claimable_dawn
             .checked_add(additional_claimable)
             .ok_or(DawnError::Overflow)?;
 
