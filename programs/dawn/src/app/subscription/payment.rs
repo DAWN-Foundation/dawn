@@ -2,16 +2,15 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use raydium_cp_swap::cpi;
 use raydium_cp_swap::program::RaydiumCpSwap;
-use raydium_cp_swap::states::{PoolState, Q32};
+use raydium_cp_swap::states::PoolState;
 
 use crate::{
-    constants::BPS_DENOMINATOR,
+    constants::{BPS_DENOMINATOR, MAX_SLIPPAGE_TOLERANCE_BPS},
     error::DawnError,
     state::{Config, Plan},
     utils::{sort_accounts, swap_amounts},
 };
 
-#[derive(Clone)]
 pub struct PaymentAccounts<'info, 'a> {
     pub caller: &'a Signer<'info>,
     pub raydium_pool: &'a AccountLoader<'info, PoolState>,
@@ -24,7 +23,7 @@ pub struct PaymentAccounts<'info, 'a> {
     pub raydium_usdc_vault: &'a Account<'info, TokenAccount>,
     pub raydium_dawn_vault: &'a Account<'info, TokenAccount>,
     pub user_usdc_account: &'a Account<'info, TokenAccount>,
-    pub user_dawn_account: &'a Account<'info, TokenAccount>,
+    pub user_dawn_account: &'a mut Account<'info, TokenAccount>,
     pub fee_pool_dawn_account: &'a Account<'info, TokenAccount>,
     pub escrow_usdc_vault: &'a Account<'info, TokenAccount>,
     pub escrow_dawn_vault: &'a Account<'info, TokenAccount>,
@@ -90,20 +89,29 @@ pub(super) fn calculate_usdc_fee(
     Ok((total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder))
 }
 
-pub(super) fn calculate_dawn_fees(
-    total_dawn: u64,
-    escrow_dawn_in_usdc: u64,
-    price: u128,
+/// Calculate DAWN fee and escrow amounts proportionally from actual swap output                                                                               
+pub(super) fn calculate_dawn_fees_proportional(
+    actual_dawn_out: u64,
+    daily_usdc: u64,
+    total_usdc: u64,
 ) -> Result<(u64, u64)> {
-    // Calculate escrow DAWN amount based on the USDC amount and price
-    let escrow_dawn = (escrow_dawn_in_usdc as u128)
-        .checked_mul(price)
-        .ok_or(DawnError::Overflow)?
-        .checked_div(Q32)
-        .ok_or(DawnError::Underflow)? as u64;
+    // Prevent division by zero
+    require!(total_usdc > 0, DawnError::InvalidAmount);
 
-    // The remaining DAWN is for fees
-    let total_dawn_fee = total_dawn.saturating_sub(escrow_dawn);
+    // Calculate escrow portion using checked math
+    let escrow_dawn = u64::try_from(
+        (actual_dawn_out as u128)
+            .checked_mul(daily_usdc as u128)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(total_usdc as u128)
+            .ok_or(DawnError::Underflow)?,
+    )
+    .map_err(|_| DawnError::Overflow)?;
+
+    // Fee is remainder
+    let total_dawn_fee = actual_dawn_out
+        .checked_sub(escrow_dawn)
+        .ok_or(DawnError::Underflow)?;
 
     Ok((total_dawn_fee, escrow_dawn))
 }
@@ -112,7 +120,8 @@ pub(super) fn process_payment(
     accounts: PaymentAccounts,
     config: &Config,
     plan: &Plan,
-) -> Result<(u64, u64, u128)> {
+    min_dawn_out: u64,
+) -> Result<(u64, u64, u64)> {
     let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
         let pool_state = accounts.raydium_pool.load()?;
         (
@@ -156,13 +165,29 @@ pub(super) fn process_payment(
 
     // Calculate swap amounts in USDC
     let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);
-    let (usdc_amount_in, minimum_dawn_amount_out, price) = swap_amounts(
+    let (usdc_amount_in, expected_dawn_out) = swap_amounts(
         accounts.raydium_pool,
         accounts.raydium_usdc_vault,
         accounts.raydium_dawn_vault,
         is_usdc_base,
         usdc_to_swap,
     )?;
+
+    // Validate min_dawn_out is reasonable: must allow at most MAX_SLIPPAGE_TOLERANCE_BPS slippage
+    // This prevents users from setting min_dawn_out too low, which increases sandwich attack risk
+    let min_allowed_output = expected_dawn_out
+        .checked_mul(BPS_DENOMINATOR - MAX_SLIPPAGE_TOLERANCE_BPS)
+        .ok_or(DawnError::Overflow)?
+        .checked_div(BPS_DENOMINATOR)
+        .ok_or(DawnError::Underflow)?;
+
+    require!(
+        min_dawn_out <= expected_dawn_out && min_dawn_out >= min_allowed_output,
+        DawnError::InvalidMinimumOutput
+    );
+
+    // Read user DAWN balance before swap
+    let user_dawn_before = accounts.user_dawn_account.amount;
 
     // Create CPI accounts for the swap
     let swap_cpi = cpi::accounts::Swap {
@@ -182,16 +207,36 @@ pub(super) fn process_payment(
     };
     let swap_cpi_ctx = CpiContext::new(accounts.raydium.to_account_info(), swap_cpi);
 
+    // Perform swap with user-supplied minimum
     if is_usdc_base {
         // USDC is the base token; use swap_base_input
-        cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
+        cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
     } else {
         // USDC is the quote token; use swap_base_output
-        cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, minimum_dawn_amount_out)?;
+        cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
     }
 
+    // Reload user DAWN account to measure actual output
+    accounts.user_dawn_account.reload()?;
+    let user_dawn_after = accounts.user_dawn_account.amount;
+
+    let actual_dawn_out = user_dawn_after
+        .checked_sub(user_dawn_before)
+        .ok_or(DawnError::Underflow)?;
+
+    // Validate actual output meets minimum
+    require!(
+        actual_dawn_out >= min_dawn_out,
+        DawnError::InsufficientOutputAmount
+    );
+
+    // Calculate fees proportionally from ACTUAL output
+    let usdc_total = total_usdc_fee
+        .checked_add(daily_dawn_in_usdc)
+        .ok_or(DawnError::Overflow)?;
+
     let (total_dawn_fee, escrow_dawn) =
-        calculate_dawn_fees(minimum_dawn_amount_out, daily_dawn_in_usdc, price)?;
+        calculate_dawn_fees_proportional(actual_dawn_out, daily_dawn_in_usdc, usdc_total)?;
 
     // Transfer total DAWN fee from user to fee pool DAWN account
     let fee_pool_cpi_ctx = CpiContext::new(
@@ -226,6 +271,6 @@ pub(super) fn process_payment(
     );
     token::transfer(remainder_cpi_ctx, escrow_usdc_remainder)?;
 
-    // Return claimable_dawn and daily_usdc for the subscription and swap price
-    Ok((escrow_dawn, daily_dawn_in_usdc, price))
+    // Return claimable_dawn, daily_usdc, and actual DAWN output
+    Ok((escrow_dawn, daily_dawn_in_usdc, actual_dawn_out))
 }

@@ -279,6 +279,22 @@ pub enum DawnError {
     #[msg("Invalid Raydium pool owner")]
     InvalidRaydiumPoolOwner,
 
+    // MEV PROTECTION ERRORS
+    #[msg("Transaction deadline has expired")]
+    TransactionExpired,
+
+    #[msg("Insufficient output amount from swap")]
+    InsufficientOutputAmount,
+
+    #[msg("Invalid minimum output amount")]
+    InvalidMinimumOutput,
+
+    #[msg("Deadline is too far in the future")]
+    DeadlineTooFarInFuture,
+
+    #[msg("Invalid amount: cannot be zero")]
+    InvalidAmount,
+
     #[msg("Invalid UTF-8 in seed data")]
     InvalidUtf8InSeed,
 
