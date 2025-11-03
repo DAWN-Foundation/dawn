@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     events::{DistributionDomainAdded, PlanAdded},
     state::{DistributionDomain, LocalDomain, Plan, ServiceAgreement},
-    utils::{hash_bytes_seed, hash_string_seed, optional_pubkey_seed},
+    utils::{hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError,
 };
 
@@ -58,7 +58,7 @@ pub struct AddL3Plan<'info> {
         seeds = [
             LocalDomain::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
-            &hash_bytes_seed(local_domain.name.as_ref())?,
+            &hash_string_seed(&local_domain.name),
         ],
         bump = local_domain.bump,
     )]

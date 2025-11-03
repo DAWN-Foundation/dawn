@@ -4,7 +4,7 @@ use std::cmp::min;
 use crate::{
     events::{DeviceAdded, DeviceLocationAdded, LocalDomainAdded},
     state::{Device, DeviceLocation, DeviceModel, LocalDomain},
-    utils::{hash_string_seed, string_to_fixed_bytes},
+    utils::hash_string_seed,
     DawnApp, DawnError,
 };
 
@@ -136,15 +136,13 @@ impl DawnApp {
             local_domain.created_at = Clock::get()?.unix_timestamp;
             local_domain.owner = caller;
             local_domain.bump = ctx.bumps.local_domain;
-
-            // Store trimmed domain name to match PDA seeds
-            local_domain.name = string_to_fixed_bytes(&local_domain_name);
+            local_domain.name = local_domain_name.trim().to_string();
 
             // Emit event
             emit!(LocalDomainAdded {
                 local_domain: local_domain.key(),
                 owner: local_domain.owner,
-                name: local_domain_name,
+                name: local_domain.name.clone(),
                 created_at: local_domain.created_at,
             });
         }
