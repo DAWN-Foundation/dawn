@@ -82,6 +82,8 @@ pub(super) fn calculate_usdc_fee(
         .checked_div(plan_duration as u64)
         .ok_or(DawnError::Underflow)?;
 
+    require!(daily_dawn_in_usdc > 0, DawnError::DailySwapTooSmall);
+
     let escrow_usdc_remainder = remainder.saturating_sub(daily_dawn_in_usdc);
 
     Ok((total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder))

@@ -96,7 +96,8 @@ impl DawnApp {
         }
 
         if !root_ip_block.has_free_blocks() {
-            ip_registry.update_root_availability(ip_lease.block_index, true);
+            // Use root_ip_block.index (0-255) not ip_lease.block_index (0-4095)
+            ip_registry.update_root_availability(root_ip_block.index, true);
             emit!(RootIpBlockNonFull {
                 root_ip_block: root_ip_block.key(),
                 timestamp: current_time,

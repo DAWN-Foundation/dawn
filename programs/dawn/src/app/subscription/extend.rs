@@ -203,10 +203,18 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        let (_, _, actual_dawn_out) =
+
+        let (additional_claimable, new_daily_usdc, actual_dawn_out) =
             payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
         let subscription = &mut ctx.accounts.subscription;
+
+        subscription.claimable_dawn = subscription
+            .claimable_dawn
+            .checked_add(additional_claimable)
+            .ok_or(DawnError::Overflow)?;
+
+        subscription.daily_usdc = new_daily_usdc;
 
         // Calculate plan duration in seconds (days to seconds)
         let duration_in_seconds = (plan.duration as u64)

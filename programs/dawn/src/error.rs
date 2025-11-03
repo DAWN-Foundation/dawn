@@ -222,6 +222,15 @@ pub enum DawnError {
     #[msg("Block account is missing")]
     BlockAccountIsMissing,
 
+    #[msg("Too many blocks for bitmap representation")]
+    TooManyBlocks,
+
+    #[msg("Invalid block index")]
+    InvalidBlockIndex,
+
+    #[msg("Invalid root block index")]
+    InvalidRootIndex,
+
     #[msg("Invalid device")]
     InvalidDevice,
 
@@ -285,4 +294,8 @@ pub enum DawnError {
 
     #[msg("Invalid amount: cannot be zero")]
     InvalidAmount,
+    
+    // SUBSCRIPTION PAYMENT ERRORS
+    #[msg("Daily swap amount too small - plan price minus fees must be >= duration")]
+    DailySwapTooSmall,
 }
