@@ -34,8 +34,8 @@ const Q32 = new BN(2).pow(new BN(32))
  * @param usdcAmount - Amount of USDC to swap
  * @param price - Current pool price (Q32 format)
  * @param slippageBps - Slippage tolerance in basis points (default: 500 = 5%)
- *                      Must be >= 500 bps (5%) to match program validation
- *                      The program enforces MIN_SLIPPAGE_TOLERANCE_BPS = 500
+ *                      Can be 0-500 bps (0%-5%) to match program validation
+ *                      The program enforces MAX_SLIPPAGE_TOLERANCE_BPS = 500
  *
  * @returns Minimum DAWN output that will be accepted
  */

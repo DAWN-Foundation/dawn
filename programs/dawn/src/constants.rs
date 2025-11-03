@@ -32,6 +32,6 @@ pub const DISCRIMINATOR_SIZE: usize = 8;
 /// This prevents transactions from being valid too far in the future
 pub const MAX_DEADLINE_OFFSET_SECONDS: i64 = 3600;
 
-/// Minimum slippage tolerance for min_dawn_out validation (500 bps = 5%)
-/// Users must specify at least 5% below expected output to allow for some slippage
-pub const MIN_SLIPPAGE_TOLERANCE_BPS: u64 = 500;
+/// Maximum slippage tolerance for min_dawn_out validation (500 bps = 5%)
+/// Users can specify 0% to 5% slippage (min_dawn_out between 95% and 100% of expected output)
+pub const MAX_SLIPPAGE_TOLERANCE_BPS: u64 = 500;

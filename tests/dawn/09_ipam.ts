@@ -177,7 +177,7 @@ const createSubscriber = async (
   const remainder = planData.price.sub(totalFeeUsdc)
   const dailyUsdc = remainder.div(new BN(planData.duration))
   const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-  const minDawnOut = calculateMinDawnOut(usdcToSwap, price, 50) // Uses default 500 bps
+  const minDawnOut = calculateMinDawnOut(usdcToSwap, price, 50)
 
   await program.methods
     .subscribe(minDawnOut, new BN(currentTime.toString()).add(new BN(300)))

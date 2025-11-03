@@ -42,8 +42,8 @@ const Q32 = new BN(2).pow(new BN(32))
  * @param usdcAmount - Amount of USDC to swap
  * @param price - Current pool price (Q32 format)
  * @param slippageBps - Slippage tolerance in basis points (default: 500 = 5%)
- *                      Must be >= 500 bps (5%) to match program validation
- *                      The program enforces MIN_SLIPPAGE_TOLERANCE_BPS = 500
+ *                      Can be 0-500 bps (0%-5%) to match program validation
+ *                      The program enforces MAX_SLIPPAGE_TOLERANCE_BPS = 500
  *
  * @returns Minimum DAWN output that will be accepted
  */
@@ -527,7 +527,7 @@ export const subscriptionTests = () =>
 
       // Calculate expected output
       const expectedOut = usdcToSwap.mul(price).div(Q32)
-      // MIN_SLIPPAGE_TOLERANCE_BPS = 500, so minimum allowed is 95% of expected (9500/10000)
+      // MAX_SLIPPAGE_TOLERANCE_BPS = 500, so minimum allowed is 95% of expected (9500/10000)
       // Use 94% (9400/10000) which is below the 95% minimum, so should fail
       const minDawnOutTooLow = expectedOut
         .mul(new BN(9400))

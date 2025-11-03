@@ -5,7 +5,7 @@ use raydium_cp_swap::program::RaydiumCpSwap;
 use raydium_cp_swap::states::PoolState;
 
 use crate::{
-    constants::{BPS_DENOMINATOR, MIN_SLIPPAGE_TOLERANCE_BPS},
+    constants::{BPS_DENOMINATOR, MAX_SLIPPAGE_TOLERANCE_BPS},
     error::DawnError,
     state::{Config, Plan},
     utils::{sort_accounts, swap_amounts},
@@ -171,10 +171,10 @@ pub(super) fn process_payment(
         usdc_to_swap,
     )?;
 
-    // Validate min_dawn_out is reasonable: must allow at least MIN_SLIPPAGE_TOLERANCE_BPS slippage
-    // This prevents users from setting min_dawn_out too high, which could block legitimate swaps
+    // Validate min_dawn_out is reasonable: must allow at most MAX_SLIPPAGE_TOLERANCE_BPS slippage
+    // This prevents users from setting min_dawn_out too low, which increases sandwich attack risk
     let min_allowed_output = expected_dawn_out
-        .checked_mul(BPS_DENOMINATOR - MIN_SLIPPAGE_TOLERANCE_BPS)
+        .checked_mul(BPS_DENOMINATOR - MAX_SLIPPAGE_TOLERANCE_BPS)
         .ok_or(DawnError::Overflow)?
         .checked_div(BPS_DENOMINATOR)
         .ok_or(DawnError::Underflow)?;
