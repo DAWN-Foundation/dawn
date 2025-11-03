@@ -36,6 +36,8 @@ pub struct AllocateIp<'info> {
     #[account(
         mut,
         constraint = root_ip_block.authority == authority.key() @ DawnError::Unauthorized,
+        constraint = root_ip_block.has_free_blocks() @ DawnError::NoAvailableBlocks,
+        constraint = root_ip_block.first_available_block_idx.is_some() @ DawnError::NoAvailableBlocks,
         seeds = [
             RootIpBlock::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref(),
@@ -52,7 +54,8 @@ pub struct AllocateIp<'info> {
         seeds = [
             IpBlock::SEED_PREFIX.as_ref(),
             root_ip_block.key().as_ref(),
-            root_ip_block.first_available_block_idx.unwrap().to_le_bytes().as_ref(),
+            // Use unwrap_or(0) to prevent panic; actual validation done by constraints
+            root_ip_block.first_available_block_idx.unwrap_or(0).to_le_bytes().as_ref(),
         ],
         bump
     )]
@@ -87,8 +90,11 @@ impl DawnApp {
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
 
-        let block_idx = root_ip_block.first_available_block_idx.unwrap();
-        let block_base = root_ip_block.get_block_base_ipv4(block_idx);
+        let block_idx = root_ip_block
+            .first_available_block_idx
+            .ok_or(DawnError::NoAvailableBlocks)?;
+
+        let block_base = root_ip_block.get_block_base_ipv4_checked(block_idx)?;
         let root_block_index = root_ip_block.index;
         let current_time = Clock::get()?.unix_timestamp;
 

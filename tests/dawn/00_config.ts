@@ -27,6 +27,10 @@ interface RootIpBlockInitialized {
   createdAt: number
 }
 
+const MAX_U64 = new BN(2).pow(new BN(64)).sub(new BN(1))
+// mask where the last 32 chunks are marked as full
+const CHUNKS_32_U64 = '18446744069414584320'
+
 export const configTests = () =>
   describe('dawn::config', () => {
     let program: Program<Dawn>
@@ -247,7 +251,7 @@ export const configTests = () =>
       assert.ok(loopbackRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
 
       // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(loopbackRoot.rootSummary64.toString(), '0')
+      assert.equal(loopbackRoot.rootSummary64.toString(), CHUNKS_32_U64)
 
       // Verify all chunks are initially empty
       loopbackRoot.rootChunks.forEach((chunk) =>
@@ -347,7 +351,7 @@ export const configTests = () =>
       assert.ok(ptpRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
 
       // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(ptpRoot.rootSummary64.toString(), '0')
+      assert.equal(ptpRoot.rootSummary64.toString(), CHUNKS_32_U64)
 
       // Verify all chunks are initially empty
       ptpRoot.rootChunks.forEach((chunk) => assert.equal(chunk.toString(), '0'))
