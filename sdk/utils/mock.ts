@@ -50,6 +50,10 @@ import { getPskAuthMethodPda } from '../pda/amf'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
+export const METADATA_PROGRAM_ID = new PublicKey(
+  'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+)
+
 export let mock: Mock
 let provider: BankrunProvider
 
@@ -60,6 +64,10 @@ export async function getProvider(accounts?: AddedAccount[]) {
     [
       { name: 'dawn', programId: PROGRAM_ID },
       { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
+      {
+        name: 'meta',
+        programId: METADATA_PROGRAM_ID,
+      },
     ],
     accounts ?? [],
   )
@@ -126,7 +134,7 @@ export async function createAccounts() {
   const raydiumConfig = await connection.getAccountInfo(RAYDIUM_CONFIG)
   addedAccounts.push({
     address: RAYDIUM_CONFIG,
-    info: raydiumConfig,
+    info: raydiumConfig as any,
   })
 
   // Add Raydium pool fee receiver account
@@ -135,7 +143,7 @@ export async function createAccounts() {
   )
   addedAccounts.push({
     address: RAYDIUM_POOL_FEE_RECEIVER,
-    info: raydiumPoolFeeReceiver,
+    info: raydiumPoolFeeReceiver as any,
   })
 
   return {

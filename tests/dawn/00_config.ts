@@ -1,10 +1,11 @@
 import { test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
-import { BN, Program, Wallet } from '@coral-xyz/anchor'
+import { AnchorError, BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
+import { getMint, getAccount } from 'spl-token-bankrun'
 
 import { Dawn } from '../../target/types/dawn'
 import {
@@ -17,6 +18,7 @@ import {
   getIpRegistryPda,
   getEvent,
   confirmTx,
+  METADATA_PROGRAM_ID,
 } from '../../sdk/utils'
 
 interface RootIpBlockInitialized {
@@ -58,6 +60,28 @@ export const configTests = () =>
 
     test('mock setup', () => {
       assert.exists(mock)
+    })
+
+    test('cannot reinitialize the token', async () => {
+      try {
+        await program.methods
+          .initToken()
+          .accountsPartial({
+            caller: wallet.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            dawnMint: mock.dawnMint,
+            callerDawnAccount: mock.walletDawnAccount,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        assert.fail('should not be able to reinitialize the token')
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+        const err: SendTransactionError = error
+        const msg = `Allocate: account Address { address: ${mock.tokenConfigPda.toBase58()}, base: None } already in use`
+        const alreadyInitialized = err.logs?.find((log) => log.includes(msg))
+        assert.ok(alreadyInitialized)
+      }
     })
 
     test('initializes config (one-time)', async () => {
@@ -207,6 +231,103 @@ export const configTests = () =>
       assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
       assert.ok(config.raydiumPool.equals(mock.raydiumPool))
       assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    })
+
+    test('non-authority cannot add metadata', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      try {
+        await program.methods
+          .initMetadata()
+          .accountsPartial({
+            caller: mock.serviceProvider.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            config: configPda,
+            dawnMint: mock.dawnMint,
+            metadata: metadataPda,
+            tokenMetadataProgram: METADATA_PROGRAM_ID,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.fail('should not be able to add metadata as non-authority')
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.equal(
+          err.error.errorMessage,
+          'Unauthorized: caller is not the authority',
+        )
+      }
+    })
+
+    test('should add metadata to the token', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      await program.methods
+        .initMetadata()
+        .accountsPartial({
+          caller: wallet.publicKey,
+          tokenConfig: mock.tokenConfigPda,
+          config: configPda,
+          dawnMint: mock.dawnMint,
+          metadata: metadataPda,
+          tokenMetadataProgram: METADATA_PROGRAM_ID,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Verify metadata was created
+      const metadataAccount = await provider.connection.getAccountInfo(
+        metadataPda,
+      )
+      console.log({ metadataAccount })
+      assert.ok(metadataAccount, 'Metadata account should exist')
+    })
+
+    test('cannot add metadata twice', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      try {
+        await program.methods
+          .initMetadata()
+          .accountsPartial({
+            caller: wallet.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            config: configPda,
+            dawnMint: mock.dawnMint,
+            metadata: metadataPda,
+            tokenMetadataProgram: METADATA_PROGRAM_ID,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        assert.fail('should not be able to add metadata twice')
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+      }
     })
 
     test('initializes loopback root IP block', async () => {
