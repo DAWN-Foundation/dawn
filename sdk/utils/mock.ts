@@ -134,7 +134,7 @@ export async function createAccounts() {
   const raydiumConfig = await connection.getAccountInfo(RAYDIUM_CONFIG)
   addedAccounts.push({
     address: RAYDIUM_CONFIG,
-    info: raydiumConfig,
+    info: raydiumConfig as any,
   })
 
   // Add Raydium pool fee receiver account
@@ -143,7 +143,7 @@ export async function createAccounts() {
   )
   addedAccounts.push({
     address: RAYDIUM_POOL_FEE_RECEIVER,
-    info: raydiumPoolFeeReceiver,
+    info: raydiumPoolFeeReceiver as any,
   })
 
   return {

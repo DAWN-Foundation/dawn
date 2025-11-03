@@ -14,6 +14,7 @@
     "key:parse": "yarn build && node dist/cli/commands/utils/parse_key.js",
     "dawn:init": "yarn build && node dist/cli/commands/config/init.js",
     "dawn:config": "yarn build && node dist/cli/commands/config/config.js",
+    "dawn:init_metadata": "yarn build && node dist/cli/commands/config/init_metadata.js",
     "dawn:get_config": "yarn build && node dist/cli/commands/config/get_config.js",
     "dawn:add_device": "yarn build && node dist/cli/commands/devices/add_device.js",
     "dawn:add_devices": "yarn build && node dist/cli/commands/devices/add_devices.js",
