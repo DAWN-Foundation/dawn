@@ -1,10 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
 
 use crate::{
     events::AuthMethodAdded,
     state::{AuthMethod, Device},
-    utils::optional_pubkey_seed,
+    utils::{hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError, Plan,
 };
 
@@ -20,7 +19,7 @@ pub struct AddAuthMethod<'info> {
             Plan::SEED_PREFIX.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes()[..min(plan.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -39,7 +38,7 @@ pub struct AddAuthMethod<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump,

@@ -1,17 +1,14 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{clock::SECONDS_PER_DAY, pubkey::MAX_SEED_LEN},
-};
+use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
-use std::cmp::min;
 
 use crate::{
     app::{subscription::payment, PaymentAccounts},
-    utils::optional_pubkey_seed,
+    constants::MAX_DEADLINE_OFFSET_SECONDS,
+    utils::{hash_string_seed, optional_pubkey_seed},
     DawnError, Subscribed,
 };
 use crate::{
@@ -20,6 +17,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
+#[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct Subscribe<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -37,7 +35,7 @@ pub struct Subscribe<'info> {
             Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes(),
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -56,7 +54,7 @@ pub struct Subscribe<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
@@ -178,14 +176,28 @@ pub struct Subscribe<'info> {
 }
 
 impl DawnApp {
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
+    pub fn subscribe(ctx: Context<Subscribe>, min_dawn_out: u64, deadline: i64) -> Result<()> {
         let config = &ctx.accounts.config;
         let plan = &ctx.accounts.plan;
 
+        // Validate deadline hasn't expired and isn't too far in the future
+        let current_time = Clock::get()?.unix_timestamp;
+        require!(current_time <= deadline, DawnError::TransactionExpired);
+
+        let deadline_offset = deadline
+            .checked_sub(current_time)
+            .ok_or(DawnError::TransactionExpired)?;
+        require!(
+            deadline_offset <= MAX_DEADLINE_OFFSET_SECONDS,
+            DawnError::DeadlineTooFarInFuture
+        );
+
+        // Validate min_dawn_out is reasonable (not zero)
+        require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
+
         if plan.start_at > 0 {
-            let now = Clock::get()?.unix_timestamp;
             // Make sure the plan has already started
-            require!(plan.start_at <= now, DawnError::InvalidStartTime);
+            require!(plan.start_at <= current_time, DawnError::InvalidStartTime);
         }
 
         let payment_accounts = PaymentAccounts {
@@ -200,15 +212,15 @@ impl DawnApp {
             raydium_usdc_vault: &ctx.accounts.raydium_usdc_vault,
             raydium_dawn_vault: &ctx.accounts.raydium_dawn_vault,
             user_usdc_account: &ctx.accounts.user_usdc_account,
-            user_dawn_account: &ctx.accounts.user_dawn_account,
+            user_dawn_account: &mut ctx.accounts.user_dawn_account,
             fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };
 
-        let (claimable_dawn, daily_usdc, swap_price) =
-            payment::process_payment(payment_accounts, config, plan)?;
+        let (claimable_dawn, daily_usdc, actual_dawn_out) =
+            payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
         // Get the current timestamp from the clock
         let clock = Clock::get()?;
@@ -245,7 +257,7 @@ impl DawnApp {
             last_claim: subscription.last_claim,
             claimable_dawn: subscription.claimable_dawn,
             daily_usdc: subscription.daily_usdc,
-            swap_price,
+            swap_price: actual_dawn_out as u128,
             created_at: subscription.created_at,
         });
 

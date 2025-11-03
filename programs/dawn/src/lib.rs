@@ -181,16 +181,24 @@ pub mod dawn {
         DawnApp::add_l2_plan(ctx, name, price, duration, speed, capacity, start_at)
     }
 
-    pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
-        DawnApp::subscribe(ctx)
+    pub fn subscribe<'info>(
+        ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::subscribe(ctx, min_dawn_out, deadline)
     }
 
-    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
-        DawnApp::extend_subscription(ctx)
+    pub fn extend_subscription(
+        ctx: Context<ExtendSubscription>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::extend_subscription(ctx, min_dawn_out, deadline)
     }
 
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
-        DawnApp::claim(ctx)
+    pub fn claim(ctx: Context<Claim>, min_dawn_out: u64, deadline: i64) -> Result<()> {
+        DawnApp::claim(ctx, min_dawn_out, deadline)
     }
 
     // IPAM Instructions

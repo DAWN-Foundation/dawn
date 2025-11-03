@@ -139,3 +139,45 @@ export async function getPlansForDevice(
     )
   })
 }
+
+/**
+ * Find an available root block for subscriber IP allocation
+ * Checks indices 0-255 for availability
+ * @param program - The Dawn Anchor program
+ * @param tier - IP tier (0 for Subscriber)
+ * @returns The index of an available root block, or null if none found
+ */
+export async function findAvailableRootBlock(
+  program: Program<Dawn>,
+  tier: number = 0, // Subscriber tier by default
+): Promise<number | null> {
+  const MAX_ROOT_BLOCKS = 256
+  const connection = program.provider.connection
+
+  // Import the PDA derivation function
+  const { getRootIpBlockPda } = await import('./index')
+
+  // Scan through all possible root indices
+  for (let index = 0; index < MAX_ROOT_BLOCKS; index++) {
+    try {
+      const rootPda = getRootIpBlockPda(tier, index)
+      const account = await connection.getAccountInfo(rootPda)
+
+      if (account) {
+        // Decode the RootIpBlock account to check capacity
+        const rootIpBlock = await program.account.rootIpBlock.fetch(rootPda)
+
+        // Check if the root has free blocks
+        // The has_free_blocks method checks if root_summary64 indicates capacity
+        if (rootIpBlock.firstAvailableBlockIdx !== null) {
+          return index
+        }
+      }
+    } catch (e) {
+      // Account doesn't exist or error fetching, continue to next
+      continue
+    }
+  }
+
+  return null // No available roots found
+}

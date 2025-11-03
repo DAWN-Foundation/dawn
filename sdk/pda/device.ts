@@ -1,5 +1,6 @@
 import { PublicKey, Keypair } from '@solana/web3.js'
 import { Program } from '@coral-xyz/anchor'
+import { createHash } from 'crypto'
 
 import { DeviceType, deviceTypeSeed, MacAddress } from '../utils/helpers'
 import { Dawn } from '../../target/types/dawn'
@@ -25,6 +26,14 @@ export function getDeviceModelPda(
   return deviceModelPda
 }
 
+/**
+ * Hash a string seed (trimmed) to match Rust hash_string_seed function
+ */
+function hashStringSeed(input: string): Buffer {
+  const trimmed = input.trim()
+  return Buffer.from(createHash('sha256').update(trimmed).digest())
+}
+
 export function getDevicePda(
   program: Program<Dawn>,
   owner: Keypair,
@@ -37,7 +46,7 @@ export function getDevicePda(
       Buffer.from('device'),
       Buffer.from(owner.publicKey.toBytes()),
       Buffer.from(model.toBytes()),
-      Buffer.from(name.slice(0, 32)),
+      hashStringSeed(name),
       Buffer.from(macAddress),
     ],
     program.programId,
@@ -84,7 +93,7 @@ export function getLocalDomainPda(
     [
       Buffer.from('local_domain'),
       Buffer.from(owner.toBytes()),
-      Buffer.from(localDomainName.trim().slice(0, 32)),
+      hashStringSeed(localDomainName),
     ],
     program.programId,
   )

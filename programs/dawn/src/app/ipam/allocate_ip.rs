@@ -1,9 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
     state::{Device, IpBlock, IpLease, IpRegistry, IpTier, RootIpBlock},
+    utils::hash_string_seed,
     DawnApp, DawnError,
 };
 
@@ -18,7 +18,7 @@ pub struct AllocateIp<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
@@ -36,6 +36,8 @@ pub struct AllocateIp<'info> {
     #[account(
         mut,
         constraint = root_ip_block.authority == authority.key() @ DawnError::Unauthorized,
+        constraint = root_ip_block.has_free_blocks() @ DawnError::NoAvailableBlocks,
+        constraint = root_ip_block.first_available_block_idx.is_some() @ DawnError::NoAvailableBlocks,
         seeds = [
             RootIpBlock::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref(),
@@ -52,7 +54,8 @@ pub struct AllocateIp<'info> {
         seeds = [
             IpBlock::SEED_PREFIX.as_ref(),
             root_ip_block.key().as_ref(),
-            root_ip_block.first_available_block_idx.unwrap().to_le_bytes().as_ref(),
+            // Use unwrap_or(0) to prevent panic; actual validation done by constraints
+            root_ip_block.first_available_block_idx.unwrap_or(0).to_le_bytes().as_ref(),
         ],
         bump
     )]
@@ -87,8 +90,11 @@ impl DawnApp {
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
 
-        let block_idx = root_ip_block.first_available_block_idx.unwrap();
-        let block_base = root_ip_block.get_block_base_ipv4(block_idx);
+        let block_idx = root_ip_block
+            .first_available_block_idx
+            .ok_or(DawnError::NoAvailableBlocks)?;
+
+        let block_base = root_ip_block.get_block_base_ipv4_checked(block_idx)?;
         let root_block_index = root_ip_block.index;
         let current_time = Clock::get()?.unix_timestamp;
 

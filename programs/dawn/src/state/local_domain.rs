@@ -9,7 +9,8 @@ pub struct LocalDomain {
     /// The creation timestamp
     pub created_at: i64,
     // Name of the local domain converted to a fixed-size byte array
-    pub name: [u8; 32],
+    #[max_len(32)]
+    pub name: String,
     /// The owner of the local domain
     pub owner: Pubkey,
     /// PDA bump seed
