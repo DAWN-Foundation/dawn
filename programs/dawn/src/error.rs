@@ -295,6 +295,9 @@ pub enum DawnError {
     #[msg("Invalid amount: cannot be zero")]
     InvalidAmount,
 
+    #[msg("Invalid UTF-8 in seed data")]
+    InvalidUtf8InSeed,
+
     // SUBSCRIPTION PAYMENT ERRORS
     #[msg("Daily swap amount too small - plan price minus fees must be >= duration")]
     DailySwapTooSmall,

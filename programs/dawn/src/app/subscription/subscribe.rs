@@ -1,18 +1,14 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{clock::SECONDS_PER_DAY, pubkey::MAX_SEED_LEN},
-};
+use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
-use std::cmp::min;
 
 use crate::{
     app::{subscription::payment, PaymentAccounts},
     constants::MAX_DEADLINE_OFFSET_SECONDS,
-    utils::optional_pubkey_seed,
+    utils::{hash_string_seed, optional_pubkey_seed},
     DawnError, Subscribed,
 };
 use crate::{
@@ -39,7 +35,7 @@ pub struct Subscribe<'info> {
             Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes(),
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -58,7 +54,7 @@ pub struct Subscribe<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
