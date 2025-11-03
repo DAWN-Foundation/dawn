@@ -7,7 +7,7 @@ use raydium_cp_swap::{cpi, program::RaydiumCpSwap, states::PoolState, ID as RAYD
 
 use crate::{
     state::{Config, Plan, Subscription},
-    utils::{optional_pubkey_seed, sort_accounts, swap_amounts},
+    utils::{hash_string_seed, optional_pubkey_seed, sort_accounts, swap_amounts},
     Claimed, DawnApp, DawnError,
 };
 
@@ -31,7 +31,7 @@ pub struct Claim<'info> {
             Plan::SEED_PREFIX.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes(),
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -168,7 +168,7 @@ impl DawnApp {
             Plan::SEED_PREFIX.as_ref(),
             ctx.accounts.plan.local_domain.as_ref(),
             &optional_pubkey_seed(ctx.accounts.plan.parent_plan),
-            ctx.accounts.plan.name.as_bytes(),
+            &hash_string_seed(&ctx.accounts.plan.name),
             &ctx.accounts.plan.price.to_le_bytes(),
             &ctx.accounts.plan.duration.to_le_bytes(),
             &ctx.accounts.plan.speed.to_le_bytes(),

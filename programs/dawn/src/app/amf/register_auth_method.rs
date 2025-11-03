@@ -5,7 +5,7 @@ use crate::{
     error::DawnError,
     events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
-    utils::optional_pubkey_seed,
+    utils::{hash_string_seed, optional_pubkey_seed},
     DawnApp,
 };
 
@@ -42,7 +42,7 @@ pub struct RegisterAuthMethod<'info> {
             Device::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
             device.model.as_ref(),
-            &device.name.as_ref(),
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump

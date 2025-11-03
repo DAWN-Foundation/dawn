@@ -1,9 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
     state::{Device, IpBlock, IpLease, IpRegistry, IpTier, RootIpBlock},
+    utils::hash_string_seed,
     DawnApp, DawnError,
 };
 
@@ -18,7 +18,7 @@ pub struct AllocateIp<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
