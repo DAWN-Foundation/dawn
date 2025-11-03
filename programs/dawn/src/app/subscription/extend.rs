@@ -203,7 +203,6 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-
         let (additional_claimable, new_daily_usdc, actual_dawn_out) =
             payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
