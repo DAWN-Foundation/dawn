@@ -239,6 +239,7 @@ export const leaseIpTests = () =>
           .accountsPartial({
             caller: subscriberSetup.wallet.publicKey,
             device: subscriberSetup.devicePda,
+            ipRegistry: mock.subscriberIpRegistryPda,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
             ipBlock: mock.ipBlockPda,
             ipLease: ipLeasePda,
@@ -318,6 +319,7 @@ export const leaseIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -385,6 +387,7 @@ export const leaseIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -434,6 +437,7 @@ export const leaseIpTests = () =>
           .accountsPartial({
             caller: subscriberSetup.wallet.publicKey,
             device: subscriberSetup.devicePda,
+            ipRegistry: mock.subscriberIpRegistryPda,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
             ipBlock: mock.ipBlockPda,
             ipLease: ipLeasePda,
@@ -1050,6 +1054,7 @@ export const bitmapEdgeCaseTests = () =>
           .accountsPartial({
             caller: subscriberSetup.wallet.publicKey,
             device: subscriberSetup.devicePda,
+            ipRegistry: mock.subscriberIpRegistryPda,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
             ipBlock: mock.ipBlockPda,
             ipLease: ipLeasePda,
@@ -1099,6 +1104,7 @@ export const bitmapEdgeCaseTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1160,6 +1166,7 @@ export const bitmapEdgeCaseTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1201,6 +1208,7 @@ export const bitmapEdgeCaseTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1355,6 +1363,7 @@ export const multiTierIpamTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: subscriberIpLeasePda,
@@ -1453,6 +1462,7 @@ export const multiTierIpamTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: subscriberIpLeasePda,
@@ -1607,6 +1617,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1659,6 +1670,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1726,6 +1738,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1742,6 +1755,7 @@ export const revokeIpTests = () =>
           .accountsPartial({
             caller: subscriberSetup.wallet.publicKey,
             device: subscriberSetup.devicePda,
+            ipRegistry: mock.subscriberIpRegistryPda,
             rootIpBlock: mock.rootSubscriberIpBlockPda,
             ipBlock: mock.ipBlockPda,
             ipLease: ipLeasePda,
@@ -1831,6 +1845,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1863,6 +1878,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,
@@ -1975,6 +1991,7 @@ export const revokeIpTests = () =>
         .accountsPartial({
           caller: subscriberSetup.wallet.publicKey,
           device: subscriberSetup.devicePda,
+          ipRegistry: mock.subscriberIpRegistryPda,
           rootIpBlock: mock.rootSubscriberIpBlockPda,
           ipBlock: mock.ipBlockPda,
           ipLease: ipLeasePda,

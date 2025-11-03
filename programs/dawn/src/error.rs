@@ -222,6 +222,15 @@ pub enum DawnError {
     #[msg("Block account is missing")]
     BlockAccountIsMissing,
 
+    #[msg("Too many blocks for bitmap representation")]
+    TooManyBlocks,
+
+    #[msg("Invalid block index")]
+    InvalidBlockIndex,
+
+    #[msg("Invalid root block index")]
+    InvalidRootIndex,
+
     #[msg("Invalid device")]
     InvalidDevice,
 
