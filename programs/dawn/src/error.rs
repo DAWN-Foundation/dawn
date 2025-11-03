@@ -278,4 +278,8 @@ pub enum DawnError {
 
     #[msg("Invalid Raydium pool owner")]
     InvalidRaydiumPoolOwner,
+
+    // SUBSCRIPTION PAYMENT ERRORS
+    #[msg("Daily swap amount too small - plan price minus fees must be >= duration")]
+    DailySwapTooSmall,
 }
