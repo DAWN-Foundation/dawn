@@ -6,5 +6,6 @@ export * from './eap'
 export * from './ipsec'
 export * from './auth'
 export * from './auth-borsh'
+export * from './swap-helpers'
 // Re-export PDA functions for convenience
 export * from '../pda'

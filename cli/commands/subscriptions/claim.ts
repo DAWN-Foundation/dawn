@@ -16,6 +16,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import { calculateSwapBounds } from '../../../sdk/utils'
 
 async function main() {
   const subscription = getFlag('--subscription')
@@ -60,8 +61,56 @@ async function main() {
       true,
     )
 
+  // Fetch subscription to get daily USDC and last claim time
+  const subscriptionData = await program.account.subscription.fetch(
+    subscriptionPda,
+  )
+
+  // Calculate USDC to swap based on days since last claim
+  const currentTime = Math.floor(Date.now() / 1000)
+  const SECONDS_PER_DAY = 86400
+  const daysSinceClaim = Math.floor(
+    (currentTime - subscriptionData.lastClaim.toNumber()) / SECONDS_PER_DAY,
+  )
+
+  // Get remaining USDC in escrow vault
+  const escrowUsdcAccount = await connection.getTokenAccountBalance(
+    escrowUsdcVault,
+  )
+  const remainingUsdc = new BN(escrowUsdcAccount.value.amount)
+
+  // Calculate USDC to swap: min(days_since_claim * daily_usdc, remaining_usdc)
+  const usdcToSwap = BN.min(
+    new BN(daysSinceClaim).mul(subscriptionData.dailyUsdc),
+    remainingUsdc,
+  )
+
+  // Get slippage from CLI flag (default 1%)
+  const slippageBps = getFlag('--slippage')
+    ? parseInt(getFlag('--slippage')!)
+    : 100
+
+  // Calculate minimum DAWN output with MEV protection
+  const { minDawnOut, deadline } = await calculateSwapBounds(
+    connection,
+    mock.raydiumPool,
+    mock.raydiumConfig,
+    mock.raydiumDawnVault,
+    mock.raydiumUsdcVault,
+    usdcToSwap,
+    slippageBps,
+  )
+
+  console.log('Claim parameters:', {
+    daysSinceClaim,
+    usdcToSwap: usdcToSwap.toString(),
+    minDawnOut: minDawnOut.toString(),
+    slippageBps: slippageBps,
+    deadline: new Date(deadline.toNumber() * 1000).toISOString(),
+  })
+
   const itx = await program.methods
-    .claim()
+    .claim(minDawnOut, deadline)
     .accountsPartial({
       caller: wallet.publicKey,
       config: mock.configPda,
