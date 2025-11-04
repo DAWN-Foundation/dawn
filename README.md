@@ -164,6 +164,8 @@ yarn testnet
 
 These command allow interaction with the DAWN contract deployed on local testnet
 
+**Note on MEV Protection**: Subscribe and claim commands now include MEV sandwich attack protection. The CLI automatically calculates minimum DAWN output (`min_dawn_out`) and transaction deadline based on current pool state, accounting for Raydium's trade fees. You can control slippage tolerance using the `--slippage` flag (in basis points, default 100 = 1%).
+
 ```bash
 # [Optional] Its also possible to specify following signers
 # apart from default one located at ~/.config/solana/id.json
@@ -234,6 +236,9 @@ yarn mint:usdc \
     --amount 240
 
 # Subscribe to a plan (as --customer)
+# The CLI will automatically calculate MEV protection parameters
+# Optional: --slippage <basis-points> (default 100 = 1%)
+# Examples: --slippage 50 (0.5%), --slippage 300 (3%)
 yarn dawn:subscribe \
     --customer \
     --plan <plan>
@@ -248,11 +253,55 @@ yarn dawn:get_subscriptions --plan <plan>
 yarn dawn:get_subscriptions --subscriber <subscriber>
 
 # Claim locked DAWN after 24 hours (as --service-provider)
+# Optional: --slippage <basis-points> (default 100 = 1%)
+# Examples: --slippage 50 (0.5%), --slippage 300 (3%)
 yarn dawn:claim \
     --service-provider \
     --subscription <subscription>
 ```
 
+
+### MEV Protection & Slippage Settings
+
+The DAWN protocol implements MEV sandwich attack protection for all swap operations (subscribe and claim). The CLI automatically:
+
+1. Fetches current Raydium pool state
+2. Calculates expected DAWN output based on pool reserves
+3. Applies your slippage tolerance to set minimum acceptable output
+4. Sets a 30-second transaction deadline
+
+**Slippage Tolerance Guide:**
+
+| Flag | Percentage | Use Case |
+|------|------------|----------|
+| `--slippage 50` | 0.5% | Very stable market, tight MEV protection |
+| `--slippage 100` | 1% | **Default** - Standard MEV protection |
+| `--slippage 200` | 2% | Normal conditions, moderate volatility |
+| `--slippage 300` | 3% | Higher volatility tolerance |
+| `--slippage 500` | 5% | Maximum allowed by program |
+
+**Note**: The CLI calculation reads Raydium's actual trade fee from the config account to match the program's validation exactly. Lower slippage values (0.5-1%) provide stronger MEV protection.
+
+**Example with custom slippage:**
+```bash
+# Subscribe with 0.5% slippage (tighter MEV protection)
+yarn dawn:subscribe --customer --plan <plan> --slippage 50
+
+# Claim with 3% slippage (higher volatility tolerance)
+yarn dawn:claim --service-provider --subscription <sub> --slippage 300
+
+# Use default 1% slippage (recommended)
+yarn dawn:subscribe --customer --plan <plan>
+```
+
+**Error Handling:**
+- `TransactionExpired`: Deadline passed - retry transaction
+- `InsufficientOutputAmount`: Price moved unfavorably - increase slippage or retry
+- `UnrealisticMinimumOutput`: Calculated minOut exceeds 110% of expected - check pool state
+
+For more details, see `CLI_MEV_PROTECTION_UPDATE.md`.
+
+---
 
 ### Devnet Deployment
 
