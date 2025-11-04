@@ -40,9 +40,13 @@ export async function calculateSwapBounds(
   //   ...
   const token0VaultOffset = 72
   const token1VaultOffset = 104
-  
-  const token0Vault = new PublicKey(poolAccount.data.slice(token0VaultOffset, token0VaultOffset + 32))
-  const token1Vault = new PublicKey(poolAccount.data.slice(token1VaultOffset, token1VaultOffset + 32))
+
+  const token0Vault = new PublicKey(
+    poolAccount.data.slice(token0VaultOffset, token0VaultOffset + 32),
+  )
+  const token1Vault = new PublicKey(
+    poolAccount.data.slice(token1VaultOffset, token1VaultOffset + 32),
+  )
 
   // Fetch vault balances
   const dawnVault = await getAccount(connection, raydiumDawnVault)
@@ -66,7 +70,7 @@ export async function calculateSwapBounds(
 
   // Determine if USDC is base (token_0) or quote (token_1)
   const isUsdcBase = raydiumUsdcVault.equals(token0Vault)
-  
+
   // Select the appropriate price based on vault ordering
   // We're swapping USDC -> DAWN, so we need the price that converts USDC to DAWN
   const price = isUsdcBase ? token0PriceX32 : token1PriceX32
@@ -76,7 +80,9 @@ export async function calculateSwapBounds(
 
   // Apply slippage tolerance
   // minDawnOut = expectedOut * (10000 - slippageBps) / 10000
-  const minDawnOut = expectedDawnOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
+  const minDawnOut = expectedDawnOut
+    .mul(new BN(10000 - slippageBps))
+    .div(new BN(10000))
 
   // Set deadline to 30 seconds from now
   const deadline = new BN(Math.floor(Date.now() / 1000) + 30)
@@ -92,4 +98,3 @@ export async function calculateSwapBounds(
 export function getDeadline(offsetSeconds: number = 30): BN {
   return new BN(Math.floor(Date.now() / 1000) + offsetSeconds)
 }
-
