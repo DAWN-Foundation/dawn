@@ -1,9 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use anchor_lang::prelude::*;
 
 use crate::{
     events::AuthMethodAdded,
     state::{AuthMethod, Device},
-    utils::{hash_string_seed, optional_pubkey_seed},
+    utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError, Plan,
 };
 
@@ -50,7 +50,8 @@ pub struct AddAuthMethod<'info> {
             AuthMethod::SEED_PREFIX.as_ref(),
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            &auth_method.parameters[..MAX_SEED_LEN],
+            auth_method.device.as_ref(),
+            &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
     )]
