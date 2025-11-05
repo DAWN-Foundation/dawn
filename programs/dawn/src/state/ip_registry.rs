@@ -78,6 +78,18 @@ impl IpRegistry {
         }
     }
 
+    /// Check if a root block is currently marked as available in the bitmap
+    pub fn is_root_available(&self, sequence: u32) -> bool {
+        if sequence >= MAX_ROOT_BLOCKS {
+            return false;
+        }
+
+        let word_idx = (sequence / 64) as usize;
+        let bit_idx = sequence % 64;
+
+        (self.root_availability_bitmap[word_idx] & (1u64 << bit_idx)) != 0
+    }
+
     /// Register a new root block
     pub fn register_root_block(&mut self) -> Result<()> {
         require!(

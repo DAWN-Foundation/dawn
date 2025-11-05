@@ -142,7 +142,7 @@ impl DawnApp {
             block_idx,
             unit_idx,
             ctx.bumps.ip_lease,
-        );
+        )?;
 
         // Emit IP lease event
         emit!(IpLeased {
