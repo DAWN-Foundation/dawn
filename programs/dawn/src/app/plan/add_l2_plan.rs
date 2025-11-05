@@ -75,7 +75,7 @@ pub struct AddL2Plan<'info> {
     #[account(
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
-            parent_plan.key().as_ref(),
+            subscription.plan.as_ref(),
             caller.key().as_ref(),
         ],
         bump = subscription.bump,
@@ -132,12 +132,6 @@ impl DawnApp {
         let plan = &mut ctx.accounts.plan;
         let parent_plan = &ctx.accounts.parent_plan;
         let now = Clock::get()?.unix_timestamp;
-
-        // Validate subscription is not expired
-        require!(
-            ctx.accounts.subscription.expiration > now,
-            DawnError::SubscriptionExpired
-        );
 
         // Validate that the resold plan is within parent plan bounds
         require!(
