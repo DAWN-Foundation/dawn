@@ -21,6 +21,7 @@ export class AuthManager {
   async registerPskAuthMethod(
     authority: PublicKey,
     plan: PublicKey,
+    device: PublicKey,
     config: PSKNetworkConfig,
   ): Promise<{ signature: string; authMethodPda: PublicKey }> {
     const params = createPSKMethodParams(config)
@@ -30,6 +31,7 @@ export class AuthManager {
     const [authMethodPda] = getPskAuthMethodPda(
       this.program,
       authority,
+      device,
       parametersBuffer,
     )
 
@@ -83,6 +85,7 @@ export class AuthManager {
   async registerPskAuth(
     authority: PublicKey,
     plan: PublicKey,
+    device: PublicKey,
     clientPubkey: PublicKey,
     psk: string,
     config: PSKNetworkConfig,
@@ -94,7 +97,7 @@ export class AuthManager {
   }> {
     // Register auth method
     const { signature: authMethodSignature, authMethodPda } =
-      await this.registerPskAuthMethod(authority, plan, config)
+      await this.registerPskAuthMethod(authority, plan, device, config)
 
     // Register credential
     const { signature: credentialSignature, credentialPda } =

@@ -2,6 +2,7 @@ import { PublicKey } from '@solana/web3.js'
 import { Program } from '@coral-xyz/anchor'
 import { Dawn } from '../../target/types/dawn'
 import { AuthMethodType } from '../utils/helpers'
+import { createHash } from 'crypto'
 
 const methods = {
   psk: 0,
@@ -12,21 +13,37 @@ const methods = {
   wpa3Enterprise: 5,
 }
 
+/**
+ * Hash the full 256-byte parameter array to a 32-byte seed
+ * This matches the Rust implementation: hash(parameters).to_bytes()
+ */
+export function hashParameters(parameters: Buffer): Buffer {
+  if (parameters.length !== 256) {
+    throw new Error(
+      `Parameters must be exactly 256 bytes, got ${parameters.length}`,
+    )
+  }
+  return createHash('sha256').update(parameters).digest()
+}
+
 export function getAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
+  device: PublicKey,
   methodType: AuthMethodType,
   parameters: Buffer,
 ): PublicKey {
   const key = Object.keys(methodType)[0]
   const seed = methods[key]
+  const paramHash = hashParameters(parameters)
 
   const [authMethodPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('auth_method'),
       authority.toBuffer(),
       Buffer.from([seed]),
-      parameters.slice(0, 32), // MAX_SEED_LEN
+      device.toBuffer(),
+      paramHash,
     ],
     program.programId,
   )
@@ -79,14 +96,18 @@ export function getConnectionPda(
 export function getPskAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
+  device: PublicKey,
   parameters: Buffer,
 ): [PublicKey, number] {
+  const paramHash = hashParameters(parameters)
+
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from('auth_method'),
       authority.toBuffer(),
       Buffer.from([0]), // PSK method type seed
-      parameters.slice(0, 32), // MAX_SEED_LEN
+      device.toBuffer(),
+      paramHash,
     ],
     program.programId,
   )
