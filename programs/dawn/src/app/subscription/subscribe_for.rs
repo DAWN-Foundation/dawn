@@ -7,19 +7,23 @@ use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_C
 
 use crate::{
     app::{subscription::subscription_helper, PaymentAccounts},
-    error::DawnError,
     utils::{hash_string_seed, optional_pubkey_seed},
+    DawnError,
 };
 use crate::{
-    state::{Config, Plan, Subscription},
+    state::{Config, Device, Plan, Subscription},
     DawnApp,
 };
 
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
-pub struct ExtendSubscription<'info> {
+pub struct SubscribeFor<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
+
+    /// The beneficiary who will receive the subscription
+    /// CHECK: Used only for PDA derivation and as subscriber
+    pub beneficiary: AccountInfo<'info>,
 
     /// The config with fees and accounts
     #[account(
@@ -46,15 +50,31 @@ pub struct ExtendSubscription<'info> {
     )]
     pub plan: Box<Account<'info, Plan>>,
 
-    /// The subscription account
+    /// The device account (must be owned by beneficiary)
     #[account(
-        mut,
+        constraint = device.owner == beneficiary.key(),
+        seeds = [
+            Device::SEED_PREFIX.as_ref(),
+            device.owner.as_ref(),
+            device.model.as_ref(),
+            &hash_string_seed(&device.name),
+            &device.mac_address,
+        ],
+        bump = device.bump
+    )]
+    pub device: Option<Box<Account<'info, Device>>>,
+
+    /// The subscription account (PDA uses beneficiary)
+    #[account(
+        init,
+        payer = caller,
+        space = Subscription::SIZE,
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
             plan.key().as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
         ],
-        bump = subscription.bump
+        bump
     )]
     pub subscription: Box<Account<'info, Subscription>>,
 
@@ -114,7 +134,7 @@ pub struct ExtendSubscription<'info> {
     pub raydium_usdc_vault: Box<Account<'info, TokenAccount>>,
 
     // TOKEN ACCOUNTS
-    /// The callers associated DAWN token account
+    /// The callers associated DAWN token account (caller provides tokens)
     #[account(
         mut,
         associated_token::mint = dawn_mint,
@@ -122,7 +142,7 @@ pub struct ExtendSubscription<'info> {
     )]
     pub user_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The callers associated USDC token account
+    /// The callers associated USDC token account (caller provides tokens)
     #[account(
         mut,
         associated_token::mint = usdc_mint,
@@ -159,15 +179,15 @@ pub struct ExtendSubscription<'info> {
 }
 
 impl DawnApp {
-    pub fn extend_subscription(
-        ctx: Context<ExtendSubscription>,
+    pub fn subscribe_for(
+        ctx: Context<SubscribeFor>,
         min_dawn_out: u64,
         deadline: i64,
     ) -> Result<()> {
-        // Extract keys first (before any mutable borrows)
+        // Get keys before creating mutable references
         let subscription_key = ctx.accounts.subscription.key();
         let plan_key = ctx.accounts.plan.key();
-        let caller_key = ctx.accounts.caller.key();
+        let beneficiary_key = ctx.accounts.beneficiary.key();
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -188,16 +208,18 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        subscription_helper::process_subscription_extension(
+        subscription_helper::process_subscription_creation(
             payment_accounts,
             &ctx.accounts.config,
             &ctx.accounts.plan,
             &mut ctx.accounts.subscription,
             subscription_key,
             plan_key,
-            caller_key,
+            beneficiary_key,
+            ctx.accounts.device.as_ref().map(|d| d.as_ref()),
             min_dawn_out,
             deadline,
+            ctx.bumps.subscription,
         )
     }
 }

@@ -1114,4 +1114,437 @@ export const subscriptionTests = () =>
       // reset provider wallet
       provider.wallet = new Wallet(mock.customer)
     })
+
+    // Define beneficiary for subscribe_for and extend_subscription_for tests
+    let beneficiaryKeypair: anchor.web3.Keypair
+    let beneficiary: PublicKey
+
+    describe('subscribe_for', () => {
+      test('caller can buy subscription for beneficiary without device', async () => {
+        // Initialize beneficiary on first use
+        if (!beneficiaryKeypair) {
+          beneficiaryKeypair = anchor.web3.Keypair.generate()
+          beneficiary = beneficiaryKeypair.publicKey
+        }
+        // Setup: wallet.payer is the caller
+        const caller = wallet.payer
+
+        // Get subscription PDA for beneficiary
+        const [subscriptionForPda] = getSubscriptionPda(
+          program,
+          mock.planPda,
+          beneficiaryKeypair,
+        )
+
+        // Set wallet to caller (who will pay)
+        provider.wallet = new Wallet(caller)
+
+        // Get balances before
+        const callerUsdcBalanceBefore = await getBalance(
+          provider.connection,
+          mock.walletUsdcAccount,
+        )
+
+        // Calculate valid minDawnOut
+        const raydiumDawnVault = await getAccount(
+          provider.connection,
+          accounts.raydiumDawnVault,
+        )
+        const raydiumUsdcVault = await getAccount(
+          provider.connection,
+          accounts.raydiumUsdcVault,
+        )
+        const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const config = await program.account.config.fetch(mock.configPda)
+        const plan = await program.account.plan.fetch(mock.planPda)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
+        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+        const remainder = plan.price.sub(totalFeeUsdc)
+        const dailyUsdc = remainder.div(new BN(plan.duration))
+        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
+        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        const deadline = await getDeadline(provider)
+
+        try {
+          const tx = await program.methods
+            .subscribeFor(minDawnOut, deadline)
+            .accountsPartial({
+              caller: caller.publicKey,
+              beneficiary: beneficiary,
+              config: mock.configPda,
+              plan: mock.planPda,
+              device: null,
+              subscription: subscriptionForPda,
+              usdcMint: mock.usdcMint,
+              dawnMint: mock.dawnMint,
+              raydium: mock.raydium,
+              raydiumAuthority: mock.raydiumAuthority,
+              raydiumConfig: mock.raydiumConfig,
+              raydiumPool: mock.raydiumPool,
+              raydiumObservation: mock.raydiumObservation,
+              raydiumDawnVault: mock.raydiumDawnVault,
+              raydiumUsdcVault: mock.raydiumUsdcVault,
+              userUsdcAccount: mock.walletUsdcAccount,
+              userDawnAccount: mock.walletDawnAccount,
+              feePoolDawnAccount: mock.feePoolDawnAccount,
+              escrowUsdcVault: mock.escrowUsdcVault,
+              escrowDawnVault: mock.escrowDawnVault,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([caller])
+            .transaction()
+
+          const txDetails = await confirmTx(provider, tx)
+
+          // Verify event
+          const event = await getEvent<Subscribed>(
+            program,
+            txDetails,
+            'subscribed',
+          )
+          assert.ok(event.subscription.equals(subscriptionForPda))
+          assert.ok(event.plan.equals(mock.planPda))
+          assert.ok(
+            event.subscriber.equals(beneficiary),
+            'Subscriber should be beneficiary',
+          )
+          expect(event.device).toBeNull()
+          assert.ok(event.expiration > 0)
+
+          // Verify caller's USDC was debited
+          const callerUsdcBalanceAfter = await getBalance(
+            provider.connection,
+            mock.walletUsdcAccount,
+          )
+          assert.ok(
+            callerUsdcBalanceAfter.lt(callerUsdcBalanceBefore),
+            'Caller USDC should be debited',
+          )
+
+          // Verify subscription was created for beneficiary
+          const subscription = await program.account.subscription.fetch(
+            subscriptionForPda,
+          )
+          assert.ok(
+            subscription.subscriber.equals(beneficiary),
+            'Subscription subscriber should be beneficiary',
+          )
+          expect(subscription.device).toBeNull()
+        } catch (error) {
+          console.error('subscribe_for error:', error)
+          throw error
+        } finally {
+          // Reset provider wallet
+          provider.wallet = new Wallet(mock.customer)
+        }
+      })
+
+      test('cannot subscribe_for with device owned by caller', async () => {
+        // Try to create a different subscription with a device owned by caller (should fail)
+        const anotherBeneficiary = anchor.web3.Keypair.generate()
+        const caller = wallet.payer
+
+        // Get device owned by caller (wallet.payer)
+        const macAddress = [1, 0, 1, 0, 1, 0] as MacAddress
+        const devicePda = getDevicePda(
+          program,
+          wallet.payer,
+          mock.deviceModelPda,
+          mock.deviceName,
+          macAddress,
+        )
+
+        const [subscriptionForPda] = getSubscriptionPda(
+          program,
+          mock.planPda,
+          anotherBeneficiary,
+        )
+
+        provider.wallet = new Wallet(caller)
+
+        // Calculate valid minDawnOut
+        const raydiumDawnVault = await getAccount(
+          provider.connection,
+          accounts.raydiumDawnVault,
+        )
+        const raydiumUsdcVault = await getAccount(
+          provider.connection,
+          accounts.raydiumUsdcVault,
+        )
+        const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const config = await program.account.config.fetch(mock.configPda)
+        const plan = await program.account.plan.fetch(mock.planPda)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
+        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+        const remainder = plan.price.sub(totalFeeUsdc)
+        const dailyUsdc = remainder.div(new BN(plan.duration))
+        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
+        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        const deadline = await getDeadline(provider)
+
+        try {
+          await program.methods
+            .subscribeFor(minDawnOut, deadline)
+            .accountsPartial({
+              caller: caller.publicKey,
+              beneficiary: anotherBeneficiary.publicKey,
+              config: mock.configPda,
+              plan: mock.planPda,
+              device: devicePda, // Device owned by caller, not beneficiary
+              subscription: subscriptionForPda,
+              usdcMint: mock.usdcMint,
+              dawnMint: mock.dawnMint,
+              raydium: mock.raydium,
+              raydiumAuthority: mock.raydiumAuthority,
+              raydiumConfig: mock.raydiumConfig,
+              raydiumPool: mock.raydiumPool,
+              raydiumObservation: mock.raydiumObservation,
+              raydiumDawnVault: mock.raydiumDawnVault,
+              raydiumUsdcVault: mock.raydiumUsdcVault,
+              userUsdcAccount: mock.walletUsdcAccount,
+              userDawnAccount: mock.walletDawnAccount,
+              feePoolDawnAccount: mock.feePoolDawnAccount,
+              escrowUsdcVault: mock.escrowUsdcVault,
+              escrowDawnVault: mock.escrowDawnVault,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([caller])
+            .rpc()
+          assert.ok(
+            false,
+            'Should have failed with device ownership constraint',
+          )
+        } catch (error) {
+          assert.ok(error instanceof AnchorError)
+          const err: AnchorError = error
+          // Device ownership constraint should fail
+          assert.ok(err.error.errorMessage.includes('constraint'))
+        } finally {
+          provider.wallet = new Wallet(mock.customer)
+        }
+      })
+    })
+
+    describe('extend_subscription_for', () => {
+      test('caller can extend subscription for beneficiary', async () => {
+        const caller = wallet.payer
+
+        // Get subscription PDA for beneficiary (created in previous test)
+        const [subscriptionForPda] = getSubscriptionPda(
+          program,
+          mock.planPda,
+          beneficiaryKeypair,
+        )
+
+        // Get subscription before extension
+        const subscriptionBefore = await program.account.subscription.fetch(
+          subscriptionForPda,
+        )
+        const expirationBefore = new BN(subscriptionBefore.expiration)
+
+        // Set wallet to caller (who will pay)
+        provider.wallet = new Wallet(caller)
+
+        // Get balances before
+        const callerUsdcBalanceBefore = await getBalance(
+          provider.connection,
+          mock.walletUsdcAccount,
+        )
+
+        // Calculate valid minDawnOut
+        const raydiumDawnVault = await getAccount(
+          provider.connection,
+          accounts.raydiumDawnVault,
+        )
+        const raydiumUsdcVault = await getAccount(
+          provider.connection,
+          accounts.raydiumUsdcVault,
+        )
+        const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const config = await program.account.config.fetch(mock.configPda)
+        const plan = await program.account.plan.fetch(mock.planPda)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
+        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+        const remainder = plan.price.sub(totalFeeUsdc)
+        const dailyUsdc = remainder.div(new BN(plan.duration))
+        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
+        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        const deadline = await getDeadline(provider)
+
+        const tx = await program.methods
+          .extendSubscriptionFor(minDawnOut, deadline)
+          .accountsPartial({
+            caller: caller.publicKey,
+            beneficiary: beneficiary,
+            config: mock.configPda,
+            plan: mock.planPda,
+            subscription: subscriptionForPda,
+            usdcMint: mock.usdcMint,
+            dawnMint: mock.dawnMint,
+            raydium: mock.raydium,
+            raydiumAuthority: mock.raydiumAuthority,
+            raydiumConfig: mock.raydiumConfig,
+            raydiumPool: mock.raydiumPool,
+            raydiumObservation: mock.raydiumObservation,
+            raydiumDawnVault: mock.raydiumDawnVault,
+            raydiumUsdcVault: mock.raydiumUsdcVault,
+            userUsdcAccount: mock.walletUsdcAccount,
+            userDawnAccount: mock.walletDawnAccount,
+            feePoolDawnAccount: mock.feePoolDawnAccount,
+            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowDawnVault: mock.escrowDawnVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([caller])
+          .transaction()
+
+        const txDetails = await confirmTx(provider, tx)
+
+        // Verify event
+        const event = await getEvent<SubscriptionExtended>(
+          program,
+          txDetails,
+          'subscriptionExtended',
+        )
+        assert.ok(event.subscription.equals(subscriptionForPda))
+        assert.ok(event.plan.equals(mock.planPda))
+        assert.ok(
+          event.subscriber.equals(beneficiary),
+          'Subscriber should be beneficiary',
+        )
+        assert.ok(
+          event.expiration.eq(
+            expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
+          ),
+          'Expiration should be extended by plan duration',
+        )
+
+        // Verify caller's USDC was debited
+        const callerUsdcBalanceAfter = await getBalance(
+          provider.connection,
+          mock.walletUsdcAccount,
+        )
+        assert.ok(
+          callerUsdcBalanceAfter.lt(callerUsdcBalanceBefore),
+          'Caller USDC should be debited',
+        )
+
+        // Verify subscription was extended
+        const subscriptionAfter = await program.account.subscription.fetch(
+          subscriptionForPda,
+        )
+        assert.ok(
+          subscriptionAfter.expiration.eq(
+            expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
+          ),
+          'Subscription expiration should be extended',
+        )
+        assert.ok(
+          subscriptionAfter.subscriber.equals(beneficiary),
+          'Subscriber should still be beneficiary',
+        )
+
+        // Reset provider wallet
+        provider.wallet = new Wallet(mock.customer)
+      })
+
+      test('cannot extend subscription for wrong beneficiary', async () => {
+        const wrongBeneficiary = anchor.web3.Keypair.generate().publicKey
+        const caller = wallet.payer
+
+        // Get subscription PDA for the actual beneficiary
+        const [subscriptionForPda] = getSubscriptionPda(
+          program,
+          mock.planPda,
+          beneficiaryKeypair,
+        )
+
+        provider.wallet = new Wallet(caller)
+
+        // Calculate valid minDawnOut
+        const raydiumDawnVault = await getAccount(
+          provider.connection,
+          accounts.raydiumDawnVault,
+        )
+        const raydiumUsdcVault = await getAccount(
+          provider.connection,
+          accounts.raydiumUsdcVault,
+        )
+        const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const config = await program.account.config.fetch(mock.configPda)
+        const plan = await program.account.plan.fetch(mock.planPda)
+        const totalFeeBps = config.daoFee
+          .add(config.validatorFee)
+          .add(config.medallionFee)
+        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+        const remainder = plan.price.sub(totalFeeUsdc)
+        const dailyUsdc = remainder.div(new BN(plan.duration))
+        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
+        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        const deadline = await getDeadline(provider)
+
+        try {
+          await program.methods
+            .extendSubscriptionFor(minDawnOut, deadline)
+            .accountsPartial({
+              caller: caller.publicKey,
+              beneficiary: wrongBeneficiary, // Wrong beneficiary
+              config: mock.configPda,
+              plan: mock.planPda,
+              subscription: subscriptionForPda, // Subscription belongs to mock.customer
+              usdcMint: mock.usdcMint,
+              dawnMint: mock.dawnMint,
+              raydium: mock.raydium,
+              raydiumAuthority: mock.raydiumAuthority,
+              raydiumConfig: mock.raydiumConfig,
+              raydiumPool: mock.raydiumPool,
+              raydiumObservation: mock.raydiumObservation,
+              raydiumDawnVault: mock.raydiumDawnVault,
+              raydiumUsdcVault: mock.raydiumUsdcVault,
+              userUsdcAccount: mock.walletUsdcAccount,
+              userDawnAccount: mock.walletDawnAccount,
+              feePoolDawnAccount: mock.feePoolDawnAccount,
+              escrowUsdcVault: mock.escrowUsdcVault,
+              escrowDawnVault: mock.escrowDawnVault,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([caller])
+            .rpc()
+          assert.ok(false, 'Should have failed with wrong beneficiary')
+        } catch (error) {
+          assert.ok(error instanceof AnchorError)
+          const err: AnchorError = error
+          // Should fail with Unauthorized or constraint error
+          assert.ok(
+            err.error.errorMessage.includes('Unauthorized') ||
+              err.error.errorMessage.includes('constraint'),
+            'Should fail with Unauthorized or constraint error',
+          )
+        } finally {
+          provider.wallet = new Wallet(mock.customer)
+        }
+      })
+    })
   })

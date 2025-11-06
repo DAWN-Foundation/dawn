@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::clock::SECONDS_PER_DAY};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
@@ -6,10 +6,9 @@ use anchor_spl::{
 use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
 
 use crate::{
-    app::{subscription::payment, PaymentAccounts},
-    constants::MAX_DEADLINE_OFFSET_SECONDS,
+    app::{subscription::subscription_helper, PaymentAccounts},
     utils::{hash_string_seed, optional_pubkey_seed},
-    DawnError, Subscribed,
+    DawnError,
 };
 use crate::{
     state::{Config, Device, Plan, Subscription},
@@ -177,28 +176,10 @@ pub struct Subscribe<'info> {
 
 impl DawnApp {
     pub fn subscribe(ctx: Context<Subscribe>, min_dawn_out: u64, deadline: i64) -> Result<()> {
-        let config = &ctx.accounts.config;
-        let plan = &ctx.accounts.plan;
-
-        // Validate deadline hasn't expired and isn't too far in the future
-        let current_time = Clock::get()?.unix_timestamp;
-        require!(current_time <= deadline, DawnError::TransactionExpired);
-
-        let deadline_offset = deadline
-            .checked_sub(current_time)
-            .ok_or(DawnError::TransactionExpired)?;
-        require!(
-            deadline_offset <= MAX_DEADLINE_OFFSET_SECONDS,
-            DawnError::DeadlineTooFarInFuture
-        );
-
-        // Validate min_dawn_out is reasonable (not zero)
-        require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
-
-        if plan.start_at > 0 {
-            // Make sure the plan has already started
-            require!(plan.start_at <= current_time, DawnError::InvalidStartTime);
-        }
+        // Get keys before creating mutable references
+        let subscription_key = ctx.accounts.subscription.key();
+        let plan_key = ctx.accounts.plan.key();
+        let caller_key = ctx.accounts.caller.key();
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -219,48 +200,18 @@ impl DawnApp {
             token_program: &ctx.accounts.token_program,
         };
 
-        let (claimable_dawn, daily_usdc, actual_dawn_out) =
-            payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
-
-        // Get the current timestamp from the clock
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
-
-        // Calculate plan duration in seconds (days to seconds)
-        let duration_in_seconds = (plan.duration as u64)
-            .checked_mul(SECONDS_PER_DAY)
-            .ok_or(DawnError::Overflow)?;
-
-        // Calculate subscription expiration by adding plan `duration` days to current timestamp
-        let expiration = current_timestamp
-            .checked_add(duration_in_seconds as i64)
-            .ok_or(DawnError::Overflow)?;
-
-        // Save subscription data
-        let subscription = &mut ctx.accounts.subscription;
-        subscription.created_at = Clock::get()?.unix_timestamp;
-        subscription.plan = ctx.accounts.plan.key();
-        subscription.subscriber = ctx.accounts.caller.key();
-        subscription.device = ctx.accounts.device.as_ref().map(|d| d.key());
-        subscription.expiration = expiration;
-        subscription.last_claim = current_timestamp;
-        subscription.claimable_dawn = claimable_dawn; // Initial DAWN amount is locked for 24h
-        subscription.daily_usdc = daily_usdc;
-        subscription.bump = ctx.bumps.subscription;
-
-        emit!(Subscribed {
-            subscription: subscription.key(),
-            plan: ctx.accounts.plan.key(),
-            subscriber: ctx.accounts.caller.key(),
-            device: subscription.device,
-            expiration: subscription.expiration,
-            last_claim: subscription.last_claim,
-            claimable_dawn: subscription.claimable_dawn,
-            daily_usdc: subscription.daily_usdc,
-            swap_price: actual_dawn_out as u128,
-            created_at: subscription.created_at,
-        });
-
-        Ok(())
+        subscription_helper::process_subscription_creation(
+            payment_accounts,
+            &ctx.accounts.config,
+            &ctx.accounts.plan,
+            &mut ctx.accounts.subscription,
+            subscription_key,
+            plan_key,
+            caller_key,
+            ctx.accounts.device.as_ref().map(|d| d.as_ref()),
+            min_dawn_out,
+            deadline,
+            ctx.bumps.subscription,
+        )
     }
 }
