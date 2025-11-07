@@ -99,11 +99,13 @@ export const planTests = () =>
       const [pskAuthMethodPda1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         parametersBuffer1,
       )
       const [pskAuthMethodPda2] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         parametersBuffer2,
       )
 
@@ -392,6 +394,7 @@ export const planTests = () =>
       const [m1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         p2,
       )
 
@@ -404,6 +407,7 @@ export const planTests = () =>
       const [m2] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         p3,
       )
 
@@ -416,6 +420,7 @@ export const planTests = () =>
       const [m3] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         p4,
       )
 
@@ -1185,6 +1190,7 @@ export const planTests = () =>
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         paramsArray,
       )
 
@@ -1313,6 +1319,7 @@ export const planTests = () =>
       const [m1] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         p1,
       )
 
@@ -1326,6 +1333,7 @@ export const planTests = () =>
       const [m2] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         p2,
       )
 
@@ -1529,6 +1537,7 @@ export const planTests = () =>
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
+        wrongDomainDevicePda,
         paramsArray,
       )
 
@@ -1622,6 +1631,7 @@ export const planTests = () =>
         const [authMethodPda] = getPskAuthMethodPda(
           program,
           mock.serviceProvider.publicKey,
+          mock.devicePda,
           paramsBuffer,
         )
 
@@ -1732,6 +1742,7 @@ export const planTests = () =>
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         paramsBuffer,
       )
 
@@ -1824,6 +1835,7 @@ export const planTests = () =>
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         paramsBuffer,
       )
 
@@ -1942,11 +1954,13 @@ export const parentPlanTests = () =>
       const [pskAuthMethodPda1] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
+        mock.deviceL2Pda,
         parametersBuffer1,
       )
       const [pskAuthMethodPda2] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
+        mock.deviceL2Pda,
         parametersBuffer2,
       )
 

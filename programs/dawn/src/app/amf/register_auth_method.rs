@@ -1,11 +1,11 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use anchor_lang::prelude::*;
 
 use crate::{
     app::amf::{eap_method::EAPMethodParams, psk_method::PSKMethodParams},
     error::DawnError,
     events::AuthMethodRegistered,
     state::{AuthMethod, AuthMethodType, Config, Device},
-    utils::{hash_string_seed, optional_pubkey_seed},
+    utils::{hash_parameters, hash_string_seed},
     DawnApp,
 };
 
@@ -30,7 +30,8 @@ pub struct RegisterAuthMethod<'info> {
             AuthMethod::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
             method_type.as_seed(),
-            &parameters[..MAX_SEED_LEN],
+            device.key().as_ref(),
+            &hash_parameters(&parameters),
         ],
         bump
     )]

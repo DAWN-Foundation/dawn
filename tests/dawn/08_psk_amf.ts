@@ -53,6 +53,7 @@ export const pskAmfTests = () =>
       const [pskAuthMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         parametersBuffer,
       )
 

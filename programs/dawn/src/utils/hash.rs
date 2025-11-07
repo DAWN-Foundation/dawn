@@ -9,6 +9,12 @@ pub fn hash_string_seed(input: &str) -> [u8; 32] {
     hash_result.to_bytes()
 }
 
+/// Hash the full 256-byte parameter array to a 32-byte seed for AuthMethod PDAs
+/// This ensures all parameters are considered, not just the first 32 bytes
+pub fn hash_parameters(parameters: &[u8; 256]) -> [u8; 32] {
+    hash(parameters).to_bytes()
+}
+
 /// Legacy function - DEPRECATED, use hash_string_seed instead
 #[deprecated(note = "Use hash_string_seed instead for hashed seeds")]
 #[allow(dead_code)]

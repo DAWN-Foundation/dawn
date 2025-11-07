@@ -13,7 +13,6 @@ import {
   EAPType,
   CipherSuite,
   EAPParams,
-  serializeEAPParams,
   DEFAULT_EAP_PARAMS,
   validateEAPParams,
   fetchEAPParams,
@@ -23,7 +22,6 @@ import {
   IPsecMode,
   IPsecAHParams,
   DEFAULT_IPSEC_AH_PARAMS,
-  serializeIPsecAHParams,
   validateIPsecAHParams,
   generateIPsecAHCredential,
   serializeIPsecAHCredential,
@@ -31,9 +29,11 @@ import {
   getEvent,
   confirmTx,
 } from '../../sdk/utils'
+import { getDevicePda, getDeviceLocationPda } from '../../sdk/pda/device'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
 import { PublicKey } from '@solana/web3.js'
+import { MacAddress } from '../../sdk/utils/helpers'
 
 interface CredentialRegistered {
   credential: PublicKey
@@ -145,6 +145,7 @@ export const amfTests = () =>
       authMethodPda = getAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         authMethodType,
         paramsBuffer,
       )
@@ -219,6 +220,131 @@ export const amfTests = () =>
           },
         })
       }
+    })
+
+    test('allows different devices to register auth methods with identical parameters', async () => {
+      // This test verifies the fix for AuthMethod PDA collision issue
+      // Previously, PDAs only used: authority + method_type + parameters[..32]
+      // This caused collisions when different devices used identical parameters
+      // Fix: Include device public key in PDA seeds + hash full parameters
+
+      const authMethodType: AuthMethodType = { eap: {} }
+
+      // Create identical EAP parameters for both devices
+      const sharedCA = anchor.web3.Keypair.generate().publicKey
+      const sharedRadius = anchor.web3.Keypair.generate().publicKey
+
+      const eapParams: EAPParams = {
+        ...DEFAULT_EAP_PARAMS,
+        certificateAuthority: sharedCA,
+        radiusServer: sharedRadius,
+      }
+
+      // Serialize parameters using Borsh
+      const serializer = new (
+        await import('../../sdk/utils/auth-borsh')
+      ).AuthParamsSerializer(program)
+      const paramsBuffer = serializer.serializeEAPParams(eapParams)
+      const paramsArray = Array.from(paramsBuffer)
+
+      // Create a second device (use existing mock device as device1)
+      const device1Pda = mock.devicePda
+
+      const device2Name = 'test-device-2'
+      const device2MacAddress: MacAddress = [0x02, 0x00, 0x00, 0x00, 0x00, 0x02]
+
+      const device2Pda = getDevicePda(
+        program,
+        mock.serviceProvider,
+        mock.deviceModelPda,
+        device2Name,
+        device2MacAddress,
+      )
+
+      const device2LocationPda = getDeviceLocationPda(program, device2Pda)
+
+      // Register second device
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
+      await program.methods
+        .addDevice(
+          device2Name,
+          mock.deviceHeight,
+          mock.deviceLatitude,
+          mock.deviceLongitude,
+          mock.devicePlacement,
+          device2MacAddress,
+          mock.localDomain,
+        )
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          deviceModel: mock.deviceModelPda,
+          device: device2Pda,
+          localDomain: mock.localDomainPda,
+          deviceLocation: device2LocationPda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      // Derive PDAs for both auth methods with IDENTICAL parameters but DIFFERENT devices
+      const authMethod1Pda = getAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        device1Pda,
+        authMethodType,
+        paramsBuffer,
+      )
+
+      const authMethod2Pda = getAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        device2Pda,
+        authMethodType,
+        paramsBuffer,
+      )
+
+      // ✅ CRITICAL: PDAs must be DIFFERENT (fix includes device in seeds)
+      console.log('Device 1 AuthMethod PDA:', authMethod1Pda.toBase58())
+      console.log('Device 2 AuthMethod PDA:', authMethod2Pda.toBase58())
+      expect(authMethod1Pda.equals(authMethod2Pda)).toBe(false)
+
+      // Register auth method for device 1
+      await program.methods
+        .registerAuthMethod(authMethodType as any, paramsArray)
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          config: mock.configPda,
+          authMethod: authMethod1Pda,
+          device: device1Pda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      // Register auth method for device 2 with SAME parameters
+      await program.methods
+        .registerAuthMethod(authMethodType as any, paramsArray)
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          config: mock.configPda,
+          authMethod: authMethod2Pda,
+          device: device2Pda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      provider.wallet = providerWallet
+
+      // Verify both auth methods were created successfully
+      const authMethod1 = await program.account.authMethod.fetch(authMethod1Pda)
+      const authMethod2 = await program.account.authMethod.fetch(authMethod2Pda)
+
+      expect(authMethod1.device.equals(device1Pda)).toBe(true)
+      expect(authMethod2.device.equals(device2Pda)).toBe(true)
+      expect(authMethod1.methodType).toStrictEqual(authMethodType)
+      expect(authMethod2.methodType).toStrictEqual(authMethodType)
+      expect(authMethod1.parameters).toStrictEqual(paramsArray)
+      expect(authMethod2.parameters).toStrictEqual(paramsArray)
     })
 
     test('fails to register client credential with wrong authority', async () => {
@@ -434,6 +560,7 @@ export const amfTests = () =>
       ipsecAuthMethodPda = getAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
+        mock.devicePda,
         authMethodType,
         paramsBuffer,
       )

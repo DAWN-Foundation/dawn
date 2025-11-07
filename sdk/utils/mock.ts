@@ -391,6 +391,7 @@ export async function setup(
   const [pskAuthMethodPda] = getPskAuthMethodPda(
     program,
     serviceProvider.publicKey,
+    devicePda,
     parametersBuffer,
   )
   const planAuthMethods = [pskAuthMethodPda]

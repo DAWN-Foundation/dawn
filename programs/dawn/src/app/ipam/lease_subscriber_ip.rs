@@ -43,12 +43,11 @@ pub struct LeaseSubscriberIp<'info> {
         constraint = root_ip_block.tier == IpTier::Subscriber @ DawnError::InvalidTier,
         constraint = root_ip_block.has_free_blocks() @ DawnError::NoAvailableBlocks,
         constraint = root_ip_block.first_available_block_idx.is_some() @ DawnError::NoAvailableBlocks,
-        constraint = ip_registry.find_available_root_block().is_some() @ DawnError::NoAvailableBlocks,
-        constraint = root_ip_block.index == ip_registry.find_available_root_block().unwrap() @ DawnError::InvalidRootIndex,
+        constraint = ip_registry.find_available_root_block() == Some(root_ip_block.index) @ DawnError::InvalidRootIndex,
         seeds = [
             RootIpBlock::SEED_PREFIX.as_ref(),
             IpTier::Subscriber.to_seed().as_ref(),
-            ip_registry.find_available_root_block().unwrap().to_le_bytes().as_ref()
+            root_ip_block.index.to_le_bytes().as_ref()
         ],
         bump = root_ip_block.bump
     )]
@@ -177,7 +176,7 @@ impl DawnApp {
             block_idx,
             unit_idx,
             ctx.bumps.ip_lease,
-        );
+        )?;
 
         // Emit allocation event
         emit!(IpLeased {
