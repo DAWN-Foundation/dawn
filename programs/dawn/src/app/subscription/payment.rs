@@ -5,7 +5,7 @@ use raydium_cp_swap::program::RaydiumCpSwap;
 use raydium_cp_swap::states::PoolState;
 
 use crate::{
-    constants::{BPS_DENOMINATOR, MAX_SLIPPAGE_TOLERANCE_BPS},
+    constants::{BPS_DENOMINATOR, MAX_DEADLINE_OFFSET_SECONDS, MAX_SLIPPAGE_TOLERANCE_BPS},
     error::DawnError,
     state::{Config, Plan},
     utils::{sort_accounts, swap_amounts},
@@ -273,4 +273,19 @@ pub(super) fn process_payment(
 
     // Return claimable_dawn, daily_usdc, and actual DAWN output
     Ok((escrow_dawn, daily_dawn_in_usdc, actual_dawn_out))
+}
+
+/// Validate deadline hasn't expired and isn't too far in the future
+pub(super) fn validate_deadline(current_time: i64, deadline: i64) -> Result<()> {
+    require!(current_time <= deadline, DawnError::TransactionExpired);
+
+    let deadline_offset = deadline
+        .checked_sub(current_time)
+        .ok_or(DawnError::TransactionExpired)?;
+    require!(
+        deadline_offset <= MAX_DEADLINE_OFFSET_SECONDS,
+        DawnError::DeadlineTooFarInFuture
+    );
+
+    Ok(())
 }

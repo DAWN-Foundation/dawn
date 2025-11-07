@@ -17,9 +17,13 @@ use crate::{
 
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
-pub struct ExtendSubscription<'info> {
+pub struct ExtendSubscriptionFor<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
+
+    /// The beneficiary whose subscription will be extended
+    /// CHECK: Used only for PDA derivation and validation
+    pub beneficiary: AccountInfo<'info>,
 
     /// The config with fees and accounts
     #[account(
@@ -46,13 +50,14 @@ pub struct ExtendSubscription<'info> {
     )]
     pub plan: Box<Account<'info, Plan>>,
 
-    /// The subscription account
+    /// The subscription account (PDA uses beneficiary, subscription.subscriber must match beneficiary)
     #[account(
         mut,
+        constraint = subscription.subscriber == beneficiary.key() @ DawnError::Unauthorized,
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
             plan.key().as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
         ],
         bump = subscription.bump
     )]
@@ -114,7 +119,7 @@ pub struct ExtendSubscription<'info> {
     pub raydium_usdc_vault: Box<Account<'info, TokenAccount>>,
 
     // TOKEN ACCOUNTS
-    /// The callers associated DAWN token account
+    /// The callers associated DAWN token account (caller provides tokens)
     #[account(
         mut,
         associated_token::mint = dawn_mint,
@@ -122,7 +127,7 @@ pub struct ExtendSubscription<'info> {
     )]
     pub user_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The callers associated USDC token account
+    /// The callers associated USDC token account (caller provides tokens)
     #[account(
         mut,
         associated_token::mint = usdc_mint,
@@ -159,15 +164,15 @@ pub struct ExtendSubscription<'info> {
 }
 
 impl DawnApp {
-    pub fn extend_subscription(
-        ctx: Context<ExtendSubscription>,
+    pub fn extend_subscription_for(
+        ctx: Context<ExtendSubscriptionFor>,
         min_dawn_out: u64,
         deadline: i64,
     ) -> Result<()> {
         // Extract keys first (before any mutable borrows)
         let subscription_key = ctx.accounts.subscription.key();
         let plan_key = ctx.accounts.plan.key();
-        let caller_key = ctx.accounts.caller.key();
+        let beneficiary_key = ctx.accounts.beneficiary.key();
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -195,7 +200,7 @@ impl DawnApp {
             &mut ctx.accounts.subscription,
             subscription_key,
             plan_key,
-            caller_key,
+            beneficiary_key,
             min_dawn_out,
             deadline,
         )

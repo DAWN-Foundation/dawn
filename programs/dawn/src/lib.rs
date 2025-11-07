@@ -189,12 +189,28 @@ pub mod dawn {
         DawnApp::subscribe(ctx, min_dawn_out, deadline)
     }
 
+    pub fn subscribe_for(
+        ctx: Context<SubscribeFor>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::subscribe_for(ctx, min_dawn_out, deadline)
+    }
+
     pub fn extend_subscription(
         ctx: Context<ExtendSubscription>,
         min_dawn_out: u64,
         deadline: i64,
     ) -> Result<()> {
         DawnApp::extend_subscription(ctx, min_dawn_out, deadline)
+    }
+
+    pub fn extend_subscription_for(
+        ctx: Context<ExtendSubscriptionFor>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::extend_subscription_for(ctx, min_dawn_out, deadline)
     }
 
     pub fn claim(ctx: Context<Claim>, min_dawn_out: u64, deadline: i64) -> Result<()> {
