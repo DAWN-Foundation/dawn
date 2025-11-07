@@ -16,6 +16,7 @@ export async function addAuthMethod(
   planStartAt: BN,
   serviceAgreement: PublicKey,
   localDomain: PublicKey,
+  device: PublicKey,
   parentPlan: PublicKey | null,
   authMethodAuthority: PublicKey,
   authMethodType: any,
@@ -37,6 +38,7 @@ export async function addAuthMethod(
   const authMethodPda = getAuthMethodPda(
     program,
     authMethodAuthority,
+    device,
     authMethodType,
     authMethodParameters,
   )
