@@ -70,8 +70,8 @@ impl DawnApp {
             DawnError::DuplicateAuthMethods
         );
 
-        // Check if we haven't exceeded the maximum number of auth methods (3)
-        require!(plan.auth_methods.len() < 3, DawnError::TooManyAuthMethods);
+        // Check if we haven't exceeded the maximum number of auth methods (2)
+        require!(plan.auth_methods.len() < 2, DawnError::TooManyAuthMethods);
 
         // Add the auth method to the plan
         plan.auth_methods.push(auth_method.key());
@@ -109,7 +109,14 @@ impl DawnApp {
 
             require!(!data.is_empty(), DawnError::InvalidAuthMethodAccount);
 
-            // // Validate account is owned by our program
+            require!(data.len() >= 8, DawnError::InvalidAuthMethodAccount);
+            let discriminator = &data[0..8];
+            require!(
+                discriminator == AuthMethod::DISCRIMINATOR,
+                DawnError::InvalidAuthMethodAccount
+            );
+
+            // Validate account is owned by our program
             require!(
                 account_info.owner == &crate::ID,
                 DawnError::InvalidAuthMethodAccount

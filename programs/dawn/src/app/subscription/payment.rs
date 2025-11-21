@@ -189,6 +189,16 @@ pub(super) fn process_payment(
     // Read user DAWN balance before swap
     let user_dawn_before = accounts.user_dawn_account.amount;
 
+    // Calculate actual USDC amount to use for swap (handles both base and quote token cases)
+    let actual_usdc_amount_in = crate::utils::calculate_actual_usdc_input(
+        &accounts.raydium_pool,
+        accounts.raydium_usdc_vault,
+        accounts.raydium_dawn_vault,
+        is_usdc_base,
+        usdc_amount_in,
+        min_dawn_out,
+    )?;
+
     // Create CPI accounts for the swap
     let swap_cpi = cpi::accounts::Swap {
         payer: accounts.caller.to_account_info(),
@@ -208,13 +218,7 @@ pub(super) fn process_payment(
     let swap_cpi_ctx = CpiContext::new(accounts.raydium.to_account_info(), swap_cpi);
 
     // Perform swap with user-supplied minimum
-    if is_usdc_base {
-        // USDC is the base token; use swap_base_input
-        cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
-    } else {
-        // USDC is the quote token; use swap_base_output
-        cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
-    }
+    cpi::swap_base_input(swap_cpi_ctx, actual_usdc_amount_in, min_dawn_out)?;
 
     // Reload user DAWN account to measure actual output
     accounts.user_dawn_account.reload()?;
@@ -273,6 +277,40 @@ pub(super) fn process_payment(
 
     // Return claimable_dawn, daily_usdc, and actual DAWN output
     Ok((escrow_dawn, daily_dawn_in_usdc, actual_dawn_out))
+}
+
+/// Process payment for active subscription extension (only deposits to escrow, no swap)
+/// For active subscriptions, payment is for a future period, so it goes entirely to escrow
+/// without swapping the first day. Fees will be collected when claims occur.
+/// Returns: (daily_usdc, actual_dawn_out) where actual_dawn_out is 0 since no swap occurs
+pub(super) fn process_extension_payment(
+    accounts: PaymentAccounts,
+    config: &Config,
+    plan: &Plan,
+) -> Result<(u64, u64)> {
+    // Calculate daily_usdc for future claims (needed to know how much to swap per day)
+    let (_total_usdc_fee, daily_dawn_in_usdc, _escrow_usdc_remainder) = calculate_usdc_fee(
+        plan.price,
+        config.dao_fee,
+        config.validator_fee,
+        config.medallion_fee,
+        plan.duration,
+    )?;
+
+    // Transfer entire plan.price to escrow_usdc_vault
+    // Fees will be collected proportionally when escrowed USDC is swapped during claims
+    let transfer_cpi_ctx = CpiContext::new(
+        accounts.token_program.to_account_info(),
+        token::Transfer {
+            from: accounts.user_usdc_account.to_account_info(),
+            to: accounts.escrow_usdc_vault.to_account_info(),
+            authority: accounts.caller.to_account_info(),
+        },
+    );
+    token::transfer(transfer_cpi_ctx, plan.price)?;
+
+    // Return daily_usdc and 0 for actual_dawn_out (no swap occurred)
+    Ok((daily_dawn_in_usdc, 0))
 }
 
 /// Validate deadline hasn't expired and isn't too far in the future

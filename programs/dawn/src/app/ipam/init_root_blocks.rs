@@ -1,3 +1,4 @@
+use crate::constants::BLOCK_CIDR;
 use crate::state::Config;
 use crate::{
     app::DawnApp, DawnError, IpRegistry, IpRegistryInitialized, IpTier, RootIpBlock,
@@ -69,7 +70,8 @@ impl DawnApp {
         let authority = &ctx.accounts.authority;
         let caller = &ctx.accounts.caller;
 
-        if ip_registry.bump == 0 {
+        // Use created_at as robust init flag instead of bump == 0
+        if ip_registry.created_at == 0 {
             ip_registry.initialize(tier, caller.key(), ctx.bumps.ip_registry)?;
             emit!(IpRegistryInitialized {
                 ip_registry: ip_registry.key(),
@@ -78,9 +80,6 @@ impl DawnApp {
                 created_at: Clock::get()?.unix_timestamp,
             });
         }
-
-        // Validate configuration parameters
-        require!(base_cidr <= 32, DawnError::InvalidCidr);
 
         // Validate sequence number
         let index = ip_registry.next_index;
@@ -119,6 +118,11 @@ impl DawnApp {
 
     /// Validate root block configuration to prevent overflow
     fn validate_root_block_config(base_ipv4: u32, base_cidr: u8) -> Result<()> {
+        require!(
+            base_cidr >= 1 && base_cidr <= BLOCK_CIDR,
+            DawnError::InvalidCidr
+        );
+
         // Calculate the network size for this CIDR
         let network_size = if base_cidr < 32 {
             1u64 << (32 - base_cidr)

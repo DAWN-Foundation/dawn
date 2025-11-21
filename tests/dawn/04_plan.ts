@@ -1572,7 +1572,7 @@ export const planTests = () =>
       }
     })
 
-    test('cannot exceed maximum of 3 auth methods on plan', async () => {
+    test('cannot exceed maximum of 2 auth methods on plan', async () => {
       // Create a plan
       const planName = 'test plan max auth methods'
       const [planPda] = getPlanPda(
@@ -1619,7 +1619,7 @@ export const planTests = () =>
       // Create 4 auth methods and devices
       const authMethods: PublicKey[] = []
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 3; i++) {
         const authMethodType: AuthMethodType = { psk: {} }
         const paramsBuffer = createPSKMethodParamsBorsh(program, {
           ssid: 'new test ssid ' + i,
@@ -1649,8 +1649,8 @@ export const planTests = () =>
         authMethods.push(authMethodPda)
       }
 
-      // Add first 3 auth methods successfully
-      for (let i = 0; i < 3; i++) {
+      // Add first 2 auth methods successfully
+      for (let i = 0; i < 2; i++) {
         await program.methods
           .addAuthMethod()
           .accountsPartial({
@@ -1665,7 +1665,7 @@ export const planTests = () =>
 
       // Verify we have 3 auth methods
       let plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethods.length).toBe(3)
+      expect(plan.authMethods.length).toBe(2)
 
       // Try to add the 4th auth method - should fail
       try {
@@ -1674,7 +1674,7 @@ export const planTests = () =>
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             plan: planPda,
-            authMethod: authMethods[3],
+            authMethod: authMethods[2],
             device: mock.devicePda,
           })
           .signers([mock.serviceProvider])

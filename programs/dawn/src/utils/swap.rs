@@ -89,33 +89,141 @@ pub fn swap_amounts<'info>(
 ) -> Result<(u64, u64)> {
     let pool = raydium_pool.load()?;
 
-    // sort vaults (usdc and dawn) by key
-    let (vault_0, vault_1) = {
+    // Sort vaults consistently: vault_0 is DAWN, vault_1 is USDC (when DAWN is token_0)
+    let (vault_0_amount, vault_1_amount, is_dawn_token_0) = {
         if raydium_dawn_vault.key() == pool.token_0_vault.key() {
-            (raydium_dawn_vault, raydium_usdc_vault)
+            (raydium_dawn_vault.amount, raydium_usdc_vault.amount, true)
         } else {
-            (raydium_usdc_vault, raydium_dawn_vault)
+            (raydium_usdc_vault.amount, raydium_dawn_vault.amount, false)
         }
     };
 
     // Get current vault amounts and calculate price using pool state's method
     let (token_0_price_x32, token_1_price_x32) =
-        pool.token_price_x32(vault_0.amount, vault_1.amount);
+        pool.token_price_x32(vault_0_amount, vault_1_amount);
 
-    let usdc_amount_in = usdc_to_swap;
+    if is_usdc_base {
+        // USDC is the base token (token_0 or token_1 depending on pool ordering)
+        // Calculate DAWN output from USDC input
+        let price_usdc_in_dawn = if is_dawn_token_0 {
+            token_1_price_x32
+        } else {
+            token_0_price_x32
+        };
 
-    // USDC is base, we're calculating DAWN output
-    let price = if is_usdc_base && vault_0.key() == raydium_usdc_vault.key() {
-        token_0_price_x32
+        let expected_dawn_out = (usdc_to_swap as u128)
+            .checked_mul(price_usdc_in_dawn)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(Q32)
+            .ok_or(DawnError::Underflow)? as u64;
+
+        Ok((usdc_to_swap, expected_dawn_out))
     } else {
-        token_1_price_x32
+        let price_usdc_in_dawn: u128 = if is_dawn_token_0 {
+            token_1_price_x32
+        } else {
+            (Q32 as u128)
+                .checked_mul(Q32 as u128)
+                .ok_or(DawnError::Overflow)?
+                .checked_div(token_0_price_x32)
+                .ok_or(DawnError::Underflow)?
+        };
+
+        let expected_dawn_out = (usdc_to_swap as u128)
+            .checked_mul(price_usdc_in_dawn)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(Q32)
+            .ok_or(DawnError::Underflow)? as u64;
+
+        // When USDC is quote token, swap_amounts returns the USDC amount as-is
+        // The actual adjustment happens in calculate_actual_usdc_input
+        Ok((usdc_to_swap, expected_dawn_out))
+    }
+}
+
+/// Calculate the actual USDC amount to use for swap, handling both base and quote token cases
+///
+/// When USDC is the base token (is_usdc_base = true), returns usdc_amount_in directly.
+/// When USDC is the quote token (is_usdc_base = false), calculates max_usdc_in from min_dawn_out
+/// to ensure we get at least min_dawn_out while spending at most the calculated amount.
+///
+/// This function centralizes the logic for handling swap direction, preventing code duplication
+/// between claim.rs and payment.rs.
+///
+/// Returns the actual USDC amount to use for swap_base_input.
+pub fn calculate_actual_usdc_input<'info>(
+    raydium_pool: &AccountLoader<'info, PoolState>,
+    raydium_usdc_vault: &Account<'info, TokenAccount>,
+    raydium_dawn_vault: &Account<'info, TokenAccount>,
+    is_usdc_base: bool,
+    usdc_amount_in: u64,
+    min_dawn_out: u64,
+) -> Result<u64> {
+    if is_usdc_base {
+        // USDC is the base token; use usdc_amount_in directly
+        Ok(usdc_amount_in)
+    } else {
+        // USDC is the quote token; calculate max_usdc_in from min_dawn_out
+        let pool_state = raydium_pool.load()?;
+        let max_usdc_in = calculate_max_usdc_in(
+            &pool_state,
+            raydium_dawn_vault,
+            raydium_usdc_vault,
+            min_dawn_out,
+        )?;
+        // Ensure we don't exceed available USDC to swap
+        Ok(max_usdc_in.min(usdc_amount_in))
+    }
+}
+
+/// Calculate max_usdc_in from min_dawn_out when USDC is the quote token
+///
+/// This function handles the case where USDC is token_1 (quote token) and we need to
+/// calculate the maximum USDC input required to get at least min_dawn_out.
+///
+/// Returns the calculated max_usdc_in value.
+pub fn calculate_max_usdc_in(
+    pool_state: &PoolState,
+    raydium_dawn_vault: &Account<TokenAccount>,
+    raydium_usdc_vault: &Account<TokenAccount>,
+    min_dawn_out: u64,
+) -> Result<u64> {
+    // sort vaults (usdc and dawn) by key
+    let (vault_0_amount, vault_1_amount) = {
+        if raydium_dawn_vault.key() == pool_state.token_0_vault.key() {
+            (raydium_dawn_vault.amount, raydium_usdc_vault.amount)
+        } else {
+            (raydium_usdc_vault.amount, raydium_dawn_vault.amount)
+        }
     };
 
-    let expected_out = (usdc_amount_in as u128)
-        .checked_mul(price)
+    let (_token_0_price_x32, token_1_price_x32) =
+        pool_state.token_price_x32(vault_0_amount, vault_1_amount);
+
+    // Calculate price of USDC in DAWN terms
+    let price_usdc_in_dawn = if raydium_dawn_vault.key() == pool_state.token_0_vault.key() {
+        token_1_price_x32 as u64
+    } else {
+        let inverse_price = (Q32 as u128)
+            .checked_mul(Q32 as u128)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(token_1_price_x32 as u128)
+            .ok_or(DawnError::Underflow)?;
+        inverse_price as u64
+    };
+
+    let max_usdc_in_base = (min_dawn_out as u128)
+        .checked_mul(Q32)
         .ok_or(DawnError::Overflow)?
-        .checked_div(Q32)
+        .checked_div(price_usdc_in_dawn as u128)
+        .ok_or(DawnError::Underflow)?;
+
+    // Add 1% buffer: max_usdc_in = max_usdc_in_base * 101 / 100
+    let max_usdc_in = max_usdc_in_base
+        .checked_mul(101)
+        .ok_or(DawnError::Overflow)?
+        .checked_div(100)
         .ok_or(DawnError::Underflow)? as u64;
 
-    Ok((usdc_amount_in, expected_out))
+    Ok(max_usdc_in)
 }

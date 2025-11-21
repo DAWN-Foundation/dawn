@@ -145,10 +145,13 @@ impl DawnApp {
             DawnError::OutsideParentBounds,
         );
         require!(speed <= parent_plan.speed, DawnError::OutsideParentBounds);
-        require!(
-            capacity <= parent_plan.capacity,
-            DawnError::OutsideParentBounds
-        );
+        if parent_plan.capacity > 0 {
+            require!(capacity > 0, DawnError::OutsideParentBounds);
+            require!(
+                capacity <= parent_plan.capacity,
+                DawnError::OutsideParentBounds
+            );
+        }
 
         // Initialize Access Domain for L2 plan
         let access_domain = &mut ctx.accounts.access_domain;
