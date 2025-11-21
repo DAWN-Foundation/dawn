@@ -11,6 +11,7 @@ export async function registerPskAuthMethodCommand(
   program: Program<Dawn>,
   authority: PublicKey,
   plan: PublicKey,
+  device: PublicKey,
   ssid: string,
   securityStandard: 'WPA2_PSK' | 'WPA3_PSK' = 'WPA3_PSK',
   encryptionAlgorithm:
@@ -28,7 +29,12 @@ export async function registerPskAuthMethodCommand(
     pskRotationInterval,
   }
 
-  return await authManager.registerPskAuthMethod(authority, plan, config)
+  return await authManager.registerPskAuthMethod(
+    authority,
+    plan,
+    device,
+    config,
+  )
 }
 
 /**
@@ -58,6 +64,7 @@ export async function registerPskAuthCommand(
   program: Program<Dawn>,
   authority: PublicKey,
   plan: PublicKey,
+  device: PublicKey,
   clientPubkey: PublicKey,
   psk: string,
   ssid: string,
@@ -85,6 +92,7 @@ export async function registerPskAuthCommand(
   return await authManager.registerPskAuth(
     authority,
     plan,
+    device,
     clientPubkey,
     psk,
     config,
