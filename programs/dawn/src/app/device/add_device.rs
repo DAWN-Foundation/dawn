@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{DeviceAdded, DeviceLocationAdded, LocalDomainAdded},
