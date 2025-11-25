@@ -169,7 +169,7 @@ export interface RawMock {
   deviceName: string
   deviceLatitude: number
   deviceLongitude: number
-  devicePlacement: [number, number]
+  devicePlacement: string
   deviceHeight: number
   deviceMacAddress: MacAddress
   localDomain: string

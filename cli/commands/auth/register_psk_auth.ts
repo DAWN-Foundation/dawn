@@ -3,6 +3,7 @@ import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../../target/types/dawn'
 import { AuthManager } from '../../../sdk/client/managers/auth'
 import { PSKNetworkConfig } from '../../../sdk/utils/types'
+import { connect, getFlag, getMock } from '../../shared/cli-utils'
 
 /**
  * CLI command to register PSK authentication method
@@ -10,9 +11,9 @@ import { PSKNetworkConfig } from '../../../sdk/utils/types'
 export async function registerPskAuthMethodCommand(
   program: Program<Dawn>,
   authority: PublicKey,
-  plan: PublicKey,
   device: PublicKey,
   ssid: string,
+  configPda: PublicKey,
   securityStandard: 'WPA2_PSK' | 'WPA3_PSK' = 'WPA3_PSK',
   encryptionAlgorithm:
     | 'AES_CCMP'
@@ -31,9 +32,9 @@ export async function registerPskAuthMethodCommand(
 
   return await authManager.registerPskAuthMethod(
     authority,
-    plan,
     device,
     config,
+    configPda,
   )
 }
 
@@ -63,11 +64,11 @@ export async function registerPskCredentialCommand(
 export async function registerPskAuthCommand(
   program: Program<Dawn>,
   authority: PublicKey,
-  plan: PublicKey,
   device: PublicKey,
   clientPubkey: PublicKey,
   psk: string,
   ssid: string,
+  configPda: PublicKey,
   securityStandard: 'WPA2_PSK' | 'WPA3_PSK' = 'WPA3_PSK',
   encryptionAlgorithm:
     | 'AES_CCMP'
@@ -91,10 +92,52 @@ export async function registerPskAuthCommand(
 
   return await authManager.registerPskAuth(
     authority,
-    plan,
     device,
     clientPubkey,
     psk,
     config,
+    configPda,
   )
 }
+
+async function main() {
+  const { wallet, connection, program } = await connect()
+  const mock = getMock()
+  console.log({ PROGRAM_ID: program.programId.toBase58() })
+
+  const devicePda = new PublicKey(getFlag('--device') || mock.devicePda)
+  const clientPubkey = new PublicKey(
+    getFlag('--client') || wallet.payer.publicKey,
+  )
+  const configPda = new PublicKey(getFlag('--config') || mock.configPda)
+  const psk = getFlag('--psk') || 'SuperSecurePassword123!'
+  const ssid = getFlag('--ssid') || 'DawnTestNetwork'
+
+  try {
+    const {
+      authMethodSignature,
+      credentialSignature,
+      authMethodPda,
+      credentialPda,
+    } = await registerPskAuthCommand(
+      program,
+      wallet.payer.publicKey,
+      devicePda,
+      clientPubkey,
+      psk,
+      ssid,
+      configPda,
+    )
+
+    console.log({
+      authMethodSignature,
+      credentialSignature,
+      authMethodPda: authMethodPda.toBase58(),
+      credentialPda: credentialPda.toBase58(),
+    })
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+main().catch(console.error)

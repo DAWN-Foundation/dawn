@@ -20,9 +20,9 @@ export class AuthManager {
    */
   async registerPskAuthMethod(
     authority: PublicKey,
-    plan: PublicKey,
     device: PublicKey,
     config: PSKNetworkConfig,
+    configPda: PublicKey,
   ): Promise<{ signature: string; authMethodPda: PublicKey }> {
     const params = createPSKMethodParams(config)
     validatePSKMethodParams(params)
@@ -35,12 +35,16 @@ export class AuthManager {
       parametersBuffer,
     )
 
+    console.log("device", device.toBase58())
+
     const signature = await this.program.methods
       .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
-      .accountsPartial({
+      .accountsStrict({
         caller: authority,
-        config: mock.configPda,
+        config: configPda,
         authMethod: authMethodPda,
+        device,
+        systemProgram: SystemProgram.programId,
       })
       .rpc()
 
@@ -68,7 +72,7 @@ export class AuthManager {
 
     const signature = await this.program.methods
       .registerCredential(clientPubkey, Array.from(serializedData))
-      .accountsPartial({
+      .accountsStrict({
         caller: authority,
         authMethod: authMethodPda,
         credential: credentialPda,
@@ -84,11 +88,11 @@ export class AuthManager {
    */
   async registerPskAuth(
     authority: PublicKey,
-    plan: PublicKey,
     device: PublicKey,
     clientPubkey: PublicKey,
     psk: string,
     config: PSKNetworkConfig,
+    configPda: PublicKey,
   ): Promise<{
     authMethodSignature: string
     credentialSignature: string
@@ -97,7 +101,7 @@ export class AuthManager {
   }> {
     // Register auth method
     const { signature: authMethodSignature, authMethodPda } =
-      await this.registerPskAuthMethod(authority, plan, device, config)
+      await this.registerPskAuthMethod(authority, device, config, configPda)
 
     // Register credential
     const { signature: credentialSignature, credentialPda } =

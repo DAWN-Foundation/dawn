@@ -25,6 +25,7 @@ async function main() {
       owner: b.publicKey.toBase58(),
       account: {
         ...b.account,
+        authMethods: "[" + b.account.authMethods.map((a) => a.toBase58()).join(',') + "]",
         owner: b.account.owner.toBase58(),
         localDomain: b.account.localDomain.toBase58(),
         price: b.account.price.toString(),
