@@ -126,8 +126,8 @@ impl DawnApp {
             .ok_or(DawnError::NoAvailableBlocks)?;
 
         let block_base = root_ip_block.get_block_base_ipv4_checked(block_idx)?;
-        // if block is not initialized, initialize it
-        if ip_block.block_base == 0 {
+        // if block is not initialized, initialize it (use created_at as robust init flag)
+        if ip_block.created_at == 0 {
             ip_block.initialize(
                 subscriber_tier,
                 root_block_index,

@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{DeviceAdded, DeviceLocationAdded, LocalDomainAdded},
@@ -27,8 +26,8 @@ pub struct AddDevice<'info> {
         seeds = [
             DeviceModel::SEED_PREFIX.as_ref(),
             device_model.device_type.to_seed(),
-            &device_model.manufacturer.trim().as_bytes()[..min(device_model.manufacturer.trim().len(), MAX_SEED_LEN)],
-            &device_model.model.trim().as_bytes()[..min(device_model.model.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device_model.manufacturer),
+            &hash_string_seed(&device_model.model),
         ],
         bump = device_model.bump
     )]
@@ -109,19 +108,21 @@ impl DawnApp {
             DawnError::InvalidPlacementTilt
         );
 
-        // Make sure the name is not empty
-        require!(!name.is_empty(), DawnError::EmptyDeviceName);
+        // Make sure the name is not empty (check after trimming)
+        let trimmed_name = name.trim();
+        require!(!trimmed_name.is_empty(), DawnError::EmptyDeviceName);
 
-        // Make sure the name is not too long
-        require!(name.len() <= 32, DawnError::DeviceNameTooLong,);
+        // Make sure the name is not too long (check after trimming)
+        require!(trimmed_name.len() <= 32, DawnError::DeviceNameTooLong,);
 
-        // Make sure the local domain name is not empty or too long
+        // Make sure the local domain name is not empty or too long (check after trimming)
+        let trimmed_local_domain = local_domain_name.trim();
         require!(
-            !local_domain_name.is_empty(),
+            !trimmed_local_domain.is_empty(),
             DawnError::EmptyLocalDomainName
         );
         require!(
-            local_domain_name.len() <= 32,
+            trimmed_local_domain.len() <= 32,
             DawnError::LocalDomainNameTooLong
         );
 

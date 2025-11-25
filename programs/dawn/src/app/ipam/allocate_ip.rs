@@ -84,7 +84,7 @@ impl DawnApp {
             DawnError::InvalidTier
         );
 
-        let device = &mut ctx.accounts.device;
+        let device = &ctx.accounts.device;
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;
@@ -98,8 +98,8 @@ impl DawnApp {
         let root_block_index = root_ip_block.index;
         let current_time = Clock::get()?.unix_timestamp;
 
-        // If block is not initialized, initialize it
-        if ip_block.block_base == 0 {
+        // If block is not initialized, initialize it (use created_at as robust init flag)
+        if ip_block.created_at == 0 {
             ip_block.initialize(tier, root_block_index, block_base, ctx.bumps.ip_block)?;
             emit!(IpBlockAdded {
                 ip_block: ip_block.key(),

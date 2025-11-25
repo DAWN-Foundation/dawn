@@ -176,6 +176,12 @@ impl DawnApp {
             DawnError::ClaimTooEarly
         );
 
+        // Validate subscription is not expired
+        require!(
+            ctx.accounts.subscription.expiration >= current_time,
+            DawnError::SubscriptionExpired
+        );
+
         // Calculate number of days since last claim
         let days_since_claim = ((current_time - last_claim) / SECONDS_PER_DAY as i64) as u64;
 
@@ -276,6 +282,16 @@ impl DawnApp {
                 // Use current balance which may have changed after claiming
                 let escrow_dawn_before_swap = ctx.accounts.escrow_dawn_vault.amount;
 
+                // Calculate actual USDC amount to use for swap (handles both base and quote token cases)
+                let actual_usdc_amount_in = crate::utils::calculate_actual_usdc_input(
+                    &ctx.accounts.raydium_pool,
+                    &ctx.accounts.raydium_usdc_vault,
+                    &ctx.accounts.raydium_dawn_vault,
+                    is_usdc_base,
+                    usdc_amount_in,
+                    min_dawn_out,
+                )?;
+
                 // Create CPI accounts for the swap
                 let swap_cpi = cpi::accounts::Swap {
                     payer: plan_account,
@@ -299,13 +315,7 @@ impl DawnApp {
                 );
 
                 // Execute swap with user-supplied minimum
-                if is_usdc_base {
-                    // USDC is the base token; use swap_base_input
-                    cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
-                } else {
-                    // USDC is the quote token; use swap_base_output
-                    cpi::swap_base_output(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
-                }
+                cpi::swap_base_input(swap_cpi_ctx, actual_usdc_amount_in, min_dawn_out)?;
 
                 // Reload escrow DAWN vault to get actual received amount
                 ctx.accounts.escrow_dawn_vault.reload()?;
@@ -328,7 +338,15 @@ impl DawnApp {
             }
         }
 
-        subscription.last_claim = current_time;
+        // Update last_claim incrementally to preserve fractional days
+        subscription.last_claim = subscription
+            .last_claim
+            .checked_add(
+                (days_since_claim as i64)
+                    .checked_mul(SECONDS_PER_DAY as i64)
+                    .ok_or(DawnError::Overflow)?,
+            )
+            .ok_or(DawnError::Overflow)?;
 
         emit!(Claimed {
             subscription: subscription_key,

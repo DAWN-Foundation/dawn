@@ -145,7 +145,7 @@ export const deviceModelTests = () =>
       const deviceModelPda = getDeviceModelPda(
         program,
         mock.deviceType,
-        manufacturer.trim(),
+        manufacturer,
         mock.deviceModel,
       )
 
@@ -174,7 +174,7 @@ export const deviceModelTests = () =>
         program,
         mock.deviceType,
         mock.deviceManufacturer,
-        model.trim(),
+        model,
       )
 
       try {
@@ -201,7 +201,7 @@ export const deviceModelTests = () =>
       const deviceModelPda = getDeviceModelPda(
         program,
         mock.deviceType,
-        manufacturer.substring(0, MAX_SEED_LENGTH),
+        manufacturer,
         mock.deviceModel,
       )
 
@@ -230,7 +230,7 @@ export const deviceModelTests = () =>
         program,
         mock.deviceType,
         mock.deviceManufacturer,
-        model.substring(0, MAX_SEED_LENGTH),
+        model,
       )
 
       try {
@@ -360,5 +360,234 @@ export const deviceModelTests = () =>
       expect(deviceModel.manufacturer).toBe(mock.deviceManufacturer)
       expect(deviceModel.model).toBe(mock.deviceModel)
       expect(deviceModel.deviceType).toStrictEqual(deviceType)
+    })
+
+    test('collision prevention: long manufacturer strings that differ after 32 chars produce different PDAs', async () => {
+      // Test case: Two manufacturer strings that would collide with truncation
+      // but produce different PDAs with hashing
+      const manufacturer1 = 'a'.repeat(32) + 'X'
+      const manufacturer2 = 'a'.repeat(32) + 'Y'
+      const model = 'TestModel'
+
+      const deviceModelPda1 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer1,
+        model,
+      )
+      const deviceModelPda2 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer2,
+        model,
+      )
+
+      // With truncation, these would be the same. With hashing, they should be different.
+      expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
+
+      // Create first device model
+      const tx1 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer1, model)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda1,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx1)
+
+      // Try to create second device model - should succeed (different PDA)
+      const tx2 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer2, model)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda2,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx2)
+
+      // Verify both device models exist
+      const deviceModel1 = await program.account.deviceModel.fetch(
+        deviceModelPda1,
+      )
+      const deviceModel2 = await program.account.deviceModel.fetch(
+        deviceModelPda2,
+      )
+
+      expect(deviceModel1.manufacturer).toBe(manufacturer1.trim())
+      expect(deviceModel2.manufacturer).toBe(manufacturer2.trim())
+    })
+
+    test('collision prevention: long model strings that differ after 32 chars produce different PDAs', async () => {
+      // Test case: Two model strings that would collide with truncation
+      const manufacturer = 'TestManufacturer'
+      const model1 = 'b'.repeat(32) + 'X'
+      const model2 = 'b'.repeat(32) + 'Y'
+
+      const deviceModelPda1 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer,
+        model1,
+      )
+      const deviceModelPda2 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer,
+        model2,
+      )
+
+      // With truncation, these would be the same. With hashing, they should be different.
+      expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
+
+      // Create first device model
+      const tx1 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer, model1)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda1,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx1)
+
+      // Try to create second device model - should succeed (different PDA)
+      const tx2 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer, model2)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda2,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx2)
+
+      // Verify both device models exist
+      const deviceModel1 = await program.account.deviceModel.fetch(
+        deviceModelPda1,
+      )
+      const deviceModel2 = await program.account.deviceModel.fetch(
+        deviceModelPda2,
+      )
+
+      expect(deviceModel1.model).toBe(model1.trim())
+      expect(deviceModel2.model).toBe(model2.trim())
+    })
+
+    test('whitespace handling: leading/trailing whitespace produces same PDA as trimmed version', async () => {
+      // Use unique values to avoid conflicts with existing device models
+      const manufacturer = 'WhitespaceTestManufacturer'
+      const model = 'WhitespaceTestModel'
+      const manufacturerWithWhitespace = '  ' + manufacturer + '  '
+      const modelWithWhitespace = '  ' + model + '  '
+
+      const deviceModelPda1 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer,
+        model,
+      )
+      const deviceModelPda2 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturerWithWhitespace,
+        modelWithWhitespace,
+      )
+
+      // Should produce the same PDA since hashStringSeed trims
+      expect(deviceModelPda1.equals(deviceModelPda2)).toBeTruthy()
+
+      // Create device model with whitespace
+      const tx = await program.methods
+        .addDeviceModel(
+          mock.deviceType,
+          manufacturerWithWhitespace,
+          modelWithWhitespace,
+        )
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda1,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx)
+
+      // Verify device model was created with trimmed values
+      const deviceModel = await program.account.deviceModel.fetch(
+        deviceModelPda1,
+      )
+      expect(deviceModel.manufacturer).toBe(manufacturer)
+      expect(deviceModel.model).toBe(model)
+    })
+
+    test('case sensitivity: different case produces different PDAs', async () => {
+      // Use unique values to avoid conflicts with existing device models
+      const manufacturer1 = 'CaseTestManufacturer'
+      const manufacturer2 = 'casetestmanufacturer'
+      const model = 'CaseTestModel'
+
+      const deviceModelPda1 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer1,
+        model,
+      )
+      const deviceModelPda2 = getDeviceModelPda(
+        program,
+        mock.deviceType,
+        manufacturer2,
+        model,
+      )
+
+      // Case differences should produce different PDAs
+      expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
+
+      // Create first device model
+      const tx1 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer1, model)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda1,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx1)
+
+      // Try to create second device model - should succeed (different PDA)
+      const tx2 = await program.methods
+        .addDeviceModel(mock.deviceType, manufacturer2, model)
+        .accountsPartial({
+          caller: wallet.publicKey,
+          config: mock.configPda,
+          deviceModel: deviceModelPda2,
+        })
+        .signers([wallet.payer])
+        .transaction()
+
+      await confirmTx(provider, tx2)
+
+      // Verify both device models exist
+      const deviceModel1 = await program.account.deviceModel.fetch(
+        deviceModelPda1,
+      )
+      const deviceModel2 = await program.account.deviceModel.fetch(
+        deviceModelPda2,
+      )
+
+      expect(deviceModel1.manufacturer).toBe(manufacturer1)
+      expect(deviceModel2.manufacturer).toBe(manufacturer2)
     })
   })
