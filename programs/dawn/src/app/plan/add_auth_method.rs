@@ -70,8 +70,8 @@ impl DawnApp {
             DawnError::DuplicateAuthMethods
         );
 
-        // Check if we haven't exceeded the maximum number of auth methods (2)
-        require!(plan.auth_methods.len() < 2, DawnError::TooManyAuthMethods);
+        // Check if we haven't exceeded the maximum number of auth methods (3)
+        require!(plan.auth_methods.len() < 3, DawnError::TooManyAuthMethods);
 
         // Add the auth method to the plan
         plan.auth_methods.push(auth_method.key());
@@ -90,8 +90,8 @@ impl DawnApp {
         remaining_accounts: &[AccountInfo],
         caller: &Pubkey,
     ) -> Result<Vec<Pubkey>> {
-        // Check that we don't have more than 2 auth methods
-        require!(remaining_accounts.len() <= 2, DawnError::TooManyAuthMethods);
+        // Check that we don't have more than 3 auth methods
+        require!(remaining_accounts.len() <= 3, DawnError::TooManyAuthMethods);
 
         let mut auth_method_keys = Vec::new();
 

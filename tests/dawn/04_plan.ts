@@ -383,54 +383,128 @@ export const planTests = () =>
       }
     })
 
-    test('cannot add more than 2 auth methods', async () => {
+    test('cannot add more than 3 auth methods', async () => {
       const serializer = new AuthParamsSerializer(program)
-      const p2 = serializer.serializePSKParams({
-        ssid: 'test1',
-        securityStandard: 'WPA3_PSK',
-        encryptionAlgorithm: 'AES_GCMP',
-        pskRotationInterval: 86400, // 24 hours
-      })
-      const [m1] = getPskAuthMethodPda(
+      // Create and register 4 auth methods
+      const authMethodParams = [
+        { ssid: 'test1' },
+        { ssid: 'test2' },
+        { ssid: 'test3' },
+        { ssid: 'test4' },
+      ]
+
+      const authMethods: PublicKey[] = []
+
+      for (let i = 0; i < 4; i++) {
+        const paramsBuffer = serializer.serializePSKParams({
+          ssid: authMethodParams[i].ssid,
+          securityStandard: 'WPA3_PSK',
+          encryptionAlgorithm: 'AES_GCMP',
+          pskRotationInterval: 86400, // 24 hours
+        })
+
+        const [authMethodPda] = getPskAuthMethodPda(
+          program,
+          mock.serviceProvider.publicKey,
+          mock.devicePda,
+          paramsBuffer,
+        )
+
+        const authMethodType: AuthMethodType = { psk: {} }
+
+        await program.methods
+          .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+          .accountsPartial({
+            caller: mock.serviceProvider.publicKey,
+            config: mock.configPda,
+            authMethod: authMethodPda,
+            device: mock.devicePda,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+
+        authMethods.push(authMethodPda)
+      }
+
+      const authMethods3 = [authMethods[0], authMethods[1], authMethods[2]] // 3 auth methods should succeed
+      const authMethods4 = authMethods // 4 auth methods should fail
+
+      // Create a unique plan name for this test
+      const planName = 'plan max 3 auth methods'
+
+      // First, test that 3 auth methods succeed
+      const [planPda3] = getPlanPda(
         program,
-        mock.serviceProvider.publicKey,
-        mock.devicePda,
-        p2,
+        mock.localDomainPda,
+        null,
+        planName,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
       )
 
-      const p3 = serializer.serializePSKParams({
-        ssid: 'test2',
-        securityStandard: 'WPA3_PSK',
-        encryptionAlgorithm: 'AES_GCMP',
-        pskRotationInterval: 86400, // 24 hours
-      })
-      const [m2] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        mock.devicePda,
-        p3,
-      )
-
-      const p4 = serializer.serializePSKParams({
-        ssid: 'test3',
-        securityStandard: 'WPA3_PSK',
-        encryptionAlgorithm: 'AES_GCMP',
-        pskRotationInterval: 86400, // 24 hours
-      })
-      const [m3] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        mock.devicePda,
-        p4,
-      )
-
-      const authMethods = [m1, m2, m3] // 3 auth methods should fail
-
-      // Create distribution domain PDA for L3 plan
-      const [distributionDomainPda] = PublicKey.findProgramAddressSync(
+      const [distributionDomainPda3] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('distribution_domain'),
-          mock.planPda.toBuffer(),
+          planPda3.toBuffer(),
+          mock.localDomainPda.toBuffer(),
+        ],
+        program.programId,
+      )
+
+      // This should succeed with 3 auth methods
+      await program.methods
+        .addL3Plan(
+          planName,
+          mock.planPrice,
+          mock.planDuration,
+          mock.planSpeed,
+          mock.planCapacity,
+          null,
+        )
+        .accountsStrict({
+          caller: mock.serviceProvider.publicKey,
+          localDomain: mock.localDomainPda,
+          serviceAgreement: mock.serviceAgreementPda,
+          plan: planPda3,
+          distributionDomain: distributionDomainPda3,
+          systemProgram: SystemProgram.programId,
+        })
+        .remainingAccounts(
+          authMethods3.map((pubkey) => ({
+            pubkey,
+            isWritable: false,
+            isSigner: false,
+          })),
+        )
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      // Verify the plan was created with 3 auth methods
+      const plan3 = await program.account.plan.fetch(planPda3)
+      expect(plan3.authMethods.length).toBe(3)
+
+      // Now test that 4 auth methods fail
+      const [planPda4] = getPlanPda(
+        program,
+        mock.localDomainPda,
+        null,
+        planName + ' fail',
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
+      )
+
+      const [distributionDomainPda4] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('distribution_domain'),
+          planPda4.toBuffer(),
           mock.localDomainPda.toBuffer(),
         ],
         program.programId,
@@ -439,7 +513,7 @@ export const planTests = () =>
       try {
         await program.methods
           .addL3Plan(
-            mock.planName,
+            planName + ' fail',
             mock.planPrice,
             mock.planDuration,
             mock.planSpeed,
@@ -450,12 +524,12 @@ export const planTests = () =>
             caller: mock.serviceProvider.publicKey,
             localDomain: mock.localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
-            plan: mock.planPda,
-            distributionDomain: distributionDomainPda,
+            plan: planPda4,
+            distributionDomain: distributionDomainPda4,
             systemProgram: SystemProgram.programId,
           })
           .remainingAccounts(
-            authMethods.map((pubkey) => ({
+            authMethods4.map((pubkey) => ({
               pubkey,
               isWritable: false,
               isSigner: false,
@@ -1337,32 +1411,6 @@ export const planTests = () =>
         p2,
       )
 
-      // Create first auth method
-      const pskMethodType: AuthMethodType = { psk: {} }
-
-      await program.methods
-        .registerAuthMethod(pskMethodType as any, [...p1])
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: m1,
-          device: mock.devicePda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
-      // Create second auth method
-      await program.methods
-        .registerAuthMethod(pskMethodType as any, [...p2])
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: m2,
-          device: mock.devicePda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
-
       const [planPda] = getPlanPda(
         program,
         mock.localDomainPda,
@@ -1572,7 +1620,7 @@ export const planTests = () =>
       }
     })
 
-    test('cannot exceed maximum of 2 auth methods on plan', async () => {
+    test('cannot exceed maximum of 3 auth methods on plan', async () => {
       // Create a plan
       const planName = 'test plan max auth methods'
       const [planPda] = getPlanPda(
@@ -1619,7 +1667,7 @@ export const planTests = () =>
       // Create 4 auth methods and devices
       const authMethods: PublicKey[] = []
 
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 4; i++) {
         const authMethodType: AuthMethodType = { psk: {} }
         const paramsBuffer = createPSKMethodParamsBorsh(program, {
           ssid: 'new test ssid ' + i,
@@ -1649,8 +1697,8 @@ export const planTests = () =>
         authMethods.push(authMethodPda)
       }
 
-      // Add first 2 auth methods successfully
-      for (let i = 0; i < 2; i++) {
+      // Add first 3 auth methods successfully
+      for (let i = 0; i < 3; i++) {
         await program.methods
           .addAuthMethod()
           .accountsPartial({
@@ -1665,7 +1713,7 @@ export const planTests = () =>
 
       // Verify we have 3 auth methods
       let plan = await program.account.plan.fetch(planPda)
-      expect(plan.authMethods.length).toBe(2)
+      expect(plan.authMethods.length).toBe(3)
 
       // Try to add the 4th auth method - should fail
       try {
@@ -1674,7 +1722,7 @@ export const planTests = () =>
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             plan: planPda,
-            authMethod: authMethods[2],
+            authMethod: authMethods[3],
             device: mock.devicePda,
           })
           .signers([mock.serviceProvider])
