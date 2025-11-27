@@ -918,7 +918,9 @@ export const deviceTests = () =>
           'deviceAdded',
         )
         expect(deviceEvent.device.equals(devicePda)).toBeTruthy()
-        expect(deviceEvent.deviceLocation.equals(deviceLocationPda)).toBeTruthy()
+        expect(
+          deviceEvent.deviceLocation.equals(deviceLocationPda),
+        ).toBeTruthy()
         expect(deviceEvent.owner.equals(beneficiary.publicKey)).toBeTruthy()
         expect(deviceEvent.model.equals(mock.deviceModelPda)).toBeTruthy()
         expect(deviceEvent.name).toBe(deviceName)
@@ -930,7 +932,9 @@ export const deviceTests = () =>
           'localDomainAdded',
         )
         expect(localDomainEvent.localDomain.equals(localDomainPda)).toBeTruthy()
-        expect(localDomainEvent.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(
+          localDomainEvent.owner.equals(beneficiary.publicKey),
+        ).toBeTruthy()
         expect(localDomainEvent.name).toBe(localDomainName)
 
         // Verify DeviceLocationAdded event
@@ -969,9 +973,9 @@ export const deviceTests = () =>
           localDomainPda,
         )
         expect(localDomain.owner.equals(beneficiary.publicKey)).toBeTruthy()
-        expect(Buffer.from(localDomain.name).toString('utf8').split('\0')[0]).toBe(
-          localDomainName,
-        )
+        expect(
+          Buffer.from(localDomain.name).toString('utf8').split('\0')[0],
+        ).toBe(localDomainName)
       })
 
       test('cannot add same device for beneficiary twice', async () => {
@@ -1110,7 +1114,9 @@ export const deviceTests = () =>
           // Should fail with latitude validation error
           expect(error).toBeDefined()
           if (error instanceof AnchorError) {
-            expect(error.error.errorMessage).toBe('Latitude coordinate is invalid')
+            expect(error.error.errorMessage).toBe(
+              'Latitude coordinate is invalid',
+            )
           }
         }
 

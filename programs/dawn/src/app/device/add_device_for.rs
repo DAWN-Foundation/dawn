@@ -24,7 +24,7 @@ pub struct AddDeviceFor<'info> {
     /// The beneficiary who will receive the device
     /// CHECK: Used only for PDA derivation and as beneficiary
     pub beneficiary: AccountInfo<'info>,
-    
+
     /// The device model account
     #[account(
         seeds = [
