@@ -36,15 +36,16 @@ function hashStringSeed(input: string): Buffer {
 
 export function getDevicePda(
   program: Program<Dawn>,
-  owner: Keypair,
+  owner: Keypair | PublicKey,
   model: PublicKey,
   name: string,
   macAddress: MacAddress,
 ): PublicKey {
+  const ownerPubkey = owner instanceof PublicKey ? owner : owner.publicKey
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from(owner.publicKey.toBytes()),
+      Buffer.from(ownerPubkey.toBytes()),
       Buffer.from(model.toBytes()),
       hashStringSeed(name),
       Buffer.from(macAddress),
