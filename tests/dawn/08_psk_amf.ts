@@ -15,6 +15,7 @@ import {
 } from '../../sdk/pda/amf'
 import { BankrunProvider } from 'anchor-bankrun'
 import { beforeAll, expect } from '@jest/globals'
+import { AuthParamsSerializer } from '../../sdk/utils/auth-borsh'
 
 export const pskAmfTests = () =>
   describe('dawn::psk_amf', () => {
@@ -59,9 +60,16 @@ export const pskAmfTests = () =>
 
       authMethodPda = pskAuthMethodPda
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       // Register the auth method on-chain
       const signature = await program.methods
-        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
+        .registerAuthMethod(
+          { psk: {} },
+          encryptionKey,
+          Array.from(parametersBuffer),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -97,27 +105,43 @@ export const pskAmfTests = () =>
       )
       const serializedData = serializePskCredentialData(credentialData)
 
+      const serializer = new AuthParamsSerializer(program)
+      const parametersBuffer1 = serializer.serializePSKParams({
+        ssid: 'DawnTestNetwork1',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
+      const [pskAuthMethodPda] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.devicePda,
+        parametersBuffer1,
+      )
+
       credentialPda = getPskCredentialPda(
         program,
-        authMethodPda,
+        pskAuthMethodPda,
         clientKeypair.publicKey,
       )
 
       await program.methods
         .registerCredential(clientKeypair.publicKey, Array.from(serializedData))
         .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          authMethod: authMethodPda,
+          caller: mock.customer.publicKey,
+          authMethod: pskAuthMethodPda,
+          plan: mock.planPda,
+          subscription: mock.subscriptionPda,
           credential: credentialPda,
         })
-        .signers([mock.serviceProvider])
+        .signers([mock.customer])
         .rpc()
 
       // Verify the credential was created correctly
       const credential = await program.account.credential.fetch(credentialPda)
       expect(credential.createdAt.toNumber()).toBeGreaterThan(0)
       expect(credential.client.equals(clientKeypair.publicKey)).toBeTruthy()
-      expect(credential.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(credential.authMethod.equals(pskAuthMethodPda)).toBeTruthy()
 
       // Verify credential data structure
       const storedCredentialData = Buffer.from(credential.credentialData)
@@ -130,7 +154,7 @@ export const pskAmfTests = () =>
       })
     })
 
-    test('fails to register credential with wrong authority', async () => {
+    test('fails to register credential without valid subscription', async () => {
       const unauthorizedKeypair = anchor.web3.Keypair.generate()
 
       // Fund the unauthorized wallet
@@ -154,6 +178,7 @@ export const pskAmfTests = () =>
       )
 
       try {
+        // This should fail because unauthorizedKeypair doesn't have a subscription
         await program.methods
           .registerCredential(
             clientKeypair.publicKey,
@@ -162,6 +187,8 @@ export const pskAmfTests = () =>
           .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
+            plan: mock.planPda,
+            subscription: mock.subscriptionPda, // This subscription doesn't belong to unauthorizedKeypair
             credential: unauthorizedCredentialPda,
           })
           .signers([unauthorizedKeypair])
@@ -173,12 +200,32 @@ export const pskAmfTests = () =>
         expect(error).toBeTruthy()
         console.log(
           'Expected error for unauthorized credential registration:',
-          error.message,
+          error,
         )
       }
     })
 
     test('revokes PSK credential successfully', async () => {
+      const serializer = new AuthParamsSerializer(program)
+      const parametersBuffer1 = serializer.serializePSKParams({
+        ssid: 'DawnTestNetwork1',
+        securityStandard: 'WPA3_PSK',
+        encryptionAlgorithm: 'AES_GCMP',
+        pskRotationInterval: 86400, // 24 hours
+      })
+      const [pskAuthMethodPda] = getPskAuthMethodPda(
+        program,
+        mock.serviceProvider.publicKey,
+        mock.devicePda,
+        parametersBuffer1,
+      )
+
+      credentialPda = getPskCredentialPda(
+        program,
+        pskAuthMethodPda,
+        clientKeypair.publicKey,
+      )
+
       // Verify credential exists before revocation
       const credentialBefore = await program.account.credential.fetch(
         credentialPda,
@@ -190,7 +237,7 @@ export const pskAmfTests = () =>
         .revokeCredential()
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
-          authMethod: authMethodPda,
+          authMethod: pskAuthMethodPda,
           credential: credentialPda,
         })
         .signers([mock.serviceProvider])

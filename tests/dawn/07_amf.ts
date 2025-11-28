@@ -153,9 +153,12 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       const tx = await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
+        .registerAuthMethod(authMethodType as any, encryptionKey, paramsArray)
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -309,9 +312,13 @@ export const amfTests = () =>
       console.log('Device 2 AuthMethod PDA:', authMethod2Pda.toBase58())
       expect(authMethod1Pda.equals(authMethod2Pda)).toBe(false)
 
+      // Generate encryption keys for both auth methods
+      const encryptionKey1 = anchor.web3.Keypair.generate().publicKey
+      const encryptionKey2 = anchor.web3.Keypair.generate().publicKey
+
       // Register auth method for device 1
       await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
+        .registerAuthMethod(authMethodType as any, encryptionKey1, paramsArray)
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -323,7 +330,7 @@ export const amfTests = () =>
 
       // Register auth method for device 2 with SAME parameters
       await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
+        .registerAuthMethod(authMethodType as any, encryptionKey2, paramsArray)
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -347,7 +354,31 @@ export const amfTests = () =>
       expect(authMethod2.parameters).toStrictEqual(paramsArray)
     })
 
-    test('fails to register client credential with wrong authority', async () => {
+    test('adds EAP auth method to plan', async () => {
+      const providerWallet = provider.wallet
+      provider.wallet = new Wallet(mock.serviceProvider)
+
+      await program.methods
+        .addAuthMethod()
+        .accountsPartial({
+          caller: mock.serviceProvider.publicKey,
+          plan: mock.planPda,
+          authMethod: authMethodPda,
+          device: mock.devicePda,
+        })
+        .signers([mock.serviceProvider])
+        .rpc()
+
+      provider.wallet = providerWallet
+
+      // Verify the auth method was added to the plan
+      const plan = await program.account.plan.fetch(mock.planPda)
+      expect(
+        plan.authMethods.some((am) => am.equals(authMethodPda)),
+      ).toBeTruthy()
+    })
+
+    test('fails to register client credential without valid subscription', async () => {
       const unauthorizedKeypair = anchor.web3.Keypair.generate()
 
       // Fund the unauthorized wallet so it can pay for transaction fees
@@ -372,11 +403,14 @@ export const amfTests = () =>
       const credentialData = Array.from(serializedCredential)
 
       try {
+        // This should fail because unauthorizedKeypair doesn't have a subscription
         await program.methods
           .registerCredential(clientKeypair.publicKey, credentialData)
           .accountsPartial({
             caller: unauthorizedKeypair.publicKey,
             authMethod: authMethodPda,
+            plan: mock.planPda,
+            subscription: mock.subscriptionPda, // This subscription doesn't belong to unauthorizedKeypair
             credential: credentialPda,
           })
           .signers([unauthorizedKeypair])
@@ -387,7 +421,7 @@ export const amfTests = () =>
       } catch (error) {
         expect(error).toBeTruthy()
         console.log(error)
-        // Could check for specific error code if available
+        // Should fail with subscription validation error
       }
     })
 
@@ -415,16 +449,18 @@ export const amfTests = () =>
       )
 
       const providerWallet = provider.wallet
-      provider.wallet = new Wallet(mock.serviceProvider)
+      provider.wallet = new Wallet(mock.customer) // Use customer who has a subscription
 
       const tx = await program.methods
         .registerCredential(clientKeypair.publicKey, credentialData)
         .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
+          caller: mock.customer.publicKey,
           authMethod: authMethodPda,
+          plan: mock.planPda,
+          subscription: mock.subscriptionPda,
           credential: credentialPda,
         })
-        .signers([mock.serviceProvider])
+        .signers([mock.customer])
         .transaction()
 
       const txDetails = await confirmTx(provider, tx)
@@ -565,9 +601,12 @@ export const amfTests = () =>
         paramsBuffer,
       )
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       // This cast is needed to ensure compatibility with the exact type expected by Anchor
       await program.methods
-        .registerAuthMethod(authMethodType as any, paramsArray)
+        .registerAuthMethod(authMethodType as any, encryptionKey, paramsArray)
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
