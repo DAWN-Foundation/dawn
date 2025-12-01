@@ -32,7 +32,7 @@ pub struct RevokeConnection<'info> {
         mut,
         constraint = connection.auth_method == auth_method.key(),
         seeds = [
-            Connection::SEED_PREFIX.as_ref(),
+            Connection::SEED_PREFIX,
             connection.auth_method.as_ref(),
             connection.entity_a.as_ref(),
             connection.entity_b.as_ref(),

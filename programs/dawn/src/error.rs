@@ -185,6 +185,9 @@ pub enum DawnError {
     #[msg("Invalid auth method authority")]
     InvalidAuthMethodAuthority,
 
+    #[msg("Auth method not assigned to plan")]
+    AuthMethodNotInPlan,
+
     // IPAM errors
     #[msg("Invalid tier specified")]
     InvalidTier,

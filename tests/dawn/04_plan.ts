@@ -109,9 +109,17 @@ export const planTests = () =>
         parametersBuffer2,
       )
 
+      // Generate encryption keys for the auth methods
+      const encryptionKey1 = anchor.web3.Keypair.generate().publicKey
+      const encryptionKey2 = anchor.web3.Keypair.generate().publicKey
+
       // Register the auth method on-chain
       await program.methods
-        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer1))
+        .registerAuthMethod(
+          { psk: {} },
+          encryptionKey1,
+          Array.from(parametersBuffer1),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -122,7 +130,11 @@ export const planTests = () =>
         .rpc()
 
       await program.methods
-        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer2))
+        .registerAuthMethod(
+          { psk: {} },
+          encryptionKey2,
+          Array.from(parametersBuffer2),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -412,8 +424,15 @@ export const planTests = () =>
 
         const authMethodType: AuthMethodType = { psk: {} }
 
+        // Generate encryption key for the auth method
+        const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
         await program.methods
-          .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+          .registerAuthMethod(
+            authMethodType as any,
+            encryptionKey,
+            Array.from(paramsBuffer),
+          )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             config: mock.configPda,
@@ -1268,8 +1287,15 @@ export const planTests = () =>
         paramsArray,
       )
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       await program.methods
-        .registerAuthMethod(authMethodType as any, Array.from(paramsArray))
+        .registerAuthMethod(
+          authMethodType as any,
+          encryptionKey,
+          Array.from(paramsArray),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -1589,8 +1615,15 @@ export const planTests = () =>
         paramsArray,
       )
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       await program.methods
-        .registerAuthMethod(authMethodType as any, Array.from(paramsArray))
+        .registerAuthMethod(
+          authMethodType as any,
+          encryptionKey,
+          Array.from(paramsArray),
+        )
         .accountsPartial({
           caller: mock.customer.publicKey,
           config: mock.configPda,
@@ -1683,8 +1716,15 @@ export const planTests = () =>
           paramsBuffer,
         )
 
+        // Generate encryption key for the auth method
+        const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
         await program.methods
-          .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+          .registerAuthMethod(
+            authMethodType as any,
+            encryptionKey,
+            Array.from(paramsBuffer),
+          )
           .accountsPartial({
             caller: mock.serviceProvider.publicKey,
             config: mock.configPda,
@@ -1794,8 +1834,15 @@ export const planTests = () =>
         paramsBuffer,
       )
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       await program.methods
-        .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+        .registerAuthMethod(
+          authMethodType as any,
+          encryptionKey,
+          Array.from(paramsBuffer),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -1887,8 +1934,15 @@ export const planTests = () =>
         paramsBuffer,
       )
 
+      // Generate encryption key for the auth method
+      const encryptionKey = anchor.web3.Keypair.generate().publicKey
+
       await program.methods
-        .registerAuthMethod(authMethodType as any, Array.from(paramsBuffer))
+        .registerAuthMethod(
+          authMethodType as any,
+          encryptionKey,
+          Array.from(paramsBuffer),
+        )
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           config: mock.configPda,
@@ -2012,9 +2066,17 @@ export const parentPlanTests = () =>
         parametersBuffer2,
       )
 
+      // Generate encryption keys for the auth methods
+      const encryptionKey1 = anchor.web3.Keypair.generate().publicKey
+      const encryptionKey2 = anchor.web3.Keypair.generate().publicKey
+
       // Register the auth method on-chain
       await program.methods
-        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer1))
+        .registerAuthMethod(
+          { psk: {} },
+          encryptionKey1,
+          Array.from(parametersBuffer1),
+        )
         .accountsPartial({
           caller: mock.customer.publicKey,
           config: mock.configPda,
@@ -2025,7 +2087,11 @@ export const parentPlanTests = () =>
         .rpc()
 
       await program.methods
-        .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer2))
+        .registerAuthMethod(
+          { psk: {} },
+          encryptionKey2,
+          Array.from(parametersBuffer2),
+        )
         .accountsPartial({
           caller: mock.customer.publicKey,
           config: mock.configPda,

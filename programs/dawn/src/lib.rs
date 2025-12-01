@@ -73,9 +73,10 @@ pub mod dawn {
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
+        encryption_key: Pubkey,
         parameters: [u8; 256],
     ) -> Result<()> {
-        DawnApp::register_auth_method(ctx, method_type, parameters)
+        DawnApp::register_auth_method(ctx, method_type, encryption_key, parameters)
     }
 
     pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {

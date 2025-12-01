@@ -12,6 +12,7 @@ export async function registerPskAuthMethodCommand(
   authority: PublicKey,
   plan: PublicKey,
   device: PublicKey,
+  encryptionKey: PublicKey,
   ssid: string,
   securityStandard: 'WPA2_PSK' | 'WPA3_PSK' = 'WPA3_PSK',
   encryptionAlgorithm:
@@ -34,15 +35,18 @@ export async function registerPskAuthMethodCommand(
     plan,
     device,
     config,
+    encryptionKey,
   )
 }
 
 /**
  * CLI command to register PSK credential for a client
+ * Requires the caller to have an active subscription to the plan
  */
 export async function registerPskCredentialCommand(
   program: Program<Dawn>,
-  authority: PublicKey,
+  caller: PublicKey,
+  plan: PublicKey,
   authMethodPda: PublicKey,
   clientPubkey: PublicKey,
   psk: string,
@@ -50,7 +54,8 @@ export async function registerPskCredentialCommand(
   const authManager = new AuthManager(program)
 
   return await authManager.registerPskCredential(
-    authority,
+    caller,
+    plan,
     authMethodPda,
     clientPubkey,
     psk,
@@ -59,12 +64,14 @@ export async function registerPskCredentialCommand(
 
 /**
  * CLI command to register complete PSK authentication (method + credential)
+ * Note: credentialCaller must have an active subscription to the plan
  */
 export async function registerPskAuthCommand(
   program: Program<Dawn>,
   authority: PublicKey,
   plan: PublicKey,
   device: PublicKey,
+  encryptionKey: PublicKey,
   clientPubkey: PublicKey,
   psk: string,
   ssid: string,
@@ -74,6 +81,7 @@ export async function registerPskAuthCommand(
     | 'AES_GCMP'
     | 'AES_GCMP_256' = 'AES_GCMP_256',
   pskRotationInterval?: number,
+  credentialCaller?: PublicKey,
 ): Promise<{
   authMethodSignature: string
   credentialSignature: string
@@ -96,5 +104,7 @@ export async function registerPskAuthCommand(
     clientPubkey,
     psk,
     config,
+    encryptionKey,
+    credentialCaller,
   )
 }
