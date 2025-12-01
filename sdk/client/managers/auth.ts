@@ -11,6 +11,7 @@ import {
   validatePSKMethodParams,
 } from '../../utils/auth'
 import { getPskAuthMethodPda, getCredentialPda } from '../../pda/amf'
+import { getSubscriptionPda } from '../../pda/subscription'
 
 export class AuthManager {
   constructor(private program: Program<Dawn>) {}
@@ -23,6 +24,7 @@ export class AuthManager {
     plan: PublicKey,
     device: PublicKey,
     config: PSKNetworkConfig,
+    encryptionKey: PublicKey,
   ): Promise<{ signature: string; authMethodPda: PublicKey }> {
     const params = createPSKMethodParams(config)
     validatePSKMethodParams(params)
@@ -36,11 +38,16 @@ export class AuthManager {
     )
 
     const signature = await this.program.methods
-      .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
+      .registerAuthMethod(
+        { psk: {} },
+        encryptionKey,
+        Array.from(parametersBuffer),
+      )
       .accountsPartial({
         caller: authority,
         config: mock.configPda,
         authMethod: authMethodPda,
+        device: device,
       })
       .rpc()
 
@@ -49,9 +56,11 @@ export class AuthManager {
 
   /**
    * Register PSK credential for a client (with hash using client pubkey as salt)
+   * Requires the caller to have an active subscription to the plan
    */
   async registerPskCredential(
-    authority: PublicKey,
+    caller: PublicKey,
+    plan: PublicKey,
     authMethodPda: PublicKey,
     clientPubkey: PublicKey,
     psk: string,
@@ -66,11 +75,15 @@ export class AuthManager {
       clientPubkey,
     )
 
+    const [subscriptionPda] = getSubscriptionPda(this.program, plan, caller)
+
     const signature = await this.program.methods
       .registerCredential(clientPubkey, Array.from(serializedData))
       .accountsPartial({
-        caller: authority,
+        caller: caller,
         authMethod: authMethodPda,
+        plan: plan,
+        subscription: subscriptionPda,
         credential: credentialPda,
         systemProgram: SystemProgram.programId,
       })
@@ -81,6 +94,7 @@ export class AuthManager {
 
   /**
    * Register both PSK auth method and credential in a single flow
+   * Note: This requires the caller to have an active subscription to the plan
    */
   async registerPskAuth(
     authority: PublicKey,
@@ -89,6 +103,8 @@ export class AuthManager {
     clientPubkey: PublicKey,
     psk: string,
     config: PSKNetworkConfig,
+    encryptionKey: PublicKey,
+    credentialCaller?: PublicKey, // Optional: if different from authority (e.g., customer with subscription)
   ): Promise<{
     authMethodSignature: string
     credentialSignature: string
@@ -97,12 +113,20 @@ export class AuthManager {
   }> {
     // Register auth method
     const { signature: authMethodSignature, authMethodPda } =
-      await this.registerPskAuthMethod(authority, plan, device, config)
+      await this.registerPskAuthMethod(
+        authority,
+        plan,
+        device,
+        config,
+        encryptionKey,
+      )
 
-    // Register credential
+    // Register credential (use credentialCaller if provided, otherwise use authority)
+    const caller = credentialCaller || authority
     const { signature: credentialSignature, credentialPda } =
       await this.registerPskCredential(
-        authority,
+        caller,
+        plan,
         authMethodPda,
         clientPubkey,
         psk,
