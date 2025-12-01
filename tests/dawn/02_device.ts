@@ -18,6 +18,7 @@ import {
   getLocalDomainPda,
   getIpLeasePda,
   IpV4Bytes,
+  MacAddress,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -856,5 +857,296 @@ export const deviceTests = () =>
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Local domain name is empty')
       }
+    })
+
+    describe('add_device_for', () => {
+      let beneficiary: Keypair
+
+      beforeAll(() => {
+        beneficiary = Keypair.generate()
+      })
+
+      test('caller can add device for beneficiary', async () => {
+        const caller = loadWallet().payer
+        const deviceName = 'BeneficiaryDevice'
+        const localDomainName = 'beneficiary-network'
+        const macAddress: MacAddress = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+
+        // Derive PDAs using beneficiary as owner
+        const devicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName,
+          macAddress,
+        )
+        const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        const tx = await program.methods
+          .addDeviceFor(
+            deviceName,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.devicePlacement,
+            macAddress,
+            localDomainName,
+          )
+          .accountsStrict({
+            caller: caller.publicKey,
+            beneficiary: beneficiary.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda,
+            deviceLocation: deviceLocationPda,
+            localDomain: localDomainPda,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([caller])
+          .transaction()
+
+        const txDetails = await confirmTx(provider, tx)
+
+        // Verify DeviceAdded event has beneficiary as owner
+        const deviceEvent = await getEvent<DeviceAdded>(
+          program,
+          txDetails,
+          'deviceAdded',
+        )
+        expect(deviceEvent.device.equals(devicePda)).toBeTruthy()
+        expect(
+          deviceEvent.deviceLocation.equals(deviceLocationPda),
+        ).toBeTruthy()
+        expect(deviceEvent.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(deviceEvent.model.equals(mock.deviceModelPda)).toBeTruthy()
+        expect(deviceEvent.name).toBe(deviceName)
+
+        // Verify LocalDomainAdded event created for beneficiary
+        const localDomainEvent = await getEvent<LocalDomainAdded>(
+          program,
+          txDetails,
+          'localDomainAdded',
+        )
+        expect(localDomainEvent.localDomain.equals(localDomainPda)).toBeTruthy()
+        expect(
+          localDomainEvent.owner.equals(beneficiary.publicKey),
+        ).toBeTruthy()
+        expect(localDomainEvent.name).toBe(localDomainName)
+
+        // Verify DeviceLocationAdded event
+        const deviceLocationEvent = await getEvent<DeviceLocationAdded>(
+          program,
+          txDetails,
+          'deviceLocationAdded',
+        )
+        expect(
+          deviceLocationEvent.deviceLocation.equals(deviceLocationPda),
+        ).toBeTruthy()
+        expect(deviceLocationEvent.device.equals(devicePda)).toBeTruthy()
+
+        // Verify device account has beneficiary as owner
+        const device = await program.account.device.fetch(devicePda)
+        expect(device.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
+        expect(device.name).toBe(deviceName)
+        expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
+
+        // Verify device location was created
+        const deviceLocation = await program.account.deviceLocation.fetch(
+          deviceLocationPda,
+        )
+        expect(deviceLocation.device.equals(devicePda)).toBeTruthy()
+        expect(deviceLocation.latitude.toString()).toBe(
+          mock.deviceLatitude.toString(),
+        )
+        expect(deviceLocation.longitude.toString()).toBe(
+          mock.deviceLongitude.toString(),
+        )
+        expect(deviceLocation.verified).toBeFalsy()
+
+        // Verify local domain was created for beneficiary
+        const localDomain = await program.account.localDomain.fetch(
+          localDomainPda,
+        )
+        expect(localDomain.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(
+          Buffer.from(localDomain.name).toString('utf8').split('\0')[0],
+        ).toBe(localDomainName)
+      })
+
+      test('cannot add same device for beneficiary twice', async () => {
+        const caller = loadWallet().payer
+        const deviceName = 'BeneficiaryDevice'
+        const localDomainName = 'beneficiary-network'
+        const macAddress: MacAddress = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+
+        const devicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName,
+          macAddress,
+        )
+        const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        try {
+          await program.methods
+            .addDeviceFor(
+              deviceName,
+              mock.deviceHeight,
+              mock.deviceLatitude,
+              mock.deviceLongitude,
+              mock.devicePlacement,
+              macAddress,
+              localDomainName,
+            )
+            .accountsStrict({
+              caller: caller.publicKey,
+              beneficiary: beneficiary.publicKey,
+              deviceModel: mock.deviceModelPda,
+              device: devicePda,
+              deviceLocation: deviceLocationPda,
+              localDomain: localDomainPda,
+              systemProgram: anchor.web3.SystemProgram.programId,
+            })
+            .signers([caller])
+            .rpc()
+
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with account already in use error
+          expect(error).toBeDefined()
+        }
+      })
+
+      test('caller can add multiple different devices for same beneficiary', async () => {
+        const caller = loadWallet().payer
+        const deviceName2 = 'BeneficiaryDevice2'
+        const localDomainName = 'beneficiary-network'
+        const macAddress2: MacAddress = [0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
+
+        const devicePda2 = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName2,
+          macAddress2,
+        )
+        const deviceLocationPda2 = getDeviceLocationPda(program, devicePda2)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        const tx = await program.methods
+          .addDeviceFor(
+            deviceName2,
+            mock.deviceHeight,
+            mock.deviceLatitude,
+            mock.deviceLongitude,
+            mock.devicePlacement,
+            macAddress2,
+            localDomainName,
+          )
+          .accountsStrict({
+            caller: caller.publicKey,
+            beneficiary: beneficiary.publicKey,
+            deviceModel: mock.deviceModelPda,
+            device: devicePda2,
+            deviceLocation: deviceLocationPda2,
+            localDomain: localDomainPda,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([caller])
+          .transaction()
+
+        await confirmTx(provider, tx)
+
+        // Verify second device was created with same beneficiary
+        const device2 = await program.account.device.fetch(devicePda2)
+        expect(device2.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(device2.name).toBe(deviceName2)
+
+        // Verify same local domain is reused (init_if_needed)
+        const localDomain = await program.account.localDomain.fetch(
+          localDomainPda,
+        )
+        expect(localDomain.owner.equals(beneficiary.publicKey)).toBeTruthy()
+      })
+
+      test('validates input constraints same as add_device', async () => {
+        const caller = loadWallet().payer
+        const deviceName = 'ValidDevice'
+        const localDomainName = 'valid-network'
+        const macAddress: MacAddress = [0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+
+        // Test invalid latitude (0)
+        try {
+          await program.methods
+            .addDeviceFor(
+              'TestDevice',
+              mock.deviceHeight,
+              new BN(0), // Invalid latitude
+              mock.deviceLongitude,
+              mock.devicePlacement,
+              macAddress,
+              localDomainName,
+            )
+            .accountsPartial({
+              caller: caller.publicKey,
+              beneficiary: beneficiary.publicKey,
+              deviceModel: mock.deviceModelPda,
+            })
+            .signers([caller])
+            .rpc()
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with latitude validation error
+          expect(error).toBeDefined()
+          if (error instanceof AnchorError) {
+            expect(error.error.errorMessage).toBe(
+              'Latitude coordinate is invalid',
+            )
+          }
+        }
+
+        // Test empty device name
+        try {
+          await program.methods
+            .addDeviceFor(
+              '', // Empty name
+              mock.deviceHeight,
+              mock.deviceLatitude,
+              mock.deviceLongitude,
+              mock.devicePlacement,
+              macAddress,
+              localDomainName,
+            )
+            .accountsPartial({
+              caller: caller.publicKey,
+              beneficiary: beneficiary.publicKey,
+              deviceModel: mock.deviceModelPda,
+            })
+            .signers([caller])
+            .rpc()
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with device name validation error
+          expect(error).toBeDefined()
+          if (error instanceof AnchorError) {
+            expect(error.error.errorMessage).toBe('Device name is empty')
+          }
+        }
+      })
     })
   })

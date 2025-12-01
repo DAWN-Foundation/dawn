@@ -146,6 +146,28 @@ pub mod dawn {
         )
     }
 
+    pub fn add_device_for(
+        ctx: Context<AddDeviceFor>,
+        name: String,
+        height: u16,
+        latitude: i64,
+        longitude: i64,
+        placement: [i32; 2],
+        mac_address: [u8; 6],
+        local_domain_name: String,
+    ) -> Result<()> {
+        DawnApp::add_device_for(
+            ctx,
+            name,
+            height,
+            latitude,
+            longitude,
+            placement,
+            mac_address,
+            local_domain_name,
+        )
+    }
+
     pub fn verify_device_location(ctx: Context<VerifyDeviceLocation>) -> Result<()> {
         DawnApp::verify_device_location(ctx)
     }
