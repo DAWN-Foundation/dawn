@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("dawnS9R8DTgNMCJKteCcweEyzp6NEvZNHqDTQq7YjNW");
+declare_id!("dawnh7NAeRB3snhS5afN3JNzYVvUhgJpbNEBLxKwChv");
 
 mod app;
 mod constants;
