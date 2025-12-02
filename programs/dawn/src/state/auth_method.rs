@@ -16,6 +16,8 @@ pub struct AuthMethod {
     pub method_type: AuthMethodType,
     /// The device that the auth method is associated with
     pub device: Pubkey,
+    /// The encryption key for the auth method
+    pub encryption_key: [u8; 32],
     /// Method-specific parameters (fixed size buffer)
     pub parameters: [u8; 256],
     /// PDA bump

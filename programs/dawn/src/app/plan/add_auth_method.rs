@@ -51,6 +51,7 @@ pub struct AddAuthMethod<'info> {
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
             auth_method.device.as_ref(),
+            &auth_method.encryption_key,
             &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
@@ -90,8 +91,8 @@ impl DawnApp {
         remaining_accounts: &[AccountInfo],
         caller: &Pubkey,
     ) -> Result<Vec<Pubkey>> {
-        // Check that we don't have more than 2 auth methods
-        require!(remaining_accounts.len() <= 2, DawnError::TooManyAuthMethods);
+        // Check that we don't have more than 3 auth methods
+        require!(remaining_accounts.len() <= 3, DawnError::TooManyAuthMethods);
 
         let mut auth_method_keys = Vec::new();
 
@@ -109,7 +110,14 @@ impl DawnApp {
 
             require!(!data.is_empty(), DawnError::InvalidAuthMethodAccount);
 
-            // // Validate account is owned by our program
+            require!(data.len() >= 8, DawnError::InvalidAuthMethodAccount);
+            let discriminator = &data[0..8];
+            require!(
+                discriminator == AuthMethod::DISCRIMINATOR,
+                DawnError::InvalidAuthMethodAccount
+            );
+
+            // Validate account is owned by our program
             require!(
                 account_info.owner == &crate::ID,
                 DawnError::InvalidAuthMethodAccount

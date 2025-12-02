@@ -944,7 +944,7 @@ MINT_AMOUNT: 1_000_000_000 * 10^6   // 1B DAWN initial mint
 - `InvalidAuthMethodType`: Unknown auth method
 - `InactiveAuthMethod`: Auth method disabled
 - `DuplicateAuthMethods`: Cannot add same method twice
-- `TooManyAuthMethods`: Max 2 methods per plan
+- `TooManyAuthMethods`: Max 3 methods per plan
 - `InvalidAuthMethodAccount`: Auth method account invalid
 - `InvalidAuthMethodAuthority`: Wrong authority
 - `InvalidCipherSuite`: Invalid cipher configuration

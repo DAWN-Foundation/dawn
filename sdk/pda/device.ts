@@ -17,8 +17,8 @@ export function getDeviceModelPda(
       deviceType instanceof Array
         ? Buffer.from(deviceType)
         : deviceTypeSeed(deviceType),
-      Buffer.from(manufacturer),
-      Buffer.from(model.slice(0, 32)),
+      hashStringSeed(manufacturer),
+      hashStringSeed(model),
     ],
     program.programId,
   )
@@ -36,15 +36,16 @@ function hashStringSeed(input: string): Buffer {
 
 export function getDevicePda(
   program: Program<Dawn>,
-  owner: Keypair,
+  owner: Keypair | PublicKey,
   model: PublicKey,
   name: string,
   macAddress: MacAddress,
 ): PublicKey {
+  const ownerPubkey = owner instanceof PublicKey ? owner : owner.publicKey
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from(owner.publicKey.toBytes()),
+      Buffer.from(ownerPubkey.toBytes()),
       Buffer.from(model.toBytes()),
       hashStringSeed(name),
       Buffer.from(macAddress),
@@ -70,13 +71,13 @@ export function getAccessDomainPda(
 export function getAccessDomainForPlanPda(
   program: Program<Dawn>,
   localDomainPda: PublicKey,
-  parentPlanPda: PublicKey,
+  planPda: PublicKey,
 ): PublicKey {
   const [accessDomainPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('access_domain'),
+      Buffer.from(planPda.toBytes()),
       Buffer.from(localDomainPda.toBytes()),
-      Buffer.from(parentPlanPda.toBytes()),
     ],
     program.programId,
   )

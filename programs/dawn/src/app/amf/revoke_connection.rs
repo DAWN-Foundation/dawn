@@ -22,6 +22,7 @@ pub struct RevokeConnection<'info> {
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
             auth_method.device.as_ref(),
+            &auth_method.encryption_key,
             &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump,
@@ -32,7 +33,7 @@ pub struct RevokeConnection<'info> {
         mut,
         constraint = connection.auth_method == auth_method.key(),
         seeds = [
-            Connection::SEED_PREFIX.as_ref(),
+            Connection::SEED_PREFIX,
             connection.auth_method.as_ref(),
             connection.entity_a.as_ref(),
             connection.entity_b.as_ref(),

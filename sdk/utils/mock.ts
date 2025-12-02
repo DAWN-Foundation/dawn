@@ -9,6 +9,7 @@ import {
   createAssociatedTokenAccount,
   mintTo,
 } from 'spl-token-bankrun'
+import nacl from 'tweetnacl'
 
 import { Mock } from './types'
 import { COORD_DENOMINATOR, MacAddress, PROGRAM_ID } from './helpers'
@@ -380,6 +381,8 @@ export async function setup(
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
 
+  const encryptionKey = nacl.box.keyPair().publicKey
+
   // Create PSK method parameters
   const params = createPSKMethodParams({
     ssid: 'DawnTestNetwork',
@@ -392,6 +395,7 @@ export async function setup(
     program,
     serviceProvider.publicKey,
     devicePda,
+    encryptionKey,
     parametersBuffer,
   )
   const planAuthMethods = [pskAuthMethodPda]

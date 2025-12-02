@@ -222,6 +222,7 @@ pub struct AuthMethodRegistered {
     pub auth_method: Pubkey,
     pub method_type: u8,
     pub device: Pubkey,
+    pub encryption_key: [u8; 32],
     pub parameters: [u8; 256],
     pub created_at: i64,
 }
@@ -229,8 +230,8 @@ pub struct AuthMethodRegistered {
 #[event]
 pub struct CredentialRegistered {
     pub credential: Pubkey,
+    pub authority: Pubkey,
     pub auth_method: Pubkey,
-    pub client: Pubkey,
     pub credential_data: [u8; 128],
     pub created_at: i64,
 }

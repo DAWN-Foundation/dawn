@@ -28,31 +28,15 @@ export function computePskHash(clientPubkey: PublicKey, psk: string): Buffer {
 }
 
 /**
- * Create PSK credential data with hash (using client pubkey as salt)
- */
-export function createPskCredentialData(
-  psk: string,
-  clientPubkey: PublicKey,
-): PSKCredentialData {
-  const pskHash = computePskHash(clientPubkey, psk)
-  const _reserved = Buffer.alloc(96)
-
-  return {
-    pskHash,
-    _reserved,
-  }
-}
-
-/**
  * Serialize PSK credential data for on-chain storage
  */
-export function serializePskCredentialData(data: PSKCredentialData): Buffer {
+export function serializePskCredentialData(encryptedPsk: Uint8Array): Buffer {
   const buffer = Buffer.alloc(128)
 
-  // psk_hash: 32 bytes
-  data.pskHash.copy(buffer, 0)
+  // encryptedPsk: 64 bytes
+  Buffer.from(encryptedPsk).copy(buffer, 64)
 
-  // reserved: 96 bytes (rest of buffer is already zeroed)
+  // reserved: 64 bytes (rest of buffer is already zeroed)
 
   return buffer
 }

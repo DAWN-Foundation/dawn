@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("dawnS9R8DTgNMCJKteCcweEyzp6NEvZNHqDTQq7YjNW");
+declare_id!("dawnh7NAeRB3snhS5afN3JNzYVvUhgJpbNEBLxKwChv");
 
 mod app;
 mod constants;
@@ -73,9 +73,10 @@ pub mod dawn {
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
+        encryption_key: [u8; 32],
         parameters: [u8; 256],
     ) -> Result<()> {
-        DawnApp::register_auth_method(ctx, method_type, parameters)
+        DawnApp::register_auth_method(ctx, method_type, encryption_key, parameters)
     }
 
     pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
@@ -84,10 +85,9 @@ pub mod dawn {
 
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential(ctx, client, credential_data)
+        DawnApp::register_credential(ctx, credential_data)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
@@ -134,6 +134,28 @@ pub mod dawn {
         local_domain_name: String,
     ) -> Result<()> {
         DawnApp::add_device(
+            ctx,
+            name,
+            height,
+            latitude,
+            longitude,
+            placement,
+            mac_address,
+            local_domain_name,
+        )
+    }
+
+    pub fn add_device_for(
+        ctx: Context<AddDeviceFor>,
+        name: String,
+        height: u16,
+        latitude: i64,
+        longitude: i64,
+        placement: [i32; 2],
+        mac_address: [u8; 6],
+        local_domain_name: String,
+    ) -> Result<()> {
+        DawnApp::add_device_for(
             ctx,
             name,
             height,

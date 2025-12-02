@@ -138,21 +138,39 @@ pub(super) fn process_subscription_extension(
     // Validate min_dawn_out is reasonable (not zero)
     require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
 
-    // Process payment
-    let (additional_claimable, new_daily_usdc, actual_dawn_out) =
-        payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
-
-    // Update subscription amounts
-    subscription.claimable_dawn = subscription
-        .claimable_dawn
-        .checked_add(additional_claimable)
-        .ok_or(DawnError::Overflow)?;
-
-    subscription.daily_usdc = new_daily_usdc;
-
-    // Calculate extended expiration
+    // Calculate extended expiration (common to both paths)
     let expiration =
         calculate_extended_expiration(subscription.expiration, current_time, plan.duration)?;
+
+    // Check if subscription is expired
+    let is_expired = subscription.expiration < current_time;
+    let actual_dawn_out = if is_expired {
+        // Expired subscription: treat as new subscription
+        let (additional_claimable, new_daily_usdc, actual_dawn_out) =
+            payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
+
+        // Update subscription amounts
+        subscription.claimable_dawn = subscription
+            .claimable_dawn
+            .checked_add(additional_claimable)
+            .ok_or(DawnError::Overflow)?;
+
+        subscription.daily_usdc = new_daily_usdc;
+
+        // Reset last_claim to prevent gap period theft
+        subscription.last_claim = current_time;
+
+        actual_dawn_out
+    } else {
+        // Active subscription: only add to escrow, don't add to claimable_dawn
+        let (new_daily_usdc, actual_dawn_out) =
+            payment::process_extension_payment(payment_accounts, config, plan)?;
+
+        // Update daily_usdc but don't modify claimable_dawn
+        subscription.daily_usdc = new_daily_usdc;
+
+        actual_dawn_out
+    };
 
     // Save subscription data
     subscription.expiration = expiration;

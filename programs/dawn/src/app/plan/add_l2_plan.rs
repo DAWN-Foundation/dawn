@@ -4,7 +4,7 @@ use crate::{
     events::{AccessDomainAdded, PlanAdded},
     state::{AccessDomain, LocalDomain, ServiceAgreement},
     utils::{hash_string_seed, optional_pubkey_seed},
-    DawnApp, DawnError, Plan, Subscription,
+    DawnApp, DawnError, Plan,
 };
 
 /// Context for adding an L2 plan (derived plan with access domain)
@@ -48,7 +48,7 @@ pub struct AddL2Plan<'info> {
         ],
         bump = parent_plan.bump,
     )]
-    pub parent_plan: Account<'info, Plan>,
+    pub parent_plan: Option<Account<'info, Plan>>,
 
     /// The plan account
     #[account(
@@ -58,7 +58,7 @@ pub struct AddL2Plan<'info> {
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
             local_domain.key().as_ref(),
-            &optional_pubkey_seed(Some(parent_plan.key())),
+            &optional_pubkey_seed(parent_plan.as_ref().map(|acc| acc.key())),
             &hash_string_seed(&name),
             &price.to_le_bytes(),
             &duration.to_le_bytes(),
@@ -70,17 +70,6 @@ pub struct AddL2Plan<'info> {
         bump
     )]
     pub plan: Account<'info, Plan>,
-
-    /// The subscription account of parent plan
-    #[account(
-        seeds = [
-            Subscription::SEED_PREFIX.as_ref(),
-            parent_plan.key().as_ref(),
-            caller.key().as_ref(),
-        ],
-        bump = subscription.bump,
-    )]
-    pub subscription: Account<'info, Subscription>,
 
     /// The local domain account (derived from seeds)
     #[account(
@@ -133,22 +122,21 @@ impl DawnApp {
         let parent_plan = &ctx.accounts.parent_plan;
         let now = Clock::get()?.unix_timestamp;
 
-        // Validate subscription is not expired
-        require!(
-            ctx.accounts.subscription.expiration > now,
-            DawnError::SubscriptionExpired
-        );
-
-        // Validate that the resold plan is within parent plan bounds
-        require!(
-            duration <= parent_plan.duration,
-            DawnError::OutsideParentBounds,
-        );
-        require!(speed <= parent_plan.speed, DawnError::OutsideParentBounds);
-        require!(
-            capacity <= parent_plan.capacity,
-            DawnError::OutsideParentBounds
-        );
+        if let Some(parent_plan) = &parent_plan {
+            // Validate that the resold plan is within parent plan bounds
+            require!(
+                duration <= parent_plan.duration,
+                DawnError::OutsideParentBounds,
+            );
+            require!(speed <= parent_plan.speed, DawnError::OutsideParentBounds);
+            if parent_plan.capacity > 0 {
+                require!(capacity > 0, DawnError::OutsideParentBounds);
+                require!(
+                    capacity <= parent_plan.capacity,
+                    DawnError::OutsideParentBounds
+                );
+            }
+        }
 
         // Initialize Access Domain for L2 plan
         let access_domain = &mut ctx.accounts.access_domain;
@@ -170,7 +158,7 @@ impl DawnApp {
         plan.local_domain = ctx.accounts.local_domain.key();
         plan.access_domain = Some(access_domain.key());
         plan.distribution_domain = None;
-        plan.parent_plan = Some(parent_plan.key());
+        plan.parent_plan = parent_plan.as_ref().map(|acc| acc.key());
         // Store trimmed name to match PDA seeds
         plan.name = name.trim().to_string();
         plan.price = price;

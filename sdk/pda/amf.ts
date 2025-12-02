@@ -29,8 +29,9 @@ export function hashParameters(parameters: Buffer): Buffer {
 export function getAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
-  device: PublicKey,
   methodType: AuthMethodType,
+  device: PublicKey,
+  encryptionKey: Uint8Array,
   parameters: Buffer,
 ): PublicKey {
   const key = Object.keys(methodType)[0]
@@ -43,6 +44,7 @@ export function getAuthMethodPda(
       authority.toBuffer(),
       Buffer.from([seed]),
       device.toBuffer(),
+      Buffer.from(encryptionKey),
       paramHash,
     ],
     program.programId,
@@ -61,10 +63,10 @@ export function getAuthMethodPda(
 export function getCredentialPda(
   program: Program<Dawn>,
   authMethod: PublicKey,
-  client: PublicKey,
+  caller: PublicKey,
 ): PublicKey {
   const [credentialPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('credential'), authMethod.toBuffer(), client.toBuffer()],
+    [Buffer.from('credential'), authMethod.toBuffer(), caller.toBuffer()],
     program.programId,
   )
 
@@ -97,6 +99,7 @@ export function getPskAuthMethodPda(
   program: Program<Dawn>,
   authority: PublicKey,
   device: PublicKey,
+  encryptionKey: Uint8Array,
   parameters: Buffer,
 ): [PublicKey, number] {
   const paramHash = hashParameters(parameters)
@@ -107,6 +110,7 @@ export function getPskAuthMethodPda(
       authority.toBuffer(),
       Buffer.from([0]), // PSK method type seed
       device.toBuffer(),
+      Buffer.from(encryptionKey),
       paramHash,
     ],
     program.programId,

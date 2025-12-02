@@ -164,11 +164,12 @@ impl DawnApp {
         speed: u32,
         start_at: Option<i64>,
     ) -> Result<()> {
-        // Make sure the plan name is not empty
-        require!(!name.is_empty(), DawnError::EmptyPlanName);
+        // Make sure the plan name is not empty (check after trimming)
+        let trimmed_name = name.trim();
+        require!(!trimmed_name.is_empty(), DawnError::EmptyPlanName);
 
-        // Make sure the plan name is not too long
-        require!(name.len() <= 32, DawnError::PlanNameTooLong);
+        // Make sure the plan name is not too long (check after trimming)
+        require!(trimmed_name.len() <= 32, DawnError::PlanNameTooLong);
 
         // Make sure the plan price is not zero
         require!(price > 0, DawnError::ZeroPlanPrice);

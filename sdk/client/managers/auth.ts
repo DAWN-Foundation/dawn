@@ -1,30 +1,35 @@
 import { Program } from '@coral-xyz/anchor'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import {
+  PublicKey,
+  SystemProgram,
+  TransactionInstruction,
+} from '@solana/web3.js'
+
 import { Dawn } from '../../../target/types/dawn'
 import { mock } from '../../utils'
 import { PSKNetworkConfig, PSKMethodParams } from '../../utils/types'
 import {
   createPSKMethodParams,
   serializePSKMethodParams,
-  createPskCredentialData,
-  serializePskCredentialData,
+  // createPskCredentialData,
+  // serializePskCredentialData,
   validatePSKMethodParams,
 } from '../../utils/auth'
 import { getPskAuthMethodPda, getCredentialPda } from '../../pda/amf'
+import { getSubscriptionPda } from '../../pda/subscription'
 
 export class AuthManager {
   constructor(private program: Program<Dawn>) {}
 
-  /**
-   * Register PSK authentication method (only network parameters, no PSK)
-   */
+  /** Register PSK authentication method */
   async registerPskAuthMethod(
+    configPda: PublicKey,
     authority: PublicKey,
     device: PublicKey,
-    config: PSKNetworkConfig,
-    configPda: PublicKey,
-  ): Promise<{ signature: string; authMethodPda: PublicKey }> {
-    const params = createPSKMethodParams(config)
+    pskParams: PSKNetworkConfig,
+    encryptionKey: Uint8Array,
+  ): Promise<{ itx: TransactionInstruction; authMethodPda: PublicKey }> {
+    const params = createPSKMethodParams(pskParams)
     validatePSKMethodParams(params)
 
     const parametersBuffer = serializePSKMethodParams(params)
@@ -32,91 +37,61 @@ export class AuthManager {
       this.program,
       authority,
       device,
+      encryptionKey,
       parametersBuffer,
     )
 
-    console.log("device", device.toBase58())
+    console.log('device', device.toBase58())
 
-    const signature = await this.program.methods
-      .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
-      .accountsStrict({
+    const itx = await this.program.methods
+      .registerAuthMethod(
+        { psk: {} },
+        Array.from(encryptionKey),
+        Array.from(parametersBuffer),
+      )
+      .accountsPartial({
         caller: authority,
         config: configPda,
+        device: device,
         authMethod: authMethodPda,
-        device,
-        systemProgram: SystemProgram.programId,
       })
-      .rpc()
+      .instruction()
 
-    return { signature, authMethodPda }
+    return { itx, authMethodPda }
   }
 
   /**
    * Register PSK credential for a client (with hash using client pubkey as salt)
+   * Requires the caller to have an active subscription to the plan
    */
   async registerPskCredential(
-    authority: PublicKey,
+    caller: PublicKey,
+    planPda: PublicKey,
     authMethodPda: PublicKey,
-    clientPubkey: PublicKey,
     psk: string,
     metadata?: Buffer,
-  ): Promise<{ signature: string; credentialPda: PublicKey }> {
-    const credentialData = createPskCredentialData(psk, clientPubkey)
-    const serializedData = serializePskCredentialData(credentialData)
+  ): Promise<{ itx: TransactionInstruction; credentialPda: PublicKey }> {
+    const plan = await this.program.account.plan.fetch(planPda)
 
-    const credentialPda = getCredentialPda(
-      this.program,
-      authMethodPda,
-      clientPubkey,
-    )
+    // const credentialData = createPskCredentialData(psk)
+    // const serializedData = serializePskCredentialData(Buffer.from([]))
 
-    const signature = await this.program.methods
-      .registerCredential(clientPubkey, Array.from(serializedData))
-      .accountsStrict({
-        caller: authority,
+    const credentialPda = getCredentialPda(this.program, authMethodPda, caller)
+
+    const [subscriptionPda] = getSubscriptionPda(this.program, planPda, caller)
+
+    const itx = await this.program.methods
+      .registerCredential([])
+      .accountsPartial({
+        caller: caller,
         authMethod: authMethodPda,
+        plan: planPda,
+        subscription: subscriptionPda,
         credential: credentialPda,
         systemProgram: SystemProgram.programId,
       })
-      .rpc()
+      .instruction()
 
-    return { signature, credentialPda }
-  }
-
-  /**
-   * Register both PSK auth method and credential in a single flow
-   */
-  async registerPskAuth(
-    authority: PublicKey,
-    device: PublicKey,
-    clientPubkey: PublicKey,
-    psk: string,
-    config: PSKNetworkConfig,
-    configPda: PublicKey,
-  ): Promise<{
-    authMethodSignature: string
-    credentialSignature: string
-    authMethodPda: PublicKey
-    credentialPda: PublicKey
-  }> {
-    // Register auth method
-    const { signature: authMethodSignature, authMethodPda } =
-      await this.registerPskAuthMethod(authority, device, config, configPda)
-
-    // Register credential
-    const { signature: credentialSignature, credentialPda } =
-      await this.registerPskCredential(
-        authority,
-        authMethodPda,
-        clientPubkey,
-        psk,
-      )
-
-    return {
-      authMethodSignature,
-      credentialSignature,
-      authMethodPda,
-      credentialPda,
-    }
+    return { itx, credentialPda }
   }
 }

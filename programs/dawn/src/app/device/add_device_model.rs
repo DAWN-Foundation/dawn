@@ -1,10 +1,9 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey::MAX_SEED_LEN;
-use std::cmp::min;
 
 use crate::{
     constants::{MAX_DEVICE_MANUFACTURER_LEN, MAX_DEVICE_MODEL_LEN},
     state::{DeviceModel, DeviceType},
+    utils::hash_string_seed,
     Config, DawnApp, DawnError, DeviceModelAdded,
 };
 
@@ -26,8 +25,8 @@ pub struct AddDeviceModel<'info> {
         seeds = [
             DeviceModel::SEED_PREFIX.as_ref(),
             device_type.to_seed(),
-            &manufacturer.trim().as_bytes()[..min(manufacturer.trim().len(), MAX_SEED_LEN)],
-            &model.trim().as_bytes()[..min(model.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&manufacturer.trim()),
+            &hash_string_seed(&model.trim()),
         ],
         bump
     )]

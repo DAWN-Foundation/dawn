@@ -15,12 +15,12 @@ pub struct RevokeCredential<'info> {
 
     #[account(
         mut,
-        constraint = auth_method.authority == caller.key(),
         seeds = [
             AuthMethod::SEED_PREFIX.as_ref(),
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
             auth_method.device.as_ref(),
+            &auth_method.encryption_key,
             &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
@@ -29,10 +29,11 @@ pub struct RevokeCredential<'info> {
 
     #[account(
         mut,
+        constraint = credential.authority == caller.key(),
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
             auth_method.key().as_ref(),
-            credential.client.as_ref(),
+            caller.key().as_ref(),
         ],
         bump = credential.bump,
         close = caller

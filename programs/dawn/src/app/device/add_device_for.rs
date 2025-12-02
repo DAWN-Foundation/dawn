@@ -17,9 +17,13 @@ use crate::{
     mac_address: [u8; 6],
     local_domain_name: String,
 )]
-pub struct AddDevice<'info> {
+pub struct AddDeviceFor<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
+
+    /// The beneficiary who will receive the device
+    /// CHECK: Used only for PDA derivation and as beneficiary
+    pub beneficiary: AccountInfo<'info>,
 
     /// The device model account
     #[account(
@@ -40,7 +44,7 @@ pub struct AddDevice<'info> {
         space = Device::SIZE,
         seeds = [
             Device::SEED_PREFIX.as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
             device_model.key().as_ref(),
             &hash_string_seed(&name),
             &mac_address,
@@ -69,7 +73,7 @@ pub struct AddDevice<'info> {
         space = LocalDomain::SIZE,
         seeds = [
             LocalDomain::SEED_PREFIX.as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
             &hash_string_seed(&local_domain_name)
         ],
         bump
@@ -80,8 +84,8 @@ pub struct AddDevice<'info> {
 }
 
 impl DawnApp {
-    pub fn add_device(
-        ctx: Context<AddDevice>,
+    pub fn add_device_for(
+        ctx: Context<AddDeviceFor>,
         name: String,
         height: u16,
         latitude: i64,
@@ -129,13 +133,13 @@ impl DawnApp {
         let device = &mut ctx.accounts.device;
         let device_model = &mut ctx.accounts.device_model;
         let device_location = &mut ctx.accounts.device_location;
-        let caller = ctx.accounts.caller.key();
+        let beneficiary = ctx.accounts.beneficiary.key();
 
         // Initialize local_domain if not already created
         if ctx.accounts.local_domain.created_at == 0 {
             let local_domain = &mut ctx.accounts.local_domain;
             local_domain.created_at = Clock::get()?.unix_timestamp;
-            local_domain.owner = caller;
+            local_domain.owner = beneficiary;
             local_domain.bump = ctx.bumps.local_domain;
             local_domain.name = local_domain_name.trim().to_string();
 
@@ -152,7 +156,7 @@ impl DawnApp {
 
         // Set device info
         device.created_at = created_at;
-        device.owner = caller;
+        device.owner = beneficiary;
         device.model = device_model.key();
         // Store trimmed name to match PDA seeds
         device.name = name.trim().to_string();

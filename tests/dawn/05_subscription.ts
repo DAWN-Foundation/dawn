@@ -31,10 +31,10 @@ import { getBalance } from '../../cli/shared/cli-utils'
 import { oneDayLaterPlanPda } from './04_plan'
 
 const SECONDS_PER_DAY = 86_400
-const BPS_DENOMINATOR = new BN(10_000)
+export const BPS_DENOMINATOR = new BN(10_000)
 const TOLERANCE_BPS = new BN(9500)
 
-const Q32 = new BN(2).pow(new BN(32))
+export const Q32 = new BN(2).pow(new BN(32))
 
 /**
  * Helper function to calculate minDawnOut with slippage tolerance
@@ -47,7 +47,7 @@ const Q32 = new BN(2).pow(new BN(32))
  *
  * @returns Minimum DAWN output that will be accepted
  */
-function calculateMinDawnOut(
+export function calculateMinDawnOut(
   usdcAmount: BN,
   price: BN,
   slippageBps: number = 50,
@@ -66,7 +66,7 @@ function calculateMinDawnOut(
  * @param provider - Bankrun provider to get current time
  * @returns Deadline timestamp (current time + 30 seconds)
  */
-async function getDeadline(provider: BankrunProvider): Promise<BN> {
+export async function getDeadline(provider: BankrunProvider): Promise<BN> {
   const clock = await provider.context.banksClient.getClock()
   const currentTime = clock.unixTimestamp
   return new BN(currentTime.toString()).add(new BN(30))
@@ -787,7 +787,7 @@ export const subscriptionTests = () =>
       assert.equal(subscription.bump, mock.subscriptionBump)
     })
 
-    test('extends subscription', async () => {
+    test('extends active subscription', async () => {
       await new Promise((resolve) => setTimeout(resolve, 300))
 
       // get expiration before extension
@@ -866,9 +866,13 @@ export const subscriptionTests = () =>
           expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
         ),
       )
-      // swapPrice is now the actual DAWN output (not Q32 price), so just verify it's reasonable
+      // swapPrice is now the actual DAWN output (not Q32 price)
+      // For active subscriptions, swapPrice is 0 (no swap occurs, payment goes to escrow)
       const swapPriceBN = new BN(event.swapPrice.toString())
-      assert.ok(swapPriceBN.gt(new BN(0)), 'swapPrice should be greater than 0')
+      assert.ok(
+        swapPriceBN.eq(new BN(0)),
+        'swapPrice should be 0 for active subscriptions (no swap occurs)',
+      )
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
       // make sure the customer USDC account was debited
@@ -890,23 +894,184 @@ export const subscriptionTests = () =>
         .mul(totalFeeBpsAssert2)
         .div(BPS_DENOMINATOR)
 
-      // make sure the device owner escrow USDC vault account was debited
-      const usdcRemainder = plan.price.sub(totalUsdcFee)
-      const dailyUsdcAssert2 = usdcRemainder.div(new BN(plan.duration))
-      const dailyDawn = dailyUsdcAssert2.mul(price).div(Q32)
-      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert2)
+      // For active subscriptions: entire plan.price goes to escrow, no swap occurs
       const escrowUsdcBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
       )
-      assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
-      )
-
-      // make sure the device owner escrow DAWN vault account was credited with the daily DAWN portion
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
+      )
+
+      assert.ok(
+        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(plan.price),
+        'Escrow USDC should increase by full plan price for active subscriptions',
+      )
+      assert.ok(
+        escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
+        'Escrow DAWN should not change for active subscriptions (no swap occurs)',
+      )
+      // No fees are collected for active subscriptions (they'll be collected during claims)
+
+      // get block time, and calculate expected expiration
+      const planInSeconds = plan.duration * SECONDS_PER_DAY
+      const expiration = expirationBefore.add(new BN(planInSeconds))
+
+      // make sure the subscription expiration was extended
+      let subscription = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      assert.ok(subscription.expiration.eq(expiration))
+
+      // make sure other subscription fields are unchanged
+      expect(subscription.createdAt.eq(subscriptionBefore.createdAt))
+      assert.ok(subscription.plan.equals(subscriptionBefore.plan))
+      assert.ok(subscription.subscriber.equals(subscriptionBefore.subscriber))
+      expect(subscription.device).toBeNull()
+      assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
+      // claimableDawn should remain unchanged for active subscriptions
+      assert.ok(subscription.claimableDawn.eq(subscriptionBefore.claimableDawn))
+      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
+      assert.equal(subscription.bump, subscriptionBefore.bump)
+    })
+
+    test('extends expired subscription', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      // get expiration before extension
+      const subscriptionBefore = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      const expirationBefore = new BN(subscriptionBefore.expiration)
+
+      // Advance time to make subscription expired
+      const clock = await provider.context.banksClient.getClock()
+      const expiredTime = expirationBefore.add(new BN(86400)) // 1 day after expiration
+      provider.context.setClock(
+        new Clock(
+          clock.slot,
+          clock.epochStartTimestamp,
+          clock.epoch,
+          clock.leaderScheduleEpoch,
+          BigInt(expiredTime.toString()),
+        ),
+      )
+
+      const testerUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
+      )
+
+      const feePoolDawnBalanceBefore = await getBalance(
+        provider.connection,
+        mock.feePoolDawnAccount,
+      )
+
+      const escrowUsdcBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+
+      const escrowDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+
+      // get balances of raydium vaults
+      const raydiumDawnVault = await getAccount(
+        provider.connection,
+        accounts.raydiumDawnVault,
+      )
+      const raydiumUsdcVault = await getAccount(
+        provider.connection,
+        accounts.raydiumUsdcVault,
+      )
+
+      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
+      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+
+      // Calculate USDC to swap for extension
+      const config2 = await program.account.config.fetch(mock.configPda)
+      const totalFeeBps2 = config2.daoFee
+        .add(config2.validatorFee)
+        .add(config2.medallionFee)
+      const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
+      const remainder2 = plan.price.sub(totalFeeUsdc2)
+      const dailyUsdc2 = remainder2.div(new BN(plan.duration))
+      const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
+
+      const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
+      const deadline = await getDeadline(provider)
+
+      const tx = await program.methods
+        .extendSubscription(minDawnOut, deadline)
+        .accounts(accounts)
+        .signers([mock.customer])
+        .transaction()
+
+      const txDetails = await confirmTx(provider, tx)
+
+      // make sure event was emitted
+      const event = await getEvent<SubscriptionExtended>(
+        program,
+        txDetails,
+        'subscriptionExtended',
+      )
+      assert.ok(event.subscription.equals(mock.subscriptionPda))
+      assert.ok(event.plan.equals(mock.planPda))
+      assert.ok(event.subscriber.equals(mock.customer.publicKey))
+      expect(event.device).toBeNull()
+      assert.ok(
+        event.expiration.eq(
+          expiredTime.add(new BN(plan.duration * SECONDS_PER_DAY)),
+        ),
+      )
+      // swapPrice is now the actual DAWN output (not Q32 price)
+      // For expired subscriptions, swapPrice should be > 0 (swap occurs)
+      const swapPriceBN = new BN(event.swapPrice.toString())
+      assert.ok(
+        swapPriceBN.gt(new BN(0)),
+        'swapPrice should be greater than 0 for expired subscriptions',
+      )
+      expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
+
+      // make sure the customer USDC account was debited
+      const testerUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        mock.customerUsdcAccount,
+      )
+      assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+
+      // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
+      const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+      assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
+
+      // calculate total fee in USDC
+      const totalFeeBpsAssert2 = mock.daoFee
+        .add(mock.validatorFee)
+        .add(mock.medallionFee)
+      const totalUsdcFee = plan.price
+        .mul(totalFeeBpsAssert2)
+        .div(BPS_DENOMINATOR)
+
+      // For expired subscriptions: fees are swapped immediately, remainder goes to escrow
+      const escrowUsdcBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+      const escrowDawnBalanceAfter = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+
+      const usdcRemainder = plan.price.sub(totalUsdcFee)
+      const dailyUsdcAssert2 = usdcRemainder.div(new BN(plan.duration))
+      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert2)
+      assert.ok(
+        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
+        'Escrow USDC should increase by remainder after fees for expired subscriptions',
       )
 
       // swapPriceBN is the actual DAWN output from the swap - calculate exact expected escrow
@@ -942,7 +1107,7 @@ export const subscriptionTests = () =>
 
       // get block time, and calculate expected expiration
       const planInSeconds = plan.duration * SECONDS_PER_DAY
-      const expiration = expirationBefore.add(new BN(planInSeconds))
+      const expiration = expiredTime.add(new BN(planInSeconds))
 
       // make sure the subscription expiration was extended
       let subscription = await program.account.subscription.fetch(
@@ -950,16 +1115,22 @@ export const subscriptionTests = () =>
       )
       assert.ok(subscription.expiration.eq(expiration))
 
-      // make sure other subscription fields are unchanged
+      // make sure other subscription fields
       expect(subscription.createdAt.eq(subscriptionBefore.createdAt))
       assert.ok(subscription.plan.equals(subscriptionBefore.plan))
       assert.ok(subscription.subscriber.equals(subscriptionBefore.subscriber))
       expect(subscription.device).toBeNull()
-      assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
+      // For expired subscriptions, last_claim should be reset to current time
+      const currentClock = await provider.context.banksClient.getClock()
+      assert.ok(
+        subscription.lastClaim.eq(
+          new BN(currentClock.unixTimestamp.toString()),
+        ),
+      )
+      // claimableDawn should increase for expired subscriptions
       assert.ok(
         subscription.claimableDawn.gte(subscriptionBefore.claimableDawn),
       )
-      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
       assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
