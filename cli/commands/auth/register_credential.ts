@@ -25,13 +25,6 @@ async function main() {
   try {
     const authManager = new AuthManager(program)
 
-    // const config: PSKNetworkConfig = {
-    //   ssid,
-    //   securityStandard,
-    //   encryptionAlgorithm,
-    //   pskRotationInterval,
-    // }
-
     const { itx, credentialPda } = await authManager.registerPskCredential(
       wallet.payer.publicKey,
       planPda,
