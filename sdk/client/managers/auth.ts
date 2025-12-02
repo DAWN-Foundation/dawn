@@ -10,6 +10,7 @@ import { mock } from '../../utils'
 import { PSKNetworkConfig, PSKMethodParams } from '../../utils/types'
 import {
   createPSKMethodParams,
+  serializePskCredentialData,
   serializePSKMethodParams,
   // createPskCredentialData,
   // serializePskCredentialData,
@@ -17,6 +18,7 @@ import {
 } from '../../utils/auth'
 import { getPskAuthMethodPda, getCredentialPda } from '../../pda/amf'
 import { getSubscriptionPda } from '../../pda/subscription'
+import { encryptWithPublicKey } from '../../utils/encrypt'
 
 export class AuthManager {
   constructor(private program: Program<Dawn>) {}
@@ -31,8 +33,8 @@ export class AuthManager {
   ): Promise<{ itx: TransactionInstruction; authMethodPda: PublicKey }> {
     const params = createPSKMethodParams(pskParams)
     validatePSKMethodParams(params)
-
     const parametersBuffer = serializePSKMethodParams(params)
+
     const [authMethodPda] = getPskAuthMethodPda(
       this.program,
       authority,
@@ -69,19 +71,18 @@ export class AuthManager {
     planPda: PublicKey,
     authMethodPda: PublicKey,
     psk: string,
-    metadata?: Buffer,
   ): Promise<{ itx: TransactionInstruction; credentialPda: PublicKey }> {
-    const plan = await this.program.account.plan.fetch(planPda)
-
-    // const credentialData = createPskCredentialData(psk)
-    // const serializedData = serializePskCredentialData(Buffer.from([]))
+    const authMethod = await this.program.account.authMethod.fetch(authMethodPda)
+    const encryptionKey = authMethod.encryptionKey
+    const encryptedPsk = encryptWithPublicKey(psk, new Uint8Array(encryptionKey))
+    const credentialData = serializePskCredentialData(encryptedPsk)
 
     const credentialPda = getCredentialPda(this.program, authMethodPda, caller)
 
     const [subscriptionPda] = getSubscriptionPda(this.program, planPda, caller)
 
     const itx = await this.program.methods
-      .registerCredential([])
+      .registerCredential(Array.from(credentialData))
       .accountsPartial({
         caller: caller,
         authMethod: authMethodPda,

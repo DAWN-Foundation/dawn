@@ -3,6 +3,7 @@ import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import { AuthManager } from '../../../sdk'
 import { PSKNetworkConfig } from '../../../sdk/utils'
 import { generateEncryptionKeypair } from '../../../sdk/utils/encrypt'
+import { encodeBase64 } from 'tweetnacl-util'
 
 async function main() {
   const { wallet, connection, program } = await connect()
@@ -12,11 +13,12 @@ async function main() {
   const authManager = new AuthManager(program)
 
   const devicePda = new PublicKey(getFlag('--device'))
+  if (!devicePda) throw new Error('--device is required')
 
   const keypair = generateEncryptionKeypair()
   console.log('Keypair', {
-    publicKey: keypair.publicKey.toString(),
-    privateKey: keypair.secretKey.toString(),
+    publicKey: encodeBase64(keypair.publicKey),
+    privateKey: encodeBase64(keypair.secretKey),
   })
 
   const encryptionKey = keypair.publicKey
