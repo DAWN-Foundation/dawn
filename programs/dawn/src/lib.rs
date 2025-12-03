@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
 
 #[cfg(feature = "devnet")]
-declare_id!("dawnh7NAeRB3snhS5afN3JNzYVvUhgJpbNEBLxKwChv");
+declare_id!("dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP");
 
 mod app;
 mod constants;
@@ -73,7 +73,7 @@ pub mod dawn {
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
-        encryption_key: Pubkey,
+        encryption_key: [u8; 32],
         parameters: [u8; 256],
     ) -> Result<()> {
         DawnApp::register_auth_method(ctx, method_type, encryption_key, parameters)
@@ -85,10 +85,9 @@ pub mod dawn {
 
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential(ctx, client, credential_data)
+        DawnApp::register_credential(ctx, credential_data)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {

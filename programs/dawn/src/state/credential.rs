@@ -9,10 +9,10 @@ use crate::constants::DISCRIMINATOR_SIZE;
 pub struct Credential {
     /// The creation timestamp
     pub created_at: i64,
+    /// The credential authority
+    pub authority: Pubkey,
     /// The auth method this credential is for
     pub auth_method: Pubkey,
-    /// The client public key
-    pub client: Pubkey,
     /// Credential-specific data (fixed size buffer)
     pub credential_data: [u8; 128],
     /// PDA bump

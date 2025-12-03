@@ -3,6 +3,7 @@ import { Program, BN, AnchorError, Wallet } from '@coral-xyz/anchor'
 import { assert } from 'chai'
 import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
+import nacl from 'tweetnacl'
 
 import { Dawn } from '../../target/types/dawn'
 import {
@@ -70,6 +71,8 @@ export const planTests = () =>
     let program: Program<Dawn>
     let provider: BankrunProvider
     let authMethods: PublicKey[]
+    const encryptionKey1 = nacl.box.keyPair().publicKey
+    const encryptionKey2 = nacl.box.keyPair().publicKey
 
     const wallet = loadWallet()
 
@@ -100,24 +103,22 @@ export const planTests = () =>
         program,
         mock.serviceProvider.publicKey,
         mock.devicePda,
+        encryptionKey1,
         parametersBuffer1,
       )
       const [pskAuthMethodPda2] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         mock.devicePda,
+        encryptionKey2,
         parametersBuffer2,
       )
-
-      // Generate encryption keys for the auth methods
-      const encryptionKey1 = anchor.web3.Keypair.generate().publicKey
-      const encryptionKey2 = anchor.web3.Keypair.generate().publicKey
 
       // Register the auth method on-chain
       await program.methods
         .registerAuthMethod(
           { psk: {} },
-          encryptionKey1,
+          Array.from(encryptionKey1),
           Array.from(parametersBuffer1),
         )
         .accountsPartial({
@@ -132,7 +133,7 @@ export const planTests = () =>
       await program.methods
         .registerAuthMethod(
           { psk: {} },
-          encryptionKey2,
+          Array.from(encryptionKey2),
           Array.from(parametersBuffer2),
         )
         .accountsPartial({
@@ -415,22 +416,22 @@ export const planTests = () =>
           pskRotationInterval: 86400, // 24 hours
         })
 
+        const encryptionKey = nacl.box.keyPair().publicKey
+
         const [authMethodPda] = getPskAuthMethodPda(
           program,
           mock.serviceProvider.publicKey,
           mock.devicePda,
+          encryptionKey,
           paramsBuffer,
         )
 
         const authMethodType: AuthMethodType = { psk: {} }
 
-        // Generate encryption key for the auth method
-        const encryptionKey = anchor.web3.Keypair.generate().publicKey
-
         await program.methods
           .registerAuthMethod(
             authMethodType as any,
-            encryptionKey,
+            Array.from(encryptionKey),
             Array.from(paramsBuffer),
           )
           .accountsPartial({
@@ -1280,20 +1281,20 @@ export const planTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
 
+      const encryptionKey = nacl.box.keyPair().publicKey
+
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         mock.devicePda,
+        encryptionKey,
         paramsArray,
       )
-
-      // Generate encryption key for the auth method
-      const encryptionKey = anchor.web3.Keypair.generate().publicKey
 
       await program.methods
         .registerAuthMethod(
           authMethodType as any,
-          encryptionKey,
+          Array.from(encryptionKey),
           Array.from(paramsArray),
         )
         .accountsPartial({
@@ -1409,34 +1410,6 @@ export const planTests = () =>
       // Create a plan with 2 auth methods
       const planName = 'test plan multiple auth methods'
 
-      const serializer = new AuthParamsSerializer(program)
-      const p1 = serializer.serializePSKParams({
-        ssid: 'test1',
-        securityStandard: 'WPA3_PSK',
-        encryptionAlgorithm: 'AES_GCMP',
-        pskRotationInterval: 86400, // 24 hours
-      })
-      const [m1] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        mock.devicePda,
-        p1,
-      )
-
-      const p2 = serializer.serializePSKParams({
-        ssid: 'test2',
-        securityStandard: 'WPA3_PSK',
-        encryptionAlgorithm: 'AES_GCMP',
-        pskRotationInterval: 86400, // 24 hours
-      })
-
-      const [m2] = getPskAuthMethodPda(
-        program,
-        mock.serviceProvider.publicKey,
-        mock.devicePda,
-        p2,
-      )
-
       const [planPda] = getPlanPda(
         program,
         mock.localDomainPda,
@@ -1483,7 +1456,7 @@ export const planTests = () =>
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           plan: planPda,
-          authMethod: m1,
+          authMethod: authMethods[0],
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
@@ -1494,7 +1467,7 @@ export const planTests = () =>
         .accountsPartial({
           caller: mock.serviceProvider.publicKey,
           plan: planPda,
-          authMethod: m2,
+          authMethod: authMethods[1],
           device: mock.devicePda,
         })
         .signers([mock.serviceProvider])
@@ -1503,8 +1476,8 @@ export const planTests = () =>
       // Verify both auth methods were added
       const plan = await program.account.plan.fetch(planPda)
       expect(plan.authMethods.length).toBe(2)
-      expect(plan.authMethods[0].equals(m1)).toBeTruthy()
-      expect(plan.authMethods[1].equals(m2)).toBeTruthy()
+      expect(plan.authMethods[0].equals(authMethods[0])).toBeTruthy()
+      expect(plan.authMethods[1].equals(authMethods[1])).toBeTruthy()
     })
 
     // Device Local Domain Constraint Tests
@@ -1608,20 +1581,20 @@ export const planTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
 
+      const encryptionKey = nacl.box.keyPair().publicKey
+
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
         wrongDomainDevicePda,
+        encryptionKey,
         paramsArray,
       )
-
-      // Generate encryption key for the auth method
-      const encryptionKey = anchor.web3.Keypair.generate().publicKey
 
       await program.methods
         .registerAuthMethod(
           authMethodType as any,
-          encryptionKey,
+          Array.from(encryptionKey),
           Array.from(paramsArray),
         )
         .accountsPartial({
@@ -1709,20 +1682,20 @@ export const planTests = () =>
           pskRotationInterval: 86400, // 24 hours
         })
 
+        const encryptionKey = nacl.box.keyPair().publicKey
+
         const [authMethodPda] = getPskAuthMethodPda(
           program,
           mock.serviceProvider.publicKey,
           mock.devicePda,
+          encryptionKey,
           paramsBuffer,
         )
-
-        // Generate encryption key for the auth method
-        const encryptionKey = anchor.web3.Keypair.generate().publicKey
 
         await program.methods
           .registerAuthMethod(
             authMethodType as any,
-            encryptionKey,
+            Array.from(encryptionKey),
             Array.from(paramsBuffer),
           )
           .accountsPartial({
@@ -1827,20 +1800,20 @@ export const planTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
 
+      const encryptionKey = nacl.box.keyPair().publicKey
+
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         mock.devicePda,
+        encryptionKey,
         paramsBuffer,
       )
-
-      // Generate encryption key for the auth method
-      const encryptionKey = anchor.web3.Keypair.generate().publicKey
 
       await program.methods
         .registerAuthMethod(
           authMethodType as any,
-          encryptionKey,
+          Array.from(encryptionKey),
           Array.from(paramsBuffer),
         )
         .accountsPartial({
@@ -1927,20 +1900,20 @@ export const planTests = () =>
         pskRotationInterval: 86400, // 24 hours
       })
 
+      const encryptionKey = nacl.box.keyPair().publicKey
+
       const [authMethodPda] = getPskAuthMethodPda(
         program,
         mock.serviceProvider.publicKey,
         mock.devicePda,
+        encryptionKey,
         paramsBuffer,
       )
-
-      // Generate encryption key for the auth method
-      const encryptionKey = anchor.web3.Keypair.generate().publicKey
 
       await program.methods
         .registerAuthMethod(
           authMethodType as any,
-          encryptionKey,
+          Array.from(encryptionKey),
           Array.from(paramsBuffer),
         )
         .accountsPartial({
@@ -1999,7 +1972,7 @@ export const parentPlanTests = () =>
       )
       parentPlan = program.coder.accounts.decode(
         'plan',
-        Buffer.from(planAccount.data),
+        Buffer.from(planAccount!.data),
       )
 
       const subscriptionAccount = await provider.context.banksClient.getAccount(
@@ -2007,7 +1980,7 @@ export const parentPlanTests = () =>
       )
       subscription = program.coder.accounts.decode(
         'subscription',
-        Buffer.from(subscriptionAccount.data),
+        Buffer.from(subscriptionAccount!.data),
       )
 
       deviceLocationPda = getDeviceLocationPda(program, mock.deviceL2Pda)
@@ -2053,28 +2026,30 @@ export const parentPlanTests = () =>
         encryptionAlgorithm: 'AES_GCMP',
         pskRotationInterval: 86400, // 24 hours
       })
+
+      const encryptionKey1 = nacl.box.keyPair().publicKey
+      const encryptionKey2 = nacl.box.keyPair().publicKey
+
       const [pskAuthMethodPda1] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
         mock.deviceL2Pda,
+        encryptionKey1,
         parametersBuffer1,
       )
       const [pskAuthMethodPda2] = getPskAuthMethodPda(
         program,
         mock.customer.publicKey,
         mock.deviceL2Pda,
+        encryptionKey2,
         parametersBuffer2,
       )
-
-      // Generate encryption keys for the auth methods
-      const encryptionKey1 = anchor.web3.Keypair.generate().publicKey
-      const encryptionKey2 = anchor.web3.Keypair.generate().publicKey
 
       // Register the auth method on-chain
       await program.methods
         .registerAuthMethod(
           { psk: {} },
-          encryptionKey1,
+          Array.from(encryptionKey1),
           Array.from(parametersBuffer1),
         )
         .accountsPartial({
@@ -2089,7 +2064,7 @@ export const parentPlanTests = () =>
       await program.methods
         .registerAuthMethod(
           { psk: {} },
-          encryptionKey2,
+          Array.from(encryptionKey2),
           Array.from(parametersBuffer2),
         )
         .accountsPartial({
@@ -2203,7 +2178,6 @@ export const parentPlanTests = () =>
             serviceAgreement: mock.serviceAgreementPda,
             plan: resellPlanPda,
             parentPlan: plan2Pda,
-            subscription: null, // This should cause the error
             accessDomain: accessDomainPda,
             systemProgram: SystemProgram.programId,
           })
@@ -2313,7 +2287,6 @@ export const parentPlanTests = () =>
             serviceAgreement: mock.serviceAgreementPda,
             plan: resellPlanPda,
             parentPlan: plan2Pda, // Different plan (not subscribed)
-            subscription: mock.subscriptionPda, // Subscription to original mock.planPda
             accessDomain: accessDomainPda,
             systemProgram: SystemProgram.programId,
           })
@@ -2402,7 +2375,6 @@ export const parentPlanTests = () =>
             caller: mock.customer.publicKey,
             localDomain: localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
-            subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
             accessDomain: accessDomainPda,
@@ -2470,7 +2442,6 @@ export const parentPlanTests = () =>
             caller: mock.customer.publicKey,
             localDomain: localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
-            subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
             accessDomain: accessDomainPda,
@@ -2537,7 +2508,6 @@ export const parentPlanTests = () =>
             caller: mock.customer.publicKey,
             localDomain: localDomainPda,
             serviceAgreement: mock.serviceAgreementPda,
-            subscription: mock.subscriptionPda,
             parentPlan: mock.planPda,
             plan: planPda,
             accessDomain: accessDomainPda,
@@ -2604,7 +2574,6 @@ export const parentPlanTests = () =>
           caller: mock.customer.publicKey,
           localDomain: localDomainPda,
           serviceAgreement: mock.serviceAgreementPda,
-          subscription: mock.subscriptionPda,
           parentPlan: mock.planPda,
           plan: planPda,
           accessDomain: accessDomainPda,
@@ -2625,9 +2594,9 @@ export const parentPlanTests = () =>
       // make sure event was emitted
       const event = await getEvent<PlanAdded>(program, txDetails, 'planAdded')
       expect(event.owner.equals(mock.customer.publicKey)).toBeTruthy()
-      expect(event.accessDomain.equals(accessDomainPda)).toBeTruthy()
+      expect(event.accessDomain!.equals(accessDomainPda)).toBeTruthy()
       expect(event.localDomain.equals(localDomainPda)).toBeTruthy()
-      expect(event.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(event.parentPlan!.equals(mock.planPda)).toBeTruthy()
       expect(event.name).toBe(mock.planName)
       expect(event.price.eq(mock.planPrice)).toBeTruthy()
       expect(event.duration).toBe(mock.planDuration)
@@ -2658,8 +2627,8 @@ export const parentPlanTests = () =>
       expect(new BN(plan.createdAt).gt(new BN(0))).toBeTruthy()
       expect(plan.owner.equals(mock.customer.publicKey)).toBeTruthy()
       expect(plan.localDomain.equals(localDomainPda)).toBeTruthy()
-      expect(plan.accessDomain.equals(accessDomainPda)).toBeTruthy()
-      expect(plan.parentPlan.equals(mock.planPda)).toBeTruthy()
+      expect(plan.accessDomain!.equals(accessDomainPda)).toBeTruthy()
+      expect(plan.parentPlan!.equals(mock.planPda)).toBeTruthy()
       expect(plan.name).toBe(mock.planName)
       expect(plan.price.eq(mock.planPrice)).toBeTruthy()
       expect(plan.duration).toBe(mock.planDuration)

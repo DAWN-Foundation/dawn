@@ -31,10 +31,10 @@ import { getBalance } from '../../cli/shared/cli-utils'
 import { oneDayLaterPlanPda } from './04_plan'
 
 const SECONDS_PER_DAY = 86_400
-const BPS_DENOMINATOR = new BN(10_000)
+export const BPS_DENOMINATOR = new BN(10_000)
 const TOLERANCE_BPS = new BN(9500)
 
-const Q32 = new BN(2).pow(new BN(32))
+export const Q32 = new BN(2).pow(new BN(32))
 
 /**
  * Helper function to calculate minDawnOut with slippage tolerance
@@ -47,7 +47,7 @@ const Q32 = new BN(2).pow(new BN(32))
  *
  * @returns Minimum DAWN output that will be accepted
  */
-function calculateMinDawnOut(
+export function calculateMinDawnOut(
   usdcAmount: BN,
   price: BN,
   slippageBps: number = 50,
@@ -66,7 +66,7 @@ function calculateMinDawnOut(
  * @param provider - Bankrun provider to get current time
  * @returns Deadline timestamp (current time + 30 seconds)
  */
-async function getDeadline(provider: BankrunProvider): Promise<BN> {
+export async function getDeadline(provider: BankrunProvider): Promise<BN> {
   const clock = await provider.context.banksClient.getClock()
   const currentTime = clock.unixTimestamp
   return new BN(currentTime.toString()).add(new BN(30))

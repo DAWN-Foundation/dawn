@@ -51,6 +51,7 @@ pub struct AddAuthMethod<'info> {
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
             auth_method.device.as_ref(),
+            &auth_method.encryption_key,
             &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump

@@ -17,6 +17,11 @@ async function main() {
   const speed = parseInt(getFlag('--speed')) || mock.planSpeed
   const capacity = new BN(getFlag('--capacity') || mock.planCapacity)
 
+  const authMethodsRaw = getFlag('--auth-methods') ?? null
+  const authMethods = authMethodsRaw
+    ? authMethodsRaw.split(',').map((method) => new PublicKey(method))
+    : null
+
   const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
@@ -66,7 +71,7 @@ async function main() {
         systemProgram: SystemProgram.programId,
       })
       .remainingAccounts(
-        mock.planAuthMethods.map((pubkey) => ({
+        authMethods.map((pubkey) => ({
           pubkey,
           isWritable: false,
           isSigner: false,
@@ -83,18 +88,12 @@ async function main() {
     }
   } else if (planType.toUpperCase() === 'L2') {
     // Create L2 plan (derived plan with access domain)
-    const parentPlanAddress = getFlag('--parent-plan')
-    if (!parentPlanAddress)
-      throw new Error('--parent-plan is required for L2 plans')
-
-    const subscriptionAddress = getFlag('--subscription')
-    if (!subscriptionAddress)
-      throw new Error('--subscription is required for L2 plans')
+    const parentPlanAddress = getFlag('--parent-plan') ?? null
 
     const [planPda] = getPlanPda(
       program,
       localDomainPda,
-      new PublicKey(parentPlanAddress),
+      parentPlanAddress ? new PublicKey(parentPlanAddress) : null,
       name,
       price,
       duration,
@@ -117,7 +116,6 @@ async function main() {
       planPda: planPda.toBase58(),
       accessDomainPda: accessDomainPda.toBase58(),
       parentPlan: parentPlanAddress,
-      subscription: subscriptionAddress,
     })
 
     const itx = await program.methods
@@ -125,15 +123,14 @@ async function main() {
       .accountsStrict({
         caller: wallet.payer.publicKey,
         serviceAgreement: mock.serviceAgreementPda,
-        parentPlan: parentPlanAddress,
+        parentPlan: parentPlanAddress ? new PublicKey(parentPlanAddress) : null,
         plan: planPda,
-        subscription: subscriptionAddress,
         localDomain: localDomainPda,
         accessDomain: accessDomainPda,
         systemProgram: SystemProgram.programId,
       })
       .remainingAccounts(
-        mock.planAuthMethods.map((pubkey) => ({
+        authMethods.map((pubkey) => ({
           pubkey,
           isWritable: false,
           isSigner: false,

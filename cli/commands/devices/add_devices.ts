@@ -77,7 +77,6 @@ async function main() {
       mock.deviceName,
       mock.deviceMacAddress,
     )
-    const accessDomainPda = getAccessDomainPda(program, devicePda)
     const deviceLocationPda = getDeviceLocationPda(program, devicePda)
     const localDomainPda = getLocalDomainPda(
       program,

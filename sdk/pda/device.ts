@@ -71,13 +71,13 @@ export function getAccessDomainPda(
 export function getAccessDomainForPlanPda(
   program: Program<Dawn>,
   localDomainPda: PublicKey,
-  parentPlanPda: PublicKey,
+  planPda: PublicKey,
 ): PublicKey {
   const [accessDomainPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('access_domain'),
+      Buffer.from(planPda.toBytes()),
       Buffer.from(localDomainPda.toBytes()),
-      Buffer.from(parentPlanPda.toBytes()),
     ],
     program.programId,
   )

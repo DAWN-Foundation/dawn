@@ -10,7 +10,7 @@ use crate::{
 
 /// Context for registering client credentials
 #[derive(Accounts)]
-#[instruction(client: Pubkey, credential_data: [u8; 128])]
+#[instruction(credential_data: [u8; 128])]
 pub struct RegisterCredential<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -21,6 +21,7 @@ pub struct RegisterCredential<'info> {
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
             auth_method.device.as_ref(),
+            &auth_method.encryption_key,
             &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
@@ -62,7 +63,7 @@ pub struct RegisterCredential<'info> {
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
             auth_method.key().as_ref(),
-            client.key().as_ref(),
+            caller.key().as_ref(),
         ],
         bump
     )]
@@ -75,7 +76,6 @@ impl DawnApp {
     /// Register client credentials for an auth method
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
         let current_time = Clock::get()?.unix_timestamp;
@@ -98,15 +98,15 @@ impl DawnApp {
         let credential = &mut ctx.accounts.credential;
 
         credential.created_at = current_time;
-        credential.client = client;
+        credential.authority = ctx.accounts.caller.key();
         credential.auth_method = auth_method.key();
         credential.credential_data = credential_data;
         credential.bump = ctx.bumps.credential;
 
         emit!(CredentialRegistered {
             credential: credential.key(),
+            authority: credential.authority,
             auth_method: credential.auth_method,
-            client: credential.client,
             credential_data: credential.credential_data,
             created_at: credential.created_at,
         });

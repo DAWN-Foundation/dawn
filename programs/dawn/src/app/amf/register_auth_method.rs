@@ -11,7 +11,7 @@ use crate::{
 
 /// Context for registering a new authentication method
 #[derive(Accounts)]
-#[instruction(method_type: AuthMethodType, encryption_key: Pubkey, parameters: [u8; 256])]
+#[instruction(method_type: AuthMethodType, encryption_key: [u8; 32], parameters: [u8; 256])]
 pub struct RegisterAuthMethod<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -21,21 +21,6 @@ pub struct RegisterAuthMethod<'info> {
         bump = config.bump
     )]
     pub config: Account<'info, Config>,
-
-    #[account(
-        init,
-        payer = caller,
-        space = AuthMethod::SIZE,
-        seeds = [
-            AuthMethod::SEED_PREFIX,
-            caller.key().as_ref(),
-            method_type.as_seed(),
-            device.key().as_ref(),
-            &hash_parameters(&parameters),
-        ],
-        bump
-    )]
-    pub auth_method: Account<'info, AuthMethod>,
 
     #[account(
         constraint = device.owner == caller.key(),
@@ -50,6 +35,22 @@ pub struct RegisterAuthMethod<'info> {
     )]
     pub device: Account<'info, Device>,
 
+    #[account(
+        init,
+        payer = caller,
+        space = AuthMethod::SIZE,
+        seeds = [
+            AuthMethod::SEED_PREFIX,
+            caller.key().as_ref(),
+            method_type.as_seed(),
+            device.key().as_ref(),
+            encryption_key.as_ref(),
+            &hash_parameters(&parameters),
+        ],
+        bump
+    )]
+    pub auth_method: Account<'info, AuthMethod>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -58,7 +59,7 @@ impl DawnApp {
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
-        encryption_key: Pubkey,
+        encryption_key: [u8; 32],
         parameters: [u8; 256],
     ) -> Result<()> {
         // VALIDATE parameters before storing
@@ -79,6 +80,7 @@ impl DawnApp {
             auth_method: auth_method.key(),
             method_type: auth_method.method_type as u8,
             device: auth_method.device,
+            encryption_key: auth_method.encryption_key,
             parameters: auth_method.parameters,
             created_at: now,
         });
