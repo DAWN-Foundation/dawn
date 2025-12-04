@@ -178,7 +178,7 @@ impl DawnApp {
 
         // Validate subscription is not expired
         require!(
-            ctx.accounts.subscription.expiration >= current_time,
+            ctx.accounts.subscription.expiration > current_time,
             DawnError::SubscriptionExpired
         );
 
@@ -282,16 +282,6 @@ impl DawnApp {
                 // Use current balance which may have changed after claiming
                 let escrow_dawn_before_swap = ctx.accounts.escrow_dawn_vault.amount;
 
-                // Calculate actual USDC amount to use for swap (handles both base and quote token cases)
-                let actual_usdc_amount_in = crate::utils::calculate_actual_usdc_input(
-                    &ctx.accounts.raydium_pool,
-                    &ctx.accounts.raydium_usdc_vault,
-                    &ctx.accounts.raydium_dawn_vault,
-                    is_usdc_base,
-                    usdc_amount_in,
-                    min_dawn_out,
-                )?;
-
                 // Create CPI accounts for the swap
                 let swap_cpi = cpi::accounts::Swap {
                     payer: plan_account,
@@ -315,7 +305,7 @@ impl DawnApp {
                 );
 
                 // Execute swap with user-supplied minimum
-                cpi::swap_base_input(swap_cpi_ctx, actual_usdc_amount_in, min_dawn_out)?;
+                cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
 
                 // Reload escrow DAWN vault to get actual received amount
                 ctx.accounts.escrow_dawn_vault.reload()?;

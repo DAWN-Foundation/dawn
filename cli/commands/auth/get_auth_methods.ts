@@ -18,11 +18,10 @@ async function main() {
         methodType: Object.keys(a.account.methodType)[0],
         authority: a.account.authority.toBase58(),
         device: a.account.device.toBase58(),
-        parameters: "[" + Array.from(a.account.parameters).join(',') + "]",
+        parameters: '[' + Array.from(a.account.parameters).join(',') + ']',
       },
     })),
   )
 }
 
 main().catch(console.error)
-
