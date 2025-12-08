@@ -166,8 +166,41 @@ pub(super) fn process_subscription_extension(
         let (new_daily_usdc, actual_dawn_out) =
             payment::process_extension_payment(payment_accounts, config, plan)?;
 
-        // Update daily_usdc but don't modify claimable_dawn
-        subscription.daily_usdc = new_daily_usdc;
+        // Calculate weighted average for daily_usdc
+        // remaining_days = time left on current subscription
+        // new_days = plan duration from extension
+        // weighted_daily_usdc = (current_daily * remaining_days + new_daily * new_days) / total_days
+        let remaining_seconds = subscription
+            .expiration
+            .checked_sub(current_time)
+            .ok_or(DawnError::Underflow)?;
+        let remaining_days = (remaining_seconds as u64)
+            .checked_div(SECONDS_PER_DAY)
+            .ok_or(DawnError::Underflow)?;
+        let new_days = plan.duration as u64;
+        let total_days = remaining_days
+            .checked_add(new_days)
+            .ok_or(DawnError::Overflow)?;
+
+        // Calculate weighted average (handle edge case where total_days could be 0)
+        let weighted_daily_usdc = if total_days > 0 {
+            let current_portion = (subscription.daily_usdc as u128)
+                .checked_mul(remaining_days as u128)
+                .ok_or(DawnError::Overflow)?;
+            let new_portion = (new_daily_usdc as u128)
+                .checked_mul(new_days as u128)
+                .ok_or(DawnError::Overflow)?;
+            let total = current_portion
+                .checked_add(new_portion)
+                .ok_or(DawnError::Overflow)?;
+            total
+                .checked_div(total_days as u128)
+                .ok_or(DawnError::Underflow)? as u64
+        } else {
+            new_daily_usdc
+        };
+
+        subscription.daily_usdc = weighted_daily_usdc;
 
         actual_dawn_out
     };

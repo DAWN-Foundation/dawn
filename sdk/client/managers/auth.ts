@@ -72,9 +72,14 @@ export class AuthManager {
     authMethodPda: PublicKey,
     psk: string,
   ): Promise<{ itx: TransactionInstruction; credentialPda: PublicKey }> {
-    const authMethod = await this.program.account.authMethod.fetch(authMethodPda)
+    const authMethod = await this.program.account.authMethod.fetch(
+      authMethodPda,
+    )
     const encryptionKey = authMethod.encryptionKey
-    const encryptedPsk = encryptWithPublicKey(psk, new Uint8Array(encryptionKey))
+    const encryptedPsk = encryptWithPublicKey(
+      psk,
+      new Uint8Array(encryptionKey),
+    )
     const credentialData = serializePskCredentialData(encryptedPsk)
 
     const credentialPda = getCredentialPda(this.program, authMethodPda, caller)

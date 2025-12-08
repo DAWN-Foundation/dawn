@@ -189,16 +189,6 @@ pub(super) fn process_payment(
     // Read user DAWN balance before swap
     let user_dawn_before = accounts.user_dawn_account.amount;
 
-    // Calculate actual USDC amount to use for swap (handles both base and quote token cases)
-    let actual_usdc_amount_in = crate::utils::calculate_actual_usdc_input(
-        &accounts.raydium_pool,
-        accounts.raydium_usdc_vault,
-        accounts.raydium_dawn_vault,
-        is_usdc_base,
-        usdc_amount_in,
-        min_dawn_out,
-    )?;
-
     // Create CPI accounts for the swap
     let swap_cpi = cpi::accounts::Swap {
         payer: accounts.caller.to_account_info(),
@@ -218,7 +208,7 @@ pub(super) fn process_payment(
     let swap_cpi_ctx = CpiContext::new(accounts.raydium.to_account_info(), swap_cpi);
 
     // Perform swap with user-supplied minimum
-    cpi::swap_base_input(swap_cpi_ctx, actual_usdc_amount_in, min_dawn_out)?;
+    cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
 
     // Reload user DAWN account to measure actual output
     accounts.user_dawn_account.reload()?;
