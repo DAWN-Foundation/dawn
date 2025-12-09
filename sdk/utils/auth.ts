@@ -34,7 +34,7 @@ export function serializePskCredentialData(encryptedPsk: Uint8Array): Buffer {
   const buffer = Buffer.alloc(128)
 
   // encryptedPsk: 64 bytes
-  Buffer.from(encryptedPsk).copy(buffer, 64)
+  Buffer.from(encryptedPsk).copy(buffer, 0)
 
   // reserved: 64 bytes (rest of buffer is already zeroed)
 
