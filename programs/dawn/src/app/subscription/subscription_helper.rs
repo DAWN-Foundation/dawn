@@ -162,9 +162,9 @@ pub(super) fn process_subscription_extension(
 
         actual_dawn_out
     } else {
-        // Active subscription: only add to escrow, don't add to claimable_dawn
+        // Active subscription: swap fees to DAWN immediately, add remaining USDC to escrow
         let (new_daily_usdc, actual_dawn_out) =
-            payment::process_extension_payment(payment_accounts, config, plan)?;
+            payment::process_extension_payment(payment_accounts, config, plan, min_dawn_out)?;
 
         // Calculate weighted average for daily_usdc
         // remaining_days = time left on current subscription

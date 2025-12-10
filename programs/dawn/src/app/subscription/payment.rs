@@ -116,12 +116,14 @@ pub(super) fn calculate_dawn_fees_proportional(
     Ok((total_dawn_fee, escrow_dawn))
 }
 
-pub(super) fn process_payment(
-    accounts: PaymentAccounts,
-    config: &Config,
-    plan: &Plan,
+/// Execute a USDC to DAWN swap via Raydium with slippage protection
+/// Returns the actual DAWN output amount
+fn execute_usdc_to_dawn_swap(
+    accounts: &mut PaymentAccounts,
+    usdc_amount_to_swap: u64,
     min_dawn_out: u64,
-) -> Result<(u64, u64, u64)> {
+) -> Result<u64> {
+    // Get pool configuration
     let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
         let pool_state = accounts.raydium_pool.load()?;
         (
@@ -154,27 +156,16 @@ pub(super) fn process_payment(
         accounts.user_dawn_account.to_account_info(),
     )?;
 
-    // calculate the total USDC fee and remainder
-    let (total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder) = calculate_usdc_fee(
-        plan.price,
-        config.dao_fee,
-        config.validator_fee,
-        config.medallion_fee,
-        plan.duration,
-    )?;
-
-    // Calculate swap amounts in USDC
-    let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);
+    // Calculate swap amounts
     let (usdc_amount_in, expected_dawn_out) = swap_amounts(
         accounts.raydium_pool,
         accounts.raydium_usdc_vault,
         accounts.raydium_dawn_vault,
         is_usdc_base,
-        usdc_to_swap,
+        usdc_amount_to_swap,
     )?;
 
     // Validate min_dawn_out is reasonable: must allow at most MAX_SLIPPAGE_TOLERANCE_BPS slippage
-    // This prevents users from setting min_dawn_out too low, which increases sandwich attack risk
     let min_allowed_output = expected_dawn_out
         .checked_mul(BPS_DENOMINATOR - MAX_SLIPPAGE_TOLERANCE_BPS)
         .ok_or(DawnError::Overflow)?
@@ -207,7 +198,7 @@ pub(super) fn process_payment(
     };
     let swap_cpi_ctx = CpiContext::new(accounts.raydium.to_account_info(), swap_cpi);
 
-    // Perform swap with user-supplied minimum
+    // Perform swap
     cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
 
     // Reload user DAWN account to measure actual output
@@ -223,6 +214,30 @@ pub(super) fn process_payment(
         actual_dawn_out >= min_dawn_out,
         DawnError::InsufficientOutputAmount
     );
+
+    Ok(actual_dawn_out)
+}
+
+pub(super) fn process_payment(
+    mut accounts: PaymentAccounts,
+    config: &Config,
+    plan: &Plan,
+    min_dawn_out: u64,
+) -> Result<(u64, u64, u64)> {
+    // Calculate the total USDC fee and remainder
+    let (total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder) = calculate_usdc_fee(
+        plan.price,
+        config.dao_fee,
+        config.validator_fee,
+        config.medallion_fee,
+        plan.duration,
+    )?;
+
+    // Calculate total USDC to swap (fees + first day)
+    let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);
+
+    // Execute swap via Raydium
+    let actual_dawn_out = execute_usdc_to_dawn_swap(&mut accounts, usdc_to_swap, min_dawn_out)?;
 
     // Calculate fees proportionally from ACTUAL output
     let usdc_total = total_usdc_fee
@@ -269,17 +284,20 @@ pub(super) fn process_payment(
     Ok((escrow_dawn, daily_dawn_in_usdc, actual_dawn_out))
 }
 
-/// Process payment for active subscription extension (only deposits to escrow, no swap)
-/// For active subscriptions, payment is for a future period, so it goes entirely to escrow
-/// without swapping the first day. Fees will be collected when claims occur.
-/// Returns: (daily_usdc, actual_dawn_out) where actual_dawn_out is 0 since no swap occurs
+/// Process payment for active subscription extension
+/// For active subscriptions, payment is for a future period:
+/// - Fees are swapped to DAWN and sent to fee pool immediately
+/// - Remaining USDC goes to escrow for future daily claims
+/// Note: min_dawn_out is automatically scaled proportionally since only fees are swapped (not full amount)
+/// Returns: (daily_usdc, actual_dawn_out) where actual_dawn_out is from the fee swap
 pub(super) fn process_extension_payment(
-    accounts: PaymentAccounts,
+    mut accounts: PaymentAccounts,
     config: &Config,
     plan: &Plan,
+    min_dawn_out: u64,
 ) -> Result<(u64, u64)> {
-    // Calculate daily_usdc for future claims (needed to know how much to swap per day)
-    let (_total_usdc_fee, daily_dawn_in_usdc, _escrow_usdc_remainder) = calculate_usdc_fee(
+    // Calculate fee breakdown
+    let (total_usdc_fee, daily_dawn_in_usdc, escrow_usdc_remainder) = calculate_usdc_fee(
         plan.price,
         config.dao_fee,
         config.validator_fee,
@@ -287,9 +305,38 @@ pub(super) fn process_extension_payment(
         plan.duration,
     )?;
 
-    // Transfer entire plan.price to escrow_usdc_vault
-    // Fees will be collected proportionally when escrowed USDC is swapped during claims
-    let transfer_cpi_ctx = CpiContext::new(
+    // Scale min_dawn_out proportionally since we're only swapping the fee portion
+    // User provides min_dawn_out for full plan.price, but we only swap total_usdc_fee
+    let scaled_min_dawn_out = u64::try_from(
+        (min_dawn_out as u128)
+            .checked_mul(total_usdc_fee as u128)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(plan.price as u128)
+            .ok_or(DawnError::Underflow)?,
+    )
+    .map_err(|_| DawnError::Overflow)?;
+
+    // Execute swap via Raydium (only swap the fee portion)
+    let actual_dawn_out =
+        execute_usdc_to_dawn_swap(&mut accounts, total_usdc_fee, scaled_min_dawn_out)?;
+
+    // Transfer all swapped DAWN (fees) to fee pool
+    let fee_pool_cpi_ctx = CpiContext::new(
+        accounts.token_program.to_account_info(),
+        token::Transfer {
+            from: accounts.user_dawn_account.to_account_info(),
+            to: accounts.fee_pool_dawn_account.to_account_info(),
+            authority: accounts.caller.to_account_info(),
+        },
+    );
+    token::transfer(fee_pool_cpi_ctx, actual_dawn_out)?;
+
+    // Transfer non-fee USDC to escrow (for future daily claims)
+    let usdc_to_escrow = escrow_usdc_remainder
+        .checked_add(daily_dawn_in_usdc)
+        .ok_or(DawnError::Overflow)?;
+
+    let escrow_cpi_ctx = CpiContext::new(
         accounts.token_program.to_account_info(),
         token::Transfer {
             from: accounts.user_usdc_account.to_account_info(),
@@ -297,10 +344,10 @@ pub(super) fn process_extension_payment(
             authority: accounts.caller.to_account_info(),
         },
     );
-    token::transfer(transfer_cpi_ctx, plan.price)?;
+    token::transfer(escrow_cpi_ctx, usdc_to_escrow)?;
 
-    // Return daily_usdc and 0 for actual_dawn_out (no swap occurred)
-    Ok((daily_dawn_in_usdc, 0))
+    // Return daily_usdc and actual DAWN output from fee swap
+    Ok((daily_dawn_in_usdc, actual_dawn_out))
 }
 
 /// Validate deadline hasn't expired and isn't too far in the future
