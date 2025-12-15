@@ -830,7 +830,7 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap for extension
+      // Calculate fee amounts for active subscription extension
       const config2 = await program.account.config.fetch(mock.configPda)
       const totalFeeBps2 = config2.daoFee
         .add(config2.validatorFee)
@@ -838,9 +838,10 @@ export const subscriptionTests = () =>
       const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
       const remainder2 = plan.price.sub(totalFeeUsdc2)
       const dailyUsdc2 = remainder2.div(new BN(plan.duration))
-      const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
 
-      const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
+      // For active extensions: provide minDawnOut for full plan.price
+      // Code will scale it down for fee-only swap
+      const minDawnOut = calculateMinDawnOut(plan.price, price) // Uses default 50 bps
       const deadline = await getDeadline(provider)
 
       const tx = await program.methods
@@ -866,12 +867,12 @@ export const subscriptionTests = () =>
           expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
         ),
       )
-      // swapPrice is now the actual DAWN output (not Q32 price)
-      // For active subscriptions, swapPrice is 0 (no swap occurs, payment goes to escrow)
+      // swapPrice is now the actual DAWN output from the fee swap
+      // For active subscriptions, only fees are swapped (not first day)
       const swapPriceBN = new BN(event.swapPrice.toString())
       assert.ok(
-        swapPriceBN.eq(new BN(0)),
-        'swapPrice should be 0 for active subscriptions (no swap occurs)',
+        swapPriceBN.gt(new BN(0)),
+        'swapPrice should be > 0 for active subscriptions (fees are swapped)',
       )
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
@@ -894,7 +895,7 @@ export const subscriptionTests = () =>
         .mul(totalFeeBpsAssert2)
         .div(BPS_DENOMINATOR)
 
-      // For active subscriptions: entire plan.price goes to escrow, no swap occurs
+      // For active subscriptions: fees are swapped to DAWN, non-fee USDC goes to escrow
       const escrowUsdcBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
@@ -903,16 +904,28 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.escrowDawnVault,
       )
+      const feePoolDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.feePoolDawnAccount,
+      )
 
+      // Only non-fee USDC goes to escrow (plan.price - totalFeeUsdc)
+      const expectedEscrowUsdcIncrease = plan.price.sub(totalUsdcFee)
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(plan.price),
-        'Escrow USDC should increase by full plan price for active subscriptions',
+        escrowUsdcBalanceAfter
+          .sub(escrowUsdcBalanceBefore)
+          .eq(expectedEscrowUsdcIncrease),
+        'Escrow USDC should increase by (plan.price - fees) for active subscriptions',
       )
       assert.ok(
         escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
-        'Escrow DAWN should not change for active subscriptions (no swap occurs)',
+        'Escrow DAWN should not change for active subscriptions (fees go to fee pool)',
       )
-      // No fees are collected for active subscriptions (they'll be collected during claims)
+      // Fees should be collected in DAWN for active subscriptions
+      assert.ok(
+        feePoolDawnBalanceAfter.gt(feePoolDawnBalanceBefore),
+        'Fee pool DAWN should increase from swapped fees',
+      )
 
       // get block time, and calculate expected expiration
       const planInSeconds = plan.duration * SECONDS_PER_DAY
@@ -1554,8 +1567,10 @@ export const subscriptionTests = () =>
         const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
         const remainder = plan.price.sub(totalFeeUsdc)
         const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+
+        // For active extensions: provide minDawnOut for full plan.price
+        // Code will scale it down for fee-only swap
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         const tx = await program.methods
