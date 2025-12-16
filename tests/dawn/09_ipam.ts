@@ -168,16 +168,9 @@ const createSubscriber = async (
   const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
   const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
   const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-  const config = await program.account.config.fetch(mock.configPda)
   const planData = await program.account.plan.fetch(plan)
-  const totalFeeBps = config.daoFee
-    .add(config.validatorFee)
-    .add(config.medallionFee)
-  const totalFeeUsdc = planData.price.mul(totalFeeBps).div(new BN(10_000))
-  const remainder = planData.price.sub(totalFeeUsdc)
-  const dailyUsdc = remainder.div(new BN(planData.duration))
-  const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-  const minDawnOut = calculateMinDawnOut(usdcToSwap, price, 50)
+  // Use plan.price for minDawnOut - program will scale it proportionally
+  const minDawnOut = calculateMinDawnOut(planData.price, price, 50)
 
   await program.methods
     .subscribe(minDawnOut, new BN(currentTime.toString()).add(new BN(300)))

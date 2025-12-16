@@ -218,6 +218,14 @@ fn execute_usdc_to_dawn_swap(
     Ok(actual_dawn_out)
 }
 
+/// Process payment for new subscriptions
+/// - Swaps fees + first day's worth to DAWN
+/// - Fee portion goes to fee pool, first day's DAWN goes to escrow
+/// - Remaining USDC goes to escrow for future daily claims
+///
+/// Note: min_dawn_out should be calculated for full plan.price.
+/// The program scales it proportionally for the actual swap amount.
+/// Returns: (escrow_dawn, daily_usdc, actual_dawn_out)
 pub(super) fn process_payment(
     mut accounts: PaymentAccounts,
     config: &Config,
@@ -236,8 +244,20 @@ pub(super) fn process_payment(
     // Calculate total USDC to swap (fees + first day)
     let usdc_to_swap = total_usdc_fee.saturating_add(daily_dawn_in_usdc);
 
+    // Scale min_dawn_out proportionally since we're only swapping a portion
+    // User provides min_dawn_out for full plan.price, but we only swap usdc_to_swap
+    let scaled_min_dawn_out = u64::try_from(
+        (min_dawn_out as u128)
+            .checked_mul(usdc_to_swap as u128)
+            .ok_or(DawnError::Overflow)?
+            .checked_div(plan.price as u128)
+            .ok_or(DawnError::Underflow)?,
+    )
+    .map_err(|_| DawnError::Overflow)?;
+
     // Execute swap via Raydium
-    let actual_dawn_out = execute_usdc_to_dawn_swap(&mut accounts, usdc_to_swap, min_dawn_out)?;
+    let actual_dawn_out =
+        execute_usdc_to_dawn_swap(&mut accounts, usdc_to_swap, scaled_min_dawn_out)?;
 
     // Calculate fees proportionally from ACTUAL output
     let usdc_total = total_usdc_fee
@@ -285,11 +305,12 @@ pub(super) fn process_payment(
 }
 
 /// Process payment for active subscription extension
-/// For active subscriptions, payment is for a future period:
-/// - Fees are swapped to DAWN and sent to fee pool immediately
+/// - Swaps only fees to DAWN (sent to fee pool immediately)
 /// - Remaining USDC goes to escrow for future daily claims
-/// Note: min_dawn_out is automatically scaled proportionally since only fees are swapped (not full amount)
-/// Returns: (daily_usdc, actual_dawn_out) where actual_dawn_out is from the fee swap
+///
+/// Note: min_dawn_out should be calculated for full plan.price.
+/// The program scales it proportionally for the actual swap amount.
+/// Returns: (daily_usdc, actual_dawn_out)
 pub(super) fn process_extension_payment(
     mut accounts: PaymentAccounts,
     config: &Config,

@@ -1,3 +1,23 @@
+/**
+ * CLI command to extend an existing subscription
+ *
+ * Usage:
+ *   yarn dawn:extend_subscription --plan <PLAN_PDA> [--slippage <BPS>]
+ *
+ * Flags:
+ *   --plan: Plan PDA address (required)
+ *   --slippage: Slippage tolerance in BPS (default: 100 = 1%)
+ *
+ * For active subscriptions:
+ *   - Protocol fees are swapped to DAWN immediately
+ *   - Remaining USDC goes to escrow for future daily claims
+ *   - Expiration is extended from current expiration
+ *
+ * For expired subscriptions:
+ *   - Behaves like a new subscription (swaps fees + first day)
+ *   - Expiration is set from current time
+ */
+
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getMock, getFlag, submitTx } from '../../shared/cli-utils'
@@ -15,9 +35,6 @@ async function main() {
   }
   const planPda = new PublicKey(plan)
 
-  const device = getFlag('--device')
-  const devicePda = device ? new PublicKey(device) : null
-
   const { wallet, connection, program } = await connect()
   const mock = getMock()
 
@@ -26,6 +43,16 @@ async function main() {
   const [subscriptionPda] = getSubscriptionPda(program, planPda, wallet.payer)
 
   console.log({ subscriptionPda: subscriptionPda.toBase58() })
+
+  // Verify subscription exists
+  const subscription = await program.account.subscription.fetch(subscriptionPda)
+  console.log('Extending subscription:', {
+    plan: subscription.plan.toBase58(),
+    subscriber: subscription.subscriber.toBase58(),
+    currentExpiration: new Date(
+      subscription.expiration.toNumber() * 1000,
+    ).toISOString(),
+  })
 
   const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
     connection,
@@ -72,7 +99,7 @@ async function main() {
     ? parseInt(getFlag('--slippage')!)
     : 100
 
-  // Calculate minimum DAWN output with MEV protection for FULL plan.price
+  // Calculate minimum DAWN output with MEV protection for full plan.price
   // The program will scale this down proportionally for the actual swap amount
   const { minDawnOut, deadline } = await calculateSwapBounds(
     connection,
@@ -84,7 +111,7 @@ async function main() {
     slippageBps,
   )
 
-  console.log('Subscribe parameters:', {
+  console.log('Extend subscription parameters:', {
     planPrice: planData.price.toString(),
     minDawnOut: minDawnOut.toString(),
     slippageBps: slippageBps,
@@ -92,12 +119,11 @@ async function main() {
   })
 
   const itx = await program.methods
-    .subscribe(minDawnOut, deadline)
+    .extendSubscription(minDawnOut, deadline)
     .accountsPartial({
       caller: wallet.publicKey,
       config: mock.configPda,
       plan: planPda,
-      device: devicePda,
       subscription: subscriptionPda,
       // mints
       usdcMint: mock.usdcMint,
@@ -127,9 +153,21 @@ async function main() {
 
   try {
     const txResult = await submitTx(connection, wallet, itx)
-    console.log('Tx submitted', { txResult })
+    console.log('Subscription extended successfully!', { txResult })
+
+    // Fetch updated subscription
+    const updatedSubscription = await program.account.subscription.fetch(
+      subscriptionPda,
+    )
+    console.log('Updated subscription:', {
+      newExpiration: new Date(
+        updatedSubscription.expiration.toNumber() * 1000,
+      ).toISOString(),
+      dailyUsdc: updatedSubscription.dailyUsdc.toString(),
+      claimableDawn: updatedSubscription.claimableDawn.toString(),
+    })
   } catch (error) {
-    console.error(error)
+    console.error('Error extending subscription:', error)
   }
 }
 
