@@ -125,3 +125,39 @@ export function getDeviceLocationPda(
 
   return deviceLocationPda
 }
+
+/**
+ * Get the PDA for a plan's distribution domain (L3 plans)
+ */
+export function getPlanDistributionDomainPda(
+  program: Program<Dawn>,
+  planPda: PublicKey,
+  localDomainPda: PublicKey,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('distribution_domain'),
+      planPda.toBuffer(),
+      localDomainPda.toBuffer(),
+    ],
+    program.programId,
+  )
+}
+
+/**
+ * Get the PDA for a plan's access domain (L2 plans)
+ */
+export function getPlanAccessDomainPda(
+  program: Program<Dawn>,
+  planPda: PublicKey,
+  localDomainPda: PublicKey,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('access_domain'),
+      planPda.toBuffer(),
+      localDomainPda.toBuffer(),
+    ],
+    program.programId,
+  )
+}

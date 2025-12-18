@@ -4,7 +4,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+declare_id!("5AUcCAfGvpPsDcqGaESHFGg3JbeDLmvhntxYXncPQq8p");
 
 #[cfg(feature = "devnet")]
 declare_id!("dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP");

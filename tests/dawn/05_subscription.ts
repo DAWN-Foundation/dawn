@@ -24,6 +24,15 @@ import {
   getDeviceLocationPda,
   getLocalDomainPda,
   getIpLeasePda,
+  subscribeTx,
+  subscribeRpc,
+  extendSubscriptionTx,
+  extendSubscriptionRpc,
+  subscribeForTx,
+  subscribeForRpc,
+  extendSubscriptionForTx,
+  extendSubscriptionForRpc,
+  addDeviceRpc,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { Clock } from 'solana-bankrun'
@@ -98,7 +107,7 @@ export const subscriptionTests = () =>
     let program: Program<Dawn>
 
     let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
-    let accounts: Record<string, PublicKey>
+    let accounts: any
 
     let oneDayLaterEscrowUsdcVault: PublicKey
     let oneDayLaterEscrowDawnVault: PublicKey
@@ -152,7 +161,7 @@ export const subscriptionTests = () =>
         caller: mock.customer.publicKey,
         config: mock.configPda,
         plan: mock.planPda,
-        device: null,
+        device: null as PublicKey | null,
         subscription: mock.subscriptionPda,
         // mints
         usdcMint: mock.usdcMint,
@@ -235,15 +244,34 @@ export const subscriptionTests = () =>
         const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .subscribe(minDawnOut, deadline)
-          .accountsPartial({
-            ...accounts,
-            plan: planPda,
-            subscription: badSubscriptionPda,
-          })
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: planPda,
+          device: accounts.device,
+          subscription: badSubscriptionPda,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -285,11 +313,34 @@ export const subscriptionTests = () =>
         const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .subscribe(minDawnOut, deadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof SendTransactionError)
@@ -343,17 +394,34 @@ export const subscriptionTests = () =>
         const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .subscribe(minDawnOut, deadline)
-          .accountsPartial({
-            ...accounts,
-            plan: oneDayLaterPlanPda,
-            subscription: subscriptionPda,
-            escrowUsdcVault: oneDayLaterEscrowUsdcVault,
-            escrowDawnVault: oneDayLaterEscrowDawnVault,
-          })
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: oneDayLaterPlanPda,
+          device: accounts.device,
+          subscription: subscriptionPda,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+          escrowDawnVault: oneDayLaterEscrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -391,11 +459,34 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
 
       try {
-        await program.methods
-          .subscribe(minDawnOut, expiredDeadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline: expiredDeadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false, 'Should have failed with expired deadline')
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -437,11 +528,34 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
 
       try {
-        await program.methods
-          .subscribe(minDawnOut, tooFarDeadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline: tooFarDeadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false, 'Should have failed with deadline too far in future')
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -484,11 +598,34 @@ export const subscriptionTests = () =>
 
       try {
         const deadline = await getDeadline(provider)
-        await program.methods
-          .subscribe(minDawnOutTooHigh, deadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut: minDawnOutTooHigh,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false, 'Should have failed with min_dawn_out too high')
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -535,11 +672,34 @@ export const subscriptionTests = () =>
 
       try {
         const deadline = await getDeadline(provider)
-        await program.methods
-          .subscribe(minDawnOutTooLow, deadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut: minDawnOutTooLow,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false, 'Should have failed with min_dawn_out too low')
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -594,17 +754,34 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .subscribe(minDawnOut, deadline)
-        .accountsPartial({
-          ...accounts,
-          plan: oneDayLaterPlanPda,
-          subscription: subscriptionPda,
-          escrowUsdcVault: oneDayLaterEscrowUsdcVault,
-          escrowDawnVault: oneDayLaterEscrowDawnVault,
-        })
-        .signers([mock.customer])
-        .transaction()
+      const tx = await subscribeTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.customer,
+        config: accounts.config,
+        plan: oneDayLaterPlanPda,
+        device: accounts.device,
+        subscription: subscriptionPda,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        userUsdcAccount: accounts.userUsdcAccount,
+        userDawnAccount: accounts.userDawnAccount,
+        feePoolDawnAccount: accounts.feePoolDawnAccount,
+        escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+        escrowDawnVault: oneDayLaterEscrowDawnVault,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -677,11 +854,34 @@ export const subscriptionTests = () =>
 
       const timeBefore = await provider.context.banksClient.getClock()
 
-      const tx = await program.methods
-        .subscribe(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.customer])
-        .transaction()
+      const tx = await subscribeTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.customer,
+        config: accounts.config,
+        plan: accounts.plan,
+        device: accounts.device,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        userUsdcAccount: accounts.userUsdcAccount,
+        userDawnAccount: accounts.userDawnAccount,
+        feePoolDawnAccount: accounts.feePoolDawnAccount,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -843,11 +1043,33 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .extendSubscription(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.customer])
-        .transaction()
+      const tx = await extendSubscriptionTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.customer,
+        config: accounts.config,
+        plan: accounts.plan,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        userUsdcAccount: accounts.userUsdcAccount,
+        userDawnAccount: accounts.userDawnAccount,
+        feePoolDawnAccount: accounts.feePoolDawnAccount,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -1005,11 +1227,33 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .extendSubscription(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.customer])
-        .transaction()
+      const tx = await extendSubscriptionTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.customer,
+        config: accounts.config,
+        plan: accounts.plan,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        userUsdcAccount: accounts.userUsdcAccount,
+        userDawnAccount: accounts.userDawnAccount,
+        feePoolDawnAccount: accounts.feePoolDawnAccount,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -1161,11 +1405,34 @@ export const subscriptionTests = () =>
       try {
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .subscribe(minDawnOut, deadline)
-          .accounts(accounts)
-          .signers([mock.customer])
-          .rpc()
+        await subscribeRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          device: accounts.device,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          userUsdcAccount: accounts.userUsdcAccount,
+          userDawnAccount: accounts.userDawnAccount,
+          feePoolDawnAccount: accounts.feePoolDawnAccount,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof SendTransactionError)
@@ -1204,25 +1471,22 @@ export const subscriptionTests = () =>
 
       const loopbackIpLeasePda = getIpLeasePda(1, devicePda)
 
-      await program.methods
-        .addDevice(
-          mock.deviceName,
-          mock.deviceHeight,
-          mock.deviceLatitude,
-          mock.deviceLongitude,
-          mock.devicePlacement,
-          macAddress,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: wallet.publicKey,
-          deviceModel: mock.deviceModelPda,
-          device: devicePda,
-          deviceLocation: deviceLocationPda,
-          localDomain: localDomainPda,
-        })
-        .signers([wallet.payer])
-        .rpc()
+      await addDeviceRpc({
+        program,
+        caller: wallet.publicKey,
+        signer: wallet.payer,
+        deviceModelPda: mock.deviceModelPda,
+        devicePda,
+        deviceLocationPda,
+        localDomainPda,
+        name: mock.deviceName,
+        height: mock.deviceHeight,
+        latitude: mock.deviceLatitude,
+        longitude: mock.deviceLongitude,
+        placement: mock.devicePlacement,
+        macAddress,
+        localDomain: mock.localDomain,
+      })
 
       // Calculate valid minDawnOut
       const raydiumDawnVault = await getAccount(
@@ -1250,20 +1514,34 @@ export const subscriptionTests = () =>
       const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .subscribe(minDawnOut, deadline)
-        .accountsPartial({
-          ...accounts,
-          caller: wallet.publicKey,
-          device: devicePda,
-          subscription: subscriptionPda,
-          userDawnAccount: mock.walletDawnAccount,
-          userUsdcAccount: mock.walletUsdcAccount,
-          escrowUsdcVault: mock.escrowUsdcVault,
-          escrowDawnVault: mock.escrowDawnVault,
-        })
-        .signers([wallet.payer])
-        .transaction()
+      const tx = await subscribeTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: wallet.publicKey,
+        signer: wallet.payer,
+        config: accounts.config,
+        plan: accounts.plan,
+        device: devicePda,
+        subscription: subscriptionPda,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        userUsdcAccount: mock.walletUsdcAccount,
+        userDawnAccount: mock.walletDawnAccount,
+        feePoolDawnAccount: accounts.feePoolDawnAccount,
+        escrowUsdcVault: mock.escrowUsdcVault,
+        escrowDawnVault: mock.escrowDawnVault,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -1341,35 +1619,35 @@ export const subscriptionTests = () =>
         const deadline = await getDeadline(provider)
 
         try {
-          const tx = await program.methods
-            .subscribeFor(minDawnOut, deadline)
-            .accountsPartial({
-              caller: caller.publicKey,
-              beneficiary: beneficiary,
-              config: mock.configPda,
-              plan: mock.planPda,
-              device: null,
-              subscription: subscriptionForPda,
-              usdcMint: mock.usdcMint,
-              dawnMint: mock.dawnMint,
-              raydium: mock.raydium,
-              raydiumAuthority: mock.raydiumAuthority,
-              raydiumConfig: mock.raydiumConfig,
-              raydiumPool: mock.raydiumPool,
-              raydiumObservation: mock.raydiumObservation,
-              raydiumDawnVault: mock.raydiumDawnVault,
-              raydiumUsdcVault: mock.raydiumUsdcVault,
-              userUsdcAccount: mock.walletUsdcAccount,
-              userDawnAccount: mock.walletDawnAccount,
-              feePoolDawnAccount: mock.feePoolDawnAccount,
-              escrowUsdcVault: mock.escrowUsdcVault,
-              escrowDawnVault: mock.escrowDawnVault,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([caller])
-            .transaction()
+          const tx = await subscribeForTx({
+            program,
+            minDawnOut,
+            deadline,
+            caller: caller.publicKey,
+            signer: caller,
+            beneficiary: beneficiary,
+            config: mock.configPda,
+            plan: mock.planPda,
+            device: null,
+            subscription: subscriptionForPda,
+            usdcMint: mock.usdcMint,
+            dawnMint: mock.dawnMint,
+            raydium: mock.raydium,
+            raydiumAuthority: mock.raydiumAuthority,
+            raydiumConfig: mock.raydiumConfig,
+            raydiumPool: mock.raydiumPool,
+            raydiumObservation: mock.raydiumObservation,
+            raydiumDawnVault: mock.raydiumDawnVault,
+            raydiumUsdcVault: mock.raydiumUsdcVault,
+            userUsdcAccount: mock.walletUsdcAccount,
+            userDawnAccount: mock.walletDawnAccount,
+            feePoolDawnAccount: mock.feePoolDawnAccount,
+            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowDawnVault: mock.escrowDawnVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
 
           const txDetails = await confirmTx(provider, tx)
 
@@ -1464,35 +1742,35 @@ export const subscriptionTests = () =>
         const deadline = await getDeadline(provider)
 
         try {
-          await program.methods
-            .subscribeFor(minDawnOut, deadline)
-            .accountsPartial({
-              caller: caller.publicKey,
-              beneficiary: anotherBeneficiary.publicKey,
-              config: mock.configPda,
-              plan: mock.planPda,
-              device: devicePda, // Device owned by caller, not beneficiary
-              subscription: subscriptionForPda,
-              usdcMint: mock.usdcMint,
-              dawnMint: mock.dawnMint,
-              raydium: mock.raydium,
-              raydiumAuthority: mock.raydiumAuthority,
-              raydiumConfig: mock.raydiumConfig,
-              raydiumPool: mock.raydiumPool,
-              raydiumObservation: mock.raydiumObservation,
-              raydiumDawnVault: mock.raydiumDawnVault,
-              raydiumUsdcVault: mock.raydiumUsdcVault,
-              userUsdcAccount: mock.walletUsdcAccount,
-              userDawnAccount: mock.walletDawnAccount,
-              feePoolDawnAccount: mock.feePoolDawnAccount,
-              escrowUsdcVault: mock.escrowUsdcVault,
-              escrowDawnVault: mock.escrowDawnVault,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([caller])
-            .rpc()
+          await subscribeForRpc({
+            program,
+            minDawnOut,
+            deadline,
+            caller: caller.publicKey,
+            signer: caller,
+            beneficiary: anotherBeneficiary.publicKey,
+            config: mock.configPda,
+            plan: mock.planPda,
+            device: devicePda, // Device owned by caller, not beneficiary
+            subscription: subscriptionForPda,
+            usdcMint: mock.usdcMint,
+            dawnMint: mock.dawnMint,
+            raydium: mock.raydium,
+            raydiumAuthority: mock.raydiumAuthority,
+            raydiumConfig: mock.raydiumConfig,
+            raydiumPool: mock.raydiumPool,
+            raydiumObservation: mock.raydiumObservation,
+            raydiumDawnVault: mock.raydiumDawnVault,
+            raydiumUsdcVault: mock.raydiumUsdcVault,
+            userUsdcAccount: mock.walletUsdcAccount,
+            userDawnAccount: mock.walletDawnAccount,
+            feePoolDawnAccount: mock.feePoolDawnAccount,
+            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowDawnVault: mock.escrowDawnVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
           assert.ok(
             false,
             'Should have failed with device ownership constraint',
@@ -1558,34 +1836,34 @@ export const subscriptionTests = () =>
         const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
         const deadline = await getDeadline(provider)
 
-        const tx = await program.methods
-          .extendSubscriptionFor(minDawnOut, deadline)
-          .accountsPartial({
-            caller: caller.publicKey,
-            beneficiary: beneficiary,
-            config: mock.configPda,
-            plan: mock.planPda,
-            subscription: subscriptionForPda,
-            usdcMint: mock.usdcMint,
-            dawnMint: mock.dawnMint,
-            raydium: mock.raydium,
-            raydiumAuthority: mock.raydiumAuthority,
-            raydiumConfig: mock.raydiumConfig,
-            raydiumPool: mock.raydiumPool,
-            raydiumObservation: mock.raydiumObservation,
-            raydiumDawnVault: mock.raydiumDawnVault,
-            raydiumUsdcVault: mock.raydiumUsdcVault,
-            userUsdcAccount: mock.walletUsdcAccount,
-            userDawnAccount: mock.walletDawnAccount,
-            feePoolDawnAccount: mock.feePoolDawnAccount,
-            escrowUsdcVault: mock.escrowUsdcVault,
-            escrowDawnVault: mock.escrowDawnVault,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([caller])
-          .transaction()
+        const tx = await extendSubscriptionForTx({
+          program,
+          minDawnOut,
+          deadline,
+          caller: caller.publicKey,
+          signer: caller,
+          beneficiary: beneficiary,
+          config: mock.configPda,
+          plan: mock.planPda,
+          subscription: subscriptionForPda,
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+          raydiumDawnVault: mock.raydiumDawnVault,
+          raydiumUsdcVault: mock.raydiumUsdcVault,
+          userUsdcAccount: mock.walletUsdcAccount,
+          userDawnAccount: mock.walletDawnAccount,
+          feePoolDawnAccount: mock.feePoolDawnAccount,
+          escrowUsdcVault: mock.escrowUsdcVault,
+          escrowDawnVault: mock.escrowDawnVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
 
         const txDetails = await confirmTx(provider, tx)
 
@@ -1675,34 +1953,34 @@ export const subscriptionTests = () =>
         const deadline = await getDeadline(provider)
 
         try {
-          await program.methods
-            .extendSubscriptionFor(minDawnOut, deadline)
-            .accountsPartial({
-              caller: caller.publicKey,
-              beneficiary: wrongBeneficiary, // Wrong beneficiary
-              config: mock.configPda,
-              plan: mock.planPda,
-              subscription: subscriptionForPda, // Subscription belongs to mock.customer
-              usdcMint: mock.usdcMint,
-              dawnMint: mock.dawnMint,
-              raydium: mock.raydium,
-              raydiumAuthority: mock.raydiumAuthority,
-              raydiumConfig: mock.raydiumConfig,
-              raydiumPool: mock.raydiumPool,
-              raydiumObservation: mock.raydiumObservation,
-              raydiumDawnVault: mock.raydiumDawnVault,
-              raydiumUsdcVault: mock.raydiumUsdcVault,
-              userUsdcAccount: mock.walletUsdcAccount,
-              userDawnAccount: mock.walletDawnAccount,
-              feePoolDawnAccount: mock.feePoolDawnAccount,
-              escrowUsdcVault: mock.escrowUsdcVault,
-              escrowDawnVault: mock.escrowDawnVault,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([caller])
-            .rpc()
+          await extendSubscriptionForRpc({
+            program,
+            minDawnOut,
+            deadline,
+            caller: caller.publicKey,
+            signer: caller,
+            beneficiary: wrongBeneficiary, // Wrong beneficiary
+            config: mock.configPda,
+            plan: mock.planPda,
+            subscription: subscriptionForPda, // Subscription belongs to mock.customer
+            usdcMint: mock.usdcMint,
+            dawnMint: mock.dawnMint,
+            raydium: mock.raydium,
+            raydiumAuthority: mock.raydiumAuthority,
+            raydiumConfig: mock.raydiumConfig,
+            raydiumPool: mock.raydiumPool,
+            raydiumObservation: mock.raydiumObservation,
+            raydiumDawnVault: mock.raydiumDawnVault,
+            raydiumUsdcVault: mock.raydiumUsdcVault,
+            userUsdcAccount: mock.walletUsdcAccount,
+            userDawnAccount: mock.walletDawnAccount,
+            feePoolDawnAccount: mock.feePoolDawnAccount,
+            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowDawnVault: mock.escrowDawnVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
           assert.ok(false, 'Should have failed with wrong beneficiary')
         } catch (error) {
           assert.ok(error instanceof AnchorError)
