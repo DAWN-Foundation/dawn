@@ -229,18 +229,8 @@ export const pskAmfTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap: fees + daily amount
-      const config = await program.account.config.fetch(mock.configPda)
-      const totalFeeBpsCalc = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBpsCalc).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdcCalc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdcCalc)
-
-      // Calculate minDawnOut with 5% slippage (500 bps) for test tolerance
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
 
       const escrowUsdcVault = await getAssociatedTokenAddress(

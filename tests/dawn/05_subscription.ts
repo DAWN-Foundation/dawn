@@ -232,16 +232,9 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         await subscribeRpc({
@@ -299,18 +292,8 @@ export const subscriptionTests = () =>
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-        // Calculate USDC to swap: fees + daily amount (same calculation as program)
-        const config = await program.account.config.fetch(mock.configPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-
-        // Calculate minDawnOut based on actual usdc_to_swap amount
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         await subscribeRpc({
@@ -382,16 +365,9 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         await subscribeRpc({
@@ -447,16 +423,9 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
 
       try {
         await subscribeRpc({
@@ -516,16 +485,9 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
 
       try {
         await subscribeRpc({
@@ -581,19 +543,11 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
 
-      // Calculate expected output and set min_dawn_out higher than expected
-      const expectedOut = usdcToSwap.mul(price).div(Q32)
+      // Calculate expected output for plan.price and set min_dawn_out higher than expected
+      // After scaling, this will be higher than expected for the actual swap amount
+      const expectedOut = plan.price.mul(price).div(Q32)
       const minDawnOutTooHigh = expectedOut.add(new BN(1)) // Higher than expected
 
       try {
@@ -630,9 +584,11 @@ export const subscriptionTests = () =>
       } catch (error) {
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
-        assert.strictEqual(
-          err.error.errorMessage,
-          'Invalid minimum output amount',
+        // Can be either "Invalid minimum output amount" or "Exceeds desired slippage limit" from Raydium
+        assert.ok(
+          err.error.errorMessage === 'Invalid minimum output amount' ||
+            err.error.errorMessage === 'Exceeds desired slippage limit',
+          `Expected slippage error but got: ${err.error.errorMessage}`,
         )
       }
     })
@@ -651,21 +607,13 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
 
-      // Calculate expected output
-      const expectedOut = usdcToSwap.mul(price).div(Q32)
+      // Calculate expected output for plan.price
+      const expectedOut = plan.price.mul(price).div(Q32)
       // MAX_SLIPPAGE_TOLERANCE_BPS = 500, so minimum allowed is 95% of expected (9500/10000)
       // Use 94% (9400/10000) which is below the 95% minimum, so should fail
+      // After scaling, this will still be 94% of expected for the actual swap amount
       const minDawnOutTooLow = expectedOut
         .mul(new BN(9400))
         .div(BPS_DENOMINATOR)
@@ -742,16 +690,9 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
 
       const tx = await subscribeTx({
@@ -838,7 +779,7 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap: fees + daily amount
+      // Calculate fee amounts for assertions later
       const config = await program.account.config.fetch(mock.configPda)
       const totalFeeBpsCalc = config.daoFee
         .add(config.validatorFee)
@@ -848,8 +789,8 @@ export const subscriptionTests = () =>
       const dailyUsdcCalc = remainder.div(new BN(plan.duration))
       const usdcToSwap = totalFeeUsdc.add(dailyUsdcCalc)
 
-      // Calculate minDawnOut with 5% slippage (500 bps) for test tolerance
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
 
       const timeBefore = await provider.context.banksClient.getClock()
@@ -1030,7 +971,7 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap for extension
+      // Calculate fee amounts for active subscription extension
       const config2 = await program.account.config.fetch(mock.configPda)
       const totalFeeBps2 = config2.daoFee
         .add(config2.validatorFee)
@@ -1038,9 +979,10 @@ export const subscriptionTests = () =>
       const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
       const remainder2 = plan.price.sub(totalFeeUsdc2)
       const dailyUsdc2 = remainder2.div(new BN(plan.duration))
-      const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
 
-      const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
+      // For active extensions: provide minDawnOut for full plan.price
+      // Code will scale it down for fee-only swap
+      const minDawnOut = calculateMinDawnOut(plan.price, price) // Uses default 50 bps
       const deadline = await getDeadline(provider)
 
       const tx = await extendSubscriptionTx({
@@ -1088,12 +1030,12 @@ export const subscriptionTests = () =>
           expirationBefore.add(new BN(plan.duration * SECONDS_PER_DAY)),
         ),
       )
-      // swapPrice is now the actual DAWN output (not Q32 price)
-      // For active subscriptions, swapPrice is 0 (no swap occurs, payment goes to escrow)
+      // swapPrice is now the actual DAWN output from the fee swap
+      // For active subscriptions, only fees are swapped (not first day)
       const swapPriceBN = new BN(event.swapPrice.toString())
       assert.ok(
-        swapPriceBN.eq(new BN(0)),
-        'swapPrice should be 0 for active subscriptions (no swap occurs)',
+        swapPriceBN.gt(new BN(0)),
+        'swapPrice should be > 0 for active subscriptions (fees are swapped)',
       )
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
@@ -1116,7 +1058,7 @@ export const subscriptionTests = () =>
         .mul(totalFeeBpsAssert2)
         .div(BPS_DENOMINATOR)
 
-      // For active subscriptions: entire plan.price goes to escrow, no swap occurs
+      // For active subscriptions: fees are swapped to DAWN, non-fee USDC goes to escrow
       const escrowUsdcBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
@@ -1125,16 +1067,28 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.escrowDawnVault,
       )
+      const feePoolDawnBalanceAfter = await getBalance(
+        provider.connection,
+        mock.feePoolDawnAccount,
+      )
 
+      // Only non-fee USDC goes to escrow (plan.price - totalFeeUsdc)
+      const expectedEscrowUsdcIncrease = plan.price.sub(totalUsdcFee)
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(plan.price),
-        'Escrow USDC should increase by full plan price for active subscriptions',
+        escrowUsdcBalanceAfter
+          .sub(escrowUsdcBalanceBefore)
+          .eq(expectedEscrowUsdcIncrease),
+        'Escrow USDC should increase by (plan.price - fees) for active subscriptions',
       )
       assert.ok(
         escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
-        'Escrow DAWN should not change for active subscriptions (no swap occurs)',
+        'Escrow DAWN should not change for active subscriptions (fees go to fee pool)',
       )
-      // No fees are collected for active subscriptions (they'll be collected during claims)
+      // Fees should be collected in DAWN for active subscriptions
+      assert.ok(
+        feePoolDawnBalanceAfter.gt(feePoolDawnBalanceBefore),
+        'Fee pool DAWN should increase from swapped fees',
+      )
 
       // get block time, and calculate expected expiration
       const planInSeconds = plan.duration * SECONDS_PER_DAY
@@ -1214,7 +1168,7 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate USDC to swap for extension
+      // Calculate fee amounts for assertions later
       const config2 = await program.account.config.fetch(mock.configPda)
       const totalFeeBps2 = config2.daoFee
         .add(config2.validatorFee)
@@ -1224,7 +1178,8 @@ export const subscriptionTests = () =>
       const dailyUsdc2 = remainder2.div(new BN(plan.duration))
       const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
 
-      const minDawnOut = calculateMinDawnOut(usdcToSwap2, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
 
       const tx = await extendSubscriptionTx({
@@ -1391,16 +1346,9 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const config = await program.account.config.fetch(mock.configPda)
       const plan = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(plan.price, price)
 
       try {
         const deadline = await getDeadline(provider)
@@ -1500,18 +1448,9 @@ export const subscriptionTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const config = await program.account.config.fetch(mock.configPda)
       const planAccount = await program.account.plan.fetch(mock.planPda)
-      const totalFeeBps = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = planAccount.price
-        .mul(totalFeeBps)
-        .div(BPS_DENOMINATOR)
-      const remainder = planAccount.price.sub(totalFeeUsdc)
-      const dailyUsdc = remainder.div(new BN(planAccount.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-      const minDawnOut = calculateMinDawnOut(usdcToSwap, price) // Uses default 500 bps
+      // Use plan.price for minDawnOut - program will scale it proportionally
+      const minDawnOut = calculateMinDawnOut(planAccount.price, price)
       const deadline = await getDeadline(provider)
 
       const tx = await subscribeTx({
@@ -1606,16 +1545,9 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         try {
@@ -1729,16 +1661,9 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         try {
@@ -1832,8 +1757,10 @@ export const subscriptionTests = () =>
         const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
         const remainder = plan.price.sub(totalFeeUsdc)
         const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+
+        // For active extensions: provide minDawnOut for full plan.price
+        // Code will scale it down for fee-only swap
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         const tx = await extendSubscriptionForTx({
@@ -1940,16 +1867,9 @@ export const subscriptionTests = () =>
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
         const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-        const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-        const usdcToSwap = totalFeeUsdc.add(dailyUsdc)
-        const minDawnOut = calculateMinDawnOut(usdcToSwap, price)
+        // Use plan.price for minDawnOut - program will scale it proportionally
+        const minDawnOut = calculateMinDawnOut(plan.price, price)
         const deadline = await getDeadline(provider)
 
         try {
