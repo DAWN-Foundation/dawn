@@ -147,6 +147,7 @@ impl DawnApp {
         // Emit IP lease event
         emit!(IpLeased {
             ip_lease: ip_lease.key(),
+            subscription: None,
             device: device.key(),
             tier: tier.to_u8(),
             ipv4,

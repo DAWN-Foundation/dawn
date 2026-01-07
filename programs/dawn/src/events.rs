@@ -179,6 +179,7 @@ pub struct RootIpBlockNonFull {
 #[event]
 pub struct IpLeased {
     pub ip_lease: Pubkey,
+    pub subscription: Option<Pubkey>,
     pub device: Pubkey,
     pub tier: u8,
     pub ipv4: [u8; 4],
@@ -231,6 +232,8 @@ pub struct AuthMethodRegistered {
 pub struct CredentialRegistered {
     pub credential: Pubkey,
     pub authority: Pubkey,
+    pub plan: Pubkey,
+    pub subscription: Pubkey,
     pub auth_method: Pubkey,
     pub credential_data: [u8; 128],
     pub created_at: i64,

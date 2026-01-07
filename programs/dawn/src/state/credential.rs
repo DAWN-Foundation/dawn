@@ -5,12 +5,15 @@ use crate::constants::DISCRIMINATOR_SIZE;
 #[derive(InitSpace)]
 /// Account structure for client credentials
 #[account]
-
 pub struct Credential {
     /// The creation timestamp
     pub created_at: i64,
     /// The credential authority
     pub authority: Pubkey,
+    /// The plan this credential is for
+    pub plan: Pubkey,
+    /// The subscription this credential is for
+    pub subscription: Pubkey,
     /// The auth method this credential is for
     pub auth_method: Pubkey,
     /// Credential-specific data (fixed size buffer)
