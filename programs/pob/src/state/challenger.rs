@@ -11,8 +11,10 @@ pub struct Challenger {
     pub authority: Pubkey,
     /// Slot when the challenger was created
     pub created_at_slot: u64,
-    /// Stake amount in lamports
-    pub stake_lamports: u64,
+    /// Stake amount in tokens
+    pub stake_amount: u64,
+    /// Slot when unstake was requested (0 if not requested)
+    pub unstake_requested_slot: u64,
     /// Reputation score
     pub reputation: u32,
     /// PDA bump seed
@@ -23,4 +25,3 @@ impl Challenger {
     pub const SEED_PREFIX: &'static [u8] = b"challenger";
     pub const SIZE: usize = DISCRIMINATOR_SIZE + Self::INIT_SPACE;
 }
-

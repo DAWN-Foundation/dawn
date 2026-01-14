@@ -29,4 +29,3 @@ impl Aggregator {
     pub const SEED_PREFIX: &'static [u8] = b"aggregator";
     pub const SIZE: usize = DISCRIMINATOR_SIZE + Self::INIT_SPACE;
 }
-

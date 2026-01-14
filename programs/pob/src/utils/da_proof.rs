@@ -1,4 +1,3 @@
-// programs/dawn/src/da_proof.rs
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hashv;
 
@@ -32,7 +31,7 @@ impl SessionLeaf {
     }
 }
 
-/// If you **don’t** want to send direction bits, you can combine
+/// If you **don't** want to send direction bits, you can combine
 /// by ordered hashing (lexicographic): H(DOMAIN, min||max).
 fn combine_ordered(a: &[u8; 32], b: &[u8; 32]) -> [u8; 32] {
     let (lo, hi) = if a <= b { (a, b) } else { (b, a) };

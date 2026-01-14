@@ -2,10 +2,8 @@ use anchor_lang::{prelude::Pubkey, solana_program::pubkey::MAX_SEED_LEN};
 
 use std::cmp::min;
 
-mod da_proof;
 mod swap;
 
-pub use da_proof::*;
 pub use swap::*;
 
 // Helper function to convert Option<Pubkey> into a deterministic seed

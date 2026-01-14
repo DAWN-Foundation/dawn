@@ -28,4 +28,3 @@ impl RoundCommitment {
     pub const SEED_PREFIX: &'static [u8] = b"round";
     pub const SIZE: usize = DISCRIMINATOR_SIZE + Self::INIT_SPACE;
 }
-

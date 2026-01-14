@@ -1,0 +1,29 @@
+[package]
+name = "pob"
+version = "0.1.0"
+description = "Proof of Bandwidth Protocol"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pob"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+devnet = []
+default = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
+data-anchor-blober = { version = "0.2.2", features = ["cpi"] }
+
+[build-dependencies]
+toml = "0.7"
