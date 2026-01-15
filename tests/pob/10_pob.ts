@@ -67,7 +67,7 @@ export const proofOfBandwidthTests = () =>
       try {
         // Use shared provider (startAnchor called only once)
         provider = await getPobProvider()
-        
+
         // Get references from shared mock
         wallet = pobMock.wallet!
         program = pobMock.program!
@@ -77,7 +77,7 @@ export const proofOfBandwidthTests = () =>
         stakeMint = pobMock.stakeMint!
         proverAta = pobMock.proverAta!
         challengerAta = pobMock.challengerAta!
-        
+
         // Derive PDAs
         ;[proverPda] = getProverPda(program, prover.publicKey)
         ;[challengerPda] = getChallengerPda(program, challenger.publicKey)
@@ -104,7 +104,12 @@ export const proofOfBandwidthTests = () =>
         // Derive DA PDAs
         daBloberPda = findBloberPda(daPayer.publicKey, daNamespace)
         const payloadSize = 1 + 32 + 32 + 32 // version + round + prover_authority + min_token
-        daBlobPda = findBlobPda(daBloberPda, daPayer.publicKey, daTimestamp, payloadSize)
+        daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
       } catch (error) {
         console.error('Setup error:', error)
         throw error
@@ -114,7 +119,7 @@ export const proofOfBandwidthTests = () =>
     describe('Configuration', () => {
       it('Initializes config with authority and stake mint', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         const tx = await program.methods
           .initConfig(
             new BN(4500), // round_close_grace_slots
@@ -142,14 +147,20 @@ export const proofOfBandwidthTests = () =>
           stakeMint.publicKey.toString(),
         )
         expect(configAccount.roundCloseGraceSlots.toNumber()).to.equal(4500)
-        expect(configAccount.proverStakeAmount.toNumber()).to.equal(10_000_000_000)
-        expect(configAccount.challengerStakeAmount.toNumber()).to.equal(1_000_000_000)
-        expect(configAccount.unstakeCooldownSlots.toNumber()).to.equal(1_512_000)
+        expect(configAccount.proverStakeAmount.toNumber()).to.equal(
+          10_000_000_000,
+        )
+        expect(configAccount.challengerStakeAmount.toNumber()).to.equal(
+          1_000_000_000,
+        )
+        expect(configAccount.unstakeCooldownSlots.toNumber()).to.equal(
+          1_512_000,
+        )
       })
 
       it('Updates config with existing authority (stake_mint unchanged)', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         const tx = await program.methods
           .updateConfig(
             new BN(5000), // round_close_grace_slots (updated)
@@ -169,9 +180,15 @@ export const proofOfBandwidthTests = () =>
         // Verify config was updated
         const configAccount = await program.account.config.fetch(configPda)
         expect(configAccount.roundCloseGraceSlots.toNumber()).to.equal(5000)
-        expect(configAccount.proverStakeAmount.toNumber()).to.equal(20_000_000_000)
-        expect(configAccount.unstakeCooldownSlots.toNumber()).to.equal(2_000_000)
-        expect(configAccount.challengerStakeAmount.toNumber()).to.equal(2_000_000_000)
+        expect(configAccount.proverStakeAmount.toNumber()).to.equal(
+          20_000_000_000,
+        )
+        expect(configAccount.unstakeCooldownSlots.toNumber()).to.equal(
+          2_000_000,
+        )
+        expect(configAccount.challengerStakeAmount.toNumber()).to.equal(
+          2_000_000_000,
+        )
         // Verify stake_mint was NOT changed
         expect(configAccount.stakeMint.toString()).to.equal(
           stakeMint.publicKey.toString(),
@@ -184,27 +201,25 @@ export const proofOfBandwidthTests = () =>
         const [configPda] = getPobConfigPda(program)
         const [proverVaultPda] = getProverVaultPda(program, proverPda)
         try {
-        const tx = await program.methods
-          .registerProver()
-          .accountsPartial({
-            authority: prover.publicKey,
-            config: configPda,
-            stakeMint: stakeMint.publicKey,
-            prover: proverPda,
-            userTokenAccount: proverAta,
-            proverVault: proverVaultPda,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([prover])
-          .rpc()
-        expect(tx).to.be.a('string')
-
+          const tx = await program.methods
+            .registerProver()
+            .accountsPartial({
+              authority: prover.publicKey,
+              config: configPda,
+              stakeMint: stakeMint.publicKey,
+              prover: proverPda,
+              userTokenAccount: proverAta,
+              proverVault: proverVaultPda,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([prover])
+            .rpc()
+          expect(tx).to.be.a('string')
         } catch (error) {
           console.error('Registration error:', error)
           throw error
         }
-
 
         // Verify prover was created with correct stake
         const proverAccount = await program.account.prover.fetch(proverPda)
@@ -216,7 +231,9 @@ export const proofOfBandwidthTests = () =>
         expect(proverAccount.unstakeRequestedSlot.toNumber()).to.equal(0)
 
         // Verify vault token account was created and funded
-        const vaultAccountInfo = await provider.connection.getAccountInfo(proverVaultPda)
+        const vaultAccountInfo = await provider.connection.getAccountInfo(
+          proverVaultPda,
+        )
         expect(vaultAccountInfo).to.not.be.null
         const vaultData = AccountLayout.decode(vaultAccountInfo!.data)
         expect(Number(vaultData.amount)).to.equal(20_000_000_000)
@@ -224,8 +241,11 @@ export const proofOfBandwidthTests = () =>
 
       it('Registers a challenger with SPL token stake', async () => {
         const [configPda] = getPobConfigPda(program)
-        const [challengerVaultPda] = getChallengerVaultPda(program, challengerPda)
-        
+        const [challengerVaultPda] = getChallengerVaultPda(
+          program,
+          challengerPda,
+        )
+
         const tx = await program.methods
           .registerChallenger()
           .accountsPartial({
@@ -244,7 +264,9 @@ export const proofOfBandwidthTests = () =>
         expect(tx).to.be.a('string')
 
         // Verify challenger was created with correct stake
-        const challengerAccount = await program.account.challenger.fetch(challengerPda)
+        const challengerAccount = await program.account.challenger.fetch(
+          challengerPda,
+        )
         expect(challengerAccount.authority.toString()).to.equal(
           challenger.publicKey.toString(),
         )
@@ -253,7 +275,9 @@ export const proofOfBandwidthTests = () =>
         expect(challengerAccount.unstakeRequestedSlot.toNumber()).to.equal(0)
 
         // Verify vault token account was created and funded
-        const vaultAccountInfo = await provider.connection.getAccountInfo(challengerVaultPda)
+        const vaultAccountInfo = await provider.connection.getAccountInfo(
+          challengerVaultPda,
+        )
         expect(vaultAccountInfo).to.not.be.null
         const vaultData = AccountLayout.decode(vaultAccountInfo!.data)
         expect(Number(vaultData.amount)).to.equal(2_000_000_000)
@@ -304,7 +328,7 @@ export const proofOfBandwidthTests = () =>
         const roundAccount = await program.account.roundCommitment.fetch(
           roundPda,
         )
-        
+
         // Warp to active slot window
         await warpToSlot(provider, roundAccount.startSlot.toNumber() + 5)
 
@@ -328,7 +352,7 @@ export const proofOfBandwidthTests = () =>
         // Create a fresh round for this test
         const closeSeed = generateRandomSeed()
         const [closeRoundPda] = getRoundCommitmentPda(program, closeSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 100
@@ -375,7 +399,9 @@ export const proofOfBandwidthTests = () =>
           await program.account.roundCommitment.fetch(closeRoundPda)
           expect.fail('Round should be closed')
         } catch (error) {
-          expect(String(error)).to.match(/Could not find|Account does not exist/)
+          expect(String(error)).to.match(
+            /Could not find|Account does not exist/,
+          )
         }
       })
     })
@@ -413,7 +439,6 @@ export const proofOfBandwidthTests = () =>
           })
           .signers([wallet.payer])
           .rpc()
-
         ;[simplifiedAggregatorPda] = getAggregatorPda(
           program,
           simplifiedRoundPda,

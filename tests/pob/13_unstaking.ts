@@ -275,7 +275,9 @@ export const unstakingTests = () =>
           await program.account.prover.fetch(unstakeProverPda)
           expect.fail('Prover account should be closed')
         } catch (error: any) {
-          expect(String(error)).to.match(/Account does not exist|Could not find/)
+          expect(String(error)).to.match(
+            /Account does not exist|Could not find/,
+          )
         }
 
         // Verify vault is closed (account should not exist)
@@ -348,7 +350,9 @@ export const unstakingTests = () =>
           await program.account.challenger.fetch(unstakeChallengerPda)
           expect.fail('Challenger account should be closed')
         } catch (error: any) {
-          expect(String(error)).to.match(/Account does not exist|Could not find/)
+          expect(String(error)).to.match(
+            /Account does not exist|Could not find/,
+          )
         }
 
         // Verify vault is closed (account should not exist)

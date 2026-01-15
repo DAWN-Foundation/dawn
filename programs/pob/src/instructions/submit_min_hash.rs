@@ -102,10 +102,7 @@ pub fn handler(
         current_slot >= round.start_slot,
         PobError::SubmissionTooEarly
     );
-    require!(
-        current_slot <= round.end_slot,
-        PobError::SubmissionTooLate
-    );
+    require!(current_slot <= round.end_slot, PobError::SubmissionTooLate);
 
     // payload = v1 || round_id(le) || prover_authority || min_token
     let mut payload = Vec::with_capacity(1 + 32 + 32 + 32);

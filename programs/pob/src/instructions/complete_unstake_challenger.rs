@@ -75,10 +75,7 @@ pub fn handler(ctx: Context<CompleteUnstakeChallenger>) -> Result<()> {
         .checked_add(config.unstake_cooldown_slots)
         .ok_or(PobError::Overflow)?;
 
-    require!(
-        current_slot >= cooldown_end,
-        PobError::CooldownNotElapsed
-    );
+    require!(current_slot >= cooldown_end, PobError::CooldownNotElapsed);
 
     // Build the vault PDA signer seeds
     let challenger_key = challenger.key();

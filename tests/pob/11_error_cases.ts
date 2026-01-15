@@ -62,7 +62,7 @@ export const errorCaseTests = () =>
     beforeAll(async () => {
       // Use shared provider (startAnchor called only once)
       provider = await getPobProvider()
-      
+
       // Get references from shared mock
       wallet = pobMock.wallet!
       program = pobMock.program!
@@ -71,7 +71,7 @@ export const errorCaseTests = () =>
       stakeMint = pobMock.stakeMint!
       proverAta = pobMock.proverAta!
       challengerAta = pobMock.challengerAta!
-      
+
       // Derive PDAs (accounts registered by core tests)
       ;[proverPda] = getProverPda(program, prover.publicKey)
       ;[challengerPda] = getChallengerPda(program, challenger.publicKey)
@@ -95,7 +95,6 @@ export const errorCaseTests = () =>
       const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
       const { root } = buildMerkleProof(leafHash, siblings)
       dataAnchorRoot = root
-
       ;[aggregatorPda] = getAggregatorPda(program, roundPda, proverPda)
     })
 
@@ -105,7 +104,7 @@ export const errorCaseTests = () =>
         // Attempting to register again should fail
         const [configPda] = getPobConfigPda(program)
         const [proverVaultPda] = getProverVaultPda(program, proverPda)
-        
+
         try {
           await program.methods
             .registerProver()
@@ -131,8 +130,11 @@ export const errorCaseTests = () =>
         // Challenger is already registered by setupPob()
         // Attempting to register again should fail
         const [configPda] = getPobConfigPda(program)
-        const [challengerVaultPda] = getChallengerVaultPda(program, challengerPda)
-        
+        const [challengerVaultPda] = getChallengerVaultPda(
+          program,
+          challengerPda,
+        )
+
         try {
           await program.methods
             .registerChallenger()
@@ -158,7 +160,7 @@ export const errorCaseTests = () =>
     describe('Configuration Errors', () => {
       it('Rejects unauthorized config update', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         // Try to update config with wrong authority (prover instead of wallet)
         try {
           await program.methods
@@ -182,7 +184,7 @@ export const errorCaseTests = () =>
 
       it('Rejects double config initialization', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         // Try to initialize config again (already initialized in previous test)
         try {
           await program.methods
@@ -211,7 +213,7 @@ export const errorCaseTests = () =>
       it('Rejects invalid n_packets (zero)', async () => {
         const badSeed = generateRandomSeed()
         const [badRoundPda] = getRoundCommitmentPda(program, badSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -242,7 +244,7 @@ export const errorCaseTests = () =>
       it('Rejects invalid n_rounds (zero)', async () => {
         const badSeed = generateRandomSeed()
         const [badRoundPda] = getRoundCommitmentPda(program, badSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -273,7 +275,7 @@ export const errorCaseTests = () =>
       it('Rejects invalid slot range (start >= end)', async () => {
         const badSeed = generateRandomSeed()
         const [badRoundPda] = getRoundCommitmentPda(program, badSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 1000
         const endSlot = startSlot // Invalid: start_slot >= end_slot
@@ -304,7 +306,7 @@ export const errorCaseTests = () =>
       it('Rejects start_slot in the past', async () => {
         const badSeed = generateRandomSeed()
         const [badRoundPda] = getRoundCommitmentPda(program, badSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot - 10 // Invalid: in the past
         const endSlot = currentSlot + 1000
@@ -340,7 +342,7 @@ export const errorCaseTests = () =>
         // Create a round for testing
         const activeSeed = generateRandomSeed()
         const [activeRoundPda] = getRoundCommitmentPda(program, activeSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -383,10 +385,10 @@ export const errorCaseTests = () =>
       })
 
       it('Rejects emission after round ends', async () => {
-        // Create a fresh round for this test  
+        // Create a fresh round for this test
         const afterSeed = generateRandomSeed()
         const [afterRoundPda] = getRoundCommitmentPda(program, afterSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 100
@@ -432,11 +434,11 @@ export const errorCaseTests = () =>
 
       it('Rejects unauthorized challenger', async () => {
         // Prover and challenger are already registered by setupPob()
-        
+
         // Create a new round for this test
         const newSeed = generateRandomSeed()
         const [newRoundPda] = getRoundCommitmentPda(program, newSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -499,7 +501,7 @@ export const errorCaseTests = () =>
           testRoundPda,
           proverPda,
         )
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -555,7 +557,7 @@ export const errorCaseTests = () =>
           testRoundPda,
           proverPda,
         )
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 100
@@ -624,7 +626,7 @@ export const errorCaseTests = () =>
         // Create a round for this test
         const testSeed = generateRandomSeed()
         const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -671,7 +673,7 @@ export const errorCaseTests = () =>
         // Create a round for this test
         const testSeed = generateRandomSeed()
         const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
-        
+
         const currentSlot = await getCurrentSlot(provider)
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
@@ -718,7 +720,7 @@ export const errorCaseTests = () =>
     describe('Token Staking Errors', () => {
       it('Rejects prover registration with insufficient balance', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         // Create a new prover with low token balance
         const poorProver = Keypair.generate()
         const [poorProverPda] = getProverPda(program, poorProver.publicKey)
@@ -783,10 +785,10 @@ export const errorCaseTests = () =>
 
       it('Rejects challenger registration with wrong stake mint', async () => {
         const [configPda] = getPobConfigPda(program)
-        
+
         // Create a fake mint
         const fakeMint = Keypair.generate()
-        
+
         const wrongChallenger = Keypair.generate()
         const [wrongChallengerPda] = getChallengerPda(
           program,

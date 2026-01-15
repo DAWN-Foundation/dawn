@@ -44,10 +44,7 @@ pub struct EmitSessionCommitment<'info> {
     pub prover: Box<Account<'info, Prover>>,
 }
 
-pub fn handler(
-    ctx: Context<EmitSessionCommitment>,
-    da_pointer: [u8; 32],
-) -> Result<()> {
+pub fn handler(ctx: Context<EmitSessionCommitment>, da_pointer: [u8; 32]) -> Result<()> {
     let current_slot = Clock::get()?.slot;
     let round_commitment = &ctx.accounts.round_commitment;
 

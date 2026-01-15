@@ -59,7 +59,7 @@ export async function getPobProvider(): Promise<BankrunProvider> {
         data: Buffer.alloc(0),
       },
     },
-    ...[pobMock.prover, pobMock.challenger, pobMock.daPayer].map(kp => ({
+    ...[pobMock.prover, pobMock.challenger, pobMock.daPayer].map((kp) => ({
       address: kp.publicKey,
       info: {
         lamports: 50 * 1e9, // 50 SOL (enough for rent + gas)
@@ -101,7 +101,8 @@ async function setupStakeToken(provider: BankrunProvider, wallet: Wallet) {
   const challenger = pobMock.challenger!
 
   // Calculate rent exemption for mint
-  const rentExemptMint = await provider.connection.getMinimumBalanceForRentExemption(MINT_SIZE)
+  const rentExemptMint =
+    await provider.connection.getMinimumBalanceForRentExemption(MINT_SIZE)
 
   // Create mint account
   const createMintAccountIx = SystemProgram.createAccount({
@@ -121,8 +122,14 @@ async function setupStakeToken(provider: BankrunProvider, wallet: Wallet) {
   )
 
   // Derive ATAs
-  const proverAta = getAssociatedTokenAddressSync(stakeMint.publicKey, prover.publicKey)
-  const challengerAta = getAssociatedTokenAddressSync(stakeMint.publicKey, challenger.publicKey)
+  const proverAta = getAssociatedTokenAddressSync(
+    stakeMint.publicKey,
+    prover.publicKey,
+  )
+  const challengerAta = getAssociatedTokenAddressSync(
+    stakeMint.publicKey,
+    challenger.publicKey,
+  )
   pobMock.proverAta = proverAta
   pobMock.challengerAta = challengerAta
 

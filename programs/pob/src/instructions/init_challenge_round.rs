@@ -46,7 +46,7 @@ pub fn handler(
     require!(n_packets > 0, PobError::InvalidRoundParameters);
     require!(n_rounds > 0, PobError::InvalidRoundParameters);
     require!(start_slot < end_slot, PobError::InvalidRoundParameters);
-    
+
     let current_slot = Clock::get()?.slot;
     require!(start_slot > current_slot, PobError::InvalidRoundParameters);
 
@@ -56,7 +56,7 @@ pub fn handler(
         .ok_or(PobError::Overflow)?;
 
     let round = &mut ctx.accounts.round;
-    
+
     // Initialize round commitment
     round.seed = seed;
     round.expected_min_scaled = expected_min_scaled;

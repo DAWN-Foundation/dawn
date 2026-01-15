@@ -75,19 +75,12 @@ pub fn handler(ctx: Context<CompleteUnstakeProver>) -> Result<()> {
         .checked_add(config.unstake_cooldown_slots)
         .ok_or(PobError::Overflow)?;
 
-    require!(
-        current_slot >= cooldown_end,
-        PobError::CooldownNotElapsed
-    );
+    require!(current_slot >= cooldown_end, PobError::CooldownNotElapsed);
 
     // Build the vault PDA signer seeds
     let prover_key = prover.key();
     let vault_bump = ctx.bumps.prover_vault;
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        PROVER_VAULT_SEED,
-        prover_key.as_ref(),
-        &[vault_bump],
-    ]];
+    let signer_seeds: &[&[&[u8]]] = &[&[PROVER_VAULT_SEED, prover_key.as_ref(), &[vault_bump]]];
 
     // Get the vault token balance to transfer back
     let vault_balance = ctx.accounts.prover_vault.amount;

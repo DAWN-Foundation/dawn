@@ -14,7 +14,7 @@ pub struct RoundCommitment {
     /// Packets per round
     pub n_packets: u32, // N
     /// Rounds per session
-    pub n_rounds: u16,  // R
+    pub n_rounds: u16, // R
     /// Slot window for submissions
     pub start_slot: u64,
     pub end_slot: u64,

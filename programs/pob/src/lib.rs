@@ -34,7 +34,13 @@ pub mod pob {
         challenger_stake_amount: u64,
         unstake_cooldown_slots: u64,
     ) -> Result<()> {
-        init_config::handler(ctx, round_close_grace_slots, prover_stake_amount, challenger_stake_amount, unstake_cooldown_slots)
+        init_config::handler(
+            ctx,
+            round_close_grace_slots,
+            prover_stake_amount,
+            challenger_stake_amount,
+            unstake_cooldown_slots,
+        )
     }
 
     pub fn update_config(
@@ -44,7 +50,13 @@ pub mod pob {
         challenger_stake_amount: u64,
         unstake_cooldown_slots: u64,
     ) -> Result<()> {
-        update_config::handler(ctx, round_close_grace_slots, prover_stake_amount, challenger_stake_amount, unstake_cooldown_slots)
+        update_config::handler(
+            ctx,
+            round_close_grace_slots,
+            prover_stake_amount,
+            challenger_stake_amount,
+            unstake_cooldown_slots,
+        )
     }
 
     pub fn init_challenge_round(

@@ -124,9 +124,6 @@ export function getChallengerVaultPda(
  * Get the Associated Token Account (ATA) for a given owner and mint.
  * Used for user token accounts when staking/unstaking.
  */
-export function getStakeTokenAta(
-  owner: PublicKey,
-  mint: PublicKey,
-): PublicKey {
+export function getStakeTokenAta(owner: PublicKey, mint: PublicKey): PublicKey {
   return getAssociatedTokenAddressSync(mint, owner)
 }

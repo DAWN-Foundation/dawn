@@ -38,9 +38,12 @@ pub fn handler(ctx: Context<CloseRound>) -> Result<()> {
         current_slot > round_commitment.end_slot,
         PobError::RoundNotActive
     );
-    
+
     require!(
-        current_slot > round_commitment.end_slot.saturating_add(config.round_close_grace_slots),
+        current_slot
+            > round_commitment
+                .end_slot
+                .saturating_add(config.round_close_grace_slots),
         PobError::RoundGracePeriodNotElapsed
     );
 

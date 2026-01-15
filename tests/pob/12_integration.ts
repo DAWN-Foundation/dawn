@@ -62,10 +62,7 @@ async function initBloberNamespace(
   ])
 
   const buf = Buffer.alloc(1024)
-  const span = initLayout.encode(
-    { namespace, trusted: daPayer.publicKey },
-    buf,
-  )
+  const span = initLayout.encode({ namespace, trusted: daPayer.publicKey }, buf)
   const data = Buffer.concat([ixDisc('initialize'), buf.subarray(0, span)])
 
   const ix = new TransactionInstruction({
@@ -118,14 +115,14 @@ export const integrationTests = () =>
     beforeAll(async () => {
       // Use shared provider (startAnchor called only once)
       provider = await getPobProvider()
-      
+
       // Get references from shared mock
       wallet = pobMock.wallet!
       program = pobMock.program!
       prover = pobMock.prover!
       challenger = pobMock.challenger!
       daPayer = pobMock.daPayer!
-      
+
       // Derive PDAs (accounts registered by core tests)
       ;[proverPda] = getProverPda(program, prover.publicKey)
       ;[challengerPda] = getChallengerPda(program, challenger.publicKey)
@@ -157,7 +154,7 @@ export const integrationTests = () =>
     it('Step 1: Verify prover and challenger are registered', async () => {
       // Prover and challenger are already registered by setupPob()
       // Just verify they exist
-      
+
       const proverAccount = await program.account.prover.fetch(proverPda)
       expect(proverAccount.authority.toString()).to.equal(
         prover.publicKey.toString(),
@@ -202,12 +199,12 @@ export const integrationTests = () =>
           new BN(endSlot),
           Array.from(dataAnchorRoot),
         )
-          .accountsPartial({
-            caller: wallet.publicKey,
-            round: roundPda,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([wallet.payer])
+        .accountsPartial({
+          caller: wallet.publicKey,
+          round: roundPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([wallet.payer])
         .rpc()
 
       expect(tx).to.be.a('string')
@@ -419,20 +416,20 @@ export const integrationTests = () =>
     })
 
     it('Step 9: Close round', async () => {
-        // Warp past grace period (5000 slots from config) after end_slot
-        await warpToSlot(provider, endSlot + 5001)
-        
-        const [configPda] = getPobConfigPda(program)
-        
-        const tx = await program.methods
-          .closeRound()
-          .accountsPartial({
-            beneficiary: wallet.publicKey,
-            config: configPda,
-            roundCommitment: roundPda,
-          })
-          .signers([wallet.payer])
-          .rpc()
+      // Warp past grace period (5000 slots from config) after end_slot
+      await warpToSlot(provider, endSlot + 5001)
+
+      const [configPda] = getPobConfigPda(program)
+
+      const tx = await program.methods
+        .closeRound()
+        .accountsPartial({
+          beneficiary: wallet.publicKey,
+          config: configPda,
+          roundCommitment: roundPda,
+        })
+        .signers([wallet.payer])
+        .rpc()
 
       expect(tx).to.be.a('string')
 

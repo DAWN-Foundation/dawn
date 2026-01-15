@@ -261,7 +261,10 @@ export const unstakingParticipationTests = () =>
           stakeMint: stakeMint.publicKey,
           challenger: activeChallengerPda,
           userTokenAccount: activeChallengerAta,
-          challengerVault: getChallengerVaultPda(program, activeChallengerPda)[0],
+          challengerVault: getChallengerVaultPda(
+            program,
+            activeChallengerPda,
+          )[0],
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })

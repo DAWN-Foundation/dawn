@@ -45,28 +45,26 @@ pub struct FinalizeAggregator<'info> {
     pub prover: Box<Account<'info, Prover>>,
 }
 
-pub fn handler(
-    ctx: Context<FinalizeAggregator>,
-    da_snapshot_pointer: [u8; 32],
-) -> Result<()> {
+pub fn handler(ctx: Context<FinalizeAggregator>, da_snapshot_pointer: [u8; 32]) -> Result<()> {
     let current_slot = Clock::get()?.slot;
     let round = &ctx.accounts.round;
     let aggregator = &mut ctx.accounts.aggregator;
 
     // Check if round has ended
-    require!(
-        current_slot > round.end_slot,
-        PobError::RoundNotActive
-    );
+    require!(current_slot > round.end_slot, PobError::RoundNotActive);
 
     // Check if aggregator is already finalized
     require!(!aggregator.finalized, PobError::AggregatorAlreadyFinalized);
 
     // Check if there are any submissions
-    require!(aggregator.num_submissions > 0, PobError::InvalidRoundParameters);
+    require!(
+        aggregator.num_submissions > 0,
+        PobError::InvalidRoundParameters
+    );
 
     // Calculate average n_est
-    let average_n_est_scaled = aggregator.sum_n_est_scaled
+    let average_n_est_scaled = aggregator
+        .sum_n_est_scaled
         .checked_div(aggregator.num_submissions as u128)
         .ok_or(PobError::Overflow)?;
 
@@ -74,7 +72,7 @@ pub fn handler(
     let n_packets_scaled = (round.n_packets as u128)
         .checked_mul(1_000_000_000_000)
         .ok_or(PobError::Overflow)?;
-    
+
     let p_hat_scaled = average_n_est_scaled
         .checked_mul(1_000_000_000_000)
         .and_then(|x| x.checked_div(n_packets_scaled))
