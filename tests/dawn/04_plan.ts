@@ -32,7 +32,10 @@ import {
 } from '../../sdk/utils'
 import { AuthParamsSerializer } from '../../sdk/utils/auth-borsh'
 import { getPskAuthMethodPda } from '../../sdk/pda/amf'
-import { getPlanDistributionDomainPda, getPlanAccessDomainPda } from '../../sdk/pda/device'
+import {
+  getPlanDistributionDomainPda,
+  getPlanAccessDomainPda,
+} from '../../sdk/pda/device'
 import { createPSKMethodParamsBorsh } from '../../sdk/utils/auth-borsh'
 import { beforeAll, expect } from '@jest/globals'
 
@@ -126,7 +129,7 @@ export const planTests = () =>
       // Register the auth method on-chain
       await registerAuthMethodRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         configPda: mock.configPda,
         authMethodPda: pskAuthMethodPda1,
@@ -138,7 +141,7 @@ export const planTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         configPda: mock.configPda,
         authMethodPda: pskAuthMethodPda2,
@@ -188,7 +191,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -236,7 +239,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -284,7 +287,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -319,7 +322,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: wallet.publicKey,
+          caller: wallet.publicKey,
           signer: wallet.payer,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -381,7 +384,7 @@ export const planTests = () =>
 
         await registerAuthMethodRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           configPda: mock.configPda,
           authMethodPda,
@@ -423,7 +426,7 @@ export const planTests = () =>
       // This should succeed with 3 auth methods
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -465,7 +468,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -500,7 +503,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -548,7 +551,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -596,7 +599,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -634,7 +637,7 @@ export const planTests = () =>
 
       const tx = await addL3PlanTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -720,7 +723,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -776,7 +779,7 @@ export const planTests = () =>
 
       const tx = await addL3PlanTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -789,7 +792,7 @@ export const planTests = () =>
         capacity,
         startAt: null,
         authMethods: [],
-        })
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -848,7 +851,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -898,7 +901,7 @@ export const planTests = () =>
       try {
         await addL3PlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           localDomainPda: mock.localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -950,7 +953,7 @@ export const planTests = () =>
 
       const tx = await addL3PlanTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1015,9 +1018,9 @@ export const planTests = () =>
         name: mock.planName,
         price: mock.planPrice,
         duration: mock.planDuration,
-          speed,
+        speed,
         capacity: mock.planCapacity,
-          startAt,
+        startAt,
         authMethods,
       })
 
@@ -1057,7 +1060,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1094,7 +1097,7 @@ export const planTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         configPda: mock.configPda,
         authMethodPda,
@@ -1107,12 +1110,12 @@ export const planTests = () =>
       // Add the auth method to the plan
       const tx = await addAuthMethodToPlanTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         planPda,
         authMethodPda,
         devicePda: mock.devicePda,
-        })
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -1156,7 +1159,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1174,12 +1177,12 @@ export const planTests = () =>
       try {
         await addAuthMethodToPlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           planPda,
           authMethodPda: authMethods[0],
           devicePda: mock.devicePda,
-          })
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -1213,7 +1216,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1230,21 +1233,21 @@ export const planTests = () =>
 
       await addAuthMethodToPlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         planPda,
         authMethodPda: authMethods[0],
         devicePda: mock.devicePda,
-        })
+      })
 
       await addAuthMethodToPlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         planPda,
         authMethodPda: authMethods[1],
         devicePda: mock.devicePda,
-        })
+      })
 
       // Verify both auth methods were added
       const plan = await program.account.plan.fetch(planPda)
@@ -1278,7 +1281,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1321,7 +1324,7 @@ export const planTests = () =>
       // The addDevice call will create the local domain if it doesn't exist
       await addDeviceRpc({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         deviceModelPda: mock.deviceModelPda,
         devicePda: wrongDomainDevicePda,
@@ -1358,7 +1361,7 @@ export const planTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         configPda: mock.configPda,
         authMethodPda,
@@ -1372,12 +1375,12 @@ export const planTests = () =>
       try {
         await addAuthMethodToPlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           planPda,
           authMethodPda,
           devicePda: wrongDomainDevicePda,
-          })
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -1410,7 +1413,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1449,7 +1452,7 @@ export const planTests = () =>
 
         await registerAuthMethodRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           configPda: mock.configPda,
           authMethodPda,
@@ -1466,12 +1469,12 @@ export const planTests = () =>
       for (let i = 0; i < 3; i++) {
         await addAuthMethodToPlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           planPda,
           authMethodPda: authMethods[i],
           devicePda: mock.devicePda,
-          })
+        })
       }
 
       // Verify we have 3 auth methods
@@ -1482,12 +1485,12 @@ export const planTests = () =>
       try {
         await addAuthMethodToPlanRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           planPda,
           authMethodPda: authMethods[3],
           devicePda: mock.devicePda,
-          })
+        })
         assert.ok(false)
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -1520,7 +1523,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1555,7 +1558,7 @@ export const planTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         configPda: mock.configPda,
         authMethodPda,
@@ -1569,12 +1572,12 @@ export const planTests = () =>
       try {
         await addAuthMethodToPlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           planPda,
           authMethodPda,
           devicePda: mock.devicePda,
-          })
+        })
         assert.ok(false)
       } catch (error) {
         // Should fail due to constraint check: caller.key() == plan.owner
@@ -1609,7 +1612,7 @@ export const planTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1645,7 +1648,7 @@ export const planTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         configPda: mock.configPda,
         authMethodPda,
@@ -1658,12 +1661,12 @@ export const planTests = () =>
       // Add the auth method to the plan - should succeed
       await addAuthMethodToPlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         planPda,
         authMethodPda,
         devicePda: mock.devicePda,
-        })
+      })
 
       // Verify the auth method was added to the plan
       const plan = await program.account.plan.fetch(planPda)
@@ -1720,7 +1723,7 @@ export const parentPlanTests = () =>
 
       await addDeviceRpc({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         deviceModelPda: mock.deviceL2ModelPda,
         devicePda: mock.deviceL2Pda,
@@ -1773,7 +1776,7 @@ export const parentPlanTests = () =>
       // Register the auth method on-chain
       await registerAuthMethodRpc({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         configPda: mock.configPda,
         authMethodPda: pskAuthMethodPda1,
@@ -1785,7 +1788,7 @@ export const parentPlanTests = () =>
 
       await registerAuthMethodRpc({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         configPda: mock.configPda,
         authMethodPda: pskAuthMethodPda2,
@@ -1830,7 +1833,7 @@ export const parentPlanTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1875,7 +1878,7 @@ export const parentPlanTests = () =>
       try {
         await addL2PlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -1921,7 +1924,7 @@ export const parentPlanTests = () =>
 
       await addL3PlanRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         localDomainPda: mock.localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,
@@ -1965,7 +1968,7 @@ export const parentPlanTests = () =>
       try {
         await addL2PlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -2042,7 +2045,7 @@ export const parentPlanTests = () =>
       try {
         await addL2PlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -2096,7 +2099,7 @@ export const parentPlanTests = () =>
       try {
         await addL2PlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -2149,7 +2152,7 @@ export const parentPlanTests = () =>
       try {
         await addL2PlanRpc({
           program,
-            caller: mock.customer.publicKey,
+          caller: mock.customer.publicKey,
           signer: mock.customer,
           localDomainPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -2202,7 +2205,7 @@ export const parentPlanTests = () =>
 
       const addPlanTx = await addL2PlanTx({
         program,
-          caller: mock.customer.publicKey,
+        caller: mock.customer.publicKey,
         signer: mock.customer,
         localDomainPda,
         serviceAgreementPda: mock.serviceAgreementPda,

@@ -90,7 +90,6 @@ impl DawnApp {
         let ip_block = &mut ctx.accounts.ip_block;
         let ip_lease = &mut ctx.accounts.ip_lease;
 
-
         let block_idx = root_ip_block
             .first_available_block_idx
             .ok_or(DawnError::NoAvailableBlocks)?;

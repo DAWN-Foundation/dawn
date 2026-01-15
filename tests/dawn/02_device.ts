@@ -104,7 +104,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: invalidModel.publicKey,
           devicePda: mock.devicePda,
@@ -134,7 +134,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -162,7 +162,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -198,7 +198,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
@@ -236,7 +236,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
@@ -274,7 +274,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
@@ -302,7 +302,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -330,7 +330,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -358,7 +358,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -386,7 +386,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -411,7 +411,7 @@ export const deviceTests = () =>
     test('adds the L3 (Router) device', async () => {
       const tx = await addDeviceTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         deviceModelPda: mock.deviceModelPda,
         devicePda: mock.devicePda,
@@ -509,12 +509,12 @@ export const deviceTests = () =>
       try {
         await verifyDeviceLocationRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           configPda: mock.configPda,
           devicePda: mock.devicePda,
           deviceLocationPda: mock.deviceLocationPda,
-          })
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -535,12 +535,12 @@ export const deviceTests = () =>
 
       const tx = await verifyDeviceLocationTx({
         program,
-          caller: wallet.publicKey,
+        caller: wallet.publicKey,
         signer: wallet.payer,
         configPda: mock.configPda,
         devicePda: mock.devicePda,
         deviceLocationPda: mock.deviceLocationPda,
-        })
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -571,7 +571,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda: mock.devicePda,
@@ -614,14 +614,14 @@ export const deviceTests = () =>
       provider.wallet = wallet
       await addDeviceModelRpc({
         program,
-          caller: wallet.publicKey,
+        caller: wallet.publicKey,
         signer: wallet.payer,
         configPda: mock.configPda,
         deviceModelPda,
         deviceType,
         manufacturer,
         model,
-        })
+      })
 
       const devicePda = getDevicePda(
         program,
@@ -643,7 +643,7 @@ export const deviceTests = () =>
 
       const tx = await addDeviceTx({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         deviceModelPda,
         devicePda,
@@ -700,7 +700,7 @@ export const deviceTests = () =>
 
       await addDeviceRpc({
         program,
-          caller: mock.serviceProvider.publicKey,
+        caller: mock.serviceProvider.publicKey,
         signer: mock.serviceProvider,
         deviceModelPda,
         devicePda,
@@ -713,7 +713,7 @@ export const deviceTests = () =>
         placement: mock.devicePlacement,
         macAddress: mock.deviceMacAddress,
         localDomain: mock.localDomain,
-        })
+      })
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.localDomain.equals(mock.localDomainPda)).toBeTruthy()
@@ -750,7 +750,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
@@ -793,7 +793,7 @@ export const deviceTests = () =>
       try {
         await addDeviceRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
@@ -806,7 +806,7 @@ export const deviceTests = () =>
           placement: mock.devicePlacement,
           macAddress: mock.deviceMacAddress,
           localDomain: localDomainName,
-          })
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -845,9 +845,9 @@ export const deviceTests = () =>
 
         const tx = await addDeviceForTx({
           program,
-            caller: caller.publicKey,
+          caller: caller.publicKey,
           signer: caller,
-            beneficiary: beneficiary.publicKey,
+          beneficiary: beneficiary.publicKey,
           deviceModelPda: mock.deviceModelPda,
           devicePda,
           deviceLocationPda,
@@ -859,7 +859,7 @@ export const deviceTests = () =>
           placement: mock.devicePlacement,
           macAddress,
           localDomain: localDomainName,
-          })
+        })
 
         const txDetails = await confirmTx(provider, tx)
 
@@ -953,9 +953,9 @@ export const deviceTests = () =>
         try {
           await addDeviceForRpc({
             program,
-              caller: caller.publicKey,
+            caller: caller.publicKey,
             signer: caller,
-              beneficiary: beneficiary.publicKey,
+            beneficiary: beneficiary.publicKey,
             deviceModelPda: mock.deviceModelPda,
             devicePda,
             deviceLocationPda,
@@ -967,7 +967,7 @@ export const deviceTests = () =>
             placement: mock.devicePlacement,
             macAddress,
             localDomain: localDomainName,
-            })
+          })
 
           expect(false).toBeTruthy()
         } catch (error) {
@@ -998,9 +998,9 @@ export const deviceTests = () =>
 
         const tx = await addDeviceForTx({
           program,
-            caller: caller.publicKey,
+          caller: caller.publicKey,
           signer: caller,
-            beneficiary: beneficiary.publicKey,
+          beneficiary: beneficiary.publicKey,
           deviceModelPda: mock.deviceModelPda,
           devicePda: devicePda2,
           deviceLocationPda: deviceLocationPda2,
@@ -1037,23 +1037,23 @@ export const deviceTests = () =>
           program,
           beneficiary.publicKey,
           mock.deviceModelPda,
-              'TestDevice',
-              macAddress,
+          'TestDevice',
+          macAddress,
         )
         const deviceLocationPda = getDeviceLocationPda(program, devicePda)
         const localDomainPda = getLocalDomainPda(
           program,
           beneficiary.publicKey,
-              localDomainName,
-            )
+          localDomainName,
+        )
 
         // Test invalid latitude (0)
         try {
           await addDeviceForRpc({
             program,
-              caller: caller.publicKey,
+            caller: caller.publicKey,
             signer: caller,
-              beneficiary: beneficiary.publicKey,
+            beneficiary: beneficiary.publicKey,
             deviceModelPda: mock.deviceModelPda,
             devicePda,
             deviceLocationPda,
@@ -1082,17 +1082,20 @@ export const deviceTests = () =>
           beneficiary.publicKey,
           mock.deviceModelPda,
           '',
-              macAddress,
+          macAddress,
         )
-        const emptyNameDeviceLocationPda = getDeviceLocationPda(program, emptyNameDevicePda)
+        const emptyNameDeviceLocationPda = getDeviceLocationPda(
+          program,
+          emptyNameDevicePda,
+        )
 
         // Test empty device name
         try {
           await addDeviceForRpc({
             program,
-              caller: caller.publicKey,
+            caller: caller.publicKey,
             signer: caller,
-              beneficiary: beneficiary.publicKey,
+            beneficiary: beneficiary.publicKey,
             deviceModelPda: mock.deviceModelPda,
             devicePda: emptyNameDevicePda,
             deviceLocationPda: emptyNameDeviceLocationPda,
