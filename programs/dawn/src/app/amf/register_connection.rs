@@ -1,9 +1,10 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use anchor_lang::prelude::*;
 
 use crate::{
     app::DawnApp,
     events::ConnectionRegistered,
     state::{AuthMethod, Connection},
+    utils::hash_parameters,
 };
 
 /// Context for registering connection credentials
@@ -21,10 +22,12 @@ pub struct RegisterConnection<'info> {
     #[account(
         constraint = auth_method.authority == caller.key(),
         seeds = [
-            AuthMethod::SEED_PREFIX.as_ref(),
+            AuthMethod::SEED_PREFIX,
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            &auth_method.parameters[..MAX_SEED_LEN]
+            auth_method.device.as_ref(),
+            &auth_method.encryption_key,
+            &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
     )]
@@ -35,7 +38,7 @@ pub struct RegisterConnection<'info> {
         payer = caller,
         space = Connection::SIZE,
         seeds = [
-            Connection::SEED_PREFIX.as_ref(),
+            Connection::SEED_PREFIX,
             auth_method.key().as_ref(),
             entity_a.as_ref(),
             entity_b.as_ref(),

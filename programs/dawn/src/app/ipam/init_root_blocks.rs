@@ -1,3 +1,4 @@
+use crate::constants::BLOCK_CIDR;
 use crate::state::Config;
 use crate::{
     app::DawnApp, DawnError, IpRegistry, IpRegistryInitialized, IpTier, RootIpBlock,
@@ -51,8 +52,13 @@ pub struct InitializeRootIpBlock<'info> {
 }
 
 impl DawnApp {
-    /// Initialize a Root IP Block for the specified tier and sequence
+    /// Initialize a Root IP Block with flexible configuration
     /// Can only be called by the DAWN authority
+    ///
+    /// Parameters:
+    /// - tier: Categorization (Subscriber, Loopback, PtP) - also determines unit_prefix
+    /// - base_ipv4: Starting IPv4 address for this root block
+    /// - base_cidr: CIDR prefix for the entire root block range
     pub fn initialize_root_ip_block(
         ctx: Context<InitializeRootIpBlock>,
         tier: IpTier,
@@ -64,7 +70,8 @@ impl DawnApp {
         let authority = &ctx.accounts.authority;
         let caller = &ctx.accounts.caller;
 
-        if ip_registry.bump == 0 {
+        // Use created_at as robust init flag instead of bump == 0
+        if ip_registry.created_at == 0 {
             ip_registry.initialize(tier, caller.key(), ctx.bumps.ip_registry)?;
             emit!(IpRegistryInitialized {
                 ip_registry: ip_registry.key(),
@@ -76,7 +83,10 @@ impl DawnApp {
 
         // Validate sequence number
         let index = ip_registry.next_index;
-        require!(index < tier.max_root_blocks(), DawnError::InvalidSequence);
+        require!(index < 256, DawnError::InvalidSequence); // Max 256 root blocks per tier
+
+        // Validate base_ipv4 won't cause overflow during IP allocation
+        Self::validate_root_block_config(base_ipv4, base_cidr)?;
 
         // Initialize the root IP block
         root_ip_block.initialize(
@@ -102,6 +112,42 @@ impl DawnApp {
             block_cidr: root_ip_block.block_cidr,
             created_at: Clock::get()?.unix_timestamp,
         });
+
+        Ok(())
+    }
+
+    /// Validate root block configuration to prevent overflow
+    fn validate_root_block_config(base_ipv4: u32, base_cidr: u8) -> Result<()> {
+        require!(
+            base_cidr >= 1 && base_cidr <= BLOCK_CIDR,
+            DawnError::InvalidCidr
+        );
+
+        // Calculate the network size for this CIDR
+        let network_size = if base_cidr < 32 {
+            1u64 << (32 - base_cidr)
+        } else {
+            1u64
+        };
+
+        // Ensure base_ipv4 is aligned to the network boundary
+        if base_cidr < 32 {
+            let alignment = 1u32 << (32 - base_cidr);
+            let mask = !(alignment - 1);
+
+            require!(base_ipv4 == (base_ipv4 & mask), DawnError::IPv4NotAligned);
+        }
+
+        // Verify that base_ipv4 + network_size won't overflow
+        let base_u64 = base_ipv4 as u64;
+        let max_ipv4 = base_u64
+            .checked_add(network_size)
+            .ok_or(DawnError::IPv4Overflow)?;
+
+        require!(
+            max_ipv4 <= (u32::MAX as u64) + 1,
+            DawnError::IPv4RangeExceedsMax
+        );
 
         Ok(())
     }

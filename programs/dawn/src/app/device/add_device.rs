@@ -1,9 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::{DeviceAdded, DeviceLocationAdded, LocalDomainAdded},
     state::{Device, DeviceLocation, DeviceModel, LocalDomain},
+    utils::hash_string_seed,
     DawnApp, DawnError,
 };
 
@@ -26,8 +26,8 @@ pub struct AddDevice<'info> {
         seeds = [
             DeviceModel::SEED_PREFIX.as_ref(),
             device_model.device_type.to_seed(),
-            &device_model.manufacturer.trim().as_bytes()[..min(device_model.manufacturer.trim().len(), MAX_SEED_LEN)],
-            &device_model.model.trim().as_bytes()[..min(device_model.model.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device_model.manufacturer),
+            &hash_string_seed(&device_model.model),
         ],
         bump = device_model.bump
     )]
@@ -42,7 +42,7 @@ pub struct AddDevice<'info> {
             Device::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
             device_model.key().as_ref(),
-            &name.trim().as_bytes()[..min(name.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&name),
             &mac_address,
         ],
         bump
@@ -70,7 +70,7 @@ pub struct AddDevice<'info> {
         seeds = [
             LocalDomain::SEED_PREFIX.as_ref(),
             caller.key().as_ref(),
-            &local_domain_name.trim().as_bytes()[..min(local_domain_name.trim().len(), MAX_SEED_LEN)]
+            &hash_string_seed(&local_domain_name)
         ],
         bump
     )]
@@ -108,19 +108,21 @@ impl DawnApp {
             DawnError::InvalidPlacementTilt
         );
 
-        // Make sure the name is not empty
-        require!(!name.is_empty(), DawnError::EmptyDeviceName);
+        // Make sure the name is not empty (check after trimming)
+        let trimmed_name = name.trim();
+        require!(!trimmed_name.is_empty(), DawnError::EmptyDeviceName);
 
-        // Make sure the name is not too long
-        require!(name.len() <= 32, DawnError::DeviceNameTooLong,);
+        // Make sure the name is not too long (check after trimming)
+        require!(trimmed_name.len() <= 32, DawnError::DeviceNameTooLong,);
 
-        // Make sure the local domain name is not empty or too long
+        // Make sure the local domain name is not empty or too long (check after trimming)
+        let trimmed_local_domain = local_domain_name.trim();
         require!(
-            !local_domain_name.is_empty(),
+            !trimmed_local_domain.is_empty(),
             DawnError::EmptyLocalDomainName
         );
         require!(
-            local_domain_name.len() <= 32,
+            trimmed_local_domain.len() <= 32,
             DawnError::LocalDomainNameTooLong
         );
 
@@ -135,19 +137,13 @@ impl DawnApp {
             local_domain.created_at = Clock::get()?.unix_timestamp;
             local_domain.owner = caller;
             local_domain.bump = ctx.bumps.local_domain;
-
-            // Convert domain name to fixed-size byte array
-            let domain_bytes = local_domain_name.as_bytes();
-            let mut name_bytes = [0u8; 32];
-            let copy_len = domain_bytes.len().min(32);
-            name_bytes[..copy_len].copy_from_slice(&domain_bytes[..copy_len]);
-            local_domain.name = name_bytes;
+            local_domain.name = local_domain_name.trim().to_string();
 
             // Emit event
             emit!(LocalDomainAdded {
                 local_domain: local_domain.key(),
                 owner: local_domain.owner,
-                name: local_domain_name,
+                name: local_domain.name.clone(),
                 created_at: local_domain.created_at,
             });
         }
@@ -158,7 +154,8 @@ impl DawnApp {
         device.created_at = created_at;
         device.owner = caller;
         device.model = device_model.key();
-        device.name.clone_from(&name);
+        // Store trimmed name to match PDA seeds
+        device.name = name.trim().to_string();
         device.local_domain = ctx.accounts.local_domain.key();
         device.mac_address = mac_address;
         device.bump = ctx.bumps.device;

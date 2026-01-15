@@ -185,6 +185,9 @@ pub enum DawnError {
     #[msg("Invalid auth method authority")]
     InvalidAuthMethodAuthority,
 
+    #[msg("Auth method not assigned to plan")]
+    AuthMethodNotInPlan,
+
     // IPAM errors
     #[msg("Invalid tier specified")]
     InvalidTier,
@@ -222,6 +225,15 @@ pub enum DawnError {
     #[msg("Block account is missing")]
     BlockAccountIsMissing,
 
+    #[msg("Too many blocks for bitmap representation")]
+    TooManyBlocks,
+
+    #[msg("Invalid block index")]
+    InvalidBlockIndex,
+
+    #[msg("Invalid root block index")]
+    InvalidRootIndex,
+
     #[msg("Invalid device")]
     InvalidDevice,
 
@@ -243,4 +255,53 @@ pub enum DawnError {
 
     #[msg("Sequence out of bounds")]
     SequenceOutOfBounds,
+
+    // IPv4 OVERFLOW ERRORS
+    #[msg("IPv4 calculation would overflow u32::MAX")]
+    IPv4Overflow,
+
+    #[msg("IPv4 range exceeds maximum addressable space")]
+    IPv4RangeExceedsMax,
+
+    #[msg("IPv4 address not aligned to network boundary")]
+    IPv4NotAligned,
+
+    #[msg("Invalid CIDR prefix length")]
+    InvalidCidr,
+
+    // CONFIG ERRORS
+    #[msg("Fee BPS exceeds maximum (10,000)")]
+    InvalidFeeBps,
+
+    #[msg("Total fees exceed 100% (10,000 BPS)")]
+    TotalFeesExceedMax,
+
+    #[msg("Invalid Raydium program ID")]
+    InvalidRaydiumProgram,
+
+    #[msg("Invalid Raydium pool owner")]
+    InvalidRaydiumPoolOwner,
+
+    // MEV PROTECTION ERRORS
+    #[msg("Transaction deadline has expired")]
+    TransactionExpired,
+
+    #[msg("Insufficient output amount from swap")]
+    InsufficientOutputAmount,
+
+    #[msg("Invalid minimum output amount")]
+    InvalidMinimumOutput,
+
+    #[msg("Deadline is too far in the future")]
+    DeadlineTooFarInFuture,
+
+    #[msg("Invalid amount: cannot be zero")]
+    InvalidAmount,
+
+    #[msg("Invalid UTF-8 in seed data")]
+    InvalidUtf8InSeed,
+
+    // SUBSCRIPTION PAYMENT ERRORS
+    #[msg("Daily swap amount too small - plan price minus fees must be >= duration")]
+    DailySwapTooSmall,
 }

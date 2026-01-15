@@ -1,18 +1,14 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{clock::SECONDS_PER_DAY, pubkey::MAX_SEED_LEN},
-};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState};
-use std::cmp::min;
+use raydium_cp_swap::{program::RaydiumCpSwap, states::PoolState, ID as RAYDIUM_CP_SWAP_ID};
 
 use crate::{
-    app::{subscription::payment, PaymentAccounts},
-    utils::optional_pubkey_seed,
-    DawnError, Subscribed,
+    app::{subscription::subscription_helper, PaymentAccounts},
+    utils::{hash_string_seed, optional_pubkey_seed},
+    DawnError,
 };
 use crate::{
     state::{Config, Device, Plan, Subscription},
@@ -20,6 +16,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
+#[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct Subscribe<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -37,7 +34,7 @@ pub struct Subscribe<'info> {
             Plan::SEED_PREFIX.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes(),
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -56,7 +53,7 @@ pub struct Subscribe<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
@@ -86,8 +83,11 @@ pub struct Subscribe<'info> {
     pub usdc_mint: Box<Account<'info, Mint>>,
 
     // RAYDIUM
-    /// The Raydium program account
-    #[account(address = config.raydium)]
+    /// The Raydium program account - MUST be the official Raydium CP Swap program
+    #[account(
+        address = config.raydium,
+        constraint = raydium.key() == RAYDIUM_CP_SWAP_ID @ DawnError::InvalidRaydiumProgram
+    )]
     pub raydium: Program<'info, RaydiumCpSwap>,
 
     /// The Raydium authority account
@@ -100,9 +100,13 @@ pub struct Subscribe<'info> {
     #[account(address = config.raydium_config)]
     pub raydium_config: UncheckedAccount<'info>,
 
-    /// The Raydium pool account
-    /// CHECK: Address checked to match the pool from config
-    #[account(mut, address = config.raydium_pool)]
+    /// The Raydium pool account - MUST be owned by Raydium program
+    #[account(
+        mut,
+        address = config.raydium_pool,
+        constraint = raydium_pool.to_account_info().owner == &RAYDIUM_CP_SWAP_ID
+            @ DawnError::InvalidRaydiumPoolOwner
+    )]
     pub raydium_pool: AccountLoader<'info, PoolState>,
 
     /// The Raydium observation account
@@ -171,15 +175,11 @@ pub struct Subscribe<'info> {
 }
 
 impl DawnApp {
-    pub fn subscribe(ctx: Context<Subscribe>) -> Result<()> {
-        let config = &ctx.accounts.config;
-        let plan = &ctx.accounts.plan;
-
-        if plan.start_at > 0 {
-            let now = Clock::get()?.unix_timestamp;
-            // Make sure the plan has already started
-            require!(plan.start_at <= now, DawnError::InvalidStartTime);
-        }
+    pub fn subscribe(ctx: Context<Subscribe>, min_dawn_out: u64, deadline: i64) -> Result<()> {
+        // Get keys before creating mutable references
+        let subscription_key = ctx.accounts.subscription.key();
+        let plan_key = ctx.accounts.plan.key();
+        let caller_key = ctx.accounts.caller.key();
 
         let payment_accounts = PaymentAccounts {
             caller: &ctx.accounts.caller,
@@ -193,55 +193,25 @@ impl DawnApp {
             raydium_usdc_vault: &ctx.accounts.raydium_usdc_vault,
             raydium_dawn_vault: &ctx.accounts.raydium_dawn_vault,
             user_usdc_account: &ctx.accounts.user_usdc_account,
-            user_dawn_account: &ctx.accounts.user_dawn_account,
+            user_dawn_account: &mut ctx.accounts.user_dawn_account,
             fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };
 
-        let (claimable_dawn, daily_usdc, swap_price) =
-            payment::process_payment(payment_accounts, config, plan)?;
-
-        // Get the current timestamp from the clock
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp; // Current UNIX timestamp (in seconds)
-
-        // Calculate plan duration in seconds (days to seconds)
-        let duration_in_seconds = (plan.duration as u64)
-            .checked_mul(SECONDS_PER_DAY)
-            .ok_or(DawnError::Overflow)?;
-
-        // Calculate subscription expiration by adding plan `duration` days to current timestamp
-        let expiration = current_timestamp
-            .checked_add(duration_in_seconds as i64)
-            .ok_or(DawnError::Overflow)?;
-
-        // Save subscription data
-        let subscription = &mut ctx.accounts.subscription;
-        subscription.created_at = Clock::get()?.unix_timestamp;
-        subscription.plan = ctx.accounts.plan.key();
-        subscription.subscriber = ctx.accounts.caller.key();
-        subscription.device = ctx.accounts.device.as_ref().map(|d| d.key());
-        subscription.expiration = expiration;
-        subscription.last_claim = current_timestamp;
-        subscription.claimable_dawn = claimable_dawn; // Initial DAWN amount is locked for 24h
-        subscription.daily_usdc = daily_usdc;
-        subscription.bump = ctx.bumps.subscription;
-
-        emit!(Subscribed {
-            subscription: subscription.key(),
-            plan: ctx.accounts.plan.key(),
-            subscriber: ctx.accounts.caller.key(),
-            device: subscription.device,
-            expiration: subscription.expiration,
-            last_claim: subscription.last_claim,
-            claimable_dawn: subscription.claimable_dawn,
-            daily_usdc: subscription.daily_usdc,
-            swap_price,
-            created_at: subscription.created_at,
-        });
-
-        Ok(())
+        subscription_helper::process_subscription_creation(
+            payment_accounts,
+            &ctx.accounts.config,
+            &ctx.accounts.plan,
+            &mut ctx.accounts.subscription,
+            subscription_key,
+            plan_key,
+            caller_key,
+            ctx.accounts.device.as_ref().map(|d| d.as_ref()),
+            min_dawn_out,
+            deadline,
+            ctx.bumps.subscription,
+        )
     }
 }

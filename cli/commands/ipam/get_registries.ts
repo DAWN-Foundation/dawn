@@ -3,6 +3,7 @@ import { getIpRegistryPda } from '../../../sdk/utils'
 
 async function main() {
   const { program } = await connect()
+  console.log({ PROGRAM_ID: program.programId.toBase58() })
 
   const data = await program.account.ipRegistry.all()
 

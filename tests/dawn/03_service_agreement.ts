@@ -9,6 +9,8 @@ import {
   getProvider,
   confirmTx,
   loadWallet,
+  addServiceAgreementTx,
+  addServiceAgreementRpc,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -42,15 +44,15 @@ export const serviceAgreementTests = () =>
     test('cannot add service agreement as non-authority', async () => {
       try {
         provider.wallet = new Wallet(mock.serviceProvider)
-        await program.methods
-          .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-          .accountsPartial({
+        await addServiceAgreementRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            config: mock.configPda,
-            serviceAgreement: mock.serviceAgreementPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          configPda: mock.configPda,
+          serviceAgreementPda: mock.serviceAgreementPda,
+          threshold: mock.slaThreshold,
+          payoutRatio: mock.slaPayoutRatio,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -63,15 +65,15 @@ export const serviceAgreementTests = () =>
 
     test('cannot add service agreement with 0 payout ratio', async () => {
       try {
-        await program.methods
-          .addServiceAgreement(mock.slaThreshold, new BN(0))
-          .accountsPartial({
+        await addServiceAgreementTx({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            serviceAgreement: mock.serviceAgreementPda,
-          })
-          .signers([wallet.payer])
-          .transaction()
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          serviceAgreementPda: mock.serviceAgreementPda,
+          threshold: mock.slaThreshold,
+          payoutRatio: new BN(0),
+        })
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
@@ -80,15 +82,15 @@ export const serviceAgreementTests = () =>
     })
 
     test('adds the service agreement', async () => {
-      const tx = await program.methods
-        .addServiceAgreement(mock.slaThreshold, mock.slaPayoutRatio)
-        .accountsPartial({
+      const tx = await addServiceAgreementTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          serviceAgreement: mock.serviceAgreementPda,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        serviceAgreementPda: mock.serviceAgreementPda,
+        threshold: mock.slaThreshold,
+        payoutRatio: mock.slaPayoutRatio,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 

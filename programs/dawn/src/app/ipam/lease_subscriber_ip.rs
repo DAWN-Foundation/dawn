@@ -1,13 +1,12 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use anchor_lang::prelude::*;
 
 use crate::{
     app::DawnApp,
     events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
     state::Device,
+    utils::hash_string_seed,
     DawnError, IpRegistry, IpTier, Subscription,
 };
-
-use std::cmp::min;
 
 use crate::{IpBlock, IpLease, RootIpBlock};
 
@@ -23,7 +22,7 @@ pub struct LeaseSubscriberIp<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump
@@ -41,10 +40,14 @@ pub struct LeaseSubscriberIp<'info> {
     /// The root IP block for the specified tier
     #[account(
         mut,
+        constraint = root_ip_block.tier == IpTier::Subscriber @ DawnError::InvalidTier,
+        constraint = root_ip_block.has_free_blocks() @ DawnError::NoAvailableBlocks,
+        constraint = root_ip_block.first_available_block_idx.is_some() @ DawnError::NoAvailableBlocks,
+        constraint = ip_registry.find_available_root_block() == Some(root_ip_block.index) @ DawnError::InvalidRootIndex,
         seeds = [
             RootIpBlock::SEED_PREFIX.as_ref(),
             IpTier::Subscriber.to_seed().as_ref(),
-            ip_registry.find_available_root_block().unwrap().to_le_bytes().as_ref()
+            root_ip_block.index.to_le_bytes().as_ref()
         ],
         bump = root_ip_block.bump
     )]
@@ -58,7 +61,8 @@ pub struct LeaseSubscriberIp<'info> {
         seeds = [
             IpBlock::SEED_PREFIX.as_ref(),
             root_ip_block.key().as_ref(),
-            root_ip_block.first_available_block_idx.unwrap().to_le_bytes().as_ref(),
+            // Use unwrap_or(0) to prevent panic; actual validation done by constraints
+            root_ip_block.first_available_block_idx.unwrap_or(0).to_le_bytes().as_ref(),
         ],
         bump
     )]
@@ -105,7 +109,10 @@ impl DawnApp {
         let subscription = &mut ctx.accounts.subscription;
         let subscriber_tier = IpTier::Subscriber;
         let ip_registry = &mut ctx.accounts.ip_registry;
-        let root_block_index = ip_registry.find_available_root_block().unwrap();
+
+        let root_block_index = ip_registry
+            .find_available_root_block()
+            .ok_or(DawnError::NoAvailableBlocks)?;
 
         let current_time = Clock::get()?.unix_timestamp;
 
@@ -113,20 +120,20 @@ impl DawnApp {
             subscription.expiration > current_time,
             DawnError::SubscriptionExpired
         );
-        // let lease_end = subscription.expiration;
 
-        let block_idx = root_ip_block.first_available_block_idx.unwrap();
-        let block_base = root_ip_block.get_block_base_ipv4(block_idx);
-        // if block is not initialized, initialize it
-        if ip_block.block_base == 0 {
-            ip_block
-                .initialize(
-                    subscriber_tier,
-                    root_block_index,
-                    block_base,
-                    ctx.bumps.ip_block,
-                )
-                .unwrap();
+        let block_idx = root_ip_block
+            .first_available_block_idx
+            .ok_or(DawnError::NoAvailableBlocks)?;
+
+        let block_base = root_ip_block.get_block_base_ipv4_checked(block_idx)?;
+        // if block is not initialized, initialize it (use created_at as robust init flag)
+        if ip_block.created_at == 0 {
+            ip_block.initialize(
+                subscriber_tier,
+                root_block_index,
+                block_base,
+                ctx.bumps.ip_block,
+            )?;
             emit!(IpBlockAdded {
                 ip_block: ip_block.key(),
                 tier: subscriber_tier.to_u8(),
@@ -169,7 +176,7 @@ impl DawnApp {
             block_idx,
             unit_idx,
             ctx.bumps.ip_lease,
-        );
+        )?;
 
         // Emit allocation event
         emit!(IpLeased {

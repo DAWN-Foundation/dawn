@@ -11,8 +11,11 @@
     "devnet": "yarn build && node dist/cli/environments/devnet.js --devnet",
     "usdc:mint": "yarn build && node dist/cli/commands/utils/mint_usdc.js",
     "usdc:balance": "yarn build && node dist/cli/commands/utils/get_usdc_balance.js",
+    "key:parse": "yarn build && node dist/cli/commands/utils/parse_key.js",
+    "key:encrypt": "yarn build && node dist/sdk/utils/encrypt.js",
     "dawn:init": "yarn build && node dist/cli/commands/config/init.js",
     "dawn:config": "yarn build && node dist/cli/commands/config/config.js",
+    "dawn:init_metadata": "yarn build && node dist/cli/commands/config/init_metadata.js",
     "dawn:get_config": "yarn build && node dist/cli/commands/config/get_config.js",
     "dawn:add_device": "yarn build && node dist/cli/commands/devices/add_device.js",
     "dawn:add_devices": "yarn build && node dist/cli/commands/devices/add_devices.js",
@@ -20,6 +23,9 @@
     "dawn:add_device_model": "yarn build && node dist/cli/commands/devices/add_device_model.js",
     "dawn:get_device_models": "yarn build && node dist/cli/commands/devices/get_device_models.js",
     "dawn:get_devices": "yarn build && node dist/cli/commands/devices/get_devices.js",
+    "dawn:get_auth_methods": "yarn build && node dist/cli/commands/auth/get_auth_methods.js",
+    "dawn:register_auth_method": "yarn build && node dist/cli/commands/auth/register_auth_method.js",
+    "dawn:register_credential": "yarn build && node dist/cli/commands/auth/register_credential.js",
     "dawn:add_plan": "yarn build && node dist/cli/commands/plans/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/cli/commands/plans/get_plans.js",
     "dawn:subscribe": "yarn build && node dist/cli/commands/subscriptions/subscribe.js",
@@ -31,18 +37,24 @@
     "dawn:get_registries": "yarn build && node dist/cli/commands/ipam/get_registries.js",
     "dawn:get_root_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_root_ip_blocks.js",
     "dawn:get_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_ip_blocks.js",
-    "dawn:get_ip_leases": "yarn build && node dist/cli/commands/ipam/get_ip_leases.js"
+    "dawn:get_ip_leases": "yarn build && node dist/cli/commands/ipam/get_ip_leases.js",
+    "dawn:allocate_ip": "yarn build && node dist/cli/commands/ipam/allocate_ip.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
+    "@coral-xyz/borsh": "^0.32.1",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "anchor-bankrun": "^0.5.0",
+    "borsh": "^2.0.0",
     "dotenv": "^16.4.7",
     "quicktype": "^23.0.171",
     "solana-bankrun": "^0.4.0",
     "spl-token-bankrun": "^0.2.6",
-    "toml": "^3.0.0"
+    "toml": "^3.0.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-sealedbox-js": "^1.2.0",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

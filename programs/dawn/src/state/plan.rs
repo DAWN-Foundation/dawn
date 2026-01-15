@@ -34,8 +34,8 @@ pub struct Plan {
     pub start_at: i64,
     /// The Service Level Agreement Account
     pub service_agreement: Pubkey,
-    /// The authentication methods for the plan (max 2)
-    #[max_len(2)]
+    /// The authentication methods for the plan (max 3)
+    #[max_len(3)]
     pub auth_methods: Vec<Pubkey>,
     /// PDA bump seed
     pub bump: u8,

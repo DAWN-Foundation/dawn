@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 declare_id!("AHvnbnT3oeRSui4V1E47UsntZxtk9LuVfK7qmusJCeU8");
 
 #[cfg(feature = "devnet")]
-declare_id!("dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ");
+declare_id!("dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP");
 
 mod app;
 mod constants;
@@ -33,21 +33,50 @@ pub mod dawn {
         DawnApp::init_fee_accounts(ctx)
     }
 
-    pub fn configure(
-        ctx: Context<Configure>,
-        dawn_fee: u64,
+    pub fn initialize_config(
+        ctx: Context<InitializeConfig>,
+        dao_fee: u64,
         validator_fee: u64,
         medallion_fee: u64,
     ) -> Result<()> {
-        DawnApp::configure(ctx, dawn_fee, validator_fee, medallion_fee)
+        DawnApp::initialize_config(ctx, dao_fee, validator_fee, medallion_fee)
+    }
+
+    pub fn init_metadata(ctx: Context<InitializeMetadata>) -> Result<()> {
+        DawnApp::init_metadata(ctx)
+    }
+
+    pub fn update_config(
+        ctx: Context<UpdateConfig>,
+        dao_fee: Option<u64>,
+        validator_fee: Option<u64>,
+        medallion_fee: Option<u64>,
+        raydium: Option<Pubkey>,
+        raydium_authority: Option<Pubkey>,
+        raydium_pool: Option<Pubkey>,
+        raydium_config: Option<Pubkey>,
+        raydium_observation: Option<Pubkey>,
+    ) -> Result<()> {
+        DawnApp::update_config(
+            ctx,
+            dao_fee,
+            validator_fee,
+            medallion_fee,
+            raydium,
+            raydium_authority,
+            raydium_pool,
+            raydium_config,
+            raydium_observation,
+        )
     }
 
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
+        encryption_key: [u8; 32],
         parameters: [u8; 256],
     ) -> Result<()> {
-        DawnApp::register_auth_method(ctx, method_type, parameters)
+        DawnApp::register_auth_method(ctx, method_type, encryption_key, parameters)
     }
 
     pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
@@ -56,10 +85,9 @@ pub mod dawn {
 
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        client: Pubkey,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential(ctx, client, credential_data)
+        DawnApp::register_credential(ctx, credential_data)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
@@ -117,6 +145,28 @@ pub mod dawn {
         )
     }
 
+    pub fn add_device_for(
+        ctx: Context<AddDeviceFor>,
+        name: String,
+        height: u16,
+        latitude: i64,
+        longitude: i64,
+        placement: [i32; 2],
+        mac_address: [u8; 6],
+        local_domain_name: String,
+    ) -> Result<()> {
+        DawnApp::add_device_for(
+            ctx,
+            name,
+            height,
+            latitude,
+            longitude,
+            placement,
+            mac_address,
+            local_domain_name,
+        )
+    }
+
     pub fn verify_device_location(ctx: Context<VerifyDeviceLocation>) -> Result<()> {
         DawnApp::verify_device_location(ctx)
     }
@@ -153,16 +203,40 @@ pub mod dawn {
         DawnApp::add_l2_plan(ctx, name, price, duration, speed, capacity, start_at)
     }
 
-    pub fn subscribe<'info>(ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>) -> Result<()> {
-        DawnApp::subscribe(ctx)
+    pub fn subscribe<'info>(
+        ctx: Context<'_, '_, '_, 'info, Subscribe<'info>>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::subscribe(ctx, min_dawn_out, deadline)
     }
 
-    pub fn extend_subscription(ctx: Context<ExtendSubscription>) -> Result<()> {
-        DawnApp::extend_subscription(ctx)
+    pub fn subscribe_for(
+        ctx: Context<SubscribeFor>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::subscribe_for(ctx, min_dawn_out, deadline)
     }
 
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
-        DawnApp::claim(ctx)
+    pub fn extend_subscription(
+        ctx: Context<ExtendSubscription>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::extend_subscription(ctx, min_dawn_out, deadline)
+    }
+
+    pub fn extend_subscription_for(
+        ctx: Context<ExtendSubscriptionFor>,
+        min_dawn_out: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        DawnApp::extend_subscription_for(ctx, min_dawn_out, deadline)
+    }
+
+    pub fn claim(ctx: Context<Claim>, min_dawn_out: u64, deadline: i64) -> Result<()> {
+        DawnApp::claim(ctx, min_dawn_out, deadline)
     }
 
     // IPAM Instructions

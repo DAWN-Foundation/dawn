@@ -9,6 +9,7 @@ import {
   createAssociatedTokenAccount,
   mintTo,
 } from 'spl-token-bankrun'
+import nacl from 'tweetnacl'
 
 import { Mock } from './types'
 import { COORD_DENOMINATOR, MacAddress, PROGRAM_ID } from './helpers'
@@ -55,6 +56,10 @@ import { getPskAuthMethodPda } from '../pda/amf'
 
 export const USDC_DECIMALS = new BN(10).pow(new BN(6))
 
+export const METADATA_PROGRAM_ID = new PublicKey(
+  'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+)
+
 export let mock: Mock
 let provider: BankrunProvider
 
@@ -72,6 +77,10 @@ export async function getProvider(accounts?: AddedAccount[]) {
       { name: 'pob', programId: POB_PROGRAM_ID },
       { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
       { name: 'blober', programId: BLOBER_PROGRAM_ID },
+      {
+        name: 'meta',
+        programId: METADATA_PROGRAM_ID,
+      },
     ],
     accounts ?? [],
   )
@@ -138,7 +147,7 @@ export async function createAccounts() {
   const raydiumConfig = await connection.getAccountInfo(RAYDIUM_CONFIG)
   addedAccounts.push({
     address: RAYDIUM_CONFIG,
-    info: raydiumConfig,
+    info: raydiumConfig as any,
   })
 
   // Add Raydium pool fee receiver account
@@ -147,7 +156,7 @@ export async function createAccounts() {
   )
   addedAccounts.push({
     address: RAYDIUM_POOL_FEE_RECEIVER,
-    info: raydiumPoolFeeReceiver,
+    info: raydiumPoolFeeReceiver as any,
   })
 
   return {
@@ -384,6 +393,8 @@ export async function setup(
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
 
+  const encryptionKey = nacl.box.keyPair().publicKey
+
   // Create PSK method parameters
   const params = createPSKMethodParams({
     ssid: 'DawnTestNetwork',
@@ -395,6 +406,8 @@ export async function setup(
   const [pskAuthMethodPda] = getPskAuthMethodPda(
     program,
     serviceProvider.publicKey,
+    devicePda,
+    encryptionKey,
     parametersBuffer,
   )
   const planAuthMethods = [pskAuthMethodPda]

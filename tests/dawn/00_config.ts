@@ -1,10 +1,11 @@
 import { test, beforeAll } from '@jest/globals'
 import * as anchor from '@coral-xyz/anchor'
-import { BN, Program, Wallet } from '@coral-xyz/anchor'
+import { AnchorError, BN, Program, Wallet } from '@coral-xyz/anchor'
 import NodeWallet from '@coral-xyz/anchor/dist/cjs/nodewallet'
 import { assert } from 'chai'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, SendTransactionError, SystemProgram } from '@solana/web3.js'
 import { BankrunProvider } from 'anchor-bankrun'
+import { getMint, getAccount } from 'spl-token-bankrun'
 
 import { Dawn } from '../../target/types/dawn'
 import {
@@ -17,6 +18,7 @@ import {
   getIpRegistryPda,
   getEvent,
   confirmTx,
+  METADATA_PROGRAM_ID,
 } from '../../sdk/utils'
 
 interface RootIpBlockInitialized {
@@ -27,8 +29,12 @@ interface RootIpBlockInitialized {
   createdAt: number
 }
 
+const MAX_U64 = new BN(2).pow(new BN(64)).sub(new BN(1))
+// mask where the last 32 chunks are marked as full
+const CHUNKS_32_U64 = '18446744069414584320'
+
 export const configTests = () =>
-  describe('dawn::configure', () => {
+  describe('dawn::config', () => {
     let program: Program<Dawn>
     let provider: BankrunProvider
     let wallet: NodeWallet
@@ -56,64 +62,31 @@ export const configTests = () =>
       assert.exists(mock)
     })
 
-    test('configures the program', async () => {
-      const daoFee = new BN(100)
-
-      const tx = await program.methods
-        .configure(daoFee, mock.validatorFee, mock.medallionFee)
-        .accountsPartial({
-          caller: wallet.payer.publicKey,
-          config: configPda,
-          tokenConfig: mock.tokenConfigPda,
-          usdcMint: mock.usdcMint,
-          dawnMint: mock.dawnMint,
-          feePoolDawnAccount: mock.feePoolDawnAccount,
-          daoDawnAccount: mock.daoDawnAccount,
-          validatorDawnAccount: mock.validatorDawnAccount,
-          medallionDawnAccount: mock.medallionDawnAccount,
-          raydium: mock.raydium,
-          raydiumAuthority: mock.raydiumAuthority,
-          raydiumConfig: mock.raydiumConfig,
-          raydiumPool: mock.raydiumPool,
-          raydiumObservation: mock.raydiumObservation,
-        })
-        .rpc()
-
-      assert.ok(tx.length > 0)
-
-      const config = await program.account.config.fetch(configPda)
-
-      // authority
-      assert.ok(config.authority.equals(wallet.payer.publicKey))
-      assert.equal(config.bump, configBump)
-
-      // fees
-      assert.ok(config.daoFee.eq(daoFee))
-      assert.ok(config.validatorFee.eq(mock.validatorFee))
-      assert.ok(config.medallionFee.eq(mock.medallionFee))
-
-      // accounts
-      assert.ok(config.usdcMint.equals(mock.usdcMint))
-      assert.ok(config.dawnMint.equals(mock.dawnMint))
-      assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
-      assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
-      assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
-      assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
-
-      // raydium
-      assert.ok(config.raydium.equals(mock.raydium))
-      assert.ok(config.raydiumAuthority.equals(mock.raydiumAuthority))
-      assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
-      assert.ok(config.raydiumPool.equals(mock.raydiumPool))
-      assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    test('cannot reinitialize the token', async () => {
+      try {
+        await program.methods
+          .initToken()
+          .accountsPartial({
+            caller: wallet.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            dawnMint: mock.dawnMint,
+            callerDawnAccount: mock.walletDawnAccount,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        assert.fail('should not be able to reinitialize the token')
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+        const err: SendTransactionError = error
+        const msg = `Allocate: account Address { address: ${mock.tokenConfigPda.toBase58()}, base: None } already in use`
+        const alreadyInitialized = err.logs?.find((log) => log.includes(msg))
+        assert.ok(alreadyInitialized)
+      }
     })
 
-    test('can be reconfigured', async () => {
-      // small wait to ensure previous tx is processed
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
+    test('initializes config (one-time)', async () => {
       const tx = await program.methods
-        .configure(mock.daoFee, mock.validatorFee, mock.medallionFee)
+        .initializeConfig(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accountsPartial({
           caller: wallet.payer.publicKey,
           config: configPda,
@@ -161,6 +134,202 @@ export const configTests = () =>
       assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
     })
 
+    test('updates config (authority-gated)', async () => {
+      // small wait to ensure previous tx is processed
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const newDaoFee = new BN(200)
+
+      const tx = await program.methods
+        .updateConfig(
+          newDaoFee, // Update dao fee
+          null, // Keep validator fee
+          null, // Keep medallion fee
+          null, // Keep raydium
+          null, // Keep raydium authority
+          null, // Keep raydium pool
+          null, // Keep raydium config
+          null, // Keep raydium observation
+        )
+        .accountsPartial({
+          caller: wallet.payer.publicKey,
+          config: configPda,
+          tokenConfig: mock.tokenConfigPda,
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          feePoolDawnAccount: mock.feePoolDawnAccount,
+          daoDawnAccount: mock.daoDawnAccount,
+          validatorDawnAccount: mock.validatorDawnAccount,
+          medallionDawnAccount: mock.medallionDawnAccount,
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+        })
+        .rpc()
+
+      assert.ok(tx.length > 0)
+
+      let config = await program.account.config.fetch(configPda)
+
+      // authority should remain the same
+      assert.ok(config.authority.equals(wallet.payer.publicKey))
+      assert.equal(config.bump, configBump)
+
+      // fees - dao fee should be updated, others remain the same
+      assert.ok(config.daoFee.eq(newDaoFee))
+      assert.ok(config.validatorFee.eq(mock.validatorFee))
+      assert.ok(config.medallionFee.eq(mock.medallionFee))
+
+      // Update config back to original dao fee for subsequent tests
+      await program.methods
+        .updateConfig(
+          mock.daoFee, // Restore original dao fee
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        )
+        .accountsPartial({
+          caller: wallet.payer.publicKey,
+          config: configPda,
+          tokenConfig: mock.tokenConfigPda,
+          usdcMint: mock.usdcMint,
+          dawnMint: mock.dawnMint,
+          feePoolDawnAccount: mock.feePoolDawnAccount,
+          daoDawnAccount: mock.daoDawnAccount,
+          validatorDawnAccount: mock.validatorDawnAccount,
+          medallionDawnAccount: mock.medallionDawnAccount,
+          raydium: mock.raydium,
+          raydiumAuthority: mock.raydiumAuthority,
+          raydiumConfig: mock.raydiumConfig,
+          raydiumPool: mock.raydiumPool,
+          raydiumObservation: mock.raydiumObservation,
+        })
+        .rpc()
+
+      config = await program.account.config.fetch(configPda)
+
+      // Verify it's back to the original value
+      assert.ok(config.daoFee.eq(mock.daoFee))
+
+      // accounts should remain the same
+      assert.ok(config.usdcMint.equals(mock.usdcMint))
+      assert.ok(config.dawnMint.equals(mock.dawnMint))
+      assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
+      assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
+      assert.ok(config.validatorDawnAccount.equals(mock.validatorDawnAccount))
+      assert.ok(config.medallionDawnAccount.equals(mock.medallionDawnAccount))
+
+      // raydium should remain the same
+      assert.ok(config.raydium.equals(mock.raydium))
+      assert.ok(config.raydiumAuthority.equals(mock.raydiumAuthority))
+      assert.ok(config.raydiumConfig.equals(mock.raydiumConfig))
+      assert.ok(config.raydiumPool.equals(mock.raydiumPool))
+      assert.ok(config.raydiumObservation.equals(mock.raydiumObservation))
+    })
+
+    test('non-authority cannot add metadata', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      try {
+        await program.methods
+          .initMetadata()
+          .accountsPartial({
+            caller: mock.serviceProvider.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            config: configPda,
+            dawnMint: mock.dawnMint,
+            metadata: metadataPda,
+            tokenMetadataProgram: METADATA_PROGRAM_ID,
+          })
+          .signers([mock.serviceProvider])
+          .rpc()
+        assert.fail('should not be able to add metadata as non-authority')
+      } catch (error) {
+        assert.ok(error instanceof AnchorError)
+        const err: AnchorError = error
+        assert.equal(
+          err.error.errorMessage,
+          'Unauthorized: caller is not the authority',
+        )
+      }
+    })
+
+    test('should add metadata to the token', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      await program.methods
+        .initMetadata()
+        .accountsPartial({
+          caller: wallet.publicKey,
+          tokenConfig: mock.tokenConfigPda,
+          config: configPda,
+          dawnMint: mock.dawnMint,
+          metadata: metadataPda,
+          tokenMetadataProgram: METADATA_PROGRAM_ID,
+        })
+        .signers([wallet.payer])
+        .rpc()
+
+      // Verify metadata was created
+      const metadataAccount = await provider.connection.getAccountInfo(
+        metadataPda,
+      )
+      console.log({ metadataAccount })
+      assert.ok(metadataAccount, 'Metadata account should exist')
+    })
+
+    test('cannot add metadata twice', async () => {
+      // Find the metadata PDA
+      const [metadataPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          METADATA_PROGRAM_ID.toBuffer(),
+          mock.dawnMint.toBuffer(),
+        ],
+        METADATA_PROGRAM_ID,
+      )
+
+      try {
+        await program.methods
+          .initMetadata()
+          .accountsPartial({
+            caller: wallet.publicKey,
+            tokenConfig: mock.tokenConfigPda,
+            config: configPda,
+            dawnMint: mock.dawnMint,
+            metadata: metadataPda,
+            tokenMetadataProgram: METADATA_PROGRAM_ID,
+          })
+          .signers([wallet.payer])
+          .rpc()
+        assert.fail('should not be able to add metadata twice')
+      } catch (error) {
+        assert.ok(error instanceof SendTransactionError)
+      }
+    })
+
     test('initializes loopback root IP block', async () => {
       // small wait to ensure previous tx is processed
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -200,10 +369,10 @@ export const configTests = () =>
       assert.equal(loopbackRoot.baseIpv4, 0x64400000) // 100.64.0.0
       assert.equal(loopbackRoot.baseCidr, 11)
       assert.equal(loopbackRoot.blockCidr, 22)
-      assert.ok(loopbackRoot.rootChunks.length === 64) // 2048 blocks / 64 = 32 chunks
+      assert.ok(loopbackRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
 
       // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(loopbackRoot.rootSummary64.toString(), '0')
+      assert.equal(loopbackRoot.rootSummary64.toString(), CHUNKS_32_U64)
 
       // Verify all chunks are initially empty
       loopbackRoot.rootChunks.forEach((chunk) =>
@@ -303,7 +472,7 @@ export const configTests = () =>
       assert.ok(ptpRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
 
       // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(ptpRoot.rootSummary64.toString(), '0')
+      assert.equal(ptpRoot.rootSummary64.toString(), CHUNKS_32_U64)
 
       // Verify all chunks are initially empty
       ptpRoot.rootChunks.forEach((chunk) => assert.equal(chunk.toString(), '0'))

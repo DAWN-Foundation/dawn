@@ -1,5 +1,6 @@
 import { PublicKey, Keypair } from '@solana/web3.js'
 import { Program } from '@coral-xyz/anchor'
+import { createHash } from 'crypto'
 
 import { DeviceType, deviceTypeSeed, MacAddress } from '../utils/helpers'
 import { Dawn } from '../../target/types/dawn'
@@ -16,8 +17,8 @@ export function getDeviceModelPda(
       deviceType instanceof Array
         ? Buffer.from(deviceType)
         : deviceTypeSeed(deviceType),
-      Buffer.from(manufacturer),
-      Buffer.from(model.slice(0, 32)),
+      hashStringSeed(manufacturer),
+      hashStringSeed(model),
     ],
     program.programId,
   )
@@ -25,19 +26,28 @@ export function getDeviceModelPda(
   return deviceModelPda
 }
 
+/**
+ * Hash a string seed (trimmed) to match Rust hash_string_seed function
+ */
+function hashStringSeed(input: string): Buffer {
+  const trimmed = input.trim()
+  return Buffer.from(createHash('sha256').update(trimmed).digest())
+}
+
 export function getDevicePda(
   program: Program<Dawn>,
-  owner: Keypair,
+  owner: Keypair | PublicKey,
   model: PublicKey,
   name: string,
   macAddress: MacAddress,
 ): PublicKey {
+  const ownerPubkey = owner instanceof PublicKey ? owner : owner.publicKey
   const [devicePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('device'),
-      Buffer.from(owner.publicKey.toBytes()),
+      Buffer.from(ownerPubkey.toBytes()),
       Buffer.from(model.toBytes()),
-      Buffer.from(name.slice(0, 32)),
+      hashStringSeed(name),
       Buffer.from(macAddress),
     ],
     program.programId,
@@ -61,13 +71,13 @@ export function getAccessDomainPda(
 export function getAccessDomainForPlanPda(
   program: Program<Dawn>,
   localDomainPda: PublicKey,
-  parentPlanPda: PublicKey,
+  planPda: PublicKey,
 ): PublicKey {
   const [accessDomainPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('access_domain'),
+      Buffer.from(planPda.toBytes()),
       Buffer.from(localDomainPda.toBytes()),
-      Buffer.from(parentPlanPda.toBytes()),
     ],
     program.programId,
   )
@@ -84,7 +94,7 @@ export function getLocalDomainPda(
     [
       Buffer.from('local_domain'),
       Buffer.from(owner.toBytes()),
-      Buffer.from(localDomainName.trim().slice(0, 32)),
+      hashStringSeed(localDomainName),
     ],
     program.programId,
   )
@@ -114,4 +124,40 @@ export function getDeviceLocationPda(
   )
 
   return deviceLocationPda
+}
+
+/**
+ * Get the PDA for a plan's distribution domain (L3 plans)
+ */
+export function getPlanDistributionDomainPda(
+  program: Program<Dawn>,
+  planPda: PublicKey,
+  localDomainPda: PublicKey,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('distribution_domain'),
+      planPda.toBuffer(),
+      localDomainPda.toBuffer(),
+    ],
+    program.programId,
+  )
+}
+
+/**
+ * Get the PDA for a plan's access domain (L2 plans)
+ */
+export function getPlanAccessDomainPda(
+  program: Program<Dawn>,
+  planPda: PublicKey,
+  localDomainPda: PublicKey,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('access_domain'),
+      planPda.toBuffer(),
+      localDomainPda.toBuffer(),
+    ],
+    program.programId,
+  )
 }

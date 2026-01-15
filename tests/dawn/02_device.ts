@@ -18,6 +18,14 @@ import {
   getLocalDomainPda,
   getIpLeasePda,
   IpV4Bytes,
+  MacAddress,
+  addDeviceTx,
+  addDeviceRpc,
+  addDeviceModelRpc,
+  addDeviceForTx,
+  addDeviceForRpc,
+  verifyDeviceLocationTx,
+  verifyDeviceLocationRpc,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -94,25 +102,22 @@ export const deviceTests = () =>
       const invalidModel = Keypair.generate()
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: invalidModel.publicKey,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: invalidModel.publicKey,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -127,25 +132,22 @@ export const deviceTests = () =>
       const latitude = new BN(0.0 * COORD_DENOMINATOR)
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            latitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -158,25 +160,22 @@ export const deviceTests = () =>
       const longitude = new BN(0.0 * COORD_DENOMINATOR)
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            longitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -197,25 +196,22 @@ export const deviceTests = () =>
       )
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            height,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -238,25 +234,22 @@ export const deviceTests = () =>
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
-        await program.methods
-          .addDevice(
-            name,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -279,25 +272,22 @@ export const deviceTests = () =>
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
       try {
-        await program.methods
-          .addDevice(
-            name,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -307,28 +297,25 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with placement.azimuth gt 360', async () => {
-      const placement = [36001, 0]
+      const placement: [number, number] = [36001, 0]
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            placement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -338,28 +325,25 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with placement.azimuth lt 0', async () => {
-      const placement = [-1, 0]
+      const placement: [number, number] = [-1, 0]
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            placement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -369,28 +353,25 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with placement.tilt gt 90', async () => {
-      const placement = [0, 9001]
+      const placement: [number, number] = [0, 9001]
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            placement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -400,28 +381,25 @@ export const deviceTests = () =>
     })
 
     test('cannot add device with placement.tilt lt -90', async () => {
-      const placement = [0, -9001]
+      const placement: [number, number] = [0, -9001]
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            placement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -431,25 +409,22 @@ export const deviceTests = () =>
     })
 
     test('adds the L3 (Router) device', async () => {
-      const tx = await program.methods
-        .addDevice(
-          mock.deviceName,
-          mock.deviceHeight,
-          mock.deviceLatitude,
-          mock.deviceLongitude,
-          mock.devicePlacement,
-          mock.deviceMacAddress,
-          mock.localDomain,
-        )
-        .accountsPartial({
+      const tx = await addDeviceTx({
+        program,
           caller: mock.serviceProvider.publicKey,
-          deviceModel: mock.deviceModelPda,
-          device: mock.devicePda,
-          deviceLocation: mock.deviceLocationPda,
-          localDomain: mock.localDomainPda,
-        })
-        .signers([mock.serviceProvider])
-        .transaction()
+        signer: mock.serviceProvider,
+        deviceModelPda: mock.deviceModelPda,
+        devicePda: mock.devicePda,
+        deviceLocationPda: mock.deviceLocationPda,
+        localDomainPda: mock.localDomainPda,
+        name: mock.deviceName,
+        height: mock.deviceHeight,
+        latitude: mock.deviceLatitude,
+        longitude: mock.deviceLongitude,
+        placement: mock.devicePlacement,
+        macAddress: mock.deviceMacAddress,
+        localDomain: mock.localDomain,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -532,16 +507,14 @@ export const deviceTests = () =>
 
     test('cannot verify device location as non-authority', async () => {
       try {
-        await program.methods
-          .verifyDeviceLocation()
-          .accountsPartial({
+        await verifyDeviceLocationRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            config: mock.configPda,
-            device: mock.devicePda,
-            deviceLocation: mock.deviceLocationPda,
+          signer: mock.serviceProvider,
+          configPda: mock.configPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
           })
-          .signers([mock.serviceProvider])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -560,16 +533,14 @@ export const deviceTests = () =>
       const wallet = loadWallet()
       provider.wallet = wallet
 
-      const tx = await program.methods
-        .verifyDeviceLocation()
-        .accountsPartial({
+      const tx = await verifyDeviceLocationTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          device: mock.devicePda,
-          deviceLocation: mock.deviceLocationPda,
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        devicePda: mock.devicePda,
+        deviceLocationPda: mock.deviceLocationPda,
         })
-        .signers([wallet.payer])
-        .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -598,25 +569,22 @@ export const deviceTests = () =>
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       try {
-        await program.methods
-          .addDevice(
-            mock.deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            mock.localDomain,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: mock.devicePda,
-            localDomain: mock.localDomainPda,
-            deviceLocation: mock.deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: mock.devicePda,
+          deviceLocationPda: mock.deviceLocationPda,
+          localDomainPda: mock.localDomainPda,
+          name: mock.deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: mock.localDomain,
+        })
 
         expect(false).toBeTruthy()
       } catch (error) {
@@ -644,15 +612,16 @@ export const deviceTests = () =>
 
       // add device model
       provider.wallet = wallet
-      await program.methods
-        .addDeviceModel(deviceType, manufacturer, model)
-        .accountsPartial({
+      await addDeviceModelRpc({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda,
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda,
+        deviceType,
+        manufacturer,
+        model,
         })
-        .signers([wallet.payer])
-        .rpc()
 
       const devicePda = getDevicePda(
         program,
@@ -672,25 +641,22 @@ export const deviceTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      const tx = await program.methods
-        .addDevice(
-          mock.deviceName,
-          mock.deviceHeight,
-          lattitude,
-          longitude,
-          mock.devicePlacement,
-          mock.deviceMacAddress,
-          mock.localDomain,
-        )
-        .accountsPartial({
+      const tx = await addDeviceTx({
+        program,
           caller: mock.serviceProvider.publicKey,
-          deviceModel: deviceModelPda,
-          device: devicePda,
-          deviceLocation: deviceLocationPda,
-          localDomain: mock.localDomainPda,
-        })
-        .signers([mock.serviceProvider])
-        .transaction()
+        signer: mock.serviceProvider,
+        deviceModelPda,
+        devicePda,
+        deviceLocationPda,
+        localDomainPda: mock.localDomainPda,
+        name: mock.deviceName,
+        height: mock.deviceHeight,
+        latitude: lattitude,
+        longitude,
+        placement: mock.devicePlacement,
+        macAddress: mock.deviceMacAddress,
+        localDomain: mock.localDomain,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -732,25 +698,22 @@ export const deviceTests = () =>
 
       const deviceLocationPda = getDeviceLocationPda(program, devicePda)
 
-      await program.methods
-        .addDevice(
-          deviceName,
-          mock.deviceHeight,
-          lattitude,
-          longitude,
-          mock.devicePlacement,
-          mock.deviceMacAddress,
-          mock.localDomain,
-        )
-        .accountsPartial({
+      await addDeviceRpc({
+        program,
           caller: mock.serviceProvider.publicKey,
-          deviceModel: deviceModelPda,
-          device: devicePda,
-          deviceLocation: deviceLocationPda,
-          localDomain: mock.localDomainPda,
+        signer: mock.serviceProvider,
+        deviceModelPda,
+        devicePda,
+        deviceLocationPda,
+        localDomainPda: mock.localDomainPda,
+        name: deviceName,
+        height: mock.deviceHeight,
+        latitude: lattitude,
+        longitude,
+        placement: mock.devicePlacement,
+        macAddress: mock.deviceMacAddress,
+        localDomain: mock.localDomain,
         })
-        .signers([mock.serviceProvider])
-        .rpc()
 
       const device = await program.account.device.fetch(devicePda)
       expect(device.localDomain.equals(mock.localDomainPda)).toBeTruthy()
@@ -785,25 +748,22 @@ export const deviceTests = () =>
       )
 
       try {
-        await program.methods
-          .addDevice(
-            deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            localDomainName,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: devicePda,
-            localDomain: localDomainPda,
-            deviceLocation: deviceLocationPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda,
+          localDomainPda,
+          name: deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: localDomainName,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -831,30 +791,328 @@ export const deviceTests = () =>
       )
 
       try {
-        await program.methods
-          .addDevice(
-            deviceName,
-            mock.deviceHeight,
-            mock.deviceLatitude,
-            mock.deviceLongitude,
-            mock.devicePlacement,
-            mock.deviceMacAddress,
-            localDomainName,
-          )
-          .accountsPartial({
+        await addDeviceRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            deviceModel: mock.deviceModelPda,
-            device: devicePda,
-            deviceLocation: deviceLocationPda,
-            localDomain: localDomainPda,
+          signer: mock.serviceProvider,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda,
+          localDomainPda,
+          name: deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: mock.deviceMacAddress,
+          localDomain: localDomainName,
           })
-          .signers([mock.serviceProvider])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
         const err: AnchorError = error
         expect(err.error.errorMessage).toBe('Local domain name is empty')
       }
+    })
+
+    describe('add_device_for', () => {
+      let beneficiary: Keypair
+
+      beforeAll(() => {
+        beneficiary = Keypair.generate()
+      })
+
+      test('caller can add device for beneficiary', async () => {
+        const caller = loadWallet().payer
+        const deviceName = 'BeneficiaryDevice'
+        const localDomainName = 'beneficiary-network'
+        const macAddress: MacAddress = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+
+        // Derive PDAs using beneficiary as owner
+        const devicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName,
+          macAddress,
+        )
+        const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        const tx = await addDeviceForTx({
+          program,
+            caller: caller.publicKey,
+          signer: caller,
+            beneficiary: beneficiary.publicKey,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda,
+          deviceLocationPda,
+          localDomainPda,
+          name: deviceName,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress,
+          localDomain: localDomainName,
+          })
+
+        const txDetails = await confirmTx(provider, tx)
+
+        // Verify DeviceAdded event has beneficiary as owner
+        const deviceEvent = await getEvent<DeviceAdded>(
+          program,
+          txDetails,
+          'deviceAdded',
+        )
+        expect(deviceEvent.device.equals(devicePda)).toBeTruthy()
+        expect(
+          deviceEvent.deviceLocation.equals(deviceLocationPda),
+        ).toBeTruthy()
+        expect(deviceEvent.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(deviceEvent.model.equals(mock.deviceModelPda)).toBeTruthy()
+        expect(deviceEvent.name).toBe(deviceName)
+
+        // Verify LocalDomainAdded event created for beneficiary
+        const localDomainEvent = await getEvent<LocalDomainAdded>(
+          program,
+          txDetails,
+          'localDomainAdded',
+        )
+        expect(localDomainEvent.localDomain.equals(localDomainPda)).toBeTruthy()
+        expect(
+          localDomainEvent.owner.equals(beneficiary.publicKey),
+        ).toBeTruthy()
+        expect(localDomainEvent.name).toBe(localDomainName)
+
+        // Verify DeviceLocationAdded event
+        const deviceLocationEvent = await getEvent<DeviceLocationAdded>(
+          program,
+          txDetails,
+          'deviceLocationAdded',
+        )
+        expect(
+          deviceLocationEvent.deviceLocation.equals(deviceLocationPda),
+        ).toBeTruthy()
+        expect(deviceLocationEvent.device.equals(devicePda)).toBeTruthy()
+
+        // Verify device account has beneficiary as owner
+        const device = await program.account.device.fetch(devicePda)
+        expect(device.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(device.model.equals(mock.deviceModelPda)).toBeTruthy()
+        expect(device.name).toBe(deviceName)
+        expect(new BN(device.createdAt).gt(new BN(0))).toBeTruthy()
+
+        // Verify device location was created
+        const deviceLocation = await program.account.deviceLocation.fetch(
+          deviceLocationPda,
+        )
+        expect(deviceLocation.device.equals(devicePda)).toBeTruthy()
+        expect(deviceLocation.latitude.toString()).toBe(
+          mock.deviceLatitude.toString(),
+        )
+        expect(deviceLocation.longitude.toString()).toBe(
+          mock.deviceLongitude.toString(),
+        )
+        expect(deviceLocation.verified).toBeFalsy()
+
+        // Verify local domain was created for beneficiary
+        const localDomain = await program.account.localDomain.fetch(
+          localDomainPda,
+        )
+        expect(localDomain.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(
+          Buffer.from(localDomain.name).toString('utf8').split('\0')[0],
+        ).toBe(localDomainName)
+      })
+
+      test('cannot add same device for beneficiary twice', async () => {
+        const caller = loadWallet().payer
+        const deviceName = 'BeneficiaryDevice'
+        const localDomainName = 'beneficiary-network'
+        const macAddress: MacAddress = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+
+        const devicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName,
+          macAddress,
+        )
+        const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        try {
+          await addDeviceForRpc({
+            program,
+              caller: caller.publicKey,
+            signer: caller,
+              beneficiary: beneficiary.publicKey,
+            deviceModelPda: mock.deviceModelPda,
+            devicePda,
+            deviceLocationPda,
+            localDomainPda,
+            name: deviceName,
+            height: mock.deviceHeight,
+            latitude: mock.deviceLatitude,
+            longitude: mock.deviceLongitude,
+            placement: mock.devicePlacement,
+            macAddress,
+            localDomain: localDomainName,
+            })
+
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with account already in use error
+          expect(error).toBeDefined()
+        }
+      })
+
+      test('caller can add multiple different devices for same beneficiary', async () => {
+        const caller = loadWallet().payer
+        const deviceName2 = 'BeneficiaryDevice2'
+        const localDomainName = 'beneficiary-network'
+        const macAddress2: MacAddress = [0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
+
+        const devicePda2 = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          deviceName2,
+          macAddress2,
+        )
+        const deviceLocationPda2 = getDeviceLocationPda(program, devicePda2)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+          localDomainName,
+        )
+
+        const tx = await addDeviceForTx({
+          program,
+            caller: caller.publicKey,
+          signer: caller,
+            beneficiary: beneficiary.publicKey,
+          deviceModelPda: mock.deviceModelPda,
+          devicePda: devicePda2,
+          deviceLocationPda: deviceLocationPda2,
+          localDomainPda,
+          name: deviceName2,
+          height: mock.deviceHeight,
+          latitude: mock.deviceLatitude,
+          longitude: mock.deviceLongitude,
+          placement: mock.devicePlacement,
+          macAddress: macAddress2,
+          localDomain: localDomainName,
+        })
+
+        await confirmTx(provider, tx)
+
+        // Verify second device was created with same beneficiary
+        const device2 = await program.account.device.fetch(devicePda2)
+        expect(device2.owner.equals(beneficiary.publicKey)).toBeTruthy()
+        expect(device2.name).toBe(deviceName2)
+
+        // Verify same local domain is reused (init_if_needed)
+        const localDomain = await program.account.localDomain.fetch(
+          localDomainPda,
+        )
+        expect(localDomain.owner.equals(beneficiary.publicKey)).toBeTruthy()
+      })
+
+      test('validates input constraints same as add_device', async () => {
+        const caller = loadWallet().payer
+        const localDomainName = 'valid-network'
+        const macAddress: MacAddress = [0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+
+        const devicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+              'TestDevice',
+              macAddress,
+        )
+        const deviceLocationPda = getDeviceLocationPda(program, devicePda)
+        const localDomainPda = getLocalDomainPda(
+          program,
+          beneficiary.publicKey,
+              localDomainName,
+            )
+
+        // Test invalid latitude (0)
+        try {
+          await addDeviceForRpc({
+            program,
+              caller: caller.publicKey,
+            signer: caller,
+              beneficiary: beneficiary.publicKey,
+            deviceModelPda: mock.deviceModelPda,
+            devicePda,
+            deviceLocationPda,
+            localDomainPda,
+            name: 'TestDevice',
+            height: mock.deviceHeight,
+            latitude: new BN(0), // Invalid latitude
+            longitude: mock.deviceLongitude,
+            placement: mock.devicePlacement,
+            macAddress,
+            localDomain: localDomainName,
+          })
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with latitude validation error
+          expect(error).toBeDefined()
+          if (error instanceof AnchorError) {
+            expect(error.error.errorMessage).toBe(
+              'Latitude coordinate is invalid',
+            )
+          }
+        }
+
+        const emptyNameDevicePda = getDevicePda(
+          program,
+          beneficiary.publicKey,
+          mock.deviceModelPda,
+          '',
+              macAddress,
+        )
+        const emptyNameDeviceLocationPda = getDeviceLocationPda(program, emptyNameDevicePda)
+
+        // Test empty device name
+        try {
+          await addDeviceForRpc({
+            program,
+              caller: caller.publicKey,
+            signer: caller,
+              beneficiary: beneficiary.publicKey,
+            deviceModelPda: mock.deviceModelPda,
+            devicePda: emptyNameDevicePda,
+            deviceLocationPda: emptyNameDeviceLocationPda,
+            localDomainPda,
+            name: '', // Empty name
+            height: mock.deviceHeight,
+            latitude: mock.deviceLatitude,
+            longitude: mock.deviceLongitude,
+            placement: mock.devicePlacement,
+            macAddress,
+            localDomain: localDomainName,
+          })
+          expect(false).toBeTruthy()
+        } catch (error) {
+          // Should fail with device name validation error
+          expect(error).toBeDefined()
+          if (error instanceof AnchorError) {
+            expect(error.error.errorMessage).toBe('Device name is empty')
+          }
+        }
+      })
     })
   })

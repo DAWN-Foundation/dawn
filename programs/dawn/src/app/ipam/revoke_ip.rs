@@ -95,8 +95,10 @@ impl DawnApp {
             });
         }
 
-        if !root_ip_block.has_free_blocks() {
-            ip_registry.update_root_availability(ip_lease.block_index, true);
+        // Only update registry if root block was previously marked as full
+        if !ip_registry.is_root_available(root_ip_block.index) {
+            // Root block was full, now has space - update registry to mark as available
+            ip_registry.update_root_availability(root_ip_block.index, true);
             emit!(RootIpBlockNonFull {
                 root_ip_block: root_ip_block.key(),
                 timestamp: current_time,

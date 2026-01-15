@@ -1,10 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
-use std::cmp::min;
+use anchor_lang::prelude::*;
 
 use crate::{
     events::AuthMethodAdded,
     state::{AuthMethod, Device},
-    utils::optional_pubkey_seed,
+    utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError, Plan,
 };
 
@@ -20,7 +19,7 @@ pub struct AddAuthMethod<'info> {
             Plan::SEED_PREFIX.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
-            &plan.name.as_bytes()[..min(plan.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&plan.name),
             &plan.price.to_le_bytes(),
             &plan.duration.to_le_bytes(),
             &plan.speed.to_le_bytes(),
@@ -39,7 +38,7 @@ pub struct AddAuthMethod<'info> {
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
             device.model.as_ref(),
-            &device.name.as_bytes()[..min(device.name.len(), MAX_SEED_LEN)],
+            &hash_string_seed(&device.name),
             &device.mac_address,
         ],
         bump = device.bump,
@@ -51,7 +50,9 @@ pub struct AddAuthMethod<'info> {
             AuthMethod::SEED_PREFIX.as_ref(),
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            &auth_method.parameters[..MAX_SEED_LEN],
+            auth_method.device.as_ref(),
+            &auth_method.encryption_key,
+            &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump
     )]
@@ -90,8 +91,8 @@ impl DawnApp {
         remaining_accounts: &[AccountInfo],
         caller: &Pubkey,
     ) -> Result<Vec<Pubkey>> {
-        // Check that we don't have more than 2 auth methods
-        require!(remaining_accounts.len() <= 2, DawnError::TooManyAuthMethods);
+        // Check that we don't have more than 3 auth methods
+        require!(remaining_accounts.len() <= 3, DawnError::TooManyAuthMethods);
 
         let mut auth_method_keys = Vec::new();
 
@@ -109,7 +110,14 @@ impl DawnApp {
 
             require!(!data.is_empty(), DawnError::InvalidAuthMethodAccount);
 
-            // // Validate account is owned by our program
+            require!(data.len() >= 8, DawnError::InvalidAuthMethodAccount);
+            let discriminator = &data[0..8];
+            require!(
+                discriminator == AuthMethod::DISCRIMINATOR,
+                DawnError::InvalidAuthMethodAccount
+            );
+
+            // Validate account is owned by our program
             require!(
                 account_info.owner == &crate::ID,
                 DawnError::InvalidAuthMethodAccount

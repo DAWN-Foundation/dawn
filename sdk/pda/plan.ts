@@ -1,7 +1,16 @@
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
+import { createHash } from 'crypto'
 
 import { Dawn } from '../../target/types/dawn'
+
+/**
+ * Hash a string seed (trimmed) to match Rust hash_string_seed function
+ */
+function hashStringSeed(input: string): Buffer {
+  const trimmed = input.trim()
+  return Buffer.from(createHash('sha256').update(trimmed).digest())
+}
 
 export function getServiceAgreementPda(
   program: Program<Dawn>,
@@ -48,7 +57,7 @@ export function getPlanPda(
       Buffer.from('plan'),
       Buffer.from(localDomainPda.toBytes()),
       parentPlanBuffer,
-      Buffer.from(name.slice(0, 32)),
+      hashStringSeed(name),
       Buffer.from(price.toArray('le', 8)),
       durationBuffer,
       speedBuffer,

@@ -1,9 +1,10 @@
-use anchor_lang::{prelude::*, solana_program::pubkey::MAX_SEED_LEN};
+use anchor_lang::prelude::*;
 
 use crate::{
     app::DawnApp,
     events::ConnectionRevoked,
     state::{AuthMethod, Connection},
+    utils::hash_parameters,
 };
 
 /// Context for revoking connection credentials
@@ -20,7 +21,9 @@ pub struct RevokeConnection<'info> {
             AuthMethod::SEED_PREFIX.as_ref(),
             auth_method.authority.as_ref(),
             &auth_method.method_type.as_seed(),
-            &auth_method.parameters[..MAX_SEED_LEN]
+            auth_method.device.as_ref(),
+            &auth_method.encryption_key,
+            &hash_parameters(&auth_method.parameters),
         ],
         bump = auth_method.bump,
     )]
@@ -30,7 +33,7 @@ pub struct RevokeConnection<'info> {
         mut,
         constraint = connection.auth_method == auth_method.key(),
         seeds = [
-            Connection::SEED_PREFIX.as_ref(),
+            Connection::SEED_PREFIX,
             connection.auth_method.as_ref(),
             connection.entity_a.as_ref(),
             connection.entity_b.as_ref(),

@@ -10,7 +10,7 @@ skip-lint = false
 dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
 
 [programs.devnet]
-dawn = "dawnUXwNb5Dp6mv7KdkwzCo28rNr7ATrb93nV2WjczQ"
+dawn = "dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP"
 pob = "PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N"
 
 [registry]

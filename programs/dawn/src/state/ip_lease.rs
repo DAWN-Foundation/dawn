@@ -40,8 +40,8 @@ impl IpLease {
         block_index: u32,
         unit_index: u32,
         bump: u8,
-    ) {
-        self.created_at = Clock::get().unwrap().unix_timestamp;
+    ) -> Result<()> {
+        self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
         self.device = device;
         self.ipv4 = ipv4;
@@ -49,5 +49,6 @@ impl IpLease {
         self.block_index = block_index;
         self.unit_index = unit_index;
         self.bump = bump;
+        Ok(())
     }
 }

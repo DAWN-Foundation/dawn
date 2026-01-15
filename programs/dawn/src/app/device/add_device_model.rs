@@ -1,10 +1,9 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey::MAX_SEED_LEN;
-use std::cmp::min;
 
 use crate::{
     constants::{MAX_DEVICE_MANUFACTURER_LEN, MAX_DEVICE_MODEL_LEN},
     state::{DeviceModel, DeviceType},
+    utils::hash_string_seed,
     Config, DawnApp, DawnError, DeviceModelAdded,
 };
 
@@ -26,8 +25,8 @@ pub struct AddDeviceModel<'info> {
         seeds = [
             DeviceModel::SEED_PREFIX.as_ref(),
             device_type.to_seed(),
-            &manufacturer.trim().as_bytes()[..min(manufacturer.trim().len(), MAX_SEED_LEN)],
-            &model.trim().as_bytes()[..min(model.trim().len(), MAX_SEED_LEN)],
+            &hash_string_seed(&manufacturer.trim()),
+            &hash_string_seed(&model.trim()),
         ],
         bump
     )]
@@ -45,36 +44,37 @@ impl DawnApp {
     ) -> Result<()> {
         let device_model = &mut ctx.accounts.device_model;
 
+        let trimmed_manufacturer = manufacturer.trim();
+        let trimmed_model = model.trim();
+
         // Make sure the manufacturer and model are not empty
         require!(
-            !manufacturer.trim().is_empty(),
+            !trimmed_manufacturer.is_empty(),
             DawnError::EmptyDeviceManufacturer
         );
-        require!(!model.trim().is_empty(), DawnError::EmptyDeviceModel);
+        require!(!trimmed_model.is_empty(), DawnError::EmptyDeviceModel);
 
         // Make sure the name and address are not exceeding the max length
         require!(
-            manufacturer.len() <= MAX_DEVICE_MANUFACTURER_LEN,
+            trimmed_manufacturer.len() <= MAX_DEVICE_MANUFACTURER_LEN,
             DawnError::DeviceManufacturerTooLong
         );
         require!(
-            model.len() <= MAX_DEVICE_MODEL_LEN,
+            trimmed_model.len() <= MAX_DEVICE_MODEL_LEN,
             DawnError::DeviceModelTooLong
         );
 
         device_model.created_at = Clock::get()?.unix_timestamp;
         device_model.device_type = device_type.clone();
-        manufacturer
-            .trim()
-            .clone_into(&mut device_model.manufacturer);
-        model.trim().clone_into(&mut device_model.model);
+        trimmed_manufacturer.clone_into(&mut device_model.manufacturer);
+        trimmed_model.clone_into(&mut device_model.model);
         device_model.bump = ctx.bumps.device_model;
 
         emit!(DeviceModelAdded {
             device_model: device_model.key(),
             device_type,
-            manufacturer: manufacturer.trim().to_owned(),
-            model: model.trim().to_owned(),
+            manufacturer: trimmed_manufacturer.to_owned(),
+            model: trimmed_model.to_owned(),
             created_at: device_model.created_at,
         });
 

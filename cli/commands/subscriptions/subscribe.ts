@@ -6,7 +6,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import { getSubscriptionPda } from '../../../sdk/utils'
+import { getSubscriptionPda, calculateSwapBounds } from '../../../sdk/utils'
 
 async function main() {
   const plan = getFlag('--plan')
@@ -64,8 +64,35 @@ async function main() {
       false,
     )
 
+  // Fetch plan data
+  const planData = await program.account.plan.fetch(planPda)
+
+  // Get slippage from CLI flag (default 1%)
+  const slippageBps = getFlag('--slippage')
+    ? parseInt(getFlag('--slippage')!)
+    : 100
+
+  // Calculate minimum DAWN output with MEV protection for FULL plan.price
+  // The program will scale this down proportionally for the actual swap amount
+  const { minDawnOut, deadline } = await calculateSwapBounds(
+    connection,
+    mock.raydiumPool,
+    mock.raydiumConfig,
+    mock.raydiumDawnVault,
+    mock.raydiumUsdcVault,
+    planData.price, // Use full plan price for minDawnOut calculation
+    slippageBps,
+  )
+
+  console.log('Subscribe parameters:', {
+    planPrice: planData.price.toString(),
+    minDawnOut: minDawnOut.toString(),
+    slippageBps: slippageBps,
+    deadline: new Date(deadline.toNumber() * 1000).toISOString(),
+  })
+
   const itx = await program.methods
-    .subscribe()
+    .subscribe(minDawnOut, deadline)
     .accountsPartial({
       caller: wallet.publicKey,
       config: mock.configPda,

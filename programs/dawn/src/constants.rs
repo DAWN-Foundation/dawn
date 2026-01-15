@@ -22,18 +22,16 @@ pub const CHUNKS_PER_BLOCK_32: usize = 16;
 /// Chunks per IP Block for /31 tier (512 bits / 64 = 8 chunks)
 pub const CHUNKS_PER_BLOCK_31: usize = 8;
 
-/// Root chunks per IP Block for /32 tiers (1024 bits / 64 = 16 chunks)
-pub const ROOT_CHUNKS_PER_BLOCK_32: usize = 64;
-
-/// Root chunks per IP Block for /31 tier (512 bits / 64 = 8 chunks)
-pub const ROOT_CHUNKS_PER_BLOCK_31: usize = 32;
-
-/// Maximum IP Blocks for Subscriber tier (/10 -> /22 = 4096 blocks)
-pub const MAX_BLOCKS_SUBSCRIBER: u16 = 4096;
-
-/// Maximum IP Blocks for Loopback/PtP tiers (/11 -> /22 = 2048 blocks)
-pub const MAX_BLOCKS_LOOPBACK_PTP: u16 = 2048;
-
-pub const MAX_ROOT_BLOCKS: u32 = 64;
+/// Maximum root blocks per tier (flexible base_ipv4/base_cidr design)
+/// Note: IpRegistry bitmap only tracks first 64 for availability
+pub const MAX_ROOT_BLOCKS: u32 = 256;
 
 pub const DISCRIMINATOR_SIZE: usize = 8;
+
+/// Maximum deadline offset from current time (1 hour in seconds)
+/// This prevents transactions from being valid too far in the future
+pub const MAX_DEADLINE_OFFSET_SECONDS: i64 = 3600;
+
+/// Maximum slippage tolerance for min_dawn_out validation (500 bps = 5%)
+/// Users can specify 0% to 5% slippage (min_dawn_out between 95% and 100% of expected output)
+pub const MAX_SLIPPAGE_TOLERANCE_BPS: u64 = 500;
