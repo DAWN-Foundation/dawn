@@ -16,6 +16,8 @@ import {
   confirmTx,
   getPlanPda,
   getSubscriptionPda,
+  claimTx,
+  claimRpc,
 } from '../../sdk/utils'
 import { BankrunProvider } from 'anchor-bankrun'
 import { Clock } from 'solana-bankrun'
@@ -163,11 +165,31 @@ export const claimTests = () =>
       try {
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .claim(minDawnOut, deadline)
-          .accounts(accounts)
-          .signers([mock.serviceProvider])
-          .rpc()
+        await claimRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.serviceProvider,
+          config: accounts.config,
+          plan: accounts.plan,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
 
         expect(false).toBeTruthy()
       } catch (error) {
@@ -217,15 +239,31 @@ export const claimTests = () =>
       try {
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .claim(minDawnOut, deadline)
-          .accountsPartial({
-            ...accounts,
-            plan: badPlanPda,
-            subscription: badSubscriptionPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+        await claimRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.serviceProvider,
+          config: accounts.config,
+          plan: badPlanPda,
+          subscription: badSubscriptionPda,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -260,11 +298,31 @@ export const claimTests = () =>
       try {
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .claim(minDawnOut, deadline)
-          .accounts({ ...accounts, caller: mock.customer.publicKey })
-          .signers([mock.customer])
-          .rpc()
+        await claimRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: mock.customer.publicKey,
+          signer: mock.customer,
+          config: accounts.config,
+          plan: accounts.plan,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -324,11 +382,31 @@ export const claimTests = () =>
       const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .claim(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.serviceProvider])
-        .transaction()
+      const tx = await claimTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.serviceProvider,
+        config: accounts.config,
+        plan: accounts.plan,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       provider.wallet = new Wallet(mock.serviceProvider)
 
@@ -411,11 +489,31 @@ export const claimTests = () =>
       try {
         const deadline = await getDeadline(provider)
 
-        await program.methods
-          .claim(minDawnOut, deadline)
-          .accounts(accounts)
-          .signers([mock.serviceProvider])
-          .rpc()
+        await claimRpc({
+          program,
+          minDawnOut,
+          deadline,
+          caller: accounts.caller,
+          signer: mock.serviceProvider,
+          config: accounts.config,
+          plan: accounts.plan,
+          subscription: accounts.subscription,
+          usdcMint: accounts.usdcMint,
+          dawnMint: accounts.dawnMint,
+          raydium: accounts.raydium,
+          raydiumAuthority: accounts.raydiumAuthority,
+          raydiumConfig: accounts.raydiumConfig,
+          raydiumPool: accounts.raydiumPool,
+          raydiumObservation: accounts.raydiumObservation,
+          raydiumDawnVault: accounts.raydiumDawnVault,
+          raydiumUsdcVault: accounts.raydiumUsdcVault,
+          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowDawnVault: accounts.escrowDawnVault,
+          serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+          tokenProgram: accounts.tokenProgram,
+          associatedTokenProgram: accounts.associatedTokenProgram,
+          systemProgram: accounts.systemProgram,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         assert.ok(error instanceof AnchorError)
@@ -476,11 +574,31 @@ export const claimTests = () =>
       const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .claim(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.serviceProvider])
-        .transaction()
+      const tx = await claimTx({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.serviceProvider,
+        config: accounts.config,
+        plan: accounts.plan,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -591,11 +709,31 @@ export const claimTests = () =>
       const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
-      const tx = await program.methods
-        .claim(minDawnOut, deadline)
-        .accounts(accounts)
-        .signers([mock.serviceProvider])
-        .rpc()
+      await claimRpc({
+        program,
+        minDawnOut,
+        deadline,
+        caller: accounts.caller,
+        signer: mock.serviceProvider,
+        config: accounts.config,
+        plan: accounts.plan,
+        subscription: accounts.subscription,
+        usdcMint: accounts.usdcMint,
+        dawnMint: accounts.dawnMint,
+        raydium: accounts.raydium,
+        raydiumAuthority: accounts.raydiumAuthority,
+        raydiumConfig: accounts.raydiumConfig,
+        raydiumPool: accounts.raydiumPool,
+        raydiumObservation: accounts.raydiumObservation,
+        raydiumDawnVault: accounts.raydiumDawnVault,
+        raydiumUsdcVault: accounts.raydiumUsdcVault,
+        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowDawnVault: accounts.escrowDawnVault,
+        serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
+        tokenProgram: accounts.tokenProgram,
+        associatedTokenProgram: accounts.associatedTokenProgram,
+        systemProgram: accounts.systemProgram,
+      })
 
       // make sure the escrow USDC vault was debited by the daily USDC amount
       const escrowUsdcBalanceAfter = await getBalance(

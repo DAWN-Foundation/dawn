@@ -15,6 +15,8 @@ import {
   loadWallet,
   DeviceType,
   getDeviceModelPda,
+  addDeviceModelTx,
+  addDeviceModelRpc,
 } from '../../sdk/utils'
 import { beforeAll, expect } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -57,19 +59,16 @@ export const deviceModelTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
 
       try {
-        await program.methods
-          .addDeviceModel(
-            mock.deviceType,
-            mock.deviceManufacturer,
-            mock.deviceModel,
-          )
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: mock.serviceProvider.publicKey,
-            config: mock.configPda,
-            deviceModel: mock.deviceModelPda,
-          })
-          .signers([mock.serviceProvider])
-          .rpc()
+          signer: mock.serviceProvider,
+          configPda: mock.configPda,
+          deviceModelPda: mock.deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer: mock.deviceManufacturer,
+          model: mock.deviceModel,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -97,19 +96,16 @@ export const deviceModelTests = () =>
       )
 
       try {
-        await program.methods
-          .addDeviceModel(
-            deviceType as any,
-            mock.deviceManufacturer,
-            mock.deviceModel,
-          )
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: deviceModelPda,
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda,
+          deviceType: deviceType as any,
+          manufacturer: mock.deviceManufacturer,
+          model: mock.deviceModel,
           })
-          .signers([wallet.payer])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof Error).toBeTruthy()
@@ -122,15 +118,16 @@ export const deviceModelTests = () =>
       const deviceType = { wirelessRadio: {} }
 
       try {
-        await program.methods
-          .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: mock.deviceModelPda,
-          })
-          .signers([wallet.payer])
-          .rpc()
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda: mock.deviceModelPda,
+          deviceType,
+          manufacturer: mock.deviceManufacturer,
+          model: mock.deviceModel,
+        })
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -150,15 +147,16 @@ export const deviceModelTests = () =>
       )
 
       try {
-        await program.methods
-          .addDeviceModel(mock.deviceType, manufacturer, mock.deviceModel)
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: deviceModelPda,
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer,
+          model: mock.deviceModel,
           })
-          .signers([wallet.payer])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -178,15 +176,16 @@ export const deviceModelTests = () =>
       )
 
       try {
-        await program.methods
-          .addDeviceModel(mock.deviceType, mock.deviceManufacturer, model)
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: deviceModelPda,
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer: mock.deviceManufacturer,
+          model,
           })
-          .signers([wallet.payer])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -206,15 +205,16 @@ export const deviceModelTests = () =>
       )
 
       try {
-        await program.methods
-          .addDeviceModel(mock.deviceType, manufacturer, mock.deviceModel)
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: deviceModelPda,
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer,
+          model: mock.deviceModel,
           })
-          .signers([wallet.payer])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -234,15 +234,16 @@ export const deviceModelTests = () =>
       )
 
       try {
-        await program.methods
-          .addDeviceModel(mock.deviceType, mock.deviceManufacturer, model)
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: deviceModelPda,
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer: mock.deviceManufacturer,
+          model,
           })
-          .signers([wallet.payer])
-          .rpc()
         expect(false).toBeTruthy()
       } catch (error) {
         expect(error instanceof AnchorError).toBeTruthy()
@@ -252,19 +253,16 @@ export const deviceModelTests = () =>
     })
 
     test('adds the device model', async () => {
-      const tx = await program.methods
-        .addDeviceModel(
-          mock.deviceType,
-          mock.deviceManufacturer,
-          mock.deviceModel,
-        )
-        .accountsPartial({
+      const tx = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: mock.deviceModelPda,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: mock.deviceModelPda,
+        deviceType: mock.deviceType,
+        manufacturer: mock.deviceManufacturer,
+        model: mock.deviceModel,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -293,19 +291,16 @@ export const deviceModelTests = () =>
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       try {
-        await program.methods
-          .addDeviceModel(
-            mock.deviceType,
-            mock.deviceManufacturer,
-            mock.deviceModel,
-          )
-          .accountsPartial({
+        await addDeviceModelRpc({
+          program,
             caller: wallet.publicKey,
-            config: mock.configPda,
-            deviceModel: mock.deviceModelPda,
-          })
-          .signers([wallet.payer])
-          .rpc()
+          signer: wallet.payer,
+          configPda: mock.configPda,
+          deviceModelPda: mock.deviceModelPda,
+          deviceType: mock.deviceType,
+          manufacturer: mock.deviceManufacturer,
+          model: mock.deviceModel,
+        })
 
         expect(false).toBeTruthy()
       } catch (error) {
@@ -329,15 +324,16 @@ export const deviceModelTests = () =>
         mock.deviceModel,
       )
 
-      const tx = await program.methods
-        .addDeviceModel(deviceType, mock.deviceManufacturer, mock.deviceModel)
-        .accountsPartial({
+      const tx = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda,
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda,
+        deviceType,
+        manufacturer: mock.deviceManufacturer,
+        model: mock.deviceModel,
         })
-        .signers([wallet.payer])
-        .transaction()
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -386,28 +382,30 @@ export const deviceModelTests = () =>
       expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
 
       // Create first device model
-      const tx1 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer1, model)
-        .accountsPartial({
+      const tx1 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda1,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda1,
+        deviceType: mock.deviceType,
+        manufacturer: manufacturer1,
+        model,
+      })
 
       await confirmTx(provider, tx1)
 
       // Try to create second device model - should succeed (different PDA)
-      const tx2 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer2, model)
-        .accountsPartial({
+      const tx2 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda2,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda2,
+        deviceType: mock.deviceType,
+        manufacturer: manufacturer2,
+        model,
+      })
 
       await confirmTx(provider, tx2)
 
@@ -446,28 +444,30 @@ export const deviceModelTests = () =>
       expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
 
       // Create first device model
-      const tx1 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer, model1)
-        .accountsPartial({
+      const tx1 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda1,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda1,
+        deviceType: mock.deviceType,
+        manufacturer,
+        model: model1,
+      })
 
       await confirmTx(provider, tx1)
 
       // Try to create second device model - should succeed (different PDA)
-      const tx2 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer, model2)
-        .accountsPartial({
+      const tx2 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda2,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda2,
+        deviceType: mock.deviceType,
+        manufacturer,
+        model: model2,
+      })
 
       await confirmTx(provider, tx2)
 
@@ -507,19 +507,16 @@ export const deviceModelTests = () =>
       expect(deviceModelPda1.equals(deviceModelPda2)).toBeTruthy()
 
       // Create device model with whitespace
-      const tx = await program.methods
-        .addDeviceModel(
-          mock.deviceType,
-          manufacturerWithWhitespace,
-          modelWithWhitespace,
-        )
-        .accountsPartial({
+      const tx = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda1,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda1,
+        deviceType: mock.deviceType,
+        manufacturer: manufacturerWithWhitespace,
+        model: modelWithWhitespace,
+      })
 
       await confirmTx(provider, tx)
 
@@ -554,28 +551,30 @@ export const deviceModelTests = () =>
       expect(deviceModelPda1.equals(deviceModelPda2)).toBeFalsy()
 
       // Create first device model
-      const tx1 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer1, model)
-        .accountsPartial({
+      const tx1 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda1,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda1,
+        deviceType: mock.deviceType,
+        manufacturer: manufacturer1,
+        model,
+      })
 
       await confirmTx(provider, tx1)
 
       // Try to create second device model - should succeed (different PDA)
-      const tx2 = await program.methods
-        .addDeviceModel(mock.deviceType, manufacturer2, model)
-        .accountsPartial({
+      const tx2 = await addDeviceModelTx({
+        program,
           caller: wallet.publicKey,
-          config: mock.configPda,
-          deviceModel: deviceModelPda2,
-        })
-        .signers([wallet.payer])
-        .transaction()
+        signer: wallet.payer,
+        configPda: mock.configPda,
+        deviceModelPda: deviceModelPda2,
+        deviceType: mock.deviceType,
+        manufacturer: manufacturer2,
+        model,
+      })
 
       await confirmTx(provider, tx2)
 

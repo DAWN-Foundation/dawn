@@ -29,6 +29,18 @@ import {
   deserializeIPsecAHCredential,
   getEvent,
   confirmTx,
+  registerAuthMethodTx,
+  registerAuthMethodRpc,
+  addAuthMethodToPlanRpc,
+  registerCredentialTx,
+  registerCredentialRpc,
+  revokeCredentialTx,
+  revokeCredentialRpc,
+  registerConnectionTx,
+  registerConnectionRpc,
+  revokeConnectionTx,
+  revokeConnectionRpc,
+  addDeviceRpc,
 } from '../../sdk/utils'
 import { getDevicePda, getDeviceLocationPda } from '../../sdk/pda/device'
 import { BankrunProvider } from 'anchor-bankrun'
@@ -157,21 +169,17 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      // This cast is needed to ensure compatibility with the exact type expected by Anchor
-      const tx = await program.methods
-        .registerAuthMethod(
-          authMethodType as any,
-          Array.from(encryptionKey),
-          paramsArray,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: authMethodPda,
-          device: mock.devicePda,
-        })
-        .signers([mock.serviceProvider])
-        .transaction()
+      const tx = await registerAuthMethodTx({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        configPda: mock.configPda,
+        authMethodPda,
+        devicePda: mock.devicePda,
+        authMethodType,
+        encryptionKey,
+        parameters: paramsBuffer,
+      })
 
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
@@ -275,25 +283,22 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      await program.methods
-        .addDevice(
-          device2Name,
-          mock.deviceHeight,
-          mock.deviceLatitude,
-          mock.deviceLongitude,
-          mock.devicePlacement,
-          device2MacAddress,
-          mock.localDomain,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          deviceModel: mock.deviceModelPda,
-          device: device2Pda,
-          localDomain: mock.localDomainPda,
-          deviceLocation: device2LocationPda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
+      await addDeviceRpc({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        deviceModelPda: mock.deviceModelPda,
+        devicePda: device2Pda,
+        deviceLocationPda: device2LocationPda,
+        localDomainPda: mock.localDomainPda,
+        name: device2Name,
+        height: mock.deviceHeight,
+        latitude: mock.deviceLatitude,
+        longitude: mock.deviceLongitude,
+        placement: mock.devicePlacement,
+        macAddress: device2MacAddress,
+        localDomain: mock.localDomain,
+      })
 
       // Generate encryption keys for both auth methods
       const encryptionKey1 = nacl.box.keyPair().publicKey
@@ -324,36 +329,30 @@ export const amfTests = () =>
       expect(authMethod1Pda.equals(authMethod2Pda)).toBe(false)
 
       // Register auth method for device 1
-      await program.methods
-        .registerAuthMethod(
-          authMethodType as any,
-          Array.from(encryptionKey1),
-          paramsArray,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: authMethod1Pda,
-          device: device1Pda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
+      await registerAuthMethodRpc({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        configPda: mock.configPda,
+        authMethodPda: authMethod1Pda,
+        devicePda: device1Pda,
+        authMethodType,
+        encryptionKey: encryptionKey1,
+        parameters: paramsBuffer,
+      })
 
       // Register auth method for device 2 with SAME parameters
-      await program.methods
-        .registerAuthMethod(
-          authMethodType as any,
-          Array.from(encryptionKey2),
-          paramsArray,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: authMethod2Pda,
-          device: device2Pda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
+      await registerAuthMethodRpc({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        configPda: mock.configPda,
+        authMethodPda: authMethod2Pda,
+        devicePda: device2Pda,
+        authMethodType,
+        encryptionKey: encryptionKey2,
+        parameters: paramsBuffer,
+      })
 
       provider.wallet = providerWallet
 
@@ -373,16 +372,14 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      await program.methods
-        .addAuthMethod()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          plan: mock.planPda,
-          authMethod: authMethodPda,
-          device: mock.devicePda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
+      await addAuthMethodToPlanRpc({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        planPda: mock.planPda,
+        authMethodPda,
+        devicePda: mock.devicePda,
+      })
 
       provider.wallet = providerWallet
 
@@ -419,17 +416,16 @@ export const amfTests = () =>
 
       try {
         // This should fail because unauthorizedKeypair doesn't have a subscription
-        await program.methods
-          .registerCredential(credentialData)
-          .accountsPartial({
-            caller: unauthorizedKeypair.publicKey,
-            authMethod: authMethodPda,
-            plan: mock.planPda,
-            subscription: mock.subscriptionPda, // This subscription doesn't belong to unauthorizedKeypair
-            credential: credentialPda,
-          })
-          .signers([unauthorizedKeypair])
-          .rpc()
+        await registerCredentialRpc({
+          program,
+          caller: unauthorizedKeypair.publicKey,
+          signer: unauthorizedKeypair,
+          authMethodPda,
+          planPda: mock.planPda,
+          subscriptionPda: mock.subscriptionPda, // This subscription doesn't belong to unauthorizedKeypair
+          credentialPda,
+          credentialData,
+        })
 
         // Should not reach here
         expect(false).toBe(true)
@@ -468,17 +464,16 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.customer) // Use customer who has a subscription
 
-      const tx = await program.methods
-        .registerCredential(credentialData)
-        .accountsPartial({
-          caller: mock.customer.publicKey,
-          authMethod: authMethodPda,
-          plan: mock.planPda,
-          subscription: mock.subscriptionPda,
-          credential: credentialPda,
-        })
-        .signers([mock.customer])
-        .transaction()
+      const tx = await registerCredentialTx({
+        program,
+        caller: mock.customer.publicKey,
+        signer: mock.customer,
+        authMethodPda,
+        planPda: mock.planPda,
+        subscriptionPda: mock.subscriptionPda,
+        credentialPda,
+        credentialData,
+      })
 
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
@@ -518,15 +513,15 @@ export const amfTests = () =>
       })
 
       try {
-        await program.methods
-          .revokeCredential()
-          .accountsPartial({
-            caller: unauthorizedKeypair.publicKey,
-            authMethod: authMethodPda,
-            credential: credentialPda,
-          })
-          .signers([unauthorizedKeypair])
-          .rpc()
+        await revokeCredentialRpc({
+          program,
+          caller: unauthorizedKeypair.publicKey,
+          signer: unauthorizedKeypair,
+          subscriptionPda: mock.subscriptionPda,
+          planPda: mock.planPda,
+          authMethodPda,
+          credentialPda,
+        })
 
         // Should not reach here
         expect(false).toBe(true)
@@ -551,17 +546,15 @@ export const amfTests = () =>
 
       // Revoke the credential
       provider.wallet = new Wallet(mock.customer)
-      const tx = await program.methods
-        .revokeCredential()
-        .accountsPartial({
-          caller: mock.customer.publicKey,
-          subscription: mock.subscriptionPda,
-          plan: mock.planPda,
-          authMethod: authMethodPda,
-          credential: credentialPda,
-        })
-        .signers([mock.customer])
-        .transaction()
+      const tx = await revokeCredentialTx({
+        program,
+        caller: mock.customer.publicKey,
+        signer: mock.customer,
+        subscriptionPda: mock.subscriptionPda,
+        planPda: mock.planPda,
+        authMethodPda,
+        credentialPda,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 
@@ -571,7 +564,9 @@ export const amfTests = () =>
         'credentialRevoked',
       )
       expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
-      expect(credentialEvent.subscription.equals(mock.subscriptionPda)).toBeTruthy()
+      expect(
+        credentialEvent.subscription.equals(mock.subscriptionPda),
+      ).toBeTruthy()
       expect(credentialEvent.plan.equals(mock.planPda)).toBeTruthy()
       expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
 
@@ -638,21 +633,17 @@ export const amfTests = () =>
         paramsBuffer,
       )
 
-      // This cast is needed to ensure compatibility with the exact type expected by Anchor
-      await program.methods
-        .registerAuthMethod(
-          authMethodType as any,
-          Array.from(encryptionKey),
-          paramsArray,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          config: mock.configPda,
-          authMethod: ipsecAuthMethodPda,
-          device: mock.devicePda,
-        })
-        .signers([mock.serviceProvider])
-        .rpc()
+      await registerAuthMethodRpc({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        configPda: mock.configPda,
+        authMethodPda: ipsecAuthMethodPda,
+        devicePda: mock.devicePda,
+        authMethodType,
+        encryptionKey,
+        parameters: paramsBuffer,
+      })
 
       // make sure the account was created
       const authMethod = await program.account.authMethod.fetch(
@@ -696,21 +687,18 @@ export const amfTests = () =>
       const providerWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      const tx = await program.methods
-        .registerConnection(
-          entityAKeypair.publicKey,
-          entityBKeypair.publicKey,
-          credentialDataA,
-          credentialDataB,
-        )
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          authMethod: ipsecAuthMethodPda,
-          connection: connectionPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([mock.serviceProvider])
-        .transaction()
+      const tx = await registerConnectionTx({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        authMethodPda: ipsecAuthMethodPda,
+        connectionPda,
+        entityA: entityAKeypair.publicKey,
+        entityB: entityBKeypair.publicKey,
+        credentialDataA,
+        credentialDataB,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
 
       const txDetails = await confirmTx(provider, tx)
       provider.wallet = providerWallet
@@ -789,15 +777,13 @@ export const amfTests = () =>
       provider.wallet = new Wallet(mock.serviceProvider)
 
       // Revoke the connection
-      const tx = await program.methods
-        .revokeConnection()
-        .accountsPartial({
-          caller: mock.serviceProvider.publicKey,
-          authMethod: ipsecAuthMethodPda,
-          connection: connectionPda,
-        })
-        .signers([mock.serviceProvider])
-        .transaction()
+      const tx = await revokeConnectionTx({
+        program,
+        caller: mock.serviceProvider.publicKey,
+        signer: mock.serviceProvider,
+        authMethodPda: ipsecAuthMethodPda,
+        connectionPda,
+      })
 
       const txDetails = await confirmTx(provider, tx)
 

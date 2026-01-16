@@ -181,3 +181,2172 @@ export async function findAvailableRootBlock(
 
   return null // No available roots found
 }
+
+/**
+ * Parameters for adding a device model
+ */
+export interface AddDeviceModelParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  configPda: PublicKey
+  deviceModelPda: PublicKey
+  deviceType: DeviceType
+  manufacturer: string
+  model: string
+}
+
+/**
+ * Add a device model to the program
+ * Returns the transaction for signing/confirmation
+ */
+export async function addDeviceModelTx(
+  params: AddDeviceModelParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    deviceModelPda,
+    deviceType,
+    manufacturer,
+    model,
+  } = params
+
+  return program.methods
+    .addDeviceModel(deviceType, manufacturer, model)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      deviceModel: deviceModelPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add a device model and send via RPC (for error testing)
+ */
+export async function addDeviceModelRpc(
+  params: AddDeviceModelParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    deviceModelPda,
+    deviceType,
+    manufacturer,
+    model,
+  } = params
+
+  return program.methods
+    .addDeviceModel(deviceType, manufacturer, model)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      deviceModel: deviceModelPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding a device
+ */
+export interface AddDeviceParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  deviceModelPda: PublicKey
+  devicePda: PublicKey
+  deviceLocationPda: PublicKey
+  localDomainPda: PublicKey
+  name: string
+  height: number
+  latitude: BN
+  longitude: BN
+  placement: [number, number] | number[]
+  macAddress: MacAddress
+  localDomain: string
+}
+
+/**
+ * Add a device to the program
+ * Returns the transaction for signing/confirmation
+ */
+export async function addDeviceTx(
+  params: AddDeviceParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    deviceModelPda,
+    devicePda,
+    deviceLocationPda,
+    localDomainPda,
+    name,
+    height,
+    latitude,
+    longitude,
+    placement,
+    macAddress,
+    localDomain,
+  } = params
+
+  return program.methods
+    .addDevice(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
+    .accountsPartial({
+      caller,
+      deviceModel: deviceModelPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+      localDomain: localDomainPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add a device and send via RPC (for error testing)
+ */
+export async function addDeviceRpc(params: AddDeviceParams): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    deviceModelPda,
+    devicePda,
+    deviceLocationPda,
+    localDomainPda,
+    name,
+    height,
+    latitude,
+    longitude,
+    placement,
+    macAddress,
+    localDomain,
+  } = params
+
+  return program.methods
+    .addDevice(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
+    .accountsPartial({
+      caller,
+      deviceModel: deviceModelPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+      localDomain: localDomainPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding a device for a beneficiary
+ */
+export interface AddDeviceForParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  beneficiary: PublicKey
+  deviceModelPda: PublicKey
+  devicePda: PublicKey
+  deviceLocationPda: PublicKey
+  localDomainPda: PublicKey
+  name: string
+  height: number
+  latitude: BN
+  longitude: BN
+  placement: [number, number] | number[]
+  macAddress: MacAddress
+  localDomain: string
+}
+
+/**
+ * Add a device for a beneficiary
+ * Returns the transaction for signing/confirmation
+ */
+export async function addDeviceForTx(
+  params: AddDeviceForParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    beneficiary,
+    deviceModelPda,
+    devicePda,
+    deviceLocationPda,
+    localDomainPda,
+    name,
+    height,
+    latitude,
+    longitude,
+    placement,
+    macAddress,
+    localDomain,
+  } = params
+
+  return program.methods
+    .addDeviceFor(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
+    .accountsStrict({
+      caller,
+      beneficiary,
+      deviceModel: deviceModelPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+      localDomain: localDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add a device for a beneficiary and send via RPC
+ */
+export async function addDeviceForRpc(
+  params: AddDeviceForParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    beneficiary,
+    deviceModelPda,
+    devicePda,
+    deviceLocationPda,
+    localDomainPda,
+    name,
+    height,
+    latitude,
+    longitude,
+    placement,
+    macAddress,
+    localDomain,
+  } = params
+
+  return program.methods
+    .addDeviceFor(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
+    .accountsStrict({
+      caller,
+      beneficiary,
+      deviceModel: deviceModelPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+      localDomain: localDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for verifying device location
+ */
+export interface VerifyDeviceLocationParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  configPda: PublicKey
+  devicePda: PublicKey
+  deviceLocationPda: PublicKey
+}
+
+/**
+ * Verify a device location
+ * Returns the transaction for signing/confirmation
+ */
+export async function verifyDeviceLocationTx(
+  params: VerifyDeviceLocationParams,
+): Promise<anchor.web3.Transaction> {
+  const { program, caller, signer, configPda, devicePda, deviceLocationPda } =
+    params
+
+  return program.methods
+    .verifyDeviceLocation()
+    .accountsPartial({
+      caller,
+      config: configPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Verify a device location and send via RPC
+ */
+export async function verifyDeviceLocationRpc(
+  params: VerifyDeviceLocationParams,
+): Promise<string> {
+  const { program, caller, signer, configPda, devicePda, deviceLocationPda } =
+    params
+
+  return program.methods
+    .verifyDeviceLocation()
+    .accountsPartial({
+      caller,
+      config: configPda,
+      device: devicePda,
+      deviceLocation: deviceLocationPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding a service agreement
+ */
+export interface AddServiceAgreementParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  configPda: PublicKey
+  serviceAgreementPda: PublicKey
+  threshold: BN
+  payoutRatio: BN
+}
+
+/**
+ * Add a service agreement
+ * Returns the transaction for signing/confirmation
+ */
+export async function addServiceAgreementTx(
+  params: AddServiceAgreementParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    serviceAgreementPda,
+    threshold,
+    payoutRatio,
+  } = params
+
+  return program.methods
+    .addServiceAgreement(threshold, payoutRatio)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      serviceAgreement: serviceAgreementPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add a service agreement and send via RPC
+ */
+export async function addServiceAgreementRpc(
+  params: AddServiceAgreementParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    serviceAgreementPda,
+    threshold,
+    payoutRatio,
+  } = params
+
+  return program.methods
+    .addServiceAgreement(threshold, payoutRatio)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      serviceAgreement: serviceAgreementPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding an L3 plan
+ */
+export interface AddL3PlanParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  localDomainPda: PublicKey
+  serviceAgreementPda: PublicKey
+  planPda: PublicKey
+  distributionDomainPda: PublicKey
+  name: string
+  price: BN
+  duration: number
+  speed: number
+  capacity: BN
+  startAt: BN | null
+  authMethods?: PublicKey[]
+}
+
+/**
+ * Add an L3 plan
+ * Returns the transaction for signing/confirmation
+ */
+export async function addL3PlanTx(
+  params: AddL3PlanParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    localDomainPda,
+    serviceAgreementPda,
+    planPda,
+    distributionDomainPda,
+    name,
+    price,
+    duration,
+    speed,
+    capacity,
+    startAt,
+    authMethods = [],
+  } = params
+
+  return program.methods
+    .addL3Plan(name, price, duration, speed, capacity, startAt)
+    .accountsStrict({
+      caller,
+      localDomain: localDomainPda,
+      serviceAgreement: serviceAgreementPda,
+      plan: planPda,
+      distributionDomain: distributionDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .remainingAccounts(
+      authMethods.map((pubkey) => ({
+        pubkey,
+        isWritable: false,
+        isSigner: false,
+      })),
+    )
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add an L3 plan and send via RPC
+ */
+export async function addL3PlanRpc(params: AddL3PlanParams): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    localDomainPda,
+    serviceAgreementPda,
+    planPda,
+    distributionDomainPda,
+    name,
+    price,
+    duration,
+    speed,
+    capacity,
+    startAt,
+    authMethods = [],
+  } = params
+
+  return program.methods
+    .addL3Plan(name, price, duration, speed, capacity, startAt)
+    .accountsStrict({
+      caller,
+      localDomain: localDomainPda,
+      serviceAgreement: serviceAgreementPda,
+      plan: planPda,
+      distributionDomain: distributionDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .remainingAccounts(
+      authMethods.map((pubkey) => ({
+        pubkey,
+        isWritable: false,
+        isSigner: false,
+      })),
+    )
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding an L2 plan
+ */
+export interface AddL2PlanParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  localDomainPda: PublicKey
+  serviceAgreementPda: PublicKey
+  parentPlanPda: PublicKey
+  planPda: PublicKey
+  accessDomainPda: PublicKey
+  name: string
+  price: BN
+  duration: number
+  speed: number
+  capacity: BN
+  startAt: BN | null
+  authMethods?: PublicKey[]
+}
+
+/**
+ * Add an L2 plan
+ * Returns the transaction for signing/confirmation
+ */
+export async function addL2PlanTx(
+  params: AddL2PlanParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    localDomainPda,
+    serviceAgreementPda,
+    parentPlanPda,
+    planPda,
+    accessDomainPda,
+    name,
+    price,
+    duration,
+    speed,
+    capacity,
+    startAt,
+    authMethods = [],
+  } = params
+
+  return program.methods
+    .addL2Plan(name, price, duration, speed, capacity, startAt)
+    .accountsStrict({
+      caller,
+      localDomain: localDomainPda,
+      serviceAgreement: serviceAgreementPda,
+      parentPlan: parentPlanPda,
+      plan: planPda,
+      accessDomain: accessDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .remainingAccounts(
+      authMethods.map((pubkey) => ({
+        pubkey,
+        isWritable: false,
+        isSigner: false,
+      })),
+    )
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add an L2 plan and send via RPC
+ */
+export async function addL2PlanRpc(params: AddL2PlanParams): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    localDomainPda,
+    serviceAgreementPda,
+    parentPlanPda,
+    planPda,
+    accessDomainPda,
+    name,
+    price,
+    duration,
+    speed,
+    capacity,
+    startAt,
+    authMethods = [],
+  } = params
+
+  return program.methods
+    .addL2Plan(name, price, duration, speed, capacity, startAt)
+    .accountsStrict({
+      caller,
+      localDomain: localDomainPda,
+      serviceAgreement: serviceAgreementPda,
+      parentPlan: parentPlanPda,
+      plan: planPda,
+      accessDomain: accessDomainPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .remainingAccounts(
+      authMethods.map((pubkey) => ({
+        pubkey,
+        isWritable: false,
+        isSigner: false,
+      })),
+    )
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for registering an auth method
+ */
+export interface RegisterAuthMethodParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  configPda: PublicKey
+  authMethodPda: PublicKey
+  devicePda: PublicKey
+  authMethodType: AuthMethodType
+  encryptionKey: Uint8Array
+  parameters: Uint8Array
+}
+
+/**
+ * Register an auth method
+ * Returns the transaction for signing/confirmation
+ */
+export async function registerAuthMethodTx(
+  params: RegisterAuthMethodParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    authMethodPda,
+    devicePda,
+    authMethodType,
+    encryptionKey,
+    parameters,
+  } = params
+
+  return program.methods
+    .registerAuthMethod(
+      authMethodType,
+      Array.from(encryptionKey),
+      Array.from(parameters),
+    )
+    .accountsPartial({
+      caller,
+      config: configPda,
+      authMethod: authMethodPda,
+      device: devicePda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Register an auth method and send via RPC
+ */
+export async function registerAuthMethodRpc(
+  params: RegisterAuthMethodParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    authMethodPda,
+    devicePda,
+    authMethodType,
+    encryptionKey,
+    parameters,
+  } = params
+
+  return program.methods
+    .registerAuthMethod(
+      authMethodType,
+      Array.from(encryptionKey),
+      Array.from(parameters),
+    )
+    .accountsPartial({
+      caller,
+      config: configPda,
+      authMethod: authMethodPda,
+      device: devicePda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for adding an auth method to a plan
+ */
+export interface AddAuthMethodToPlanParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  planPda: PublicKey
+  authMethodPda: PublicKey
+  devicePda: PublicKey
+}
+
+/**
+ * Add an auth method to a plan
+ * Returns the transaction for signing/confirmation
+ */
+export async function addAuthMethodToPlanTx(
+  params: AddAuthMethodToPlanParams,
+): Promise<anchor.web3.Transaction> {
+  const { program, caller, signer, planPda, authMethodPda, devicePda } = params
+
+  return program.methods
+    .addAuthMethod()
+    .accountsPartial({
+      caller,
+      plan: planPda,
+      authMethod: authMethodPda,
+      device: devicePda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Add an auth method to a plan and send via RPC
+ */
+export async function addAuthMethodToPlanRpc(
+  params: AddAuthMethodToPlanParams,
+): Promise<string> {
+  const { program, caller, signer, planPda, authMethodPda, devicePda } = params
+
+  return program.methods
+    .addAuthMethod()
+    .accountsPartial({
+      caller,
+      plan: planPda,
+      authMethod: authMethodPda,
+      device: devicePda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for subscribing to a plan
+ */
+export interface SubscribeParams {
+  program: Program<Dawn>
+  minDawnOut: BN
+  deadline: BN
+  caller: PublicKey
+  signer: Keypair
+  config: PublicKey
+  plan: PublicKey
+  device: PublicKey | null
+  subscription: PublicKey
+  usdcMint: PublicKey
+  dawnMint: PublicKey
+  raydium: PublicKey
+  raydiumAuthority: PublicKey
+  raydiumConfig: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
+  userUsdcAccount: PublicKey
+  userDawnAccount: PublicKey
+  feePoolDawnAccount: PublicKey
+  escrowUsdcVault: PublicKey
+  escrowDawnVault: PublicKey
+  tokenProgram: PublicKey
+  associatedTokenProgram: PublicKey
+  systemProgram: PublicKey
+}
+
+/**
+ * Subscribe to a plan
+ * Returns the transaction for signing/confirmation
+ */
+export async function subscribeTx(
+  params: SubscribeParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    device,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .subscribe(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      device,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Subscribe to a plan and send via RPC
+ */
+export async function subscribeRpc(params: SubscribeParams): Promise<string> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    device,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .subscribe(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      device,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for extending a subscription
+ */
+export interface ExtendSubscriptionParams {
+  program: Program<Dawn>
+  minDawnOut: BN
+  deadline: BN
+  caller: PublicKey
+  signer: Keypair
+  config: PublicKey
+  plan: PublicKey
+  subscription: PublicKey
+  usdcMint: PublicKey
+  dawnMint: PublicKey
+  raydium: PublicKey
+  raydiumAuthority: PublicKey
+  raydiumConfig: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
+  userUsdcAccount: PublicKey
+  userDawnAccount: PublicKey
+  feePoolDawnAccount: PublicKey
+  escrowUsdcVault: PublicKey
+  escrowDawnVault: PublicKey
+  tokenProgram: PublicKey
+  associatedTokenProgram: PublicKey
+  systemProgram: PublicKey
+}
+
+/**
+ * Extend a subscription
+ * Returns the transaction for signing/confirmation
+ */
+export async function extendSubscriptionTx(
+  params: ExtendSubscriptionParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .extendSubscription(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Extend a subscription and send via RPC
+ */
+export async function extendSubscriptionRpc(
+  params: ExtendSubscriptionParams,
+): Promise<string> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .extendSubscription(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for subscribing to a plan for a beneficiary
+ */
+export interface SubscribeForParams {
+  program: Program<Dawn>
+  minDawnOut: BN
+  deadline: BN
+  caller: PublicKey
+  signer: Keypair
+  beneficiary: PublicKey
+  config: PublicKey
+  plan: PublicKey
+  device: PublicKey | null
+  subscription: PublicKey
+  usdcMint: PublicKey
+  dawnMint: PublicKey
+  raydium: PublicKey
+  raydiumAuthority: PublicKey
+  raydiumConfig: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
+  userUsdcAccount: PublicKey
+  userDawnAccount: PublicKey
+  feePoolDawnAccount: PublicKey
+  escrowUsdcVault: PublicKey
+  escrowDawnVault: PublicKey
+  tokenProgram: PublicKey
+  associatedTokenProgram: PublicKey
+  systemProgram: PublicKey
+}
+
+/**
+ * Subscribe to a plan for a beneficiary
+ * Returns the transaction for signing/confirmation
+ */
+export async function subscribeForTx(
+  params: SubscribeForParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    beneficiary,
+    config,
+    plan,
+    device,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .subscribeFor(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      beneficiary,
+      config,
+      plan,
+      device,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Subscribe to a plan for a beneficiary and send via RPC
+ */
+export async function subscribeForRpc(
+  params: SubscribeForParams,
+): Promise<string> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    beneficiary,
+    config,
+    plan,
+    device,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .subscribeFor(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      beneficiary,
+      config,
+      plan,
+      device,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for extending a subscription for a beneficiary
+ */
+export interface ExtendSubscriptionForParams {
+  program: Program<Dawn>
+  minDawnOut: BN
+  deadline: BN
+  caller: PublicKey
+  signer: Keypair
+  beneficiary: PublicKey
+  config: PublicKey
+  plan: PublicKey
+  subscription: PublicKey
+  usdcMint: PublicKey
+  dawnMint: PublicKey
+  raydium: PublicKey
+  raydiumAuthority: PublicKey
+  raydiumConfig: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
+  userUsdcAccount: PublicKey
+  userDawnAccount: PublicKey
+  feePoolDawnAccount: PublicKey
+  escrowUsdcVault: PublicKey
+  escrowDawnVault: PublicKey
+  tokenProgram: PublicKey
+  associatedTokenProgram: PublicKey
+  systemProgram: PublicKey
+}
+
+/**
+ * Extend a subscription for a beneficiary
+ * Returns the transaction for signing/confirmation
+ */
+export async function extendSubscriptionForTx(
+  params: ExtendSubscriptionForParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    beneficiary,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .extendSubscriptionFor(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      beneficiary,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Extend a subscription for a beneficiary and send via RPC
+ */
+export async function extendSubscriptionForRpc(
+  params: ExtendSubscriptionForParams,
+): Promise<string> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    beneficiary,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    userUsdcAccount,
+    userDawnAccount,
+    feePoolDawnAccount,
+    escrowUsdcVault,
+    escrowDawnVault,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .extendSubscriptionFor(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      beneficiary,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      userUsdcAccount,
+      userDawnAccount,
+      feePoolDawnAccount,
+      escrowUsdcVault,
+      escrowDawnVault,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for claiming DAWN from a subscription
+ */
+export interface ClaimParams {
+  program: Program<Dawn>
+  minDawnOut: BN
+  deadline: BN
+  caller: PublicKey
+  signer: Keypair
+  config: PublicKey
+  plan: PublicKey
+  subscription: PublicKey
+  usdcMint: PublicKey
+  dawnMint: PublicKey
+  raydium: PublicKey
+  raydiumAuthority: PublicKey
+  raydiumConfig: PublicKey
+  raydiumPool: PublicKey
+  raydiumObservation: PublicKey
+  raydiumDawnVault: PublicKey
+  raydiumUsdcVault: PublicKey
+  escrowUsdcVault: PublicKey
+  escrowDawnVault: PublicKey
+  serviceProviderDawnAccount: PublicKey
+  tokenProgram: PublicKey
+  associatedTokenProgram: PublicKey
+  systemProgram: PublicKey
+}
+
+/**
+ * Claim DAWN from a subscription
+ * Returns the transaction for signing/confirmation
+ */
+export async function claimTx(
+  params: ClaimParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    escrowUsdcVault,
+    escrowDawnVault,
+    serviceProviderDawnAccount,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .claim(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      escrowUsdcVault,
+      escrowDawnVault,
+      serviceProviderDawnAccount,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Claim DAWN from a subscription and send via RPC
+ */
+export async function claimRpc(params: ClaimParams): Promise<string> {
+  const {
+    program,
+    minDawnOut,
+    deadline,
+    caller,
+    signer,
+    config,
+    plan,
+    subscription,
+    usdcMint,
+    dawnMint,
+    raydium,
+    raydiumAuthority,
+    raydiumConfig,
+    raydiumPool,
+    raydiumObservation,
+    raydiumDawnVault,
+    raydiumUsdcVault,
+    escrowUsdcVault,
+    escrowDawnVault,
+    serviceProviderDawnAccount,
+    tokenProgram,
+    associatedTokenProgram,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .claim(minDawnOut, deadline)
+    .accountsPartial({
+      caller,
+      config,
+      plan,
+      subscription,
+      usdcMint,
+      dawnMint,
+      raydium,
+      raydiumAuthority,
+      raydiumConfig,
+      raydiumPool,
+      raydiumObservation,
+      raydiumDawnVault,
+      raydiumUsdcVault,
+      escrowUsdcVault,
+      escrowDawnVault,
+      serviceProviderDawnAccount,
+      tokenProgram,
+      associatedTokenProgram,
+      systemProgram,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for registering a credential
+ */
+export interface RegisterCredentialParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  authMethodPda: PublicKey
+  planPda: PublicKey
+  subscriptionPda: PublicKey
+  credentialPda: PublicKey
+  credentialData: number[]
+}
+
+/**
+ * Register a credential
+ * Returns the transaction for signing/confirmation
+ */
+export async function registerCredentialTx(
+  params: RegisterCredentialParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    authMethodPda,
+    planPda,
+    subscriptionPda,
+    credentialPda,
+    credentialData,
+  } = params
+
+  return program.methods
+    .registerCredential(credentialData)
+    .accountsPartial({
+      caller,
+      authMethod: authMethodPda,
+      plan: planPda,
+      subscription: subscriptionPda,
+      credential: credentialPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Register a credential and send via RPC
+ */
+export async function registerCredentialRpc(
+  params: RegisterCredentialParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    authMethodPda,
+    planPda,
+    subscriptionPda,
+    credentialPda,
+    credentialData,
+  } = params
+
+  return program.methods
+    .registerCredential(credentialData)
+    .accountsPartial({
+      caller,
+      subscription: subscriptionPda,
+      plan: planPda,
+      authMethod: authMethodPda,
+      credential: credentialPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for revoking a credential
+ */
+export interface RevokeCredentialParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  subscriptionPda: PublicKey
+  planPda: PublicKey
+  authMethodPda: PublicKey
+  credentialPda: PublicKey
+}
+
+/**
+ * Revoke a credential
+ * Returns the transaction for signing/confirmation
+ */
+export async function revokeCredentialTx(
+  params: RevokeCredentialParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    subscriptionPda,
+    planPda,
+    authMethodPda,
+    credentialPda,
+  } = params
+
+  return program.methods
+    .revokeCredential()
+    .accountsPartial({
+      caller,
+      subscription: subscriptionPda,
+      plan: planPda,
+      authMethod: authMethodPda,
+      credential: credentialPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Revoke a credential and send via RPC
+ */
+export async function revokeCredentialRpc(
+  params: RevokeCredentialParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    subscriptionPda,
+    planPda,
+    authMethodPda,
+    credentialPda,
+  } = params
+
+  return program.methods
+    .revokeCredential()
+    .accountsPartial({
+      caller,
+      subscription: subscriptionPda,
+      plan: planPda,
+      authMethod: authMethodPda,
+      credential: credentialPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for registering a connection
+ */
+export interface RegisterConnectionParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  authMethodPda: PublicKey
+  connectionPda: PublicKey
+  entityA: PublicKey
+  entityB: PublicKey
+  credentialDataA: number[]
+  credentialDataB: number[]
+  systemProgram?: PublicKey
+}
+
+/**
+ * Register a connection
+ * Returns the transaction for signing/confirmation
+ */
+export async function registerConnectionTx(
+  params: RegisterConnectionParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    authMethodPda,
+    connectionPda,
+    entityA,
+    entityB,
+    credentialDataA,
+    credentialDataB,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .registerConnection(entityA, entityB, credentialDataA, credentialDataB)
+    .accountsPartial({
+      caller,
+      authMethod: authMethodPda,
+      connection: connectionPda,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Register a connection and send via RPC
+ */
+export async function registerConnectionRpc(
+  params: RegisterConnectionParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    authMethodPda,
+    connectionPda,
+    entityA,
+    entityB,
+    credentialDataA,
+    credentialDataB,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .registerConnection(entityA, entityB, credentialDataA, credentialDataB)
+    .accountsPartial({
+      caller,
+      authMethod: authMethodPda,
+      connection: connectionPda,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for revoking a connection
+ */
+export interface RevokeConnectionParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  authMethodPda: PublicKey
+  connectionPda: PublicKey
+}
+
+/**
+ * Revoke a connection
+ * Returns the transaction for signing/confirmation
+ */
+export async function revokeConnectionTx(
+  params: RevokeConnectionParams,
+): Promise<anchor.web3.Transaction> {
+  const { program, caller, signer, authMethodPda, connectionPda } = params
+
+  return program.methods
+    .revokeConnection()
+    .accountsPartial({
+      caller,
+      authMethod: authMethodPda,
+      connection: connectionPda,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Revoke a connection and send via RPC
+ */
+export async function revokeConnectionRpc(
+  params: RevokeConnectionParams,
+): Promise<string> {
+  const { program, caller, signer, authMethodPda, connectionPda } = params
+
+  return program.methods
+    .revokeConnection()
+    .accountsPartial({
+      caller,
+      authMethod: authMethodPda,
+      connection: connectionPda,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for leasing subscription IP
+ */
+export interface LeaseSubscriptionIpParams {
+  program: Program<Dawn>
+  caller: PublicKey
+  signer: Keypair
+  devicePda: PublicKey
+  ipRegistry: PublicKey
+  rootIpBlock: PublicKey
+  ipBlock: PublicKey
+  ipLease: PublicKey
+  subscription: PublicKey
+  systemProgram?: PublicKey
+}
+
+/**
+ * Lease subscription IP
+ * Returns the transaction for signing/confirmation
+ */
+export async function leaseSubscriptionIpTx(
+  params: LeaseSubscriptionIpParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    caller,
+    signer,
+    devicePda,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .leaseSubscriptionIp()
+    .accountsPartial({
+      caller,
+      device: devicePda,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      subscription,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Lease subscription IP and send via RPC
+ */
+export async function leaseSubscriptionIpRpc(
+  params: LeaseSubscriptionIpParams,
+): Promise<string> {
+  const {
+    program,
+    caller,
+    signer,
+    devicePda,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .leaseSubscriptionIp()
+    .accountsPartial({
+      caller,
+      device: devicePda,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      subscription,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for allocating IP
+ */
+export interface AllocateIpParams {
+  program: Program<Dawn>
+  tier: number
+  authority: PublicKey
+  signer: Keypair
+  devicePda: PublicKey
+  ipRegistry: PublicKey
+  rootIpBlock: PublicKey
+  ipBlock: PublicKey
+  ipLease: PublicKey
+  systemProgram?: PublicKey
+}
+
+/**
+ * Allocate IP
+ * Returns the transaction for signing/confirmation
+ */
+export async function allocateIpTx(
+  params: AllocateIpParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    tier,
+    authority,
+    signer,
+    devicePda,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .allocateIp(tier)
+    .accountsPartial({
+      authority,
+      device: devicePda,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Allocate IP and send via RPC
+ */
+export async function allocateIpRpc(params: AllocateIpParams): Promise<string> {
+  const {
+    program,
+    tier,
+    authority,
+    signer,
+    devicePda,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .allocateIp(tier)
+    .accountsPartial({
+      authority,
+      device: devicePda,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for initializing root IP block
+ */
+export interface InitializeRootIpBlockParams {
+  program: Program<Dawn>
+  tier: number
+  baseIpv4: number
+  baseCidr: number
+  caller: PublicKey
+  signer: Keypair
+  configPda: PublicKey
+  authority: PublicKey
+  systemProgram?: PublicKey
+}
+
+/**
+ * Initialize root IP block
+ * Returns the transaction for signing/confirmation
+ */
+export async function initializeRootIpBlockTx(
+  params: InitializeRootIpBlockParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    tier,
+    baseIpv4,
+    baseCidr,
+    caller,
+    signer,
+    configPda,
+    authority,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .initializeRootIpBlock(tier, baseIpv4, baseCidr)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      authority,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Initialize root IP block and send via RPC
+ */
+export async function initializeRootIpBlockRpc(
+  params: InitializeRootIpBlockParams,
+): Promise<string> {
+  const {
+    program,
+    tier,
+    baseIpv4,
+    baseCidr,
+    caller,
+    signer,
+    configPda,
+    authority,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .initializeRootIpBlock(tier, baseIpv4, baseCidr)
+    .accountsPartial({
+      caller,
+      config: configPda,
+      authority,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
+
+/**
+ * Parameters for revoking IP
+ */
+export interface RevokeIpParams {
+  program: Program<Dawn>
+  tier: number
+  caller: PublicKey
+  signer: Keypair
+  ipRegistry: PublicKey
+  rootIpBlock: PublicKey
+  ipBlock: PublicKey
+  ipLease: PublicKey
+  systemProgram?: PublicKey
+}
+
+/**
+ * Revoke IP
+ * Returns the transaction for signing/confirmation
+ */
+export async function revokeIpTx(
+  params: RevokeIpParams,
+): Promise<anchor.web3.Transaction> {
+  const {
+    program,
+    tier,
+    caller,
+    signer,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .revokeIp(tier)
+    .accountsPartial({
+      caller,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .transaction()
+}
+
+/**
+ * Revoke IP and send via RPC
+ */
+export async function revokeIpRpc(params: RevokeIpParams): Promise<string> {
+  const {
+    program,
+    tier,
+    caller,
+    signer,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    systemProgram,
+  } = params
+
+  return program.methods
+    .revokeIp(tier)
+    .accountsPartial({
+      caller,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+    })
+    .signers([signer])
+    .rpc()
+}
