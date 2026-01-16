@@ -15,9 +15,60 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { loadWallet, POB_PROGRAM_ID, BLOBER_PROGRAM_ID } from '../../sdk/utils'
+import { findBloberPda } from '../../sdk/utils/pob'
 
 // Cached provider - only initialized once
 let pobProvider: BankrunProvider | null = null
+
+// Data Anchor namespace for tests
+const DA_NAMESPACE = 'nitro'
+
+/**
+ * Create properly formatted Blober account data for testing.
+ * Matches the Blober struct from data-anchor-blober v0.2.2:
+ * - discriminator (8 bytes)
+ * - hash (32 bytes)
+ * - slot (8 bytes - u64)
+ * - caller (32 bytes - Pubkey)
+ * - namespace (String with length prefix)
+ */
+function createBloberAccountData(
+  caller: PublicKey,
+  namespace: string,
+): Buffer {
+  // Calculate Anchor account discriminator for "Blober"
+  const crypto = require('crypto')
+  const discriminator = crypto
+    .createHash('sha256')
+    .update('account:Blober')
+    .digest()
+    .slice(0, 8)
+
+  // Initial hash (32 bytes of zeros for newly initialized account)
+  const hash = Buffer.alloc(32, 0)
+
+  // Slot (u64 LE) - start at slot 0
+  const slot = Buffer.alloc(8)
+  slot.writeBigUInt64LE(0n)
+
+  // Caller pubkey (32 bytes)
+  const callerBytes = caller.toBuffer()
+
+  // Namespace string (4 bytes length + UTF-8 bytes)
+  const namespaceBytes = Buffer.from(namespace, 'utf8')
+  const namespaceLength = Buffer.alloc(4)
+  namespaceLength.writeUInt32LE(namespaceBytes.length)
+
+  // Concatenate all parts
+  return Buffer.concat([
+    discriminator,
+    hash,
+    slot,
+    callerBytes,
+    namespaceLength,
+    namespaceBytes,
+  ])
+}
 
 // Shared mock state for all PoB tests
 export const pobMock = {
@@ -48,6 +99,13 @@ export async function getPobProvider(): Promise<BankrunProvider> {
   pobMock.daPayer = Keypair.generate()
   pobMock.stakeMint = Keypair.generate()
 
+  // Derive Data Anchor blober PDA and create properly initialized account data
+  const daBloberPda = findBloberPda(pobMock.daPayer.publicKey, DA_NAMESPACE)
+  const bloberAccountData = createBloberAccountData(
+    pobMock.daPayer.publicKey,
+    DA_NAMESPACE,
+  )
+
   // Create accounts with funding for startAnchor
   const fundedAccounts = [
     {
@@ -68,6 +126,16 @@ export async function getPobProvider(): Promise<BankrunProvider> {
         data: Buffer.alloc(0),
       },
     })),
+    // Pre-initialize the Data Anchor blober account
+    {
+      address: daBloberPda,
+      info: {
+        lamports: 10 * 1e9, // 10 SOL for rent exemption
+        owner: BLOBER_PROGRAM_ID,
+        executable: false,
+        data: bloberAccountData,
+      },
+    },
   ]
 
   // Create a single shared provider for all PoB tests

@@ -29,6 +29,10 @@ import {
   warpToSlot,
   getCurrentSlot,
   generateRandomSeed,
+  generateRandomMinToken,
+  DA_PROGRAM_ID,
+  findBloberPda,
+  findBlobPda,
 } from '../../sdk/utils/pob'
 import { getPobProvider, pobMock } from './pob-setup'
 
@@ -42,6 +46,7 @@ export const errorCaseTests = () =>
     let prover: Keypair
     let challenger: Keypair
     let prover2: Keypair
+    let daPayer: Keypair
     let stakeMint: Keypair
     let proverAta: PublicKey
     let challengerAta: PublicKey
@@ -52,12 +57,14 @@ export const errorCaseTests = () =>
     let prover2Pda: PublicKey
     let roundPda: PublicKey
     let aggregatorPda: PublicKey
+    let daBloberPda: PublicKey
 
     // Test data
     let seed: Buffer
     let dataAnchorRoot: Buffer
     const nPackets = 100
     const nRounds = 10
+    const daNamespace = 'nitro'
 
     beforeAll(async () => {
       // Use shared provider (startAnchor called only once)
@@ -68,6 +75,7 @@ export const errorCaseTests = () =>
       program = pobMock.program!
       prover = pobMock.prover!
       challenger = pobMock.challenger!
+      daPayer = pobMock.daPayer!
       stakeMint = pobMock.stakeMint!
       proverAta = pobMock.proverAta!
       challengerAta = pobMock.challengerAta!
@@ -96,6 +104,9 @@ export const errorCaseTests = () =>
       const { root } = buildMerkleProof(leafHash, siblings)
       dataAnchorRoot = root
       ;[aggregatorPda] = getAggregatorPda(program, roundPda, proverPda)
+
+      // Set up Data Anchor
+      daBloberPda = findBloberPda(daPayer.publicKey, daNamespace)
     })
 
     describe('Registration Errors', () => {
@@ -486,10 +497,113 @@ export const errorCaseTests = () =>
 
     describe('Aggregator Errors', () => {
       it('Rejects closing unfinalized aggregator', async () => {
-        // For this test, we would need an aggregator that exists but isn't finalized
-        // This requires submit_min_hash which needs Data Anchor integration
-        // Skipping for now as it's covered in integration tests
-        console.log('Skipping - requires Data Anchor integration')
+        // Create a round and submit a min-hash to create an unfinalized aggregator
+        const testSeed = generateRandomSeed()
+        const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
+        const [testAggregatorPda] = getAggregatorPda(
+          program,
+          testRoundPda,
+          proverPda,
+        )
+
+        const currentSlot = await getCurrentSlot(provider)
+        const startSlot = currentSlot + 10
+        const endSlot = startSlot + 1000
+
+        // Initialize round
+        await program.methods
+          .initChallengeRound(
+            Array.from(testSeed),
+            nPackets,
+            nRounds,
+            new BN(startSlot),
+            new BN(endSlot),
+            Array.from(dataAnchorRoot),
+          )
+          .accountsPartial({
+            caller: wallet.publicKey,
+            round: testRoundPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        // Warp to active window
+        await warpToSlot(provider, startSlot + 5)
+
+        // Submit min-hash to create aggregator
+        const minToken = generateRandomMinToken()
+        const [testReceiptPda] = getReceiptPda(
+          program,
+          testRoundPda,
+          proverPda,
+          minToken,
+        )
+
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
+
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_981_700
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        await program.methods
+          .submitMinHash(
+            leafForIdl,
+            proof,
+            Array.from(minToken),
+            new BN(daTimestamp),
+          )
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            prover: proverPda,
+            round: testRoundPda,
+            aggregator: testAggregatorPda,
+            receipt: testReceiptPda,
+            daBlober: daBloberPda,
+            daBlob: daBlobPda,
+            daPayer: daPayer.publicKey,
+            daProgram: DA_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([prover, daPayer])
+          .rpc()
+
+        // Try to close aggregator before it's finalized (should fail)
+        try {
+          await program.methods
+            .closeAggregator()
+            .accountsPartial({
+              beneficiary: prover.publicKey,
+              prover: proverPda,
+              aggregator: testAggregatorPda,
+            })
+            .signers([prover])
+            .rpc()
+          expect.fail('Should have rejected close before finalization')
+        } catch (error: any) {
+          expect(String(error)).to.match(/AggregatorNotFinalized|0x1789/)
+        }
       })
 
       it('Rejects finalizing before round ends', async () => {
@@ -607,17 +721,198 @@ export const errorCaseTests = () =>
 
     describe('Min Hash Submission Timing Errors', () => {
       it('Rejects submission before round starts', async () => {
-        // Note: This test would require setting up Data Anchor integration
-        // which is complex. The timing check is validated in the handler.
-        // Skipping actual test execution but documenting the error case.
-        console.log('Skipping - requires full Data Anchor integration')
+        // Create a round for this test
+        const testSeed = generateRandomSeed()
+        const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
+        const [testAggregatorPda] = getAggregatorPda(
+          program,
+          testRoundPda,
+          proverPda,
+        )
+
+        const currentSlot = await getCurrentSlot(provider)
+        const startSlot = currentSlot + 100 // Start in future
+        const endSlot = startSlot + 1000
+
+        // Initialize round
+        await program.methods
+          .initChallengeRound(
+            Array.from(testSeed),
+            nPackets,
+            nRounds,
+            new BN(startSlot),
+            new BN(endSlot),
+            Array.from(dataAnchorRoot),
+          )
+          .accountsPartial({
+            caller: wallet.publicKey,
+            round: testRoundPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        // Try to submit before start_slot (should fail)
+        const minToken = generateRandomMinToken()
+        const [receiptPda] = getReceiptPda(
+          program,
+          testRoundPda,
+          proverPda,
+          minToken,
+        )
+
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
+
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_981_300
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        try {
+          await program.methods
+            .submitMinHash(
+              leafForIdl,
+              proof,
+              Array.from(minToken),
+              new BN(daTimestamp),
+            )
+            .accountsPartial({
+              proverAuthority: prover.publicKey,
+              prover: proverPda,
+              round: testRoundPda,
+              aggregator: testAggregatorPda,
+              receipt: receiptPda,
+              daBlober: daBloberPda,
+              daBlob: daBlobPda,
+              daPayer: daPayer.publicKey,
+              daProgram: DA_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([prover, daPayer])
+            .rpc()
+          expect.fail('Should have rejected early submission')
+        } catch (error: any) {
+          expect(String(error)).to.match(/SubmissionTooEarly|0x1781/)
+        }
       })
 
       it('Rejects submission after round ends', async () => {
-        // Note: This test would require setting up Data Anchor integration
-        // which is complex. The timing check is validated in the handler.
-        // Skipping actual test execution but documenting the error case.
-        console.log('Skipping - requires full Data Anchor integration')
+        // Create a round for this test
+        const testSeed = generateRandomSeed()
+        const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
+        const [testAggregatorPda] = getAggregatorPda(
+          program,
+          testRoundPda,
+          proverPda,
+        )
+
+        const currentSlot = await getCurrentSlot(provider)
+        const startSlot = currentSlot + 10
+        const endSlot = startSlot + 100 // Short window
+
+        // Initialize round
+        await program.methods
+          .initChallengeRound(
+            Array.from(testSeed),
+            nPackets,
+            nRounds,
+            new BN(startSlot),
+            new BN(endSlot),
+            Array.from(dataAnchorRoot),
+          )
+          .accountsPartial({
+            caller: wallet.publicKey,
+            round: testRoundPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        // Warp past end_slot
+        await warpToSlot(provider, endSlot + 10)
+
+        // Try to submit after end_slot (should fail)
+        const minToken = generateRandomMinToken()
+        const [receiptPda] = getReceiptPda(
+          program,
+          testRoundPda,
+          proverPda,
+          minToken,
+        )
+
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
+
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_981_400
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        try {
+          await program.methods
+            .submitMinHash(
+              leafForIdl,
+              proof,
+              Array.from(minToken),
+              new BN(daTimestamp),
+            )
+            .accountsPartial({
+              proverAuthority: prover.publicKey,
+              prover: proverPda,
+              round: testRoundPda,
+              aggregator: testAggregatorPda,
+              receipt: receiptPda,
+              daBlober: daBloberPda,
+              daBlob: daBlobPda,
+              daPayer: daPayer.publicKey,
+              daProgram: DA_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            })
+            .signers([prover, daPayer])
+            .rpc()
+          expect.fail('Should have rejected late submission')
+        } catch (error: any) {
+          expect(String(error)).to.match(/SubmissionTooLate|0x1782/)
+        }
       })
     })
 
@@ -856,15 +1151,239 @@ export const errorCaseTests = () =>
 
     describe('Close Receipt Errors', () => {
       it('Rejects close receipt before aggregator finalized', async () => {
-        // This test requires Data Anchor setup, but we can document the check
-        // The constraint is in close_receipt.rs: aggregator.finalized @ PobError::AggregatorNotFinalized
-        console.log('Skipping - requires full Data Anchor integration')
+        // Create a round and submit a min-hash to create aggregator and receipt
+        const testSeed = generateRandomSeed()
+        const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
+        const [testAggregatorPda] = getAggregatorPda(
+          program,
+          testRoundPda,
+          proverPda,
+        )
+
+        const currentSlot = await getCurrentSlot(provider)
+        const startSlot = currentSlot + 10
+        const endSlot = startSlot + 1000
+
+        // Initialize round
+        await program.methods
+          .initChallengeRound(
+            Array.from(testSeed),
+            nPackets,
+            nRounds,
+            new BN(startSlot),
+            new BN(endSlot),
+            Array.from(dataAnchorRoot),
+          )
+          .accountsPartial({
+            caller: wallet.publicKey,
+            round: testRoundPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        // Warp to active window
+        await warpToSlot(provider, startSlot + 5)
+
+        // Submit min-hash to create aggregator and receipt
+        const minToken = generateRandomMinToken()
+        const [testReceiptPda] = getReceiptPda(
+          program,
+          testRoundPda,
+          proverPda,
+          minToken,
+        )
+
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
+
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_981_500
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        await program.methods
+          .submitMinHash(
+            leafForIdl,
+            proof,
+            Array.from(minToken),
+            new BN(daTimestamp),
+          )
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            prover: proverPda,
+            round: testRoundPda,
+            aggregator: testAggregatorPda,
+            receipt: testReceiptPda,
+            daBlober: daBloberPda,
+            daBlob: daBlobPda,
+            daPayer: daPayer.publicKey,
+            daProgram: DA_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([prover, daPayer])
+          .rpc()
+
+        // Try to close receipt before aggregator is finalized (should fail)
+        try {
+          await program.methods
+            .closeReceipt()
+            .accountsPartial({
+              beneficiary: prover.publicKey,
+              prover: proverPda,
+              receipt: testReceiptPda,
+              aggregator: testAggregatorPda,
+            })
+            .signers([prover])
+            .rpc()
+          expect.fail('Should have rejected close before finalization')
+        } catch (error: any) {
+          expect(String(error)).to.match(/AggregatorNotFinalized|0x1789/)
+        }
       })
 
       it('Rejects unauthorized close receipt', async () => {
-        // This would require submitting a min-hash first (needs DA integration)
-        // The check is: prover.authority == beneficiary.key() @ PobError::Unauthorized
-        console.log('Skipping - requires full Data Anchor integration')
+        // Create a round and submit a min-hash
+        const testSeed = generateRandomSeed()
+        const [testRoundPda] = getRoundCommitmentPda(program, testSeed)
+        const [testAggregatorPda] = getAggregatorPda(
+          program,
+          testRoundPda,
+          proverPda,
+        )
+
+        const currentSlot = await getCurrentSlot(provider)
+        const startSlot = currentSlot + 10
+        const endSlot = startSlot + 1000
+
+        // Initialize round
+        await program.methods
+          .initChallengeRound(
+            Array.from(testSeed),
+            nPackets,
+            nRounds,
+            new BN(startSlot),
+            new BN(endSlot),
+            Array.from(dataAnchorRoot),
+          )
+          .accountsPartial({
+            caller: wallet.publicKey,
+            round: testRoundPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([wallet.payer])
+          .rpc()
+
+        // Warp to active window
+        await warpToSlot(provider, startSlot + 5)
+
+        // Submit min-hash
+        const minToken = generateRandomMinToken()
+        const [testReceiptPda] = getReceiptPda(
+          program,
+          testRoundPda,
+          proverPda,
+          minToken,
+        )
+
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
+
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_981_600
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        await program.methods
+          .submitMinHash(
+            leafForIdl,
+            proof,
+            Array.from(minToken),
+            new BN(daTimestamp),
+          )
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            prover: proverPda,
+            round: testRoundPda,
+            aggregator: testAggregatorPda,
+            receipt: testReceiptPda,
+            daBlober: daBloberPda,
+            daBlob: daBlobPda,
+            daPayer: daPayer.publicKey,
+            daProgram: DA_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([prover, daPayer])
+          .rpc()
+
+        // Finalize aggregator
+        await warpToSlot(provider, endSlot + 10)
+
+        await program.methods
+          .finalizeAggregator(Array.from(Buffer.alloc(32, 6)))
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            round: testRoundPda,
+            aggregator: testAggregatorPda,
+            prover: proverPda,
+          })
+          .signers([prover])
+          .rpc()
+
+        // Try to close receipt with unauthorized beneficiary (should fail)
+        try {
+          await program.methods
+            .closeReceipt()
+            .accountsPartial({
+              beneficiary: challenger.publicKey, // Wrong beneficiary
+              prover: proverPda,
+              receipt: testReceiptPda,
+              aggregator: testAggregatorPda,
+            })
+            .signers([challenger])
+            .rpc()
+          expect.fail('Should have rejected unauthorized close')
+        } catch (error: any) {
+          expect(String(error)).to.match(/Unauthorized|0x1770/)
+        }
       })
     })
   })

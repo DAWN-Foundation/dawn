@@ -420,8 +420,17 @@ export const proofOfBandwidthTests = () =>
         const startSlot = currentSlot + 10
         const endSlot = startSlot + 1000
 
-        // Create simple DA root (all zeros for simplicity)
-        const simplifiedDataAnchorRoot = Buffer.alloc(32, 0)
+        // Create DA root that matches the session leaf we'll use in tests
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { root } = buildMerkleProof(leafHash, siblings)
+        const simplifiedDataAnchorRoot = root
 
         await program.methods
           .initChallengeRound(
@@ -450,15 +459,63 @@ export const proofOfBandwidthTests = () =>
       })
 
       it('Finalizes an aggregator', async () => {
-        // Note: In a real scenario, we would submit min hashes first
-        // For this test, we'll manually create an aggregator account
-        // by calling submit_min_hash once (simplified)
+        // Submit a min-hash to create the aggregator
+        const minToken = generateRandomMinToken()
+        const [simplifiedReceiptPda] = getReceiptPda(
+          program,
+          simplifiedRoundPda,
+          proverPda,
+          minToken,
+        )
 
-        const daSnapshotPointer = Buffer.alloc(32, 4)
+        const sessionLeaf = createSessionLeaf(
+          challenger.publicKey,
+          proverPda,
+          42n,
+          nPackets,
+        )
+        const leafHash = computeLeafHash(sessionLeaf)
+        const siblings = [Buffer.alloc(32, 1), Buffer.alloc(32, 2)]
+        const { proof } = buildMerkleProof(leafHash, siblings)
 
-        // First, we need at least one submission
-        // We'll create a simple submission by initializing the aggregator
-        // through a mock account setup (for test purposes)
+        const leafForIdl = {
+          challenger: sessionLeaf.challenger,
+          prover: sessionLeaf.prover,
+          roundId: new BN(sessionLeaf.roundId.toString()),
+          packetRoot: Array.from(sessionLeaf.packetRoot),
+          n: sessionLeaf.n,
+        }
+
+        const daTimestamp = 1_717_999_000
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp,
+          payloadSize,
+        )
+
+        await program.methods
+          .submitMinHash(
+            leafForIdl,
+            proof,
+            Array.from(minToken),
+            new BN(daTimestamp),
+          )
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            prover: proverPda,
+            round: simplifiedRoundPda,
+            aggregator: simplifiedAggregatorPda,
+            receipt: simplifiedReceiptPda,
+            daBlober: daBloberPda,
+            daBlob: daBlobPda,
+            daPayer: daPayer.publicKey,
+            daProgram: DA_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([prover, daPayer])
+          .rpc()
 
         // Warp past end_slot
         const roundAccount = await program.account.roundCommitment.fetch(
@@ -466,55 +523,46 @@ export const proofOfBandwidthTests = () =>
         )
         await warpToSlot(provider, roundAccount.endSlot.toNumber() + 1)
 
-        // For this simplified test, we'll skip finalization if aggregator doesn't exist
-        try {
-          const tx = await program.methods
-            .finalizeAggregator(Array.from(daSnapshotPointer))
-            .accountsPartial({
-              proverAuthority: prover.publicKey,
-              round: simplifiedRoundPda,
-              aggregator: simplifiedAggregatorPda,
-              prover: proverPda,
-            })
-            .signers([prover])
-            .rpc()
+        // Finalize the aggregator
+        const daSnapshotPointer = Buffer.alloc(32, 4)
+        const tx = await program.methods
+          .finalizeAggregator(Array.from(daSnapshotPointer))
+          .accountsPartial({
+            proverAuthority: prover.publicKey,
+            round: simplifiedRoundPda,
+            aggregator: simplifiedAggregatorPda,
+            prover: proverPda,
+          })
+          .signers([prover])
+          .rpc()
 
-          expect(tx).to.be.a('string')
+        expect(tx).to.be.a('string')
 
-          const aggregatorAccount = await program.account.aggregator.fetch(
-            simplifiedAggregatorPda,
-          )
-          expect(aggregatorAccount.finalized).to.be.true
-        } catch (error) {
-          // Aggregator doesn't exist, which is expected in this simplified test
-          console.log('Skipping finalization - no submissions made')
-        }
+        const aggregatorAccount = await program.account.aggregator.fetch(
+          simplifiedAggregatorPda,
+        )
+        expect(aggregatorAccount.finalized).to.be.true
       })
 
       it('Closes an aggregator after finalization', async () => {
+        const tx = await program.methods
+          .closeAggregator()
+          .accountsPartial({
+            beneficiary: prover.publicKey,
+            prover: proverPda,
+            aggregator: simplifiedAggregatorPda,
+          })
+          .signers([prover])
+          .rpc()
+
+        expect(tx).to.be.a('string')
+
+        // Verify account is closed
         try {
-          const tx = await program.methods
-            .closeAggregator()
-            .accountsPartial({
-              beneficiary: prover.publicKey,
-              prover: proverPda,
-              aggregator: simplifiedAggregatorPda,
-            })
-            .signers([prover])
-            .rpc()
-
-          expect(tx).to.be.a('string')
-
-          // Verify account is closed
-          try {
-            await program.account.aggregator.fetch(simplifiedAggregatorPda)
-            expect.fail('Aggregator should be closed')
-          } catch (error) {
-            expect(String(error)).to.match(/Account does not exist/)
-          }
+          await program.account.aggregator.fetch(simplifiedAggregatorPda)
+          expect.fail('Aggregator should be closed')
         } catch (error) {
-          // Aggregator doesn't exist, which is expected if finalization was skipped
-          console.log('Skipping close - aggregator does not exist')
+          expect(String(error)).to.match(/Account does not exist|Could not find/)
         }
       })
     })

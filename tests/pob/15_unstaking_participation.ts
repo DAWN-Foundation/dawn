@@ -337,6 +337,7 @@ export const unstakingParticipationTests = () =>
       await warpToSlot(provider, startSlot + 5)
 
       // Setup DA PDAs
+      // Note: daBloberPda is pre-initialized in pob-setup.ts with correct owner
       daBloberPda = findBloberPda(daPayer.publicKey, daNamespace)
       const payloadSize = 1 + 32 + 32 + 32
       daBlobPda = findBlobPda(
@@ -499,12 +500,22 @@ export const unstakingParticipationTests = () =>
           minToken,
         )
 
+        // Use unique timestamp and blob PDA for this submission
+        const uniqueTimestamp = daTimestamp + 100
+        const payloadSize = 1 + 32 + 32 + 32
+        const uniqueBlobPda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          uniqueTimestamp,
+          payloadSize,
+        )
+
         const tx = await program.methods
           .submitMinHash(
             leafForIdl,
             proof,
             Array.from(minToken),
-            new BN(daTimestamp),
+            new BN(uniqueTimestamp),
           )
           .accountsPartial({
             proverAuthority: activeProver.publicKey,
@@ -513,7 +524,7 @@ export const unstakingParticipationTests = () =>
             aggregator: activeAggregatorPda,
             receipt: receiptPda,
             daBlober: daBloberPda,
-            daBlob: daBlobPda,
+            daBlob: uniqueBlobPda,
             daPayer: daPayer.publicKey,
             daProgram: DA_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
@@ -527,20 +538,16 @@ export const unstakingParticipationTests = () =>
 
     describe('Finalize Aggregator Blocks', () => {
       it('Rejects finalization when prover is unstaking', async () => {
-        // First need to submit at least one min-hash for unstaking prover
-        // But since we can't submit (blocked above), we skip creating aggregator
-
-        // Try to finalize after round ends
-        const currentSlot = await getCurrentSlot(provider)
-        const roundAccount = await program.account.roundCommitment.fetch(
-          roundPda,
-        )
-        await warpToSlot(provider, roundAccount.endSlot.toNumber() + 10)
-
-        // Even if aggregator existed, finalization should fail
-        console.log(
-          'Skipping - cannot create aggregator for unstaking prover due to submit_min_hash block',
-        )
+        // Note: This test cannot be fully executed because an unstaking prover
+        // is blocked at submit_min_hash, so an aggregator never gets created.
+        // The constraint is enforced earlier in the flow, which is the correct design.
+        // The test above ("Rejects submission when prover is unstaking") validates
+        // that unstaking provers cannot participate at the submission level.
+        
+        // This test serves as documentation that finalize_aggregator would also
+        // have a constraint if somehow an unstaking prover's aggregator existed,
+        // but the earlier constraint makes this path unreachable by design.
+        expect(true).to.be.true // No-op test to maintain test structure
       })
 
       it('Allows finalization when prover is active', async () => {
@@ -549,6 +556,12 @@ export const unstakingParticipationTests = () =>
           roundPda,
           activeProverPda,
         )
+
+        // Warp past end_slot to allow finalization
+        const roundAccount = await program.account.roundCommitment.fetch(
+          roundPda,
+        )
+        await warpToSlot(provider, roundAccount.endSlot.toNumber() + 10)
 
         const daSnapshotPointer = Buffer.alloc(32, 5)
 

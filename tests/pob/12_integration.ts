@@ -9,8 +9,6 @@ import {
   PublicKey,
   Keypair,
   SystemProgram,
-  Transaction,
-  TransactionInstruction,
 } from '@solana/web3.js'
 import {
   getPobConfigPda,
@@ -33,51 +31,6 @@ import {
 } from '../../sdk/utils/pob'
 import { getPobProvider, pobMock } from './pob-setup'
 import { getProverPda, getChallengerPda } from '../../sdk/pda/pob'
-import * as borsh from '@coral-xyz/borsh'
-import crypto from 'crypto'
-
-/**
- * Create Data Anchor instruction discriminator
- */
-function ixDisc(name: string): Buffer {
-  return crypto
-    .createHash('sha256')
-    .update(`global:${name}`)
-    .digest()
-    .slice(0, 8)
-}
-
-/**
- * Initialize Data Anchor namespace (blober)
- */
-async function initBloberNamespace(
-  provider: BankrunProvider,
-  daPayer: Keypair,
-  bloberPda: PublicKey,
-  namespace: string,
-): Promise<void> {
-  const initLayout = borsh.struct([
-    borsh.str('namespace'),
-    borsh.publicKey('trusted'),
-  ])
-
-  const buf = Buffer.alloc(1024)
-  const span = initLayout.encode({ namespace, trusted: daPayer.publicKey }, buf)
-  const data = Buffer.concat([ixDisc('initialize'), buf.subarray(0, span)])
-
-  const ix = new TransactionInstruction({
-    programId: DA_PROGRAM_ID,
-    keys: [
-      { pubkey: bloberPda, isSigner: false, isWritable: true },
-      { pubkey: daPayer.publicKey, isSigner: true, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  })
-
-  const tx = new Transaction().add(ix)
-  await (provider as any).sendAndConfirm(tx, [daPayer])
-}
 
 export const integrationTests = () =>
   describe('Proof of Bandwidth - Full Integration', () => {
@@ -133,6 +86,7 @@ export const integrationTests = () =>
       ;[roundPda] = getRoundCommitmentPda(program, seed)
 
       // Set up Data Anchor
+      // Note: daBloberPda is pre-initialized in pob-setup.ts with correct owner
       daBloberPda = findBloberPda(daPayer.publicKey, daNamespace)
       const payloadSize = 1 + 32 + 32 + 32 // version + round + prover_authority + min_token
       daBlobPda = findBlobPda(
@@ -141,14 +95,6 @@ export const integrationTests = () =>
         daTimestamp,
         payloadSize,
       )
-
-      // Initialize Data Anchor namespace before tests run
-      try {
-        await initBloberNamespace(provider, daPayer, daBloberPda, daNamespace)
-      } catch (error) {
-        console.log('DA initialization error (may be expected):', error)
-        // If DA initialization fails, we'll skip DA-dependent tests
-      }
     })
 
     it('Step 1: Verify prover and challenger are registered', async () => {
@@ -512,7 +458,7 @@ export const integrationTests = () =>
       })
 
       it('Handles multiple unique min-hash submissions', async () => {
-        // Submit first min-hash
+        // Submit first min-hash with unique DA blob
         const minToken1 = generateRandomMinToken()
         const [receipt1Pda] = getReceiptPda(
           program,
@@ -529,12 +475,22 @@ export const integrationTests = () =>
           n: extSessionLeaf.n,
         }
 
+        // Use unique timestamp for first submission
+        const daTimestamp1 = daTimestamp + 1
+        const payloadSize = 1 + 32 + 32 + 32
+        const daBlob1Pda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp1,
+          payloadSize,
+        )
+
         await program.methods
           .submitMinHash(
             leafForIdl1,
             extMerkleProof,
             Array.from(minToken1),
-            new BN(daTimestamp),
+            new BN(daTimestamp1),
           )
           .accountsPartial({
             proverAuthority: prover.publicKey,
@@ -543,7 +499,7 @@ export const integrationTests = () =>
             aggregator: extAggregatorPda,
             receipt: receipt1Pda,
             daBlober: daBloberPda,
-            daBlob: daBlobPda,
+            daBlob: daBlob1Pda,
             daPayer: daPayer.publicKey,
             daProgram: DA_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
@@ -557,7 +513,7 @@ export const integrationTests = () =>
         )
         expect(aggregatorAccount.numSubmissions).to.equal(1)
 
-        // Submit second min-hash with different token
+        // Submit second min-hash with different token and unique DA blob
         const minToken2 = generateRandomMinToken()
         const [receipt2Pda] = getReceiptPda(
           program,
@@ -574,12 +530,21 @@ export const integrationTests = () =>
           n: extSessionLeaf.n,
         }
 
+        // Use unique timestamp for second submission
+        const daTimestamp2 = daTimestamp + 2
+        const daBlob2Pda = findBlobPda(
+          daBloberPda,
+          daPayer.publicKey,
+          daTimestamp2,
+          payloadSize,
+        )
+
         await program.methods
           .submitMinHash(
             leafForIdl2,
             extMerkleProof,
             Array.from(minToken2),
-            new BN(daTimestamp),
+            new BN(daTimestamp2),
           )
           .accountsPartial({
             proverAuthority: prover.publicKey,
@@ -588,7 +553,7 @@ export const integrationTests = () =>
             aggregator: extAggregatorPda,
             receipt: receipt2Pda,
             daBlober: daBloberPda,
-            daBlob: daBlobPda,
+            daBlob: daBlob2Pda,
             daPayer: daPayer.publicKey,
             daProgram: DA_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
