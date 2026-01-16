@@ -4,10 +4,16 @@ import { Dawn } from '../../../target/types/dawn'
 import { AuthManager } from '../../../sdk/client/managers/auth'
 import { PSKNetworkConfig } from '../../../sdk/utils/types'
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
+import { getSubscriptionPda } from '../../../sdk'
 
 async function main() {
   const { wallet, connection, program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
+
+  const plan = getFlag('--plan')
+  if (!plan) throw new Error('--plan is required')
+  const planPda = new PublicKey(plan)
+  const [subscriptionPda] = getSubscriptionPda(program, planPda, wallet.payer)
 
   const authMethod = new PublicKey(getFlag('--auth-method'))
   if (!authMethod) throw new Error('--auth-method is required')
@@ -22,6 +28,8 @@ async function main() {
       .revokeCredential()
       .accountsPartial({
         caller: wallet.publicKey,
+        subscription: subscriptionPda,
+        plan: planPda,
         authMethod: authMethodPda,
         credential: credentialPda,
       })
