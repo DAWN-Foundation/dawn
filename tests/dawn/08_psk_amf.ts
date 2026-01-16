@@ -129,6 +129,8 @@ export const pskAmfTests = () =>
 
       const unauthorizedCredentialPda = getPskCredentialPda(
         program,
+        mock.subscriptionPda,
+        mock.planPda,
         authMethodPda,
         anchor.web3.Keypair.generate().publicKey, // Different client
       )
@@ -297,6 +299,8 @@ export const pskAmfTests = () =>
 
       credentialPda = getPskCredentialPda(
         program,
+        subscriptionPda,
+        planPda,
         authMethodPda,
         mock.customer.publicKey,
       )
@@ -305,9 +309,9 @@ export const pskAmfTests = () =>
         .registerCredential(Array.from(serializedParams))
         .accountsPartial({
           caller: mock.customer.publicKey,
-          authMethod: authMethodPda,
-          plan: planPda,
           subscription: subscriptionPda,
+          plan: planPda,
+          authMethod: authMethodPda,
           credential: credentialPda,
         })
         .signers([mock.customer])
@@ -318,6 +322,8 @@ export const pskAmfTests = () =>
       expect(credential.createdAt.toNumber()).toBeGreaterThan(0)
       expect(credential.authority.equals(mock.customer.publicKey)).toBeTruthy()
       expect(credential.authMethod.equals(authMethodPda)).toBeTruthy()
+      expect(credential.plan.equals(planPda)).toBeTruthy()
+      expect(credential.subscription.equals(subscriptionPda)).toBeTruthy()
 
       // Verify credential data structure
       const storedCredentialData = Buffer.from(credential.credentialData)
@@ -336,12 +342,34 @@ export const pskAmfTests = () =>
       )
       expect(credentialBefore).toBeTruthy()
 
+      const planName = 'test PSK plan'
+      const [planPda] = getPlanPda(
+        program,
+        mock.localDomainPda,
+        null,
+        planName,
+        mock.planPrice,
+        mock.planDuration,
+        mock.planSpeed,
+        mock.planCapacity,
+        null,
+        mock.serviceAgreementPda,
+      )
+
+      const [subscriptionPda] = getSubscriptionPda(
+        program,
+        planPda,
+        mock.customer.publicKey,
+      )
+
       // Revoke the credential
       provider.wallet = new Wallet(mock.customer)
       await program.methods
         .revokeCredential()
         .accountsPartial({
           caller: mock.customer.publicKey,
+          subscription: subscriptionPda,
+          plan: planPda,
           authMethod: authMethodPda,
           credential: credentialPda,
         })

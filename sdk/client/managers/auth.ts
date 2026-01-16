@@ -82,9 +82,15 @@ export class AuthManager {
     )
     const credentialData = serializePskCredentialData(encryptedPsk)
 
-    const credentialPda = getCredentialPda(this.program, authMethodPda, caller)
-
     const [subscriptionPda] = getSubscriptionPda(this.program, planPda, caller)
+
+    const credentialPda = getCredentialPda(
+      this.program,
+      subscriptionPda,
+      planPda,
+      authMethodPda,
+      caller,
+    )
 
     const itx = await this.program.methods
       .registerCredential(Array.from(credentialData))

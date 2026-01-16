@@ -62,6 +62,8 @@ pub struct RegisterCredential<'info> {
         space = Credential::SIZE,
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
+            subscription.key().as_ref(),
+            plan.key().as_ref(),
             auth_method.key().as_ref(),
             caller.key().as_ref(),
         ],

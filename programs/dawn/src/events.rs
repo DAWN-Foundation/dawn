@@ -242,6 +242,8 @@ pub struct CredentialRegistered {
 #[event]
 pub struct CredentialRevoked {
     pub credential: Pubkey,
+    pub subscription: Pubkey,
+    pub plan: Pubkey,
     pub auth_method: Pubkey,
     pub revoked_at: i64,
 }
