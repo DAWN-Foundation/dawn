@@ -7,11 +7,11 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-dawn = "2A5ax9F3x4k45byCwSZi9okxU5JiTw5sC4HmQEoy2Mz8"
+dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
 pob = "PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N"
 
 [programs.localnet]
-dawn = "2A5ax9F3x4k45byCwSZi9okxU5JiTw5sC4HmQEoy2Mz8"
+dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
 pob = "PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N"
 blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
 
