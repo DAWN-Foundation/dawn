@@ -32,10 +32,7 @@ const DA_NAMESPACE = 'nitro'
  * - caller (32 bytes - Pubkey)
  * - namespace (String with length prefix)
  */
-function createBloberAccountData(
-  caller: PublicKey,
-  namespace: string,
-): Buffer {
+function createBloberAccountData(caller: PublicKey, namespace: string): Buffer {
   // Calculate Anchor account discriminator for "Blober"
   const crypto = require('crypto')
   const discriminator = crypto

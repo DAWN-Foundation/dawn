@@ -5,11 +5,7 @@ import { Pob } from '../../target/types/pob'
 import { expect } from 'chai'
 import { beforeAll, describe, it } from '@jest/globals'
 import { BankrunProvider } from 'anchor-bankrun'
-import {
-  PublicKey,
-  Keypair,
-  SystemProgram,
-} from '@solana/web3.js'
+import { PublicKey, Keypair, SystemProgram } from '@solana/web3.js'
 import {
   getPobConfigPda,
   getRoundCommitmentPda,

@@ -543,7 +543,7 @@ export const unstakingParticipationTests = () =>
         // The constraint is enforced earlier in the flow, which is the correct design.
         // The test above ("Rejects submission when prover is unstaking") validates
         // that unstaking provers cannot participate at the submission level.
-        
+
         // This test serves as documentation that finalize_aggregator would also
         // have a constraint if somehow an unstaking prover's aggregator existed,
         // but the earlier constraint makes this path unreachable by design.

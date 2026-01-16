@@ -562,7 +562,9 @@ export const proofOfBandwidthTests = () =>
           await program.account.aggregator.fetch(simplifiedAggregatorPda)
           expect.fail('Aggregator should be closed')
         } catch (error) {
-          expect(String(error)).to.match(/Account does not exist|Could not find/)
+          expect(String(error)).to.match(
+            /Account does not exist|Could not find/,
+          )
         }
       })
     })
