@@ -16,6 +16,7 @@ pub struct LeaseSubscriberIp<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
+    /// Device account - optional for mobile subscribers without devices
     #[account(
         constraint = device.owner == caller.key() @DawnError::InvalidDevice,
         seeds = [
@@ -27,7 +28,7 @@ pub struct LeaseSubscriberIp<'info> {
         ],
         bump = device.bump
     )]
-    pub device: Account<'info, Device>,
+    pub device: Option<Account<'info, Device>>,
 
     /// The root block registry for this tier
     #[account(
@@ -76,7 +77,7 @@ pub struct LeaseSubscriberIp<'info> {
         seeds = [
             IpLease::SEED_PREFIX.as_ref(),
             IpTier::Subscriber.to_seed().as_ref(),
-            device.key().as_ref(),
+            subscription.key().as_ref(),
         ],
         bump
     )]
@@ -85,7 +86,6 @@ pub struct LeaseSubscriberIp<'info> {
     /// Subscription account to update
     #[account(
         mut,
-        constraint = subscription.device.is_some() && subscription.device.unwrap() == device.key() @DawnError::InvalidDevice,
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
             subscription.plan.as_ref(),
@@ -109,6 +109,17 @@ impl DawnApp {
         let subscription = &mut ctx.accounts.subscription;
         let subscriber_tier = IpTier::Subscriber;
         let ip_registry = &mut ctx.accounts.ip_registry;
+
+        // Get device key if device is provided
+        let device_key = device.as_ref().map(|d| d.key());
+
+        // When device is None, subscription.device must be None
+        // When device is Some, subscription.device must match the device key
+        match (device_key, subscription.device) {
+            (None, None) => {} // OK: no device provided, subscription has no device
+            (Some(dev_key), Some(sub_dev)) if dev_key == sub_dev => {}
+            _ => return Err(DawnError::InvalidDevice.into()),
+        }
 
         let root_block_index = ip_registry
             .find_available_root_block()
@@ -170,7 +181,8 @@ impl DawnApp {
 
         ip_lease.initialize(
             subscriber_tier,
-            device.key(),
+            subscription.key(), // seed_key for PDA derivation
+            device_key,
             ipv4,
             cidr,
             block_idx,
@@ -181,7 +193,8 @@ impl DawnApp {
         // Emit allocation event
         emit!(IpLeased {
             ip_lease: ip_lease.key(),
-            device: device.key(),
+            subscription: Some(subscription.key()),
+            device: device_key,
             tier: subscriber_tier.to_u8(),
             ipv4,
             cidr,

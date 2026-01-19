@@ -2,7 +2,7 @@ import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getFlag, submitTx } from '../../shared/cli-utils'
 import {
-  getIpLeasePda,
+  getSubscriberIpLeasePda,
   getIpRegistryPda,
   getIpBlockPda,
   getRootIpBlockPda,
@@ -12,10 +12,10 @@ import {
 async function main() {
   const deviceFlag = getFlag('--device')
   const subscriptionFlag = getFlag('--subscription')
-  if (!deviceFlag) throw new Error('--device is required')
   if (!subscriptionFlag) throw new Error('--subscription is required')
 
-  const device = new PublicKey(deviceFlag)
+  // Device is now optional for mobile subscribers
+  const device = deviceFlag ? new PublicKey(deviceFlag) : null
   const subscription = new PublicKey(subscriptionFlag)
 
   const tierFlag = getFlag('--tier')
@@ -46,10 +46,12 @@ async function main() {
   const ipRegistry = getIpRegistryPda(tier)
   const rootIpBlock = getRootIpBlockPda(tier, rootIndex)
   const ipBlock = getIpBlockPda(rootIpBlock, blockIndex)
-  const ipLease = getIpLeasePda(tier, device)
+
+  // For subscriber tier, IP lease PDA is derived from subscription
+  const ipLease = getSubscriberIpLeasePda(subscription)
 
   console.log({
-    device: device.toBase58(),
+    device: device ? device.toBase58() : 'none (mobile subscriber)',
     subscription: subscription.toBase58(),
     tier,
     rootIndex,
@@ -60,18 +62,24 @@ async function main() {
     ipLease: ipLease.toBase58(),
   })
 
+  const accounts: any = {
+    caller: wallet.payer.publicKey,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram: SystemProgram.programId,
+  }
+
+  // Add device if provided
+  if (device) {
+    accounts.device = device
+  }
+
   const itx = await program.methods
     .leaseSubscriptionIp()
-    .accountsPartial({
-      caller: wallet.payer.publicKey,
-      device,
-      ipRegistry,
-      rootIpBlock,
-      ipBlock,
-      ipLease,
-      subscription,
-      systemProgram: SystemProgram.programId,
-    })
+    .accountsPartial(accounts)
     .instruction()
 
   const txResult = await submitTx(connection, wallet, itx, false)

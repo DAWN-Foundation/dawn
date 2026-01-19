@@ -45,6 +45,7 @@ import {
   getTokenConfigPda,
   getValidatorDawnAccountPda,
   getIpLeasePda,
+  getSubscriberIpLeasePda,
   getIpRegistryPda,
 } from '../pda'
 
@@ -359,7 +360,7 @@ export async function prepare(
   const loopIpRegistryPda = getIpRegistryPda(1)
   const rootSubscriberIpBlockPda = getRootIpBlockPda(0, 0)
   const ipBlockPda = getIpBlockPda(rootSubscriberIpBlockPda, 0)
-  const ipLeasePda = getIpLeasePda(0, devicePda)
+  const ipLeasePda = getSubscriberIpLeasePda(subscriptionPda)
 
   const ptpIpRegistryPda = getIpRegistryPda(2)
   const rootLoopbackIpBlockPda = getRootIpBlockPda(1, 0)

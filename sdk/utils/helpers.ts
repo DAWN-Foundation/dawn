@@ -298,7 +298,15 @@ export async function addDeviceTx(
   } = params
 
   return program.methods
-    .addDevice(name, height, latitude, longitude, placement, macAddress, localDomain)
+    .addDevice(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
     .accountsPartial({
       caller,
       deviceModel: deviceModelPda,
@@ -313,9 +321,7 @@ export async function addDeviceTx(
 /**
  * Add a device and send via RPC (for error testing)
  */
-export async function addDeviceRpc(
-  params: AddDeviceParams,
-): Promise<string> {
+export async function addDeviceRpc(params: AddDeviceParams): Promise<string> {
   const {
     program,
     caller,
@@ -334,7 +340,15 @@ export async function addDeviceRpc(
   } = params
 
   return program.methods
-    .addDevice(name, height, latitude, longitude, placement, macAddress, localDomain)
+    .addDevice(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
     .accountsPartial({
       caller,
       deviceModel: deviceModelPda,
@@ -393,7 +407,15 @@ export async function addDeviceForTx(
   } = params
 
   return program.methods
-    .addDeviceFor(name, height, latitude, longitude, placement, macAddress, localDomain)
+    .addDeviceFor(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
     .accountsStrict({
       caller,
       beneficiary,
@@ -432,7 +454,15 @@ export async function addDeviceForRpc(
   } = params
 
   return program.methods
-    .addDeviceFor(name, height, latitude, longitude, placement, macAddress, localDomain)
+    .addDeviceFor(
+      name,
+      height,
+      latitude,
+      longitude,
+      placement,
+      macAddress,
+      localDomain,
+    )
     .accountsStrict({
       caller,
       beneficiary,
@@ -465,7 +495,8 @@ export interface VerifyDeviceLocationParams {
 export async function verifyDeviceLocationTx(
   params: VerifyDeviceLocationParams,
 ): Promise<anchor.web3.Transaction> {
-  const { program, caller, signer, configPda, devicePda, deviceLocationPda } = params
+  const { program, caller, signer, configPda, devicePda, deviceLocationPda } =
+    params
 
   return program.methods
     .verifyDeviceLocation()
@@ -485,7 +516,8 @@ export async function verifyDeviceLocationTx(
 export async function verifyDeviceLocationRpc(
   params: VerifyDeviceLocationParams,
 ): Promise<string> {
-  const { program, caller, signer, configPda, devicePda, deviceLocationPda } = params
+  const { program, caller, signer, configPda, devicePda, deviceLocationPda } =
+    params
 
   return program.methods
     .verifyDeviceLocation()
@@ -519,7 +551,15 @@ export interface AddServiceAgreementParams {
 export async function addServiceAgreementTx(
   params: AddServiceAgreementParams,
 ): Promise<anchor.web3.Transaction> {
-  const { program, caller, signer, configPda, serviceAgreementPda, threshold, payoutRatio } = params
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    serviceAgreementPda,
+    threshold,
+    payoutRatio,
+  } = params
 
   return program.methods
     .addServiceAgreement(threshold, payoutRatio)
@@ -538,7 +578,15 @@ export async function addServiceAgreementTx(
 export async function addServiceAgreementRpc(
   params: AddServiceAgreementParams,
 ): Promise<string> {
-  const { program, caller, signer, configPda, serviceAgreementPda, threshold, payoutRatio } = params
+  const {
+    program,
+    caller,
+    signer,
+    configPda,
+    serviceAgreementPda,
+    threshold,
+    payoutRatio,
+  } = params
 
   return program.methods
     .addServiceAgreement(threshold, payoutRatio)
@@ -619,9 +667,7 @@ export async function addL3PlanTx(
 /**
  * Add an L3 plan and send via RPC
  */
-export async function addL3PlanRpc(
-  params: AddL3PlanParams,
-): Promise<string> {
+export async function addL3PlanRpc(params: AddL3PlanParams): Promise<string> {
   const {
     program,
     caller,
@@ -731,9 +777,7 @@ export async function addL2PlanTx(
 /**
  * Add an L2 plan and send via RPC
  */
-export async function addL2PlanRpc(
-  params: AddL2PlanParams,
-): Promise<string> {
+export async function addL2PlanRpc(params: AddL2PlanParams): Promise<string> {
   const {
     program,
     caller,
@@ -809,7 +853,11 @@ export async function registerAuthMethodTx(
   } = params
 
   return program.methods
-    .registerAuthMethod(authMethodType, Array.from(encryptionKey), Array.from(parameters))
+    .registerAuthMethod(
+      authMethodType,
+      Array.from(encryptionKey),
+      Array.from(parameters),
+    )
     .accountsPartial({
       caller,
       config: configPda,
@@ -839,7 +887,11 @@ export async function registerAuthMethodRpc(
   } = params
 
   return program.methods
-    .registerAuthMethod(authMethodType, Array.from(encryptionKey), Array.from(parameters))
+    .registerAuthMethod(
+      authMethodType,
+      Array.from(encryptionKey),
+      Array.from(parameters),
+    )
     .accountsPartial({
       caller,
       config: configPda,
@@ -1004,9 +1056,7 @@ export async function subscribeTx(
 /**
  * Subscribe to a plan and send via RPC
  */
-export async function subscribeRpc(
-  params: SubscribeParams,
-): Promise<string> {
+export async function subscribeRpc(params: SubscribeParams): Promise<string> {
   const {
     program,
     minDawnOut,
@@ -1647,9 +1697,7 @@ export async function claimTx(
 /**
  * Claim DAWN from a subscription and send via RPC
  */
-export async function claimRpc(
-  params: ClaimParams,
-): Promise<string> {
+export async function claimRpc(params: ClaimParams): Promise<string> {
   const {
     program,
     minDawnOut,
@@ -1964,7 +2012,7 @@ export interface LeaseSubscriptionIpParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
-  devicePda: PublicKey
+  devicePda?: PublicKey // Optional for mobile subscribers without devices
   ipRegistry: PublicKey
   rootIpBlock: PublicKey
   ipBlock: PublicKey
@@ -1993,18 +2041,24 @@ export async function leaseSubscriptionIpTx(
     systemProgram,
   } = params
 
+  const accounts: any = {
+    caller,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+  }
+
+  // Add device if provided (optional for mobile subscribers)
+  if (devicePda) {
+    accounts.device = devicePda
+  }
+
   return program.methods
     .leaseSubscriptionIp()
-    .accountsPartial({
-      caller,
-      device: devicePda,
-      ipRegistry,
-      rootIpBlock,
-      ipBlock,
-      ipLease,
-      subscription,
-      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
-    })
+    .accountsPartial(accounts)
     .signers([signer])
     .transaction()
 }
@@ -2028,18 +2082,24 @@ export async function leaseSubscriptionIpRpc(
     systemProgram,
   } = params
 
+  const accounts: any = {
+    caller,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+  }
+
+  // Add device if provided (optional for mobile subscribers)
+  if (devicePda) {
+    accounts.device = devicePda
+  }
+
   return program.methods
     .leaseSubscriptionIp()
-    .accountsPartial({
-      caller,
-      device: devicePda,
-      ipRegistry,
-      rootIpBlock,
-      ipBlock,
-      ipLease,
-      subscription,
-      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
-    })
+    .accountsPartial(accounts)
     .signers([signer])
     .rpc()
 }
@@ -2098,9 +2158,7 @@ export async function allocateIpTx(
 /**
  * Allocate IP and send via RPC
  */
-export async function allocateIpRpc(
-  params: AllocateIpParams,
-): Promise<string> {
+export async function allocateIpRpc(params: AllocateIpParams): Promise<string> {
   const {
     program,
     tier,
@@ -2256,9 +2314,7 @@ export async function revokeIpTx(
 /**
  * Revoke IP and send via RPC
  */
-export async function revokeIpRpc(
-  params: RevokeIpParams,
-): Promise<string> {
+export async function revokeIpRpc(params: RevokeIpParams): Promise<string> {
   const {
     program,
     tier,

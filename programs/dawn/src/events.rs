@@ -179,7 +179,8 @@ pub struct RootIpBlockNonFull {
 #[event]
 pub struct IpLeased {
     pub ip_lease: Pubkey,
-    pub device: Pubkey,
+    pub subscription: Option<Pubkey>,
+    pub device: Option<Pubkey>,
     pub tier: u8,
     pub ipv4: [u8; 4],
     pub cidr: u8,
@@ -191,7 +192,7 @@ pub struct IpLeased {
 #[event]
 pub struct IpRevoked {
     pub ip_lease: Pubkey,
-    pub device: Pubkey,
+    pub device: Option<Pubkey>,
     pub ipv4: [u8; 4],
     pub block_index: u32,
     pub revoked_at: i64,
