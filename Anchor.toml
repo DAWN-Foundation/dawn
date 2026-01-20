@@ -3,20 +3,23 @@ anchor_version = "0.31.1"
 solana_version = "2.1.0"
 
 [features]
-seeds = false
+resolution = true
 skip-lint = false
+
+[programs.devnet]
+dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
+pob = "PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N"
 
 [programs.localnet]
 dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
-
-[programs.devnet]
-dawn = "dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP"
+pob = "PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N"
+blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -84,7 +84,7 @@ impl DawnApp {
             DawnError::InvalidTier
         );
 
-        let device = &ctx.accounts.device;
+        let device = &mut ctx.accounts.device;
         let ip_registry = &mut ctx.accounts.ip_registry;
         let root_ip_block = &mut ctx.accounts.root_ip_block;
         let ip_block = &mut ctx.accounts.ip_block;

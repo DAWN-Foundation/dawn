@@ -19,6 +19,11 @@ import {
   RAYDIUM_PROGRAM_ID,
   setupRaydium,
 } from '../integrations/raydium'
+
+// Data Anchor Blober program ID (exported for tests)
+export const BLOBER_PROGRAM_ID = new PublicKey(
+  'anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2',
+)
 import { getDawnProgram } from '../../cli/shared/cli-utils'
 import {
   getDistributionDomainPda,
@@ -58,13 +63,20 @@ export const METADATA_PROGRAM_ID = new PublicKey(
 export let mock: Mock
 let provider: BankrunProvider
 
+// PoB program ID
+export const POB_PROGRAM_ID = new PublicKey(
+  'PoBrUKPnS6aHnXpAgtQYnLK7mQzFGF5ktk6CrXA9b8N',
+)
+
 export async function getProvider(accounts?: AddedAccount[]) {
   if (provider) return provider
   const context = await startAnchor(
     '.',
     [
       { name: 'dawn', programId: PROGRAM_ID },
+      { name: 'pob', programId: POB_PROGRAM_ID },
       { name: 'raydium', programId: RAYDIUM_PROGRAM_ID },
+      { name: 'blober', programId: BLOBER_PROGRAM_ID },
       {
         name: 'meta',
         programId: METADATA_PROGRAM_ID,

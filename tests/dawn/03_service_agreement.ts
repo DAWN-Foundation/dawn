@@ -46,7 +46,7 @@ export const serviceAgreementTests = () =>
         provider.wallet = new Wallet(mock.serviceProvider)
         await addServiceAgreementRpc({
           program,
-            caller: mock.serviceProvider.publicKey,
+          caller: mock.serviceProvider.publicKey,
           signer: mock.serviceProvider,
           configPda: mock.configPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -67,7 +67,7 @@ export const serviceAgreementTests = () =>
       try {
         await addServiceAgreementTx({
           program,
-            caller: wallet.publicKey,
+          caller: wallet.publicKey,
           signer: wallet.payer,
           configPda: mock.configPda,
           serviceAgreementPda: mock.serviceAgreementPda,
@@ -84,7 +84,7 @@ export const serviceAgreementTests = () =>
     test('adds the service agreement', async () => {
       const tx = await addServiceAgreementTx({
         program,
-          caller: wallet.publicKey,
+        caller: wallet.publicKey,
         signer: wallet.payer,
         configPda: mock.configPda,
         serviceAgreementPda: mock.serviceAgreementPda,

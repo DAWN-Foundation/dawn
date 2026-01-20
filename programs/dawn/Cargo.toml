@@ -29,6 +29,7 @@ raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", defau
     "cpi",
 ] }
 spl-memo = "6.0.0"
+data-anchor-blober = { version = "0.2.2", features = ["cpi"] }
 
 [build-dependencies]
 toml = "0.7"

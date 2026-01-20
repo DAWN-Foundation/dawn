@@ -20,6 +20,7 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../target/types/dawn'
+import { Pob } from '../../target/types/pob'
 import {
   COORD_DENOMINATOR,
   GenerateDevice,
@@ -169,6 +170,19 @@ export function getDawnProgram(
   return new Program(idl, provider)
 }
 
+// helper function to get the PoB IDL
+export function getPobIDL(): Pob {
+  const idlData = fs.readFileSync('target/idl/pob.json', 'utf8')
+  return JSON.parse(idlData)
+}
+
+export function getPobProgram(
+  provider: BankrunProvider | AnchorProvider,
+): Program<Pob> {
+  const idl = getPobIDL()
+  return new Program(idl, provider)
+}
+
 export async function connect(): Promise<{
   wallet: Wallet
   program: Program<Dawn>
@@ -190,6 +204,31 @@ export async function connect(): Promise<{
   const program = getDawnProgram(provider)
 
   return { wallet, program, connection: provider.connection }
+}
+
+export async function connectPob(): Promise<{
+  wallet: Wallet
+  pobProgram: Program<Pob>
+  dawnProgram: Program<Dawn>
+  connection: Connection
+}> {
+  const isDevnet = hasFlag('--devnet')
+  console.log({ isDevnet })
+
+  const wallet = getWallet()
+  console.log({ signer: wallet.payer.publicKey.toBase58() })
+
+  const rpcUrl = isDevnet
+    ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
+    : 'http://127.0.0.1:8899'
+  console.log({ rpcUrl })
+  const connection = new Connection(rpcUrl)
+  const provider = new AnchorProvider(connection, wallet, {})
+  setProvider(provider)
+  const pobProgram = getPobProgram(provider)
+  const dawnProgram = getDawnProgram(provider)
+
+  return { wallet, pobProgram, dawnProgram, connection: provider.connection }
 }
 
 // helper function to get wallet from the config
@@ -220,6 +259,7 @@ export async function submitTx(
   itx: web3.TransactionInstruction,
   logs: boolean = true,
   commitment: Commitment = 'finalized',
+  additionalSigners: Keypair[] = [],
 ) {
   const latestBlockHash = await connection.getLatestBlockhash({
     commitment,
@@ -231,7 +271,13 @@ export async function submitTx(
     feePayer: wallet.payer.publicKey,
   } as TransactionBlockhashCtor).add(itx)
 
+  // Sign with wallet first
   const signed = await wallet.signTransaction(tx)
+
+  // Then sign with additional signers if any
+  if (additionalSigners.length > 0) {
+    signed.partialSign(...additionalSigners)
+  }
 
   let txSignature = await connection.sendRawTransaction(signed.serialize(), {
     skipPreflight: true,
