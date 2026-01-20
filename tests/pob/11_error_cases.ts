@@ -240,11 +240,12 @@ export const errorCaseTests = () =>
               Array.from(dataAnchorRoot),
             )
             .accountsPartial({
-              caller: wallet.publicKey,
+              challengerAuthority: challenger.publicKey,
+              challenger: challengerPda,
               round: badRoundPda,
               systemProgram: SystemProgram.programId,
             })
-            .signers([wallet.payer])
+            .signers([challenger])
             .rpc()
           expect.fail('Should have thrown error')
         } catch (error: any) {
@@ -271,11 +272,12 @@ export const errorCaseTests = () =>
               Array.from(dataAnchorRoot),
             )
             .accountsPartial({
-              caller: wallet.publicKey,
+              challengerAuthority: challenger.publicKey,
+              challenger: challengerPda,
               round: badRoundPda,
               systemProgram: SystemProgram.programId,
             })
-            .signers([wallet.payer])
+            .signers([challenger])
             .rpc()
           expect.fail('Should have thrown error')
         } catch (error: any) {
@@ -302,11 +304,12 @@ export const errorCaseTests = () =>
               Array.from(dataAnchorRoot),
             )
             .accountsPartial({
-              caller: wallet.publicKey,
+              challengerAuthority: challenger.publicKey,
+              challenger: challengerPda,
               round: badRoundPda,
               systemProgram: SystemProgram.programId,
             })
-            .signers([wallet.payer])
+            .signers([challenger])
             .rpc()
           expect.fail('Should have thrown error')
         } catch (error: any) {
@@ -333,11 +336,12 @@ export const errorCaseTests = () =>
               Array.from(dataAnchorRoot),
             )
             .accountsPartial({
-              caller: wallet.publicKey,
+              challengerAuthority: challenger.publicKey,
+              challenger: challengerPda,
               round: badRoundPda,
               systemProgram: SystemProgram.programId,
             })
-            .signers([wallet.payer])
+            .signers([challenger])
             .rpc()
           expect.fail('Should have thrown error')
         } catch (error: any) {
@@ -368,11 +372,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: activeRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         const daPointer = Buffer.alloc(32, 3)
@@ -414,11 +419,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: afterRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp past end_slot
@@ -464,11 +470,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: newRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp to active window
@@ -521,11 +528,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp to active window
@@ -630,11 +638,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Try to finalize during active window (before end_slot)
@@ -686,11 +695,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp past end_slot
@@ -745,11 +755,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Try to submit before start_slot (should fail)
@@ -841,11 +852,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp past end_slot
@@ -936,11 +948,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Try to close during active window
@@ -983,11 +996,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Try to close after end_slot but before grace period (5000 slots from config)
@@ -1175,11 +1189,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp to active window
@@ -1286,11 +1301,12 @@ export const errorCaseTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: testRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp to active window

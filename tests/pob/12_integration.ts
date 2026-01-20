@@ -142,11 +142,12 @@ export const integrationTests = () =>
           Array.from(dataAnchorRoot),
         )
         .accountsPartial({
-          caller: wallet.publicKey,
+          challengerAuthority: challenger.publicKey,
+          challenger: challengerPda,
           round: roundPda,
           systemProgram: SystemProgram.programId,
         })
-        .signers([wallet.payer])
+        .signers([challenger])
         .rpc()
 
       expect(tx).to.be.a('string')
@@ -442,11 +443,12 @@ export const integrationTests = () =>
             Array.from(extDataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: extRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp to active window

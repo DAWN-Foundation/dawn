@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::error::PobError;
 use crate::events::ChallengeRoundCreated;
-use crate::state::RoundCommitment;
+use crate::state::{Challenger, RoundCommitment};
 
 #[derive(Accounts)]
 #[instruction(
@@ -15,12 +15,24 @@ use crate::state::RoundCommitment;
 )]
 pub struct InitChallengeRound<'info> {
     #[account(mut)]
-    pub caller: Signer<'info>,
+    pub challenger_authority: Signer<'info>,
+
+    /// The challenger account - validates caller is a registered challenger
+    #[account(
+        seeds = [
+            Challenger::SEED_PREFIX.as_ref(),
+            challenger.authority.as_ref(),
+        ],
+        bump = challenger.bump,
+        constraint = challenger.authority == challenger_authority.key() @ PobError::Unauthorized,
+        constraint = challenger.unstake_requested_slot == 0 @ PobError::ChallengerUnstaking,
+    )]
+    pub challenger: Box<Account<'info, Challenger>>,
 
     /// The round commitment account
     #[account(
         init,
-        payer = caller,
+        payer = challenger_authority,
         space = RoundCommitment::SIZE,
         seeds = [
             RoundCommitment::SEED_PREFIX.as_ref(),

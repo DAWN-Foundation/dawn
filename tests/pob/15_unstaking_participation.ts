@@ -326,11 +326,12 @@ export const unstakingParticipationTests = () =>
           Array.from(dataAnchorRoot),
         )
         .accountsPartial({
-          caller: wallet.publicKey,
+          challengerAuthority: activeChallenger.publicKey,
+          challenger: activeChallengerPda,
           round: roundPda,
           systemProgram: SystemProgram.programId,
         })
-        .signers([wallet.payer])
+        .signers([activeChallenger])
         .rpc()
 
       // Warp to active window

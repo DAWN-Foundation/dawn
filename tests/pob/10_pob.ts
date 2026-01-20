@@ -303,11 +303,12 @@ export const proofOfBandwidthTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: roundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         expect(tx).to.be.a('string')
@@ -370,11 +371,12 @@ export const proofOfBandwidthTests = () =>
             Array.from(dataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: closeRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
 
         // Warp past end_slot + grace period (5000 slots from config)
@@ -442,11 +444,12 @@ export const proofOfBandwidthTests = () =>
             Array.from(simplifiedDataAnchorRoot),
           )
           .accountsPartial({
-            caller: wallet.publicKey,
+            challengerAuthority: challenger.publicKey,
+            challenger: challengerPda,
             round: simplifiedRoundPda,
             systemProgram: SystemProgram.programId,
           })
-          .signers([wallet.payer])
+          .signers([challenger])
           .rpc()
         ;[simplifiedAggregatorPda] = getAggregatorPda(
           program,
