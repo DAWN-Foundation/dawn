@@ -13,6 +13,7 @@ tests/fixtures/dawn.so
 /dawn**.json
 /dvwn**.json
 /ddwn**.json
+/dwn**.json
 /test**.json
 
 .env
