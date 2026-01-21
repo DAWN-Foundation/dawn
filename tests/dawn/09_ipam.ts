@@ -37,6 +37,7 @@ import { beforeAll, expect } from '@jest/globals'
 
 interface IpLeased {
   ipLease: PublicKey
+  subscription?: PublicKey
   device: PublicKey
   tier: number
   ipv4: IpV4Bytes

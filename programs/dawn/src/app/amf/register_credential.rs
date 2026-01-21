@@ -62,6 +62,8 @@ pub struct RegisterCredential<'info> {
         space = Credential::SIZE,
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
+            subscription.key().as_ref(),
+            plan.key().as_ref(),
             auth_method.key().as_ref(),
             caller.key().as_ref(),
         ],
@@ -99,6 +101,8 @@ impl DawnApp {
 
         credential.created_at = current_time;
         credential.authority = ctx.accounts.caller.key();
+        credential.plan = plan.key();
+        credential.subscription = subscription.key();
         credential.auth_method = auth_method.key();
         credential.credential_data = credential_data;
         credential.bump = ctx.bumps.credential;
@@ -106,6 +110,8 @@ impl DawnApp {
         emit!(CredentialRegistered {
             credential: credential.key(),
             authority: credential.authority,
+            plan: credential.plan,
+            subscription: credential.subscription,
             auth_method: credential.auth_method,
             credential_data: credential.credential_data,
             created_at: credential.created_at,
