@@ -17,6 +17,7 @@ import {
   loadWallet,
   confirmTx,
   getIpLeasePda,
+  getSubscriberIpLeasePda,
   getDevicePda,
   IpV4Bytes,
   getDeviceLocationPda,
@@ -264,7 +265,9 @@ export const leaseIpTests = () =>
       )
 
       // Get IP lease PDA for our test device
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda) // Subscriber tier
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      ) // Subscriber tier
 
       // Set provider wallet to the subscriber for signing
       provider.wallet = new Wallet(subscriberSetup.wallet)
@@ -311,7 +314,9 @@ export const leaseIpTests = () =>
       )
 
       // const unauthorizedWallet = new Wallet(anchor.web3.Keypair.generate())
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda) // Subscriber tier
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      ) // Subscriber tier
 
       try {
         await leaseSubscriptionIpRpc({
@@ -342,7 +347,9 @@ export const leaseIpTests = () =>
       )
 
       // Get IP lease PDA for our test device
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda) // Subscriber tier
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      ) // Subscriber tier
 
       // Set provider wallet to service provider for signing
       provider.wallet = new Wallet(subscriberSetup.wallet)
@@ -411,7 +418,9 @@ export const leaseIpTests = () =>
       )
 
       // Get IP lease PDA for the subscriber's device
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -455,7 +464,9 @@ export const leaseIpTests = () =>
 
       // Create lease promises for each subscriber
       for (const subscriberSetup of subscribers) {
-        const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+        const ipLeasePda = getSubscriberIpLeasePda(
+          subscriberSetup.subscriptionPda,
+        )
 
         // Set provider wallet to the subscriber for signing
         const originalWallet = provider.wallet
@@ -487,7 +498,9 @@ export const leaseIpTests = () =>
       // Verify all IP leases were created with unique IPs
       const ipv4s: string[] = []
       for (const subscriberSetup of subscribers) {
-        const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+        const ipLeasePda = getSubscriberIpLeasePda(
+          subscriberSetup.subscriptionPda,
+        )
         const ipLease = await program.account.ipLease.fetch(ipLeasePda)
         ipv4s.push(ipLease.ipv4.join('.'))
       }
@@ -1060,7 +1073,9 @@ export const bitmapEdgeCaseTests = () =>
       // Allocate IPs for all subscribers
       const allocatedIps: string[] = []
       for (const subscriberSetup of subscribers) {
-        const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+        const ipLeasePda = getSubscriberIpLeasePda(
+          subscriberSetup.subscriptionPda,
+        )
 
         await leaseSubscriptionIpRpc({
           program,
@@ -1107,7 +1122,9 @@ export const bitmapEdgeCaseTests = () =>
         'bitmap-release-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       // Allocate IP
       await leaseSubscriptionIpRpc({
@@ -1167,7 +1184,9 @@ export const bitmapEdgeCaseTests = () =>
         'ipv4-calc-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -1207,7 +1226,9 @@ export const bitmapEdgeCaseTests = () =>
         'bounds-test-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -1359,7 +1380,9 @@ export const multiTierIpamTests = () =>
       )
 
       // Test subscriber tier
-      const subscriberIpLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const subscriberIpLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
       await leaseSubscriptionIpRpc({
         program,
         caller: subscriberSetup.wallet.publicKey,
@@ -1454,7 +1477,9 @@ export const multiTierIpamTests = () =>
       )
 
       // Allocate subscriber IP
-      const subscriberIpLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const subscriberIpLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
       await leaseSubscriptionIpRpc({
         program,
         caller: subscriberSetup.wallet.publicKey,
@@ -1604,7 +1629,9 @@ export const revokeIpTests = () =>
         'revoke-ip-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -1654,7 +1681,9 @@ export const revokeIpTests = () =>
       // const originalWallet = provider.wallet
       provider.wallet = new Wallet(mock.serviceProvider)
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -1718,7 +1747,9 @@ export const revokeIpTests = () =>
         'duplicate-revoke-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       // First revoke should succeed
       await leaseSubscriptionIpRpc({
@@ -1777,7 +1808,10 @@ export const revokeIpTests = () =>
       )
 
       // Try to use subscriber1's device with subscriber2's subscription
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup1.devicePda)
+      // PDA is derived from the subscription being used (subscriberSetup2)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup2.subscriptionPda,
+      )
 
       try {
         await leaseSubscriptionIpRpc({
@@ -1821,7 +1855,9 @@ export const revokeIpTests = () =>
       expect(subscription.expiration.toNumber()).toBeGreaterThan(currentTime)
 
       // Lease should succeed with valid subscription
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       await leaseSubscriptionIpRpc({
         program,
@@ -1848,7 +1884,9 @@ export const revokeIpTests = () =>
         'reuse-ip-subscriber',
         'reuse-ip-device',
       )
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       const ipBlockBeforeLease = await program.account.ipBlock.fetch(
         mock.ipBlockPda,
@@ -1919,14 +1957,13 @@ export const revokeIpTests = () =>
       await provider.context.banksClient.processTransaction(transferTx)
 
       // Create a fake IP lease PDA that doesn't exist
-      const fakeDevicePda = getDevicePda(
+      // For subscriber tier, IP lease PDA is derived from subscription, not device
+      const [fakeSubscriptionPda] = getSubscriptionPda(
         program,
-        unauthorizedWallet,
-        mock.deviceL2ModelPda,
-        'fake-device',
-        mock.deviceMacAddress,
+        mock.planPda,
+        unauthorizedWallet.publicKey,
       )
-      const fakeIpLeasePda = getIpLeasePda(0, fakeDevicePda)
+      const fakeIpLeasePda = getSubscriberIpLeasePda(fakeSubscriptionPda)
 
       const authority = loadWallet().payer
       provider.wallet = new Wallet(authority)
@@ -1960,7 +1997,9 @@ export const revokeIpTests = () =>
         'bitmap-state-device',
       )
 
-      const ipLeasePda = getIpLeasePda(0, subscriberSetup.devicePda)
+      const ipLeasePda = getSubscriberIpLeasePda(
+        subscriberSetup.subscriptionPda,
+      )
 
       // Allocate IP
       await leaseSubscriptionIpRpc({

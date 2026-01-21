@@ -39,6 +39,7 @@ import {
   getTokenConfigPda,
   getValidatorDawnAccountPda,
   getIpLeasePda,
+  getSubscriberIpLeasePda,
   getIpRegistryPda,
 } from '../pda'
 import {
@@ -453,7 +454,7 @@ export async function setup(
   const subscriberIpRegistryPda = getIpRegistryPda(0)
   const rootSubscriberIpBlockPda = getRootIpBlockPda(0, 0)
   const ipBlockPda = getIpBlockPda(rootSubscriberIpBlockPda, 0)
-  const ipLeasePda = getIpLeasePda(0, devicePda)
+  const ipLeasePda = getSubscriberIpLeasePda(subscriptionPda)
 
   mock = {
     serviceProvider,

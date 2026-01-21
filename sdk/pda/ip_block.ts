@@ -35,12 +35,30 @@ export function getIpBlockPda(rootIpBlockPda: PublicKey, blockIndex: number) {
   return ipBlockPda
 }
 
+/**
+ * Get IP Lease PDA for Loopback/PtP tiers (uses device as seed)
+ */
 export function getIpLeasePda(tier: number, devicePda: PublicKey) {
   const [ipLeasePda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('ip_lease'),
       Buffer.from([tier]),
       Buffer.from(devicePda.toBytes()),
+    ],
+    PROGRAM_ID,
+  )
+  return ipLeasePda
+}
+
+/**
+ * Get IP Lease PDA for Subscriber tier (uses subscription as seed)
+ */
+export function getSubscriberIpLeasePda(subscriptionPda: PublicKey) {
+  const [ipLeasePda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ip_lease'),
+      Buffer.from([0]), // Subscriber tier = 0
+      Buffer.from(subscriptionPda.toBytes()),
     ],
     PROGRAM_ID,
   )

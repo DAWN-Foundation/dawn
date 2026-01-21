@@ -59,14 +59,14 @@ pub struct RevokeIp<'info> {
     )]
     pub ip_block: Account<'info, IpBlock>,
 
-    /// The IP lease account to create
+    /// The IP lease account to revoke
     #[account(
         mut,
         close = caller,
         seeds = [
             IpLease::SEED_PREFIX.as_ref(),
             tier.to_seed().as_ref(),
-            ip_lease.device.as_ref(),
+            ip_lease.seed_key.as_ref(),
         ],
         bump = ip_lease.bump
     )]

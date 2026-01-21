@@ -2034,7 +2034,7 @@ export interface LeaseSubscriptionIpParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
-  devicePda: PublicKey
+  devicePda?: PublicKey // Optional for mobile subscribers without devices
   ipRegistry: PublicKey
   rootIpBlock: PublicKey
   ipBlock: PublicKey
@@ -2063,18 +2063,24 @@ export async function leaseSubscriptionIpTx(
     systemProgram,
   } = params
 
+  const accounts: any = {
+    caller,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+  }
+
+  // Add device if provided (optional for mobile subscribers)
+  if (devicePda) {
+    accounts.device = devicePda
+  }
+
   return program.methods
     .leaseSubscriptionIp()
-    .accountsPartial({
-      caller,
-      device: devicePda,
-      ipRegistry,
-      rootIpBlock,
-      ipBlock,
-      ipLease,
-      subscription,
-      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
-    })
+    .accountsPartial(accounts)
     .signers([signer])
     .transaction()
 }
@@ -2098,18 +2104,24 @@ export async function leaseSubscriptionIpRpc(
     systemProgram,
   } = params
 
+  const accounts: any = {
+    caller,
+    ipRegistry,
+    rootIpBlock,
+    ipBlock,
+    ipLease,
+    subscription,
+    systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
+  }
+
+  // Add device if provided (optional for mobile subscribers)
+  if (devicePda) {
+    accounts.device = devicePda
+  }
+
   return program.methods
     .leaseSubscriptionIp()
-    .accountsPartial({
-      caller,
-      device: devicePda,
-      ipRegistry,
-      rootIpBlock,
-      ipBlock,
-      ipLease,
-      subscription,
-      systemProgram: systemProgram || anchor.web3.SystemProgram.programId,
-    })
+    .accountsPartial(accounts)
     .signers([signer])
     .rpc()
 }

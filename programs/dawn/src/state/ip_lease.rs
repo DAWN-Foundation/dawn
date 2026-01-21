@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use crate::constants::DISCRIMINATOR_SIZE;
 
 /// Minimal IP Lease for IPAM strict-first allocation
-/// Represents a single IP address lease to a device
+/// Represents a single IP address lease to a device or subscription
 #[account]
 #[derive(InitSpace)]
 pub struct IpLease {
@@ -12,8 +12,10 @@ pub struct IpLease {
     pub created_at: i64,
     /// Tier identifier (Subscriber, Loopback, PtP)
     pub tier: IpTier,
-    /// Device this IP is leased to
-    pub device: Pubkey,
+    /// Key used for PDA derivation (subscription.key() for Subscriber tier, device.key() for others)
+    pub seed_key: Pubkey,
+    /// Device this IP is leased to (optional for mobile subscribers, required for Loopback/PtP)
+    pub device: Option<Pubkey>,
     /// IPv4 address (32-bit)
     pub ipv4: [u8; 4],
     /// Prefix length (/32 or /31)
@@ -34,7 +36,8 @@ impl IpLease {
     pub fn initialize(
         &mut self,
         tier: IpTier,
-        device: Pubkey,
+        seed_key: Pubkey,
+        device: Option<Pubkey>,
         ipv4: [u8; 4],
         cidr: u8,
         block_index: u32,
@@ -43,6 +46,7 @@ impl IpLease {
     ) -> Result<()> {
         self.created_at = Clock::get()?.unix_timestamp;
         self.tier = tier;
+        self.seed_key = seed_key;
         self.device = device;
         self.ipv4 = ipv4;
         self.ip_v4_cidr_mask = cidr;

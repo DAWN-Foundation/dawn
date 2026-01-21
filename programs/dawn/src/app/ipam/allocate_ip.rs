@@ -136,7 +136,8 @@ impl DawnApp {
         // Initialize the IP lease
         ip_lease.initialize(
             tier,
-            device.key(),
+            device.key(), // seed_key for PDA derivation
+            Some(device.key()),
             ipv4,
             tier.unit_prefix(),
             block_idx,
@@ -147,8 +148,8 @@ impl DawnApp {
         // Emit IP lease event
         emit!(IpLeased {
             ip_lease: ip_lease.key(),
-            subscription: None,
-            device: device.key(),
+            subscription: None, // No subscription for Loopback/PtP tiers
+            device: Some(device.key()),
             tier: tier.to_u8(),
             ipv4,
             cidr: tier.unit_prefix(),
