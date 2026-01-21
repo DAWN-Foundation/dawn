@@ -1,6 +1,6 @@
 [package]
 name = "dawn"
-version = "1.0.2"
+version = "1.1.0"
 description = "DAWN Protocol Program"
 edition = "2021"
 

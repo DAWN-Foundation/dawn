@@ -36,6 +36,8 @@
     "dawn:claim": "yarn build && node dist/cli/commands/subscriptions/claim.js",
     "dawn:get_device_locations": "yarn build && node dist/cli/commands/devices/get_device_locations.js",
     "dawn:get_registries": "yarn build && node dist/cli/commands/ipam/get_registries.js",
+    "dawn:init_root_ip_block": "yarn build && node dist/cli/commands/ipam/init_root_ip_block.js",
+    "dawn:init_ipam": "yarn build && node dist/cli/commands/ipam/init_ipam.js",
     "dawn:get_root_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_root_ip_blocks.js",
     "dawn:get_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_ip_blocks.js",
     "dawn:get_ip_leases": "yarn build && node dist/cli/commands/ipam/get_ip_leases.js",
