@@ -51,6 +51,8 @@ import { MacAddress } from '../../sdk/utils/helpers'
 interface CredentialRegistered {
   credential: PublicKey
   authority: PublicKey
+  plan: PublicKey
+  subscription: PublicKey
   authMethod: PublicKey
   credentialData: number[]
   createdAt: number
@@ -58,6 +60,8 @@ interface CredentialRegistered {
 
 interface CredentialRevoked {
   credential: PublicKey
+  subscription: PublicKey
+  plan: PublicKey
   authMethod: PublicKey
   revokedAt: number
 }
@@ -451,6 +455,8 @@ export const amfTests = () =>
 
       credentialPda = getCredentialPda(
         program,
+        mock.subscriptionPda,
+        mock.planPda,
         authMethodPda,
         mock.customer.publicKey,
       )
@@ -488,6 +494,8 @@ export const amfTests = () =>
       const credential = await program.account.credential.fetch(credentialPda)
       expect(credential.createdAt.toNumber()).toBeGreaterThan(0)
       expect(credential.authority.equals(mock.customer.publicKey)).toBeTruthy()
+      expect(credential.plan.equals(mock.planPda)).toBeTruthy()
+      expect(credential.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(credential.authMethod.equals(authMethodPda)).toBeTruthy()
       expect(credential.credentialData).toStrictEqual(credentialData)
     })
@@ -509,6 +517,8 @@ export const amfTests = () =>
           program,
           caller: unauthorizedKeypair.publicKey,
           signer: unauthorizedKeypair,
+          subscriptionPda: mock.subscriptionPda,
+          planPda: mock.planPda,
           authMethodPda,
           credentialPda,
         })
@@ -540,6 +550,8 @@ export const amfTests = () =>
         program,
         caller: mock.customer.publicKey,
         signer: mock.customer,
+        subscriptionPda: mock.subscriptionPda,
+        planPda: mock.planPda,
         authMethodPda,
         credentialPda,
       })
@@ -552,6 +564,10 @@ export const amfTests = () =>
         'credentialRevoked',
       )
       expect(credentialEvent.credential.equals(credentialPda)).toBeTruthy()
+      expect(
+        credentialEvent.subscription.equals(mock.subscriptionPda),
+      ).toBeTruthy()
+      expect(credentialEvent.plan.equals(mock.planPda)).toBeTruthy()
       expect(credentialEvent.authMethod.equals(authMethodPda)).toBeTruthy()
 
       // Verify credential account is closed (should throw error when trying to fetch)

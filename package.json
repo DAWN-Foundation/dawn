@@ -26,6 +26,7 @@
     "dawn:get_auth_methods": "yarn build && node dist/cli/commands/auth/get_auth_methods.js",
     "dawn:register_auth_method": "yarn build && node dist/cli/commands/auth/register_auth_method.js",
     "dawn:register_credential": "yarn build && node dist/cli/commands/auth/register_credential.js",
+    "dawn:revoke_credential": "yarn build && node dist/cli/commands/auth/revoke_credential.js",
     "dawn:add_plan": "yarn build && node dist/cli/commands/plans/add_plan.js",
     "dawn:get_plans": "yarn build && node dist/cli/commands/plans/get_plans.js",
     "dawn:subscribe": "yarn build && node dist/cli/commands/subscriptions/subscribe.js",
@@ -38,7 +39,8 @@
     "dawn:get_root_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_root_ip_blocks.js",
     "dawn:get_ip_blocks": "yarn build && node dist/cli/commands/ipam/get_ip_blocks.js",
     "dawn:get_ip_leases": "yarn build && node dist/cli/commands/ipam/get_ip_leases.js",
-    "dawn:allocate_ip": "yarn build && node dist/cli/commands/ipam/allocate_ip.js"
+    "dawn:allocate_ip": "yarn build && node dist/cli/commands/ipam/allocate_ip.js",
+    "dawn:lease_subscription_ip": "yarn build && node dist/cli/commands/ipam/lease_subscription_ip.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

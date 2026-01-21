@@ -232,6 +232,8 @@ pub struct AuthMethodRegistered {
 pub struct CredentialRegistered {
     pub credential: Pubkey,
     pub authority: Pubkey,
+    pub plan: Pubkey,
+    pub subscription: Pubkey,
     pub auth_method: Pubkey,
     pub credential_data: [u8; 128],
     pub created_at: i64,
@@ -240,6 +242,8 @@ pub struct CredentialRegistered {
 #[event]
 pub struct CredentialRevoked {
     pub credential: Pubkey,
+    pub subscription: Pubkey,
+    pub plan: Pubkey,
     pub auth_method: Pubkey,
     pub revoked_at: i64,
 }

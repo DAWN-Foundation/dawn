@@ -1817,9 +1817,9 @@ export async function registerCredentialRpc(
     .registerCredential(credentialData)
     .accountsPartial({
       caller,
-      authMethod: authMethodPda,
-      plan: planPda,
       subscription: subscriptionPda,
+      plan: planPda,
+      authMethod: authMethodPda,
       credential: credentialPda,
     })
     .signers([signer])
@@ -1833,6 +1833,8 @@ export interface RevokeCredentialParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
+  subscriptionPda: PublicKey
+  planPda: PublicKey
   authMethodPda: PublicKey
   credentialPda: PublicKey
 }
@@ -1844,12 +1846,22 @@ export interface RevokeCredentialParams {
 export async function revokeCredentialTx(
   params: RevokeCredentialParams,
 ): Promise<anchor.web3.Transaction> {
-  const { program, caller, signer, authMethodPda, credentialPda } = params
+  const {
+    program,
+    caller,
+    signer,
+    subscriptionPda,
+    planPda,
+    authMethodPda,
+    credentialPda,
+  } = params
 
   return program.methods
     .revokeCredential()
     .accountsPartial({
       caller,
+      subscription: subscriptionPda,
+      plan: planPda,
       authMethod: authMethodPda,
       credential: credentialPda,
     })
@@ -1863,12 +1875,22 @@ export async function revokeCredentialTx(
 export async function revokeCredentialRpc(
   params: RevokeCredentialParams,
 ): Promise<string> {
-  const { program, caller, signer, authMethodPda, credentialPda } = params
+  const {
+    program,
+    caller,
+    signer,
+    subscriptionPda,
+    planPda,
+    authMethodPda,
+    credentialPda,
+  } = params
 
   return program.methods
     .revokeCredential()
     .accountsPartial({
       caller,
+      subscription: subscriptionPda,
+      plan: planPda,
       authMethod: authMethodPda,
       credential: credentialPda,
     })
