@@ -62,24 +62,17 @@ async function main() {
     ipLease: ipLease.toBase58(),
   })
 
-  const accounts: any = {
-    caller: wallet.payer.publicKey,
-    ipRegistry,
-    rootIpBlock,
-    ipBlock,
-    ipLease,
-    subscription,
-    systemProgram: SystemProgram.programId,
-  }
-
-  // Add device if provided
-  if (device) {
-    accounts.device = device
-  }
-
   const itx = await program.methods
     .leaseSubscriptionIp()
-    .accountsPartial(accounts)
+    .accountsPartial({
+      caller: wallet.payer.publicKey,
+      ipRegistry,
+      rootIpBlock,
+      ipBlock,
+      ipLease,
+      device,
+      subscription,
+    })
     .instruction()
 
   const txResult = await submitTx(connection, wallet, itx, false)

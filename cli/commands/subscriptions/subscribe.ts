@@ -33,6 +33,7 @@ async function main() {
     mock.usdcMint,
     planPda,
     true,
+    'confirmed',
   )
 
   const { address: escrowDawnVault } = await getOrCreateAssociatedTokenAccount(
@@ -41,6 +42,7 @@ async function main() {
     mock.dawnMint,
     planPda,
     true,
+    'confirmed',
   )
 
   // get wallet token accounts
