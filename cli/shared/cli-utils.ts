@@ -207,6 +207,8 @@ export function getWallet(): Wallet {
     wallet = configWallet('customer')
   } else if (hasFlag('--service-provider')) {
     wallet = configWallet('serviceProvider')
+  } else if (hasFlag('--wallet')) {
+    wallet = loadWallet(getFlag('--wallet'))
   } else {
     wallet = loadWallet()
   }

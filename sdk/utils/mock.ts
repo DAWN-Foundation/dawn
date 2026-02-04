@@ -1,4 +1,5 @@
 import fs from 'fs'
+import path from 'path'
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Wallet } from '@coral-xyz/anchor'
 import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
@@ -92,8 +93,28 @@ export async function confirmTx(provider: BankrunProvider, tx: Transaction) {
 }
 
 // helper function to load the wallet from the local file system
-export function loadWallet(): anchor.Wallet {
-  const walletPath = `${require('os').homedir()}/.config/solana/id.json`
+export function loadWallet(walletFile?: string): anchor.Wallet {
+  let walletPath: string
+
+  if (walletFile) {
+    // Check if it's a full path (contains '/' or starts with absolute path indicators)
+    if (walletFile.startsWith('/') || walletFile.includes('/')) {
+      walletPath = walletFile
+    } else {
+      // It's a filename, look in custom-wallets folder
+      const customWalletsPath = path.join(process.cwd(), 'custom-wallets', walletFile)
+      if (fs.existsSync(customWalletsPath)) {
+        walletPath = customWalletsPath
+      } else {
+        // Fallback to default location if not found in custom-wallets
+        walletPath = `${require('os').homedir()}/.config/solana/${walletFile}`
+      }
+    }
+  } else {
+    // Default to the standard Solana wallet location
+    walletPath = `${require('os').homedir()}/.config/solana/id.json`
+  }
+
   const secretKeyString = fs.readFileSync(walletPath, 'utf8')
   const secretKey = Uint8Array.from(JSON.parse(secretKeyString))
   const keypair = Keypair.fromSecretKey(secretKey)
