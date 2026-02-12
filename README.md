@@ -32,11 +32,8 @@ rustc --version
 ### Solana CLI
 
 ```bash
-# Install the Solana CLI (version 1.17.0)
-sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
-
-# Alternatively, install the latest Solana CLI (not recommended)
-# sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+# Install the Solana CLI (version 2.1.0)
+sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
 
 # Output might ask to:
 # Close and reopen your terminal to apply the PATH changes
@@ -54,11 +51,11 @@ cargo install --git https://github.com/coral-xyz/anchor avm --force
 # Make sure AVM is installed
 avm --version
 
-# Install the Anchor version 0.29.0
-avm install 0.29.0
+# Install the Anchor version 0.31.1
+avm install 0.31.1
 
 # Use the installed Anchor version
-avm use 0.29.0
+avm use 0.31.1
 
 # Make sure Anchor is installed
 anchor --version
@@ -115,7 +112,7 @@ anchor test
 
 ```bash
 # Start local validator with script
-./script/run-local-validator.sh
+make validator
 
 # Or make this manualy 👇
 # Start local validator (with cloned Raydium)
@@ -147,17 +144,7 @@ pbcopy < ~/andrena/dawn/target/idl/dawn.json
 
 ```bash
 # Run the init script
-./scripts/testnet-setup.sh
-```
-
-```bash
-# Or make this manualy 👇
-```
----
-
-```bash
-# Run the testnet script (this takes a while)
-yarn testnet
+make setup
 ```
 
 ### Local Testnet
@@ -180,8 +167,8 @@ These command allow interaction with the DAWN contract deployed on local testnet
 # yarn dawn:add_plan --service-provider
 # yarn dawn:subscribe --customer
 
-# Initialize the DAWN contract (as local identity)
-yarn dawn:config
+# # Initialize the DAWN contract (as local identity)
+# yarn dawn:config
 
 # Add a device model (note Device Mode PDA from output)
 yarn dawn:add_device_model \
@@ -260,7 +247,6 @@ yarn dawn:claim \
     --subscription <subscription>
 ```
 
-
 ### MEV Protection & Slippage Settings
 
 The DAWN protocol implements MEV sandwich attack protection for all swap operations (subscribe and claim). The CLI automatically:
@@ -272,17 +258,18 @@ The DAWN protocol implements MEV sandwich attack protection for all swap operati
 
 **Slippage Tolerance Guide:**
 
-| Flag | Percentage | Use Case |
-|------|------------|----------|
-| `--slippage 50` | 0.5% | Very stable market, tight MEV protection |
-| `--slippage 100` | 1% | **Default** - Standard MEV protection |
-| `--slippage 200` | 2% | Normal conditions, moderate volatility |
-| `--slippage 300` | 3% | Higher volatility tolerance |
-| `--slippage 500` | 5% | Maximum allowed by program |
+| Flag             | Percentage | Use Case                                 |
+| ---------------- | ---------- | ---------------------------------------- |
+| `--slippage 50`  | 0.5%       | Very stable market, tight MEV protection |
+| `--slippage 100` | 1%         | **Default** - Standard MEV protection    |
+| `--slippage 200` | 2%         | Normal conditions, moderate volatility   |
+| `--slippage 300` | 3%         | Higher volatility tolerance              |
+| `--slippage 500` | 5%         | Maximum allowed by program               |
 
 **Note**: The CLI calculation reads Raydium's actual trade fee from the config account to match the program's validation exactly. Lower slippage values (0.5-1%) provide stronger MEV protection.
 
 **Example with custom slippage:**
+
 ```bash
 # Subscribe with 0.5% slippage (tighter MEV protection)
 yarn dawn:subscribe --customer --plan <plan> --slippage 50
@@ -295,6 +282,7 @@ yarn dawn:subscribe --customer --plan <plan>
 ```
 
 **Error Handling:**
+
 - `TransactionExpired`: Deadline passed - retry transaction
 - `InsufficientOutputAmount`: Price moved unfavorably - increase slippage or retry
 - `UnrealisticMinimumOutput`: Calculated minOut exceeds 110% of expected - check pool state
