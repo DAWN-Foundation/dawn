@@ -4,7 +4,7 @@
 use anchor_lang::prelude::*;
 
 #[cfg(not(feature = "devnet"))]
-declare_id!("F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE");
+declare_id!("BManEMKFiw1Vm7kJL9JotQ2k8gBSYkLg9mMEvWnoTNKS");
 
 #[cfg(feature = "devnet")]
 declare_id!("dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu");
@@ -13,7 +13,7 @@ mod app;
 mod constants;
 mod error;
 mod events;
-mod state;
+pub mod state;  // Make state module public so API can import types
 mod utils;
 
 use app::*;

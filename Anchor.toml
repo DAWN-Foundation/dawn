@@ -7,7 +7,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dawn = "F4Yq1jQgccrzbEn9iHrA9JjQ1xyRFViDX8Xhb5FzJmaE"
+dawn = "BManEMKFiw1Vm7kJL9JotQ2k8gBSYkLg9mMEvWnoTNKS"
 
 [programs.devnet]
 dawn = "dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu"
