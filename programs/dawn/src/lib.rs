@@ -13,7 +13,7 @@ mod app;
 mod constants;
 mod error;
 mod events;
-pub mod state;  // Make state module public so API can import types
+pub mod state; // Make state module public so API can import types
 mod utils;
 
 use app::*;
