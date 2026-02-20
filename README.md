@@ -79,23 +79,15 @@ solana address --keypair ~/.config/solana/id.json
 ### Build
 
 ```bash
-# Use `dev` branch
-git checkout dev
-
 # Build the program
 anchor build
 ```
 
 ### Local Program Address
 
-Each local keypair is unique and must be set correctly to deploy contracts locally
-
 ```bash
-# Check local program address
-anchor keys list
-
-# Sync local program address
-anchor keys sync
+# Sync the program keypair before build (required by localnet)
+make sync-testnet-program-id
 
 # Build again
 anchor build
@@ -114,7 +106,7 @@ anchor test
 # Start local validator with script
 make validator
 
-# Or make this manualy 👇
+# Or make this manually 👇
 # Start local validator (with cloned Raydium)
 solana-test-validator \
   --reset \
@@ -154,19 +146,27 @@ These command allow interaction with the DAWN contract deployed on local testnet
 **Note on MEV Protection**: Subscribe and claim commands now include MEV sandwich attack protection. The CLI automatically calculates minimum DAWN output (`min_dawn_out`) and transaction deadline based on current pool state, accounting for Raydium's trade fees. You can control slippage tolerance using the `--slippage` flag (in basis points, default 100 = 1%).
 
 ```bash
-# [Optional] Its also possible to specify following signers
-# apart from default one located at ~/.config/solana/id.json
-# these can be applied to all transaction commands below
+
+# When running yarn commands, in order to specify a signer you have 5 options:
+
+# 1) Not passing a flag" the default signer located in /.config/solana/id.json is used
+
+# 2) Passing --service-provider. The serviceProvider.secretKey in devnet.json or testnet.json is used. It's usually used to add a device and create plans
+
+# 3) Passing --customer. The customer.secretKey in devnet.json or testnet.json is used
+
+# 4) passing a full path to a wallet file in --wallet {FILE_PATH}
+
+# 5) creating a wallet running yarn create-wallet which will create a wallet in custom-wallets/wallet-{index}.json such as custom-wallets/wallet-1.json, custom-wallets/wallet-2.json and so on. Wallets will have preallocated funds. Then you can pass for instance --wallet wallet-1.json.
+
 # for example:
-# empty means the local wallet is used and is usually the root wallet
-# --service-provider is usually used to add a device and create plans
-# --customer should have some USDC and can be used to pay for plan subscription
 # yarn dawn:config
 # yarn dawn:add_device_model
 # yarn dawn:add_device --service-provider
 # yarn dawn:add_plan --service-provider
 # yarn dawn:subscribe --customer
-
+# --customer or --wallet {FILE_PATH} should have some USDC and can be used to pay for plan subscription
+# yarn dawn:subscribe --wallet wallet-1.json
 # # Initialize the DAWN contract (as local identity)
 # yarn dawn:config
 
@@ -299,4 +299,85 @@ anchor build -- --features devnet
 
 # Deploy the program to devnet
 anchor deploy --provider.cluster devnet --program-name dawn --program-keypair dvwnCqTegp9rVZVTZgnfmpqgVCKD9PMF42f4yjTVPMJ.json
+```
+
+
+## Local Testnet flow full example
+
+```bash
+# In a separate terminal, in order to start local validator run:
+make validator
+
+# Run the init script
+make setup
+
+# Add device model. Model and manufacturer has to be the same as in LAN server
+yarn dawn:add_device_model \
+    --device-type 'router' \
+    --manufacturer 'DAWN' \
+    --model 'Black Box'
+
+# Add device (as --service-provider)
+yarn dawn:add_device --service-provider \
+    --device-model <device-model> \
+    --latitude '40.765258' \
+    --longitude '-74.171105' \
+    --height 85 \
+    --placement '22700,-1000' \
+    --mac-address 'AC:B6:7C:F1:EB:31' \
+    --name 'Box 1'
+
+#After device is added, you can copy the device pda and local domain from the output and use them in the next steps
+
+# Send Request to LAN server to setup device
+curl -X POST http://localhost:4004/api/setup \
+    -H "Content-Type: application/json" \
+    -d '{
+        "device": "<device>",
+        "local_domain": "<local_domain>"
+    }'
+
+# Register Auth Method (as --service-provider)
+yarn dawn:register_auth_method \
+  --service-provider \
+  --device <device>
+
+# After auth method is added, you can copy the auth method pda and the private key from the output and use it in the next steps
+
+# Send Request to LAN server to register auth method
+curl -X POST http://localhost:4004/api/auth-method \
+    -H "Content-Type: application/json" \
+    -d '{
+        "auth_method_pda": "<auth-method>",
+        "private_key": "<private-key>"
+    }'
+
+# Add L2 plan (as --service-provider)
+yarn dawn:add_plan \
+    --service-provider \
+    --type L2 \
+    --price 450000000 \
+    --duration 30 \
+    --speed 250 \
+    --capacity 5500 \
+    --auth-methods <auth-method>
+
+# Mint USDC to customer.publicKey (from testnet.json)
+yarn usdc:mint --recipient <pubkey>
+
+# Subscribe to plan (as --customer)
+yarn dawn:subscribe \
+    --customer \
+    --plan <plan>
+
+# Allocate IP
+yarn dawn:allocate_ip --tier 1 --device <device_pubkey>
+
+# Register credential (as --customer)
+yarn dawn:register_credential \
+    --customer \
+    --plan <plan> \
+    --auth-method <auth-method> \
+    --psk 'TestTest12341234'
+
 ```
