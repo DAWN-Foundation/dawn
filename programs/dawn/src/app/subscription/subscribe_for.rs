@@ -18,7 +18,7 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct SubscribeFor<'info> {
-    #[account(mut)]
+    #[account(mut, address = config.api_authority)]
     pub caller: Signer<'info>,
 
     /// The beneficiary who will receive the subscription

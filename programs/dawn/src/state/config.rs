@@ -9,6 +9,8 @@ pub struct Config {
     pub created_at: i64,
     /// The authority that can update the config
     pub authority: Pubkey,
+    /// The authority that can make calls on user's behalf
+    pub api_authority: Pubkey,
 
     // MINTS
     /// The token config account that owns the DAWN mint

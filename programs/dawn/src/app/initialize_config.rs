@@ -9,6 +9,10 @@ pub struct InitializeConfig<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
+    /// CHECK: The API authority that can make calls on user's behalf
+    #[account(mut)]
+    pub api_authority: UncheckedAccount<'info>,
+
     /// The config with fees and ratios applied to the plan payments
     #[account(
         init,
@@ -117,6 +121,7 @@ impl DawnApp {
         // Set caller as the authority
         config.created_at = Clock::get()?.unix_timestamp;
         config.authority = ctx.accounts.caller.key();
+        config.api_authority = ctx.accounts.api_authority.key();
 
         // Set mints
         config.token_config = ctx.accounts.token_config.key();

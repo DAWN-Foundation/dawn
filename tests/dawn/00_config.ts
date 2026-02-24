@@ -20,6 +20,7 @@ import {
   confirmTx,
   METADATA_PROGRAM_ID,
 } from '../../sdk/utils'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 interface RootIpBlockInitialized {
   rootIpBlock: PublicKey
@@ -87,8 +88,9 @@ export const configTests = () =>
     test('initializes config (one-time)', async () => {
       const tx = await program.methods
         .initializeConfig(mock.daoFee, mock.validatorFee, mock.medallionFee)
-        .accountsPartial({
+        .accountsStrict({
           caller: wallet.payer.publicKey,
+          apiAuthority: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
           usdcMint: mock.usdcMint,
@@ -102,6 +104,9 @@ export const configTests = () =>
           raydiumConfig: mock.raydiumConfig,
           raydiumPool: mock.raydiumPool,
           raydiumObservation: mock.raydiumObservation,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .rpc()
 
@@ -150,8 +155,9 @@ export const configTests = () =>
           null, // Keep raydium pool
           null, // Keep raydium config
           null, // Keep raydium observation
+          null, // Keep api authority
         )
-        .accountsPartial({
+        .accountsStrict({
           caller: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
@@ -166,6 +172,9 @@ export const configTests = () =>
           raydiumConfig: mock.raydiumConfig,
           raydiumPool: mock.raydiumPool,
           raydiumObservation: mock.raydiumObservation,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .rpc()
 
@@ -186,6 +195,7 @@ export const configTests = () =>
       await program.methods
         .updateConfig(
           mock.daoFee, // Restore original dao fee
+          null,
           null,
           null,
           null,

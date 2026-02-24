@@ -56,6 +56,7 @@ pub mod dawn {
         raydium_pool: Option<Pubkey>,
         raydium_config: Option<Pubkey>,
         raydium_observation: Option<Pubkey>,
+        api_authority: Option<Pubkey>,
     ) -> Result<()> {
         DawnApp::update_config(
             ctx,
@@ -67,6 +68,7 @@ pub mod dawn {
             raydium_pool,
             raydium_config,
             raydium_observation,
+            api_authority,
         )
     }
 
@@ -88,6 +90,13 @@ pub mod dawn {
         credential_data: [u8; 128],
     ) -> Result<()> {
         DawnApp::register_credential(ctx, credential_data)
+    }
+
+    pub fn register_credential_for(
+        ctx: Context<RegisterCredentialFor>,
+        credential_data: [u8; 128],
+    ) -> Result<()> {
+        DawnApp::register_credential_for(ctx, credential_data)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
@@ -257,6 +266,10 @@ pub mod dawn {
 
     pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
         DawnApp::lease_subscription_ip(ctx)
+    }
+
+    pub fn lease_subscription_ip_for(ctx: Context<LeaseSubscriberIpFor>) -> Result<()> {
+        DawnApp::lease_subscription_ip_for(ctx)
     }
 
     pub fn revoke_ip(ctx: Context<RevokeIp>, tier: u8) -> Result<()> {

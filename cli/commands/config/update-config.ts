@@ -32,8 +32,9 @@ async function main() {
       null, // Keep raydium pool
       null, // Keep raydium config
       null, // Keep raydium observation
+      null, // Keep api authority
     )
-    .accountsPartial({
+    .accountsStrict({
       caller: wallet.payer.publicKey,
       tokenConfig: mock.tokenConfigPda,
       config: mock.configPda,
@@ -48,6 +49,9 @@ async function main() {
       raydiumConfig: mock.raydiumConfig,
       raydiumPool: mock.raydiumPool,
       raydiumObservation: mock.raydiumObservation,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .signers([wallet.payer])
     .instruction()
