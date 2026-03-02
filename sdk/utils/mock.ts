@@ -424,6 +424,7 @@ export async function setup(
 
   const [planPda, planBump] = getPlanPda(
     program,
+    serviceProvider.publicKey,
     localDomainPda,
     null,
     planName,

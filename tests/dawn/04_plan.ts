@@ -164,6 +164,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -218,6 +219,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -266,6 +268,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -406,6 +409,7 @@ export const planTests = () =>
       // First, test that 3 auth methods succeed
       const [planPda3] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -448,6 +452,7 @@ export const planTests = () =>
       // Now test that 4 auth methods fail
       const [planPda4] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName + ' fail',
@@ -530,6 +535,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         name,
@@ -578,6 +584,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         name,
@@ -759,6 +766,7 @@ export const planTests = () =>
 
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         name,
@@ -830,6 +838,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -880,6 +889,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -931,6 +941,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -989,6 +1000,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -1041,6 +1053,7 @@ export const planTests = () =>
       const planName = 'test plan for auth method'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1140,6 +1153,7 @@ export const planTests = () =>
       const planName = 'test plan for duplicate'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1197,6 +1211,7 @@ export const planTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1262,6 +1277,7 @@ export const planTests = () =>
       const planName = 'test plan wrong domain'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1394,6 +1410,7 @@ export const planTests = () =>
       const planName = 'test plan max auth methods'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1504,6 +1521,7 @@ export const planTests = () =>
       const planName = 'test plan unauthorized caller'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1593,6 +1611,7 @@ export const planTests = () =>
       const planName = 'test plan same domain success'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -1813,6 +1832,7 @@ export const parentPlanTests = () =>
       const speed = 240
       const [plan2Pda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         mock.planName,
@@ -1857,6 +1877,7 @@ export const parentPlanTests = () =>
       )
       const [resellPlanPda] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         plan2Pda,
         mock.planName,
@@ -1905,6 +1926,7 @@ export const parentPlanTests = () =>
       const speed2 = 350
       const [plan2Pda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         'Different Plan',
@@ -1948,6 +1970,7 @@ export const parentPlanTests = () =>
       )
       const [resellPlanPda] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         plan2Pda, // Parent is plan2
         'Resell Different Plan',
@@ -2024,6 +2047,7 @@ export const parentPlanTests = () =>
       )
       const [planPda] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         mock.planPda,
         mock.planName,
@@ -2078,6 +2102,7 @@ export const parentPlanTests = () =>
       )
       const [planPda] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         mock.planPda,
         mock.planName,
@@ -2131,6 +2156,7 @@ export const parentPlanTests = () =>
       )
       const [planPda] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         mock.planPda,
         mock.planName,
@@ -2185,6 +2211,7 @@ export const parentPlanTests = () =>
       )
       const [planPda, planBump] = getPlanPda(
         program,
+        mock.customer.publicKey,
         localDomainPda,
         mock.planPda, // parent plan
         mock.planName,

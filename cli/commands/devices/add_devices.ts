@@ -118,6 +118,7 @@ async function main() {
 
           const [planPda] = getPlanPda(
             program,
+            wallet.payer.publicKey,
             localDomainPda,
             null,
             planParams.name,
