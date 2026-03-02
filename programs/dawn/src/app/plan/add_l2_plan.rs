@@ -36,6 +36,7 @@ pub struct AddL2Plan<'info> {
     #[account(
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            parent_plan.owner.as_ref(),
             parent_plan.local_domain.as_ref(),
             &optional_pubkey_seed(parent_plan.parent_plan),
             &hash_string_seed(&parent_plan.name),
@@ -57,6 +58,7 @@ pub struct AddL2Plan<'info> {
         space = Plan::SIZE,
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            caller.key().as_ref(),
             local_domain.key().as_ref(),
             &optional_pubkey_seed(parent_plan.as_ref().map(|acc| acc.key())),
             &hash_string_seed(&name),

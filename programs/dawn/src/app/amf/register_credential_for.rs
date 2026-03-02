@@ -43,6 +43,7 @@ pub struct RegisterCredentialFor<'info> {
         mut,
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            plan.owner.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &hash_string_seed(&plan.name),

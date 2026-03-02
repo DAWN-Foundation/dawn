@@ -39,6 +39,7 @@ pub struct AddL3Plan<'info> {
         space = Plan::SIZE,
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            caller.key().as_ref(),
             local_domain.key().as_ref(),
             &optional_pubkey_seed(None::<Pubkey>),
             &hash_string_seed(&name),

@@ -31,6 +31,7 @@ pub struct Claim<'info> {
         constraint = caller.key() == plan.owner,
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            plan.owner.as_ref(),
             plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &hash_string_seed(&plan.name),
@@ -188,6 +189,7 @@ impl DawnApp {
         // Signer seeds for the subscription account
         let seeds = &[
             Plan::SEED_PREFIX.as_ref(),
+            ctx.accounts.plan.owner.as_ref(),
             ctx.accounts.plan.local_domain.as_ref(),
             &optional_pubkey_seed(ctx.accounts.plan.parent_plan),
             &hash_string_seed(&ctx.accounts.plan.name),
