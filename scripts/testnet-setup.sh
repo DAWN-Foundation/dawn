@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Sync the program keypair before build (required by localnet)
+./scripts/sync-testnet-program-id.sh
+
 # Build the program
 anchor build
 
