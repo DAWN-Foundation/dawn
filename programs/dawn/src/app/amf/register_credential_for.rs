@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    app::DawnApp,
+    app::{amf::register_credential_helper, DawnApp},
     error::DawnError,
     events::CredentialRegistered,
     state::{AuthMethod, Config, Credential, Plan, Subscription},
@@ -59,6 +59,7 @@ pub struct RegisterCredentialFor<'info> {
     pub plan: Account<'info, Plan>,
 
     #[account(
+        constraint = subscription.subscriber == beneficiary.key() @DawnError::InvalidBeneficiary,
         seeds = [
             Subscription::SEED_PREFIX,
             plan.key().as_ref(),
@@ -92,43 +93,14 @@ impl DawnApp {
         ctx: Context<RegisterCredentialFor>,
         credential_data: [u8; 128],
     ) -> Result<()> {
-        let current_time = Clock::get()?.unix_timestamp;
-        let plan = &ctx.accounts.plan;
-        let subscription = &ctx.accounts.subscription;
-        let auth_method = &ctx.accounts.auth_method;
-
-        // Validate subscription is not expired
-        require!(
-            subscription.expiration > current_time,
-            DawnError::SubscriptionExpired
-        );
-
-        // Validate auth method is assigned to the plan
-        require!(
-            plan.auth_methods.contains(&auth_method.key()),
-            DawnError::AuthMethodNotInPlan
-        );
-
-        let credential = &mut ctx.accounts.credential;
-
-        credential.created_at = current_time;
-        credential.authority = ctx.accounts.beneficiary.key();
-        credential.plan = plan.key();
-        credential.subscription = subscription.key();
-        credential.auth_method = auth_method.key();
-        credential.credential_data = credential_data;
-        credential.bump = ctx.bumps.credential;
-
-        emit!(CredentialRegistered {
-            credential: credential.key(),
-            authority: credential.authority,
-            plan: credential.plan,
-            subscription: credential.subscription,
-            auth_method: credential.auth_method,
-            credential_data: credential.credential_data,
-            created_at: credential.created_at,
-        });
-
-        Ok(())
+        register_credential_helper::process_register_credential(
+            &ctx.accounts.plan,
+            &ctx.accounts.subscription,
+            &ctx.accounts.auth_method,
+            ctx.accounts.beneficiary.key(),
+            &mut ctx.accounts.credential,
+            credential_data,
+            ctx.bumps.credential,
+        )
     }
 }
