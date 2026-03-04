@@ -2,8 +2,8 @@ pub mod allocate_ip;
 pub mod init_root_blocks;
 pub mod lease_subscriber_ip;
 pub mod lease_subscriber_ip_for;
-pub mod revoke_ip;
 pub mod lease_subscriber_ip_helper;
+pub mod revoke_ip;
 
 pub use allocate_ip::*;
 pub use init_root_blocks::*;

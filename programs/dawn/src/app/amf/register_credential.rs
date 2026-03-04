@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    app::{DawnApp, amf::register_credential_helper},
+    app::{amf::register_credential_helper, DawnApp},
     error::DawnError,
     events::CredentialRegistered,
     state::{AuthMethod, Credential, Plan, Subscription},

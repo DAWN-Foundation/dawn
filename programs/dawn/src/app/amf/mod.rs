@@ -8,10 +8,10 @@ mod register_auth_method;
 mod register_connection;
 mod register_credential;
 mod register_credential_for;
+mod register_credential_helper;
 mod revoke_connection;
 mod revoke_credential;
 mod wpa2e_method;
-mod register_credential_helper;
 
 pub use amf::*;
 pub use eap_method::*;

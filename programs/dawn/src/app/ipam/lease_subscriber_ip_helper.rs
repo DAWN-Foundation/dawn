@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     error::DawnError,
-    events::{IpBlockAdded, IpBlockFull, RootIpBlockFull, IpLeased},
+    events::{IpBlockAdded, IpBlockFull, IpLeased, RootIpBlockFull},
     state::{Device, IpBlock, IpLease, IpRegistry, IpTier, RootIpBlock, Subscription},
 };
 
@@ -47,12 +47,7 @@ pub fn process_lease_subscription_ip(
     let block_base = root_ip_block.get_block_base_ipv4_checked(block_idx)?;
     // if block is not initialized, initialize it (use created_at as robust init flag)
     if ip_block.created_at == 0 {
-        ip_block.initialize(
-            subscriber_tier,
-            root_block_index,
-            block_base,
-            ip_block_bump,
-        )?;
+        ip_block.initialize(subscriber_tier, root_block_index, block_base, ip_block_bump)?;
         emit!(IpBlockAdded {
             ip_block: ip_block.key(),
             tier: subscriber_tier.to_u8(),
