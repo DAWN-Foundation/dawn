@@ -151,7 +151,6 @@ impl DawnApp {
         let plan_key = plan_account.key();
         let last_claim = ctx.accounts.subscription.last_claim;
         let claimable_dawn = ctx.accounts.subscription.claimable_dawn;
-        let daily_usdc = ctx.accounts.subscription.daily_usdc;
 
         let clock = Clock::get()?;
         let current_time = clock.unix_timestamp;
@@ -170,20 +169,17 @@ impl DawnApp {
         // Validate min_dawn_out is reasonable (not zero)
         require!(min_dawn_out > 0, DawnError::InvalidMinimumOutput);
 
-        // Check if 24 hours have passed since last claim
+        // Validate subscription is expired (claim only allowed after subscription ends)
+        require!(
+            ctx.accounts.subscription.expiration <= current_time,
+            DawnError::SubscriptionNotExpired
+        );
+
+        // Check if 24 hours have passed since last claim (for claiming locked DAWN)
         require!(
             current_time - last_claim >= SECONDS_PER_DAY as i64,
             DawnError::ClaimTooEarly
         );
-
-        // Validate subscription is not expired
-        require!(
-            ctx.accounts.subscription.expiration > current_time,
-            DawnError::SubscriptionExpired
-        );
-
-        // Calculate number of days since last claim
-        let days_since_claim = ((current_time - last_claim) / SECONDS_PER_DAY as i64) as u64;
 
         // Signer seeds for the subscription account
         let seeds = &[
@@ -225,17 +221,13 @@ impl DawnApp {
 
         let mut swap_price = 0;
 
-        // Handle swapping USDC for next period
+        // Handle swapping all remaining USDC
         let remaining_usdc = ctx.accounts.escrow_usdc_vault.amount;
-        if days_since_claim > 0 && remaining_usdc > 0 {
-            // Swap daily USDC times the number of days since last claim
-            // Or the remaining USDC if it's less than the cumulative daily USDC
-            let usdc_to_swap = days_since_claim
-                .checked_mul(daily_usdc)
-                .ok_or(DawnError::Overflow)?
-                .min(remaining_usdc);
+        if remaining_usdc > 0 {
+            // Swap all remaining USDC to DAWN
+            let usdc_to_swap = remaining_usdc;
 
-            if usdc_to_swap > 0 {
+            {
                 // Perform swap using Raydium
                 let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
                     let pool_state = ctx.accounts.raydium_pool.load()?;
@@ -328,15 +320,8 @@ impl DawnApp {
             }
         }
 
-        // Update last_claim incrementally to preserve fractional days
-        subscription.last_claim = subscription
-            .last_claim
-            .checked_add(
-                (days_since_claim as i64)
-                    .checked_mul(SECONDS_PER_DAY as i64)
-                    .ok_or(DawnError::Overflow)?,
-            )
-            .ok_or(DawnError::Overflow)?;
+        // Update last_claim to current time
+        subscription.last_claim = current_time;
 
         emit!(Claimed {
             subscription: subscription_key,

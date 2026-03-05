@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::constants::DISCRIMINATOR_SIZE;
 
-/// The plan account, representing a subscription plan tied to a device
+/// The subscription account, representing a subscription to a plan
 #[account]
 #[derive(InitSpace)]
 pub struct Subscription {
@@ -20,8 +20,6 @@ pub struct Subscription {
     pub last_claim: i64,
     /// Next claimable amount of DAWN tokens
     pub claimable_dawn: u64,
-    /// Daily USDC portion for swaps
-    pub daily_usdc: u64,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -36,8 +34,6 @@ impl Subscription {
         plan: Pubkey,
         subscriber: Pubkey,
         device: Option<Pubkey>,
-        claimable_dawn: u64,
-        daily_usdc: u64,
         bump: u8,
         current_timestamp: i64,
         expiration: i64,
@@ -48,8 +44,7 @@ impl Subscription {
         self.device = device;
         self.expiration = expiration;
         self.last_claim = current_timestamp;
-        self.claimable_dawn = claimable_dawn;
-        self.daily_usdc = daily_usdc;
+        self.claimable_dawn = 0;
         self.bump = bump;
     }
 }

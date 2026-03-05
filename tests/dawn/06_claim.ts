@@ -25,8 +25,6 @@ import { beforeAll, expect } from '@jest/globals'
 import { getBalance } from '../../cli/shared/cli-utils'
 
 const SECONDS_PER_DAY = 86_400n
-const BPS_DENOMINATOR = new BN(10_000)
-const SLIPPAGE_BPS = new BN(9900)
 
 const Q32 = new BN(2).pow(new BN(32))
 
@@ -36,8 +34,6 @@ const Q32 = new BN(2).pow(new BN(32))
  * @param usdcAmount - Amount of USDC to swap
  * @param price - Current pool price (Q32 format)
  * @param slippageBps - Slippage tolerance in basis points (default: 500 = 5%)
- *                      Can be 0-500 bps (0%-5%) to match program validation
- *                      The program enforces MAX_SLIPPAGE_TOLERANCE_BPS = 500
  *
  * @returns Minimum DAWN output that will be accepted
  */
@@ -46,19 +42,13 @@ function calculateMinDawnOut(
   price: BN,
   slippageBps: number = 500,
 ): BN {
-  // expectedOut = (usdcAmount * price) / Q32
   const expectedOut = usdcAmount.mul(price).div(Q32)
-  // Apply slippage: minOut = expectedOut * (10000 - slippageBps) / 10000
   const minOut = expectedOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
   return minOut
 }
 
 /**
  * Helper function to get deadline (30 seconds from now)
- * Must be <= MAX_DEADLINE_OFFSET_SECONDS (3600 seconds = 1 hour) from current time
- *
- * @param provider - Bankrun provider to get current time
- * @returns Deadline timestamp (current time + 30 seconds)
  */
 async function getDeadline(provider: BankrunProvider): Promise<BN> {
   const clock = await provider.context.banksClient.getClock()
@@ -107,29 +97,23 @@ export const claimTests = () =>
         Buffer.from(subscriptionAccount.data),
       )
 
-      // accounts for a successful subscription
       accounts = {
         caller: mock.serviceProvider.publicKey,
         config: mock.configPda,
         plan: mock.planPda,
         subscription: mock.subscriptionPda,
-        // mints
         usdcMint: mock.usdcMint,
         dawnMint: mock.dawnMint,
-        // raydium
         raydium: mock.raydium,
         raydiumAuthority: mock.raydiumAuthority,
         raydiumConfig: mock.raydiumConfig,
         raydiumPool: mock.raydiumPool,
         raydiumObservation: mock.raydiumObservation,
-        // vaults
         raydiumDawnVault: mock.raydiumDawnVault,
         raydiumUsdcVault: mock.raydiumUsdcVault,
-        // token accounts
         escrowUsdcVault: mock.escrowUsdcVault,
         escrowDawnVault: mock.escrowDawnVault,
         serviceProviderDawnAccount: mock.serviceProviderDawnAccount,
-        // programs
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
@@ -144,11 +128,12 @@ export const claimTests = () =>
       assert.exists(accounts)
     })
 
-    test('cannot claim before the next day', async () => {
-      // Calculate valid minDawnOut (expects claim too early error, not validation error)
-      const subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
+    test('cannot claim before subscription expires', async () => {
+      const escrowUsdcBalance = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
       )
+
       const raydiumDawnVault = await getAccount(
         provider.connection,
         accounts.raydiumDawnVault,
@@ -160,7 +145,7 @@ export const claimTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(escrowUsdcBalance, price)
 
       try {
         const deadline = await getDeadline(provider)
@@ -195,7 +180,7 @@ export const claimTests = () =>
       } catch (error) {
         assert.ok(error instanceof AnchorError)
         const err: AnchorError = error
-        expect(err.error.errorMessage).toBe('Claim too early')
+        expect(err.error.errorMessage).toBe('Subscription not expired')
       }
     })
 
@@ -219,9 +204,9 @@ export const claimTests = () =>
         mock.serviceProvider,
       )
 
-      // Calculate valid minDawnOut (expects account error, not validation error)
-      const subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
+      const escrowUsdcBalance = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
       )
       const raydiumDawnVault = await getAccount(
         provider.connection,
@@ -234,7 +219,7 @@ export const claimTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(escrowUsdcBalance, price)
 
       try {
         const deadline = await getDeadline(provider)
@@ -278,9 +263,9 @@ export const claimTests = () =>
     test('cannot claim from escrow of a plan that is not owned by the caller', async () => {
       provider.wallet = new Wallet(mock.customer)
 
-      // Calculate valid minDawnOut (expects authorization error, not validation error)
-      const subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
+      const escrowUsdcBalance = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
       )
       const raydiumDawnVault = await getAccount(
         provider.connection,
@@ -293,7 +278,7 @@ export const claimTests = () =>
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(escrowUsdcBalance, price)
 
       try {
         const deadline = await getDeadline(provider)
@@ -331,14 +316,12 @@ export const claimTests = () =>
       }
     })
 
-    test('claims daily DAWN', async () => {
-      // get balances of escrow USDC vault BEFORE claim
+    test('claims full USDC after subscription expires and locks DAWN', async () => {
       const escrowUsdcBalanceBefore = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
       )
 
-      // get balance of escrow DAWN vault BEFORE claim
       const escrowDawnBalanceBefore = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
@@ -349,7 +332,6 @@ export const claimTests = () =>
         accounts.serviceProviderDawnAccount,
       )
 
-      // get balances of raydium vaults (for calculating minDawnOut)
       const raydiumDawnVault = await getAccount(
         provider.connection,
         accounts.raydiumDawnVault,
@@ -363,23 +345,27 @@ export const claimTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // forward time to the next day
+      // Forward time past subscription expiration
+      const subscriptionData = await program.account.subscription.fetch(
+        mock.subscriptionPda,
+      )
+      const expiration = subscriptionData.expiration
       const clock = await provider.context.banksClient.getClock()
+
+      // Move to 1 day after expiration
+      const targetTime =
+        BigInt(expiration.toNumber()) + SECONDS_PER_DAY - clock.unixTimestamp
       provider.context.setClock(
         new Clock(
           clock.slot,
           clock.epochStartTimestamp,
           clock.epoch,
           clock.leaderScheduleEpoch,
-          clock.unixTimestamp + SECONDS_PER_DAY,
+          clock.unixTimestamp + targetTime,
         ),
       )
 
-      // Calculate valid minDawnOut for testing (uses default 500 bps = 5% slippage)
-      const subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
-      )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(escrowUsdcBalanceBefore, price)
       const deadline = await getDeadline(provider)
 
       const tx = await claimTx({
@@ -412,79 +398,62 @@ export const claimTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      // make sure event was emitted
       const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
-      // swapPrice is now the actual DAWN output (not Q32 price)
+
       const swapPriceBN = new BN(event.swapPrice.toString())
       expect(swapPriceBN.gt(new BN(0))).toBeTruthy()
-      expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
 
-      // make sure the service provider DAWN account was credited with the claimable DAWN amount
+      // Service provider should NOT have received any DAWN yet (first claim swaps and locks)
+      // claimableDawn was 0 before this claim (no initial swap on subscription)
       const serviceProviderDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.serviceProviderDawnAccount,
       )
       expect(
-        serviceProviderDawnBalanceAfter
-          .sub(serviceProviderDawnBalanceBefore)
-          .eq(subscription.claimableDawn),
+        serviceProviderDawnBalanceAfter.eq(serviceProviderDawnBalanceBefore),
       ).toBeTruthy()
 
-      // make sure the escrow USDC vault was debited by the daily USDC amount
+      // ALL USDC should have been swapped
       const escrowUsdcBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
       )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
+      expect(escrowUsdcBalanceAfter.eq(new BN(0))).toBeTruthy()
 
-      // Verify amount debited - should be daily USDC (or less if remaining escrow is lower)
-      // event.swapPrice contains the actual DAWN received from the swap
-      expect(actualDebit.gte(new BN(0))).toBeTruthy()
-      expect(actualDebit.lte(subscription.dailyUsdc)).toBeTruthy()
-
-      // make sure the escrow DAWN vault was credited by the actual swap amount
+      // DAWN should be in escrow vault (locked)
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
       )
+      expect(escrowDawnBalanceAfter.gt(escrowDawnBalanceBefore)).toBeTruthy()
+      expect(escrowDawnBalanceAfter.eq(swapPriceBN)).toBeTruthy()
 
-      // Calculate actual DAWN deposited from swap:
-      // final_balance = initial_balance - claimable_dawn (transferred out) + swap_output
-      // Therefore: swap_output = final_balance - initial_balance + claimable_dawn
-      const actualDawnDeposited = escrowDawnBalanceAfter
-        .sub(escrowDawnBalanceBefore)
-        .add(subscription.claimableDawn)
-
-      // The actual DAWN deposited should equal the swap output from the event
-      expect(actualDawnDeposited.eq(swapPriceBN)).toBeTruthy()
-
-      // make sure the subscription was updated with the exact amount from the swap
+      // Subscription should have claimable_dawn set
       const sub = await program.account.subscription.fetch(mock.subscriptionPda)
       expect(sub.claimableDawn.eq(swapPriceBN)).toBeTruthy()
     })
 
-    test('cannot claim again right away before the next day', async () => {
-      // small wait to make sure the last claim is updated
+    test('cannot claim again before 24 hours', async () => {
       await new Promise((resolve) => setTimeout(resolve, 300))
 
-      // Calculate valid minDawnOut (expects claim too early error, not validation error)
+      const escrowUsdcBalance = await getBalance(
+        provider.connection,
+        accounts.escrowUsdcVault,
+      )
+
+      // Even with 0 USDC, we need a valid minDawnOut for the subscription's claimable amount
       const subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
-      const raydiumDawnVault = await getAccount(
-        provider.connection,
-        accounts.raydiumDawnVault,
-      )
-      const raydiumUsdcVault = await getAccount(
-        provider.connection,
-        accounts.raydiumUsdcVault,
-      )
-      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+
+      // Use claimable_dawn for minDawnOut calculation since USDC is 0
+      const minDawnOut = subscription.claimableDawn.gt(new BN(0))
+        ? subscription.claimableDawn
+            .mul(new BN(10000 - 500))
+            .div(new BN(10000))
+        : new BN(1)
 
       try {
         const deadline = await getDeadline(provider)
@@ -522,12 +491,23 @@ export const claimTests = () =>
       }
     })
 
-    test('claiming after 3 days should claim previous 1 day, then swap and lock 3 days worth of DAWN', async () => {
-      let subscription = await program.account.subscription.fetch(
+    test('claims locked DAWN after 24 hours', async () => {
+      const subscriptionBefore = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
+      const claimableDawnBefore = subscriptionBefore.claimableDawn
 
-      // forward time 3 days
+      const escrowDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.escrowDawnVault,
+      )
+
+      const serviceProviderDawnBalanceBefore = await getBalance(
+        provider.connection,
+        accounts.serviceProviderDawnAccount,
+      )
+
+      // Forward time by 1 day
       const clock = await provider.context.banksClient.getClock()
       provider.context.setClock(
         new Clock(
@@ -535,43 +515,15 @@ export const claimTests = () =>
           clock.epochStartTimestamp,
           clock.epoch,
           clock.leaderScheduleEpoch,
-          clock.unixTimestamp + 3n * SECONDS_PER_DAY,
+          clock.unixTimestamp + SECONDS_PER_DAY,
         ),
       )
 
-      // get balances BEFORE claim
-      const escrowUsdcBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.escrowUsdcVault,
-      )
-      const escrowDawnBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.escrowDawnVault,
-      )
-      const serviceProviderDawnBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.serviceProviderDawnAccount,
-      )
+      // Use claimable_dawn for minDawnOut since we're claiming locked DAWN
+      const minDawnOut = claimableDawnBefore
+        .mul(new BN(10000 - 500))
+        .div(new BN(10000))
 
-      // get balances of raydium vaults
-      const raydiumDawnVault = await getAccount(
-        provider.connection,
-        accounts.raydiumDawnVault,
-      )
-      const raydiumUsdcVault = await getAccount(
-        provider.connection,
-        accounts.raydiumUsdcVault,
-      )
-
-      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-
-      // Calculate valid minDawnOut (uses default 500 bps = 5% slippage)
-      subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
-      )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
       const tx = await claimTx({
@@ -602,16 +554,12 @@ export const claimTests = () =>
 
       const txDetails = await confirmTx(provider, tx)
 
-      // make sure event was emitted
       const event = await getEvent<Claimed>(program, txDetails, 'claimed')
       expect(event.subscription.equals(mock.subscriptionPda)).toBeTruthy()
       expect(event.plan.equals(mock.planPda)).toBeTruthy()
-      // swapPrice is now the actual DAWN output (not Q32 price)
-      const swapPriceBN = new BN(event.swapPrice.toString())
-      expect(swapPriceBN.gt(new BN(0))).toBeTruthy()
-      expect(event.dawnClaimed.eq(subscription.claimableDawn)).toBeTruthy()
+      expect(event.dawnClaimed.eq(claimableDawnBefore)).toBeTruthy()
 
-      // make sure the service provider DAWN account was credited with the claimable DAWN amount (1 day)
+      // Service provider should have received the locked DAWN
       const serviceProviderDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.serviceProviderDawnAccount,
@@ -619,156 +567,18 @@ export const claimTests = () =>
       expect(
         serviceProviderDawnBalanceAfter
           .sub(serviceProviderDawnBalanceBefore)
-          .eq(subscription.claimableDawn),
+          .eq(claimableDawnBefore),
       ).toBeTruthy()
 
-      // Verify amount debited - should be up to 3 days worth
-      const escrowUsdcBalanceAfter = await getBalance(
-        provider.connection,
-        accounts.escrowUsdcVault,
-      )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
-      const maxThreeDaysUsdc = subscription.dailyUsdc.mul(new BN(3))
-
-      // Should debit some amount (actual amount depends on remaining escrow)
-      expect(actualDebit.gt(new BN(0))).toBeTruthy()
-      expect(actualDebit.lte(maxThreeDaysUsdc)).toBeTruthy()
-
-      // Verify exact DAWN deposited from swap
+      // Escrow DAWN vault should be empty now
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
       )
+      expect(escrowDawnBalanceAfter.eq(new BN(0))).toBeTruthy()
 
-      // Calculate actual DAWN deposited from swap:
-      // final_balance = initial_balance - claimable_dawn (transferred out) + swap_output
-      // Therefore: swap_output = final_balance - initial_balance + claimable_dawn
-      const actualDawnDeposited = escrowDawnBalanceAfter
-        .sub(escrowDawnBalanceBefore)
-        .add(subscription.claimableDawn)
-
-      expect(actualDawnDeposited.eq(swapPriceBN)).toBeTruthy()
-
-      // Verify subscription has exact claimable DAWN from swap
+      // Subscription should have claimable_dawn = 0 now
       const sub = await program.account.subscription.fetch(mock.subscriptionPda)
-      expect(sub.claimableDawn.eq(swapPriceBN)).toBeTruthy()
-
-      // Verify last claim time was updated
-      expect(
-        sub.lastClaim.gt(new BN(clock.unixTimestamp.toString())),
-      ).toBeTruthy()
-    })
-
-    test('claims accumulated 3 days worth of DAWN', async () => {
-      let subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
-      )
-
-      // forward time 1 day to unlock claimable_dawn (3 days worth of DAWN)
-      const clock = await provider.context.banksClient.getClock()
-      provider.context.setClock(
-        new Clock(
-          clock.slot,
-          clock.epochStartTimestamp,
-          clock.epoch,
-          clock.leaderScheduleEpoch,
-          clock.unixTimestamp + SECONDS_PER_DAY,
-        ),
-      )
-
-      // get balances of service provider DAWN account
-      const serviceProviderDawnBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.serviceProviderDawnAccount,
-      )
-
-      // get balances of escrow USDC vault
-      const escrowUsdcBalanceBefore = await getBalance(
-        provider.connection,
-        accounts.escrowUsdcVault,
-      )
-
-      // get raydium vaults
-      const raydiumDawnVault = await getAccount(
-        provider.connection,
-        accounts.raydiumDawnVault,
-      )
-      const raydiumUsdcVault = await getAccount(
-        provider.connection,
-        accounts.raydiumUsdcVault,
-      )
-
-      const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-
-      // Calculate valid minDawnOut (uses default 500 bps = 5% slippage)
-      subscription = await program.account.subscription.fetch(
-        mock.subscriptionPda,
-      )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
-      const deadline = await getDeadline(provider)
-
-      await claimRpc({
-        program,
-        minDawnOut,
-        deadline,
-        caller: accounts.caller,
-        signer: mock.serviceProvider,
-        config: accounts.config,
-        plan: accounts.plan,
-        subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
-        dawnMint: accounts.dawnMint,
-        raydium: accounts.raydium,
-        raydiumAuthority: accounts.raydiumAuthority,
-        raydiumConfig: accounts.raydiumConfig,
-        raydiumPool: accounts.raydiumPool,
-        raydiumObservation: accounts.raydiumObservation,
-        raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        escrowUsdcVault: accounts.escrowUsdcVault,
-        escrowDawnVault: accounts.escrowDawnVault,
-        serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
-        tokenProgram: accounts.tokenProgram,
-        associatedTokenProgram: accounts.associatedTokenProgram,
-        systemProgram: accounts.systemProgram,
-      })
-
-      // make sure the escrow USDC vault was debited by the daily USDC amount
-      const escrowUsdcBalanceAfter = await getBalance(
-        provider.connection,
-        accounts.escrowUsdcVault,
-      )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
-
-      // The amount debited depends on:
-      // 1. days_since_claim * daily_usdc, or
-      // 2. remaining_usdc if less than that
-      // Since claim only happens once per day, actualDebit should be >= 0 and <= days * dailyUsdc
-      expect(actualDebit.gt(new BN(0))).toBeTruthy() // At least some USDC was swapped
-
-      // make sure the service provider DAWN account was credited with the claimable DAWN amount
-      const serviceProviderDawnBalanceAfter = await getBalance(
-        provider.connection,
-        accounts.serviceProviderDawnAccount,
-      )
-      expect(
-        serviceProviderDawnBalanceAfter
-          .sub(serviceProviderDawnBalanceBefore)
-          .eq(subscription.claimableDawn),
-      ).toBeTruthy()
-
-      // make sure the escrow DAWN vault was credited by the next daily claimable DAWN amount (1 day)
-      const nextDailyDawn = subscription.dailyUsdc
-        .mul(price)
-        .div(Q32)
-        .mul(SLIPPAGE_BPS)
-        .div(BPS_DENOMINATOR)
-      const escrowDawnBalanceAfter = await getBalance(
-        provider.connection,
-        accounts.escrowDawnVault,
-      )
-      expect(escrowDawnBalanceAfter.gte(nextDailyDawn)).toBeTruthy()
+      expect(sub.claimableDawn.eq(new BN(0))).toBeTruthy()
     })
   })
