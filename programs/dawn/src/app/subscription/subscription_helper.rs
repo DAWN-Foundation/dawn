@@ -84,8 +84,7 @@ pub(super) fn process_subscription_creation(
     validate_plan_started(plan.start_at, current_time)?;
 
     // Process payment (swaps fees to DAWN, puts remainder USDC in escrow)
-    let actual_dawn_out =
-        payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
+    let actual_dawn_out = payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
     // Calculate subscription expiration
     let expiration = calculate_subscription_expiration(current_time, plan.duration)?;
