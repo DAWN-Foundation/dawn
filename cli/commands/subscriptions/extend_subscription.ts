@@ -163,7 +163,6 @@ async function main() {
       newExpiration: new Date(
         updatedSubscription.expiration.toNumber() * 1000,
       ).toISOString(),
-      dailyUsdc: updatedSubscription.dailyUsdc.toString(),
       claimableDawn: updatedSubscription.claimableDawn.toString(),
     })
   } catch (error) {

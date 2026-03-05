@@ -216,6 +216,9 @@ pub enum DawnError {
     #[msg("Subscription expired")]
     SubscriptionExpired,
 
+    #[msg("Subscription not expired")]
+    SubscriptionNotExpired,
+
     #[msg("IP lease not expired")]
     IpLeaseNotExpired,
 

@@ -61,29 +61,11 @@ async function main() {
       true,
     )
 
-  // Fetch subscription to get daily USDC and last claim time
-  const subscriptionData = await program.account.subscription.fetch(
-    subscriptionPda,
-  )
-
-  // Calculate USDC to swap based on days since last claim
-  const currentTime = Math.floor(Date.now() / 1000)
-  const SECONDS_PER_DAY = 86400
-  const daysSinceClaim = Math.floor(
-    (currentTime - subscriptionData.lastClaim.toNumber()) / SECONDS_PER_DAY,
-  )
-
-  // Get remaining USDC in escrow vault
+  // Get remaining USDC in escrow vault (claim swaps all remaining USDC)
   const escrowUsdcAccount = await connection.getTokenAccountBalance(
     escrowUsdcVault,
   )
-  const remainingUsdc = new BN(escrowUsdcAccount.value.amount)
-
-  // Calculate USDC to swap: min(days_since_claim * daily_usdc, remaining_usdc)
-  const usdcToSwap = BN.min(
-    new BN(daysSinceClaim).mul(subscriptionData.dailyUsdc),
-    remainingUsdc,
-  )
+  const usdcToSwap = new BN(escrowUsdcAccount.value.amount)
 
   // Get slippage from CLI flag (default 1%)
   const slippageBps = getFlag('--slippage')
@@ -102,7 +84,6 @@ async function main() {
   )
 
   console.log('Claim parameters:', {
-    daysSinceClaim,
     usdcToSwap: usdcToSwap.toString(),
     minDawnOut: minDawnOut.toString(),
     slippageBps: slippageBps,

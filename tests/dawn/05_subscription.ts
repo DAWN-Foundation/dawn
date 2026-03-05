@@ -779,16 +779,6 @@ export const subscriptionTests = () =>
       const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
-      // Calculate fee amounts for assertions later
-      const config = await program.account.config.fetch(mock.configPda)
-      const totalFeeBpsCalc = config.daoFee
-        .add(config.validatorFee)
-        .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBpsCalc).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdcCalc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdcCalc)
-
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
@@ -857,42 +847,27 @@ export const subscriptionTests = () =>
         .mul(totalFeeBpsAssert1)
         .div(BPS_DENOMINATOR)
 
-      // make sure the device owner escrow USDC vault account was debited
+      // make sure all non-fee USDC goes to escrow
       const usdcRemainder = plan.price.sub(totalUsdcFee)
-      const dailyUsdcAssert1 = usdcRemainder.div(new BN(plan.duration))
-      const dailyDawn = dailyUsdcAssert1.mul(price).div(Q32)
-      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert1)
       const escrowUsdcBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowUsdcVault,
       )
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
+        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcRemainder),
       )
 
-      // make sure the device owner escrow DAWN vault account was credited with the daily DAWN portion
+      // make sure the escrow DAWN vault was NOT credited (no DAWN swap at subscription creation)
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
       )
-
-      // swapPriceBN is the actual DAWN output from the swap - calculate exact expected escrow
-      // escrow_dawn = (actual_dawn_out * daily_usdc) / total_usdc
-      const expectedEscrowDawn = swapPriceBN
-        .mul(dailyUsdcAssert1)
-        .div(usdcToSwap)
-
-      const actualEscrowDawn = escrowDawnBalanceAfter.sub(
-        escrowDawnBalanceBefore,
-      )
       assert.ok(
-        actualEscrowDawn.eq(expectedEscrowDawn),
-        `Escrow DAWN ${actualEscrowDawn.toString()} should equal ${expectedEscrowDawn.toString()}`,
+        escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
+        `Escrow DAWN should be unchanged`,
       )
 
-      // Calculate exact expected fee: total_dawn_fee = actual_dawn_out - escrow_dawn
-      const expectedFeeDawn = swapPriceBN.sub(expectedEscrowDawn)
-
+      // All swapped DAWN (from fees) should go to fee pool
       const feePoolDawnBalanceAfter = await getBalance(
         provider.connection,
         mock.feePoolDawnAccount,
@@ -902,8 +877,8 @@ export const subscriptionTests = () =>
       )
 
       assert.ok(
-        actualFeeDeposited.eq(expectedFeeDawn),
-        `Fee ${actualFeeDeposited.toString()} should equal ${expectedFeeDawn.toString()}`,
+        actualFeeDeposited.eq(swapPriceBN),
+        `Fee ${actualFeeDeposited.toString()} should equal swap output ${swapPriceBN.toString()}`,
       )
 
       // get block time, and calculate expected expiration
@@ -922,9 +897,8 @@ export const subscriptionTests = () =>
       assert.ok(
         subscription.lastClaim.eq(new BN(Number(timeBefore.unixTimestamp))),
       )
-      // claimable_dawn is set to the actual escrow amount from proportional allocation
-      assert.ok(subscription.claimableDawn.eq(actualEscrowDawn))
-      assert.ok(subscription.dailyUsdc.eq(dailyUsdcAssert1))
+      // claimable_dawn is 0 at creation (no initial swap for service provider)
+      assert.ok(subscription.claimableDawn.eq(new BN(0)))
       assert.equal(subscription.bump, mock.subscriptionBump)
     })
 
@@ -973,13 +947,6 @@ export const subscriptionTests = () =>
 
       // Calculate fee amounts for active subscription extension
       const config2 = await program.account.config.fetch(mock.configPda)
-      const totalFeeBps2 = config2.daoFee
-        .add(config2.validatorFee)
-        .add(config2.medallionFee)
-      const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
-      const remainder2 = plan.price.sub(totalFeeUsdc2)
-      const dailyUsdc2 = remainder2.div(new BN(plan.duration))
-
       // For active extensions: provide minDawnOut for full plan.price
       // Code will scale it down for fee-only swap
       const minDawnOut = calculateMinDawnOut(plan.price, price) // Uses default 50 bps
@@ -1108,7 +1075,6 @@ export const subscriptionTests = () =>
       assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
       // claimableDawn should remain unchanged for active subscriptions
       assert.ok(subscription.claimableDawn.eq(subscriptionBefore.claimableDawn))
-      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
       assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
@@ -1169,15 +1135,6 @@ export const subscriptionTests = () =>
       const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
 
       // Calculate fee amounts for assertions later
-      const config2 = await program.account.config.fetch(mock.configPda)
-      const totalFeeBps2 = config2.daoFee
-        .add(config2.validatorFee)
-        .add(config2.medallionFee)
-      const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
-      const remainder2 = plan.price.sub(totalFeeUsdc2)
-      const dailyUsdc2 = remainder2.div(new BN(plan.duration))
-      const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
-
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
@@ -1265,32 +1222,20 @@ export const subscriptionTests = () =>
         accounts.escrowDawnVault,
       )
 
+      // All non-fee USDC should go to escrow
       const usdcRemainder = plan.price.sub(totalUsdcFee)
-      const dailyUsdcAssert2 = usdcRemainder.div(new BN(plan.duration))
-      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert2)
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
+        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcRemainder),
         'Escrow USDC should increase by remainder after fees for expired subscriptions',
       )
 
-      // swapPriceBN is the actual DAWN output from the swap - calculate exact expected escrow
-      // escrow_dawn = (actual_dawn_out * daily_usdc) / total_usdc
-      const expectedEscrowDawn = swapPriceBN
-        .mul(dailyUsdcAssert2)
-        .div(usdcToSwap2)
-
-      const actualEscrowDawn = escrowDawnBalanceAfter.sub(
-        escrowDawnBalanceBefore,
-      )
+      // No DAWN should go to escrow for expired subscription extension
       assert.ok(
-        actualEscrowDawn.eq(expectedEscrowDawn),
-        `Escrow DAWN ${actualEscrowDawn.toString()} should equal ${expectedEscrowDawn.toString()}`,
+        escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
+        `Escrow DAWN should be unchanged for expired subscription extension`,
       )
 
-      // Calculate exact expected fee: total_dawn_fee = actual_dawn_out - escrow_dawn
-      const expectedFeeDawn = swapPriceBN.sub(expectedEscrowDawn)
-
-      // make sure the DAO DAWN account was credited with fees
+      // All swapped DAWN should go to fee pool
       const feePoolDawnBalanceAfter = await getBalance(
         provider.connection,
         mock.feePoolDawnAccount,
@@ -1300,8 +1245,8 @@ export const subscriptionTests = () =>
       )
 
       assert.ok(
-        actualFeeDeposited.eq(expectedFeeDawn),
-        `Fee ${actualFeeDeposited.toString()} should equal ${expectedFeeDawn.toString()}`,
+        actualFeeDeposited.eq(swapPriceBN),
+        `Fee ${actualFeeDeposited.toString()} should equal swap output ${swapPriceBN.toString()}`,
       )
 
       // get block time, and calculate expected expiration
@@ -1326,10 +1271,8 @@ export const subscriptionTests = () =>
           new BN(currentClock.unixTimestamp.toString()),
         ),
       )
-      // claimableDawn should increase for expired subscriptions
-      assert.ok(
-        subscription.claimableDawn.gte(subscriptionBefore.claimableDawn),
-      )
+      // claimableDawn should remain unchanged (no initial DAWN swap anymore)
+      assert.ok(subscription.claimableDawn.eq(subscriptionBefore.claimableDawn))
       assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
@@ -1751,13 +1694,6 @@ export const subscriptionTests = () =>
         const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
         const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
-        const totalFeeBps = config.daoFee
-          .add(config.validatorFee)
-          .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
-
         // For active extensions: provide minDawnOut for full plan.price
         // Code will scale it down for fee-only swap
         const minDawnOut = calculateMinDawnOut(plan.price, price)

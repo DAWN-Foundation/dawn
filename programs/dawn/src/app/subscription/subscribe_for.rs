@@ -204,7 +204,6 @@ impl DawnApp {
             user_dawn_account: &mut ctx.accounts.user_dawn_account,
             fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
             escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
-            escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };
 
