@@ -9,7 +9,7 @@ import {
   getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token'
 
-const AMOUNT = 1000
+const AMOUNT = 100_000
 
 async function main() {
   const amount = parseInt(getFlag('--amount')) || AMOUNT
