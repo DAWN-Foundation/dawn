@@ -86,7 +86,11 @@ pub(super) fn calculate_stable_fee(
 
     let escrow_stable_remainder = remainder.saturating_sub(daily_dawn_in_stable);
 
-    Ok((total_stable_fee, daily_dawn_in_stable, escrow_stable_remainder))
+    Ok((
+        total_stable_fee,
+        daily_dawn_in_stable,
+        escrow_stable_remainder,
+    ))
 }
 
 /// Calculate DAWN fee and escrow amounts proportionally from actual swap output                                                                               

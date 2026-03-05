@@ -94,7 +94,11 @@ pub fn swap_amounts<'info>(
         if raydium_dawn_vault.key() == pool.token_0_vault.key() {
             (raydium_dawn_vault.amount, raydium_stable_vault.amount, true)
         } else {
-            (raydium_stable_vault.amount, raydium_dawn_vault.amount, false)
+            (
+                raydium_stable_vault.amount,
+                raydium_dawn_vault.amount,
+                false,
+            )
         }
     };
 
