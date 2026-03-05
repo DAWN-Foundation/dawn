@@ -13,7 +13,7 @@ export interface Mock {
   serviceProvider: Keypair
   customer: Keypair
   // mints
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   // token accounts
   feePoolDawnAccount: PublicKey
@@ -21,13 +21,13 @@ export interface Mock {
   validatorDawnAccount: PublicKey
   medallionDawnAccount: PublicKey
   serviceProviderDawnAccount: PublicKey
-  serviceProviderUsdcAccount: PublicKey
+  serviceProviderStableAccount: PublicKey
   customerDawnAccount: PublicKey
-  customerUsdcAccount: PublicKey
+  customerStableAccount: PublicKey
   walletDawnAccount: PublicKey
-  walletUsdcAccount: PublicKey
+  walletStableAccount: PublicKey
   escrowDawnVault: PublicKey
-  escrowUsdcVault: PublicKey
+  escrowStableVault: PublicKey
   // raydium
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -35,7 +35,7 @@ export interface Mock {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
+  raydiumStableVault: PublicKey
   // config
   daoFee: BN
   validatorFee: BN
@@ -107,7 +107,7 @@ export interface RawMock {
   serviceProvider: RawKeypair
   customer: RawKeypair
   // mints
-  usdcMint: string
+  stableMint: string
   dawnMint: string
   // token accounts
   feePoolDawnAccount: string
@@ -115,13 +115,13 @@ export interface RawMock {
   validatorDawnAccount: string
   medallionDawnAccount: string
   serviceProviderDawnAccount: string
-  serviceProviderUsdcAccount: string
+  serviceProviderStableAccount: string
   customerDawnAccount: string
-  customerUsdcAccount: string
+  customerStableAccount: string
   walletDawnAccount: string
-  walletUsdcAccount: string
+  walletStableAccount: string
   escrowDawnVault: string
-  escrowUsdcVault: string
+  escrowStableVault: string
   // raydium
   raydium: string
   raydiumAuthority: string
@@ -129,7 +129,7 @@ export interface RawMock {
   raydiumPool: string
   raydiumObservation: string
   raydiumDawnVault: string
-  raydiumUsdcVault: string
+  raydiumStableVault: string
   // config
   daoFee: string
   validatorFee: string

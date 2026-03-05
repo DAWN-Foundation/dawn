@@ -84,7 +84,7 @@ pub(super) fn process_subscription_creation(
     validate_plan_started(plan.start_at, current_time)?;
 
     // Process payment
-    let (claimable_dawn, daily_usdc, actual_dawn_out) =
+    let (claimable_dawn, daily_stable, actual_dawn_out) =
         payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
     // Calculate subscription expiration
@@ -96,7 +96,7 @@ pub(super) fn process_subscription_creation(
         subscriber,
         device.map(|d| d.key()),
         claimable_dawn,
-        daily_usdc,
+        daily_stable,
         bump,
         current_time,
         expiration,
@@ -111,7 +111,7 @@ pub(super) fn process_subscription_creation(
         expiration: subscription.expiration,
         last_claim: subscription.last_claim,
         claimable_dawn: subscription.claimable_dawn,
-        daily_usdc: subscription.daily_usdc,
+        daily_stable: subscription.daily_stable,
         swap_price: actual_dawn_out as u128,
         created_at: subscription.created_at,
     });
@@ -146,7 +146,7 @@ pub(super) fn process_subscription_extension(
     let is_expired = subscription.expiration < current_time;
     let actual_dawn_out = if is_expired {
         // Expired subscription: treat as new subscription
-        let (additional_claimable, new_daily_usdc, actual_dawn_out) =
+        let (additional_claimable, new_daily_stable, actual_dawn_out) =
             payment::process_payment(payment_accounts, config, plan, min_dawn_out)?;
 
         // Update subscription amounts
@@ -155,21 +155,21 @@ pub(super) fn process_subscription_extension(
             .checked_add(additional_claimable)
             .ok_or(DawnError::Overflow)?;
 
-        subscription.daily_usdc = new_daily_usdc;
+        subscription.daily_stable = new_daily_stable;
 
         // Reset last_claim to prevent gap period theft
         subscription.last_claim = current_time;
 
         actual_dawn_out
     } else {
-        // Active subscription: swap fees to DAWN immediately, add remaining USDC to escrow
-        let (new_daily_usdc, actual_dawn_out) =
+        // Active subscription: swap fees to DAWN immediately, add remaining USD.tel to escrow
+        let (new_daily_stable, actual_dawn_out) =
             payment::process_extension_payment(payment_accounts, config, plan, min_dawn_out)?;
 
-        // Calculate weighted average for daily_usdc
+        // Calculate weighted average for daily_stable
         // remaining_days = time left on current subscription
         // new_days = plan duration from extension
-        // weighted_daily_usdc = (current_daily * remaining_days + new_daily * new_days) / total_days
+        // weighted_daily_stable = (current_daily * remaining_days + new_daily * new_days) / total_days
         let remaining_seconds = subscription
             .expiration
             .checked_sub(current_time)
@@ -183,11 +183,11 @@ pub(super) fn process_subscription_extension(
             .ok_or(DawnError::Overflow)?;
 
         // Calculate weighted average (handle edge case where total_days could be 0)
-        let weighted_daily_usdc = if total_days > 0 {
-            let current_portion = (subscription.daily_usdc as u128)
+        let weighted_daily_stable = if total_days > 0 {
+            let current_portion = (subscription.daily_stable as u128)
                 .checked_mul(remaining_days as u128)
                 .ok_or(DawnError::Overflow)?;
-            let new_portion = (new_daily_usdc as u128)
+            let new_portion = (new_daily_stable as u128)
                 .checked_mul(new_days as u128)
                 .ok_or(DawnError::Overflow)?;
             let total = current_portion
@@ -197,10 +197,10 @@ pub(super) fn process_subscription_extension(
                 .checked_div(total_days as u128)
                 .ok_or(DawnError::Underflow)? as u64
         } else {
-            new_daily_usdc
+            new_daily_stable
         };
 
-        subscription.daily_usdc = weighted_daily_usdc;
+        subscription.daily_stable = weighted_daily_stable;
 
         actual_dawn_out
     };

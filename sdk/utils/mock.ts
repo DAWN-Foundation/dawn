@@ -51,7 +51,7 @@ import {
 import { createPSKMethodParams, serializePSKMethodParams } from './auth'
 import { getPskAuthMethodPda } from '../pda/amf'
 
-export const USDC_DECIMALS = new BN(10).pow(new BN(6))
+export const USD_DECIMALS = new BN(10).pow(new BN(6))
 
 export const METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
@@ -183,14 +183,14 @@ export async function setup(
 ) {
   const { wallet, serviceProvider, customer } = accounts
 
-  // Mint test USDC token
-  console.log('Minting test USDC token...')
-  const usdcMint = await createMint(
+  // Mint test USD.tel token
+  console.log('Minting test USD.tel token...')
+  const stableMint = await createMint(
     provider.context.banksClient, // Banks client
     wallet, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
-    6, // Decimals (6 decimals for USDC)
+    6, // Decimals (6 decimals for USD.tel)
   )
   // Get DAWN token PDA
   console.log('Getting DAWN token PDA...')
@@ -200,7 +200,7 @@ export async function setup(
   )[0]
 
   console.log({
-    usdc_mint: usdcMint.toBase58(),
+    stable_mint: stableMint.toBase58(),
     dawn_mint: dawnMint.toBase58(),
   })
 
@@ -268,21 +268,21 @@ export async function setup(
     serviceProvider.publicKey,
   )
 
-  // Create USDC account for Service Provider
-  console.log('Creating USDC account for Service Provider...')
-  const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
+  // Create USD.tel account for Service Provider
+  console.log('Creating USD.tel account for Service Provider...')
+  const serviceProviderStableAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
-    usdcMint,
+    stableMint,
     serviceProvider.publicKey,
   )
 
-  // Create USDC account for Tester
-  console.log('Creating USDC account for Tester...')
-  const customerUsdcAccount = await createAssociatedTokenAccount(
+  // Create USD.tel account for Tester
+  console.log('Creating USD.tel account for Tester...')
+  const customerStableAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     customer,
-    usdcMint,
+    stableMint,
     customer.publicKey,
   )
 
@@ -295,34 +295,34 @@ export async function setup(
     customer.publicKey,
   )
 
-  // Create USDC token account for wallet
-  console.log('Creating USDC token account for wallet...')
-  const walletUsdcAccount = await createAssociatedTokenAccount(
+  // Create USD.tel token account for wallet
+  console.log('Creating USD.tel token account for wallet...')
+  const walletStableAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     wallet,
-    usdcMint,
+    stableMint,
     wallet.publicKey,
   )
 
-  // Mint 1_000_000 USDC to wallet
-  console.log('Minting 1_000_000 USDC to wallet...')
+  // Mint 1_000_000 USD.tel to wallet
+  console.log('Minting 1_000_000 USD.tel to wallet...')
   await mintTo(
     provider.context.banksClient, // Banks client
     wallet, // Payer for transaction
-    usdcMint, // Mint
-    walletUsdcAccount, // Token account
+    stableMint, // Mint
+    walletStableAccount, // Token account
     wallet, // Mint authority
     BigInt(1_000_000_000_000), // 6 decimals
   )
 
-  const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
+  const { raydium, config, pool, auth, obs, dawnVault, stableVault } =
     await setupRaydium(
       provider,
       wallet,
       dawnMint,
-      usdcMint,
+      stableMint,
       walletDawnAccount,
-      walletUsdcAccount,
+      walletStableAccount,
     )
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
@@ -388,7 +388,7 @@ export async function setup(
     localDomain,
   )
 
-  const slaThreshold = new BN(100).mul(USDC_DECIMALS)
+  const slaThreshold = new BN(100).mul(USD_DECIMALS)
   const slaPayoutRatio = new BN(100)
 
   const serviceAgreementPda = getServiceAgreementPda(
@@ -398,7 +398,7 @@ export async function setup(
   )
 
   const planName = 'RapidLink Elite'
-  const planPrice = new BN(100).mul(USDC_DECIMALS)
+  const planPrice = new BN(100).mul(USD_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
@@ -441,12 +441,12 @@ export async function setup(
     customer,
   )
 
-  // Create USDC vault token account for plan escrow
-  console.log('Creating USDC vault token account for plan escrow...')
-  const escrowUsdcVault = await createAssociatedTokenAccount(
+  // Create USD.tel vault token account for plan escrow
+  console.log('Creating USD.tel vault token account for plan escrow...')
+  const escrowStableVault = await createAssociatedTokenAccount(
     provider.context.banksClient,
     serviceProvider,
-    usdcMint,
+    stableMint,
     planPda,
   )
 
@@ -481,7 +481,7 @@ export async function setup(
     serviceProvider,
     customer,
     // mints
-    usdcMint,
+    stableMint,
     dawnMint,
     // token accounts
     feePoolDawnAccount,
@@ -489,13 +489,13 @@ export async function setup(
     validatorDawnAccount,
     medallionDawnAccount,
     serviceProviderDawnAccount,
-    serviceProviderUsdcAccount,
+    serviceProviderStableAccount,
     customerDawnAccount,
-    customerUsdcAccount,
+    customerStableAccount,
     walletDawnAccount,
-    walletUsdcAccount,
+    walletStableAccount,
     escrowDawnVault,
-    escrowUsdcVault,
+    escrowStableVault,
     // raydium
     raydium,
     raydiumConfig: config,
@@ -503,7 +503,7 @@ export async function setup(
     raydiumPool: pool,
     raydiumObservation: obs,
     raydiumDawnVault: dawnVault,
-    raydiumUsdcVault: usdcVault,
+    raydiumStableVault: stableVault,
     // config
     daoFee,
     validatorFee,

@@ -35,10 +35,10 @@ async function main() {
   const sub = await program.account.subscription.fetch(subscriptionPda)
   const planPda = sub.plan
 
-  const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
+  const { address: escrowStableVault } = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
-    mock.usdcMint,
+    mock.stableMint,
     subscriptionPda,
     true,
   )
@@ -61,28 +61,28 @@ async function main() {
       true,
     )
 
-  // Fetch subscription to get daily USDC and last claim time
+  // Fetch subscription to get daily USD.tel and last claim time
   const subscriptionData = await program.account.subscription.fetch(
     subscriptionPda,
   )
 
-  // Calculate USDC to swap based on days since last claim
+  // Calculate USD.tel to swap based on days since last claim
   const currentTime = Math.floor(Date.now() / 1000)
   const SECONDS_PER_DAY = 86400
   const daysSinceClaim = Math.floor(
     (currentTime - subscriptionData.lastClaim.toNumber()) / SECONDS_PER_DAY,
   )
 
-  // Get remaining USDC in escrow vault
-  const escrowUsdcAccount = await connection.getTokenAccountBalance(
-    escrowUsdcVault,
+  // Get remaining USD.tel in escrow vault
+  const escrowStableAccount = await connection.getTokenAccountBalance(
+    escrowStableVault,
   )
-  const remainingUsdc = new BN(escrowUsdcAccount.value.amount)
+  const remainingStable = new BN(escrowStableAccount.value.amount)
 
-  // Calculate USDC to swap: min(days_since_claim * daily_usdc, remaining_usdc)
-  const usdcToSwap = BN.min(
-    new BN(daysSinceClaim).mul(subscriptionData.dailyUsdc),
-    remainingUsdc,
+  // Calculate USD.tel to swap: min(days_since_claim * daily_stable, remaining_stable)
+  const stableToSwap = BN.min(
+    new BN(daysSinceClaim).mul(subscriptionData.dailyStable),
+    remainingStable,
   )
 
   // Get slippage from CLI flag (default 1%)
@@ -96,14 +96,14 @@ async function main() {
     mock.raydiumPool,
     mock.raydiumConfig,
     mock.raydiumDawnVault,
-    mock.raydiumUsdcVault,
-    usdcToSwap,
+    mock.raydiumStableVault,
+    stableToSwap,
     slippageBps,
   )
 
   console.log('Claim parameters:', {
     daysSinceClaim,
-    usdcToSwap: usdcToSwap.toString(),
+    stableToSwap: stableToSwap.toString(),
     minDawnOut: minDawnOut.toString(),
     slippageBps: slippageBps,
     deadline: new Date(deadline.toNumber() * 1000).toISOString(),
@@ -117,7 +117,7 @@ async function main() {
       plan: planPda,
       subscription: subscriptionPda,
       // mints
-      usdcMint: mock.usdcMint,
+      stableMint: mock.stableMint,
       dawnMint: mock.dawnMint,
       // raydium
       raydium: mock.raydium,
@@ -127,9 +127,9 @@ async function main() {
       raydiumObservation: mock.raydiumObservation,
       // vaults
       raydiumDawnVault: mock.raydiumDawnVault,
-      raydiumUsdcVault: mock.raydiumUsdcVault,
+      raydiumStableVault: mock.raydiumStableVault,
       // token accounts
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       serviceProviderDawnAccount: walletDawnAccount,
       // programs

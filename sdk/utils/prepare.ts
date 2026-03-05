@@ -25,7 +25,7 @@ import {
 import { mock } from './mock'
 import { setupRaydium } from '../integrations/raydium'
 import { getDawnProgram } from '../../cli/shared/cli-utils'
-import { createAccounts, USDC_DECIMALS } from './mock'
+import { createAccounts, USD_DECIMALS } from './mock'
 import {
   getDistributionDomainPda,
   getAccessDomainPda,
@@ -83,14 +83,14 @@ export async function prepare(
     await fundAccounts(provider, accounts)
   }
 
-  // Mint test USDC token
-  console.log('Minting test USDC token...')
-  const usdcMint = await createMint(
+  // Mint test USD.tel token
+  console.log('Minting test USD.tel token...')
+  const stableMint = await createMint(
     provider.connection,
     wallet, // Payer for transaction
     wallet.publicKey, // Mint authority
     null, // Freeze authority
-    6, // Decimals (6 decimals for USDC)
+    6, // Decimals (6 decimals for USD.tel)
     undefined,
     { commitment: 'finalized' },
   )
@@ -103,7 +103,7 @@ export async function prepare(
   )[0]
 
   console.log({
-    usdc_mint: usdcMint.toBase58(),
+    stable_mint: stableMint.toBase58(),
     dawn_mint: dawnMint.toBase58(),
   })
 
@@ -169,22 +169,22 @@ export async function prepare(
     { commitment: 'finalized', skipPreflight: true },
   )
 
-  // Create USDC account for Service Provider
-  console.log('Creating USDC account for Service Provider...')
-  const serviceProviderUsdcAccount = await createAssociatedTokenAccount(
+  // Create USD.tel account for Service Provider
+  console.log('Creating USD.tel account for Service Provider...')
+  const serviceProviderStableAccount = await createAssociatedTokenAccount(
     provider.connection,
     wallet,
-    usdcMint,
+    stableMint,
     serviceProvider.publicKey,
     { commitment: 'finalized', skipPreflight: true },
   )
 
-  // Create USDC account for Customer
-  console.log('Creating USDC account for Customer...')
-  const customerUsdcAccount = await createAssociatedTokenAccount(
+  // Create USD.tel account for Customer
+  console.log('Creating USD.tel account for Customer...')
+  const customerStableAccount = await createAssociatedTokenAccount(
     provider.connection,
     wallet,
-    usdcMint,
+    stableMint,
     customer.publicKey,
     { commitment: 'finalized', skipPreflight: true },
   )
@@ -199,23 +199,23 @@ export async function prepare(
     { commitment: 'finalized', skipPreflight: true },
   )
 
-  // create USDC token account for wallet
-  console.log('Creating USDC token account for wallet...')
-  const walletUsdcAccount = await createAssociatedTokenAccount(
+  // create USD.tel token account for wallet
+  console.log('Creating USD.tel token account for wallet...')
+  const walletStableAccount = await createAssociatedTokenAccount(
     provider.connection,
     wallet,
-    usdcMint,
+    stableMint,
     wallet.publicKey,
     { commitment: 'finalized', skipPreflight: true },
   )
 
-  // Mint 1_000_000 USDC to wallet
-  console.log('Minting 1_000_000 USDC to wallet...')
+  // Mint 1_000_000 USD.tel to wallet
+  console.log('Minting 1_000_000 USD.tel to wallet...')
   await mintTo(
     provider.connection,
     wallet, // Payer for transaction
-    usdcMint, // Mint
-    walletUsdcAccount, // Token account
+    stableMint, // Mint
+    walletStableAccount, // Token account
     wallet.publicKey, // Mint Authority
     BigInt(1_000_000_000_000), // 6 decimals
     undefined,
@@ -223,14 +223,14 @@ export async function prepare(
   )
 
   console.log('Setting up Raydium...')
-  const { raydium, config, pool, auth, obs, dawnVault, usdcVault } =
+  const { raydium, config, pool, auth, obs, dawnVault, stableVault } =
     await setupRaydium(
       provider,
       wallet,
       dawnMint,
-      usdcMint,
+      stableMint,
       walletDawnAccount,
-      walletUsdcAccount,
+      walletStableAccount,
     )
 
   const daoFee = new BN(300) // 3% fee (dao_fee)
@@ -295,7 +295,7 @@ export async function prepare(
     localDomain,
   )
 
-  const slaThreshold = new BN(100).mul(USDC_DECIMALS)
+  const slaThreshold = new BN(100).mul(USD_DECIMALS)
   const slaPayoutRatio = new BN(100)
 
   const serviceAgreementPda = getServiceAgreementPda(
@@ -305,7 +305,7 @@ export async function prepare(
   )
 
   const planName = 'RapidLink Elite'
-  const planPrice = new BN(100).mul(USDC_DECIMALS)
+  const planPrice = new BN(100).mul(USD_DECIMALS)
   const planDuration = 30
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
@@ -330,12 +330,12 @@ export async function prepare(
     customer,
   )
 
-  // Create USDC vault token account for plan escrow
-  console.log('Creating USDC vault token account for plan escrow...')
-  const escrowUsdcVault = await createAssociatedTokenAccount(
+  // Create USD.tel vault token account for plan escrow
+  console.log('Creating USD.tel vault token account for plan escrow...')
+  const escrowStableVault = await createAssociatedTokenAccount(
     provider.connection,
     isDevnet ? wallet : serviceProvider,
-    usdcMint,
+    stableMint,
     planPda,
     { commitment: 'finalized', skipPreflight: true },
     undefined,
@@ -376,7 +376,7 @@ export async function prepare(
     serviceProvider,
     customer,
     // mints
-    usdcMint,
+    stableMint,
     dawnMint,
     // token accounts
     feePoolDawnAccount,
@@ -384,13 +384,13 @@ export async function prepare(
     validatorDawnAccount,
     medallionDawnAccount,
     serviceProviderDawnAccount,
-    serviceProviderUsdcAccount,
+    serviceProviderStableAccount,
     customerDawnAccount,
-    customerUsdcAccount,
+    customerStableAccount,
     walletDawnAccount,
-    walletUsdcAccount,
+    walletStableAccount,
     escrowDawnVault,
-    escrowUsdcVault,
+    escrowStableVault,
     // raydium
     raydium,
     raydiumConfig: config,
@@ -398,7 +398,7 @@ export async function prepare(
     raydiumPool: pool,
     raydiumObservation: obs,
     raydiumDawnVault: dawnVault,
-    raydiumUsdcVault: usdcVault,
+    raydiumStableVault: stableVault,
     // config
     daoFee,
     validatorFee,

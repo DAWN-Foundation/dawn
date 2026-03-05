@@ -10,8 +10,8 @@ const Q32 = new BN('4294967296') // 2^32
  * @param raydiumPoolPda - Raydium pool address
  * @param raydiumConfigPda - Raydium config address (to fetch trade fee)
  * @param raydiumDawnVault - DAWN vault address
- * @param raydiumUsdcVault - USDC vault address
- * @param usdcAmountIn - Amount of USDC to swap
+ * @param raydiumStableVault - USD.tel vault address
+ * @param stableAmountIn - Amount of USD.tel to swap
  * @param slippageBps - Slippage tolerance in basis points (default 100 = 1%)
  * @returns Object containing minDawnOut and deadline
  */
@@ -20,8 +20,8 @@ export async function calculateSwapBounds(
   raydiumPoolPda: PublicKey,
   raydiumConfigPda: PublicKey,
   raydiumDawnVault: PublicKey,
-  raydiumUsdcVault: PublicKey,
-  usdcAmountIn: BN,
+  raydiumStableVault: PublicKey,
+  stableAmountIn: BN,
   slippageBps: number = 100,
 ): Promise<{ minDawnOut: BN; deadline: BN }> {
   // Fetch pool account to get pool state
@@ -50,17 +50,17 @@ export async function calculateSwapBounds(
 
   // Fetch vault balances
   const dawnVault = await getAccount(connection, raydiumDawnVault)
-  const usdcVault = await getAccount(connection, raydiumUsdcVault)
+  const stableVault = await getAccount(connection, raydiumStableVault)
 
   const dawnReserve = new BN(dawnVault.amount.toString())
-  const usdcReserve = new BN(usdcVault.amount.toString())
+  const stableReserve = new BN(stableVault.amount.toString())
 
   // Sort vaults the same way the Rust program does
-  // If DAWN vault is token_0, then (vault_0_amount, vault_1_amount) = (dawn, usdc)
-  // Otherwise (vault_0_amount, vault_1_amount) = (usdc, dawn)
+  // If DAWN vault is token_0, then (vault_0_amount, vault_1_amount) = (dawn, stable)
+  // Otherwise (vault_0_amount, vault_1_amount) = (stable, dawn)
   const isDawnToken0 = raydiumDawnVault.equals(token0Vault)
-  const vault0Amount = isDawnToken0 ? dawnReserve : usdcReserve
-  const vault1Amount = isDawnToken0 ? usdcReserve : dawnReserve
+  const vault0Amount = isDawnToken0 ? dawnReserve : stableReserve
+  const vault1Amount = isDawnToken0 ? stableReserve : dawnReserve
 
   // Calculate price using Raydium's token_price_x32 formula
   // token_0_price = (vault_1_amount << 32) / vault_0_amount
@@ -68,15 +68,15 @@ export async function calculateSwapBounds(
   const token0PriceX32 = vault1Amount.shln(32).div(vault0Amount)
   const token1PriceX32 = vault0Amount.shln(32).div(vault1Amount)
 
-  // Determine if USDC is base (token_0) or quote (token_1)
-  const isUsdcBase = raydiumUsdcVault.equals(token0Vault)
+  // Determine if USD.tel is base (token_0) or quote (token_1)
+  const isStableBase = raydiumStableVault.equals(token0Vault)
 
   // Select the appropriate price based on vault ordering
-  // We're swapping USDC -> DAWN, so we need the price that converts USDC to DAWN
-  const price = isUsdcBase ? token0PriceX32 : token1PriceX32
+  // We're swapping USD.tel -> DAWN, so we need the price that converts USD.tel to DAWN
+  const price = isStableBase ? token0PriceX32 : token1PriceX32
 
-  // Calculate expected DAWN output: (usdcAmountIn * price) / 2^32
-  const expectedDawnOut = usdcAmountIn.mul(price).div(Q32)
+  // Calculate expected DAWN output: (stableAmountIn * price) / 2^32
+  const expectedDawnOut = stableAmountIn.mul(price).div(Q32)
 
   // Apply slippage tolerance
   // minDawnOut = expectedOut * (10000 - slippageBps) / 10000

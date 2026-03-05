@@ -70,7 +70,7 @@ pub struct Subscribed {
     pub expiration: i64,
     pub last_claim: i64,
     pub claimable_dawn: u64,
-    pub daily_usdc: u64,
+    pub daily_stable: u64,
     pub swap_price: u128,
     pub created_at: i64,
 }

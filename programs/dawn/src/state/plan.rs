@@ -21,7 +21,7 @@ pub struct Plan {
     /// The plan name (arbitrary string up to 32 bytes)
     #[max_len(32)]
     pub name: String,
-    /// The plan price per `duration` days (in USDC with 6 decimals)
+    /// The plan price per `duration` days (in USD.tel with 6 decimals)
     pub price: u64,
     /// The plan duration in days
     pub duration: u16,

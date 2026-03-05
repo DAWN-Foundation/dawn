@@ -48,7 +48,7 @@ export const Q32 = new BN(2).pow(new BN(32))
 /**
  * Helper function to calculate minDawnOut with slippage tolerance
  *
- * @param usdcAmount - Amount of USDC to swap
+ * @param stableAmount - Amount of USD.tel to swap
  * @param price - Current pool price (Q32 format)
  * @param slippageBps - Slippage tolerance in basis points (default: 500 = 5%)
  *                      Can be 0-500 bps (0%-5%) to match program validation
@@ -57,12 +57,12 @@ export const Q32 = new BN(2).pow(new BN(32))
  * @returns Minimum DAWN output that will be accepted
  */
 export function calculateMinDawnOut(
-  usdcAmount: BN,
+  stableAmount: BN,
   price: BN,
   slippageBps: number = 50,
 ): BN {
-  // expectedOut = (usdcAmount * price) / Q32
-  const expectedOut = usdcAmount.mul(price).div(Q32)
+  // expectedOut = (stableAmount * price) / Q32
+  const expectedOut = stableAmount.mul(price).div(Q32)
   // Apply slippage: minOut = expectedOut * (10000 - slippageBps) / 10000
   const minOut = expectedOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
   return minOut
@@ -109,7 +109,7 @@ export const subscriptionTests = () =>
     let plan: Awaited<ReturnType<typeof program.account.plan.fetch>>
     let accounts: any
 
-    let oneDayLaterEscrowUsdcVault: PublicKey
+    let oneDayLaterEscrowStableVault: PublicKey
     let oneDayLaterEscrowDawnVault: PublicKey
 
     const wallet = loadWallet()
@@ -142,10 +142,10 @@ export const subscriptionTests = () =>
         Buffer.from(planAccount.data),
       )
 
-      oneDayLaterEscrowUsdcVault = await createAssociatedTokenAccount(
+      oneDayLaterEscrowStableVault = await createAssociatedTokenAccount(
         provider.context.banksClient,
         mock.serviceProvider,
-        mock.usdcMint,
+        mock.stableMint,
         oneDayLaterPlanPda,
       )
 
@@ -164,7 +164,7 @@ export const subscriptionTests = () =>
         device: null as PublicKey | null,
         subscription: mock.subscriptionPda,
         // mints
-        usdcMint: mock.usdcMint,
+        stableMint: mock.stableMint,
         dawnMint: mock.dawnMint,
         // raydium
         raydium: mock.raydium,
@@ -174,12 +174,12 @@ export const subscriptionTests = () =>
         raydiumObservation: mock.raydiumObservation,
         // vaults
         raydiumDawnVault: mock.raydiumDawnVault,
-        raydiumUsdcVault: mock.raydiumUsdcVault,
+        raydiumStableVault: mock.raydiumStableVault,
         // token accounts
-        userUsdcAccount: mock.customerUsdcAccount,
+        userStableAccount: mock.customerStableAccount,
         userDawnAccount: mock.customerDawnAccount,
         feePoolDawnAccount: mock.feePoolDawnAccount,
-        escrowUsdcVault: mock.escrowUsdcVault,
+        escrowStableVault: mock.escrowStableVault,
         escrowDawnVault: mock.escrowDawnVault,
         // programs
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -225,13 +225,13 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const plan = await program.account.plan.fetch(mock.planPda)
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -247,7 +247,7 @@ export const subscriptionTests = () =>
           plan: planPda,
           device: accounts.device,
           subscription: badSubscriptionPda,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -255,11 +255,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -276,21 +276,21 @@ export const subscriptionTests = () =>
       }
     })
 
-    test('cannot subscribe if does not have enough USDC', async () => {
+    test('cannot subscribe if does not have enough USD.tel', async () => {
       try {
         // get balances of raydium vaults
         const raydiumDawnVault = await getAccount(
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
 
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -306,7 +306,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -314,11 +314,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -333,12 +333,12 @@ export const subscriptionTests = () =>
         )
         assert.ok(insufficientFunds)
       } finally {
-        // Mint 1'000 USDC to Customer account
+        // Mint 1'000 USD.tel to Customer account
         await mintTo(
           provider.context.banksClient, // Banks client
           wallet.payer, // Payer for transaction
-          mock.usdcMint, // Mint
-          mock.customerUsdcAccount, // Token account
+          mock.stableMint, // Mint
+          mock.customerStableAccount, // Token account
           wallet, // Mint authority
           BigInt(1_000_000_000_000), // 6 decimals
         )
@@ -358,13 +358,13 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -380,7 +380,7 @@ export const subscriptionTests = () =>
           plan: oneDayLaterPlanPda,
           device: accounts.device,
           subscription: subscriptionPda,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -388,11 +388,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+          escrowStableVault: oneDayLaterEscrowStableVault,
           escrowDawnVault: oneDayLaterEscrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -416,13 +416,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
       const plan = await program.account.plan.fetch(mock.planPda)
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -438,7 +438,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -446,11 +446,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -478,13 +478,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
       const plan = await program.account.plan.fetch(mock.planPda)
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -500,7 +500,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -508,11 +508,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -535,13 +535,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       const plan = await program.account.plan.fetch(mock.planPda)
 
@@ -562,7 +562,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -570,11 +570,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -599,13 +599,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       const plan = await program.account.plan.fetch(mock.planPda)
 
@@ -630,7 +630,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -638,11 +638,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -683,13 +683,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
       const plan = await program.account.plan.fetch(oneDayLaterPlanPda)
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -705,7 +705,7 @@ export const subscriptionTests = () =>
         plan: oneDayLaterPlanPda,
         device: accounts.device,
         subscription: subscriptionPda,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -713,11 +713,11 @@ export const subscriptionTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        userUsdcAccount: accounts.userUsdcAccount,
+        raydiumStableVault: accounts.raydiumStableVault,
+        userStableAccount: accounts.userStableAccount,
         userDawnAccount: accounts.userDawnAccount,
         feePoolDawnAccount: accounts.feePoolDawnAccount,
-        escrowUsdcVault: oneDayLaterEscrowUsdcVault,
+        escrowStableVault: oneDayLaterEscrowStableVault,
         escrowDawnVault: oneDayLaterEscrowDawnVault,
         tokenProgram: accounts.tokenProgram,
         associatedTokenProgram: accounts.associatedTokenProgram,
@@ -745,9 +745,9 @@ export const subscriptionTests = () =>
     test('subscribes to the plan', async () => {
       await new Promise((resolve) => setTimeout(resolve, 300))
 
-      const testerUsdcBalanceBefore = await getBalance(
+      const testerStableBalanceBefore = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
 
       const feePoolDawnBalanceBefore = await getBalance(
@@ -755,9 +755,9 @@ export const subscriptionTests = () =>
         mock.feePoolDawnAccount,
       )
 
-      const escrowUsdcBalanceBefore = await getBalance(
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
 
       const escrowDawnBalanceBefore = await getBalance(
@@ -770,24 +770,24 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Calculate fee amounts for assertions later
       const config = await program.account.config.fetch(mock.configPda)
       const totalFeeBpsCalc = config.daoFee
         .add(config.validatorFee)
         .add(config.medallionFee)
-      const totalFeeUsdc = plan.price.mul(totalFeeBpsCalc).div(BPS_DENOMINATOR)
-      const remainder = plan.price.sub(totalFeeUsdc)
-      const dailyUsdcCalc = remainder.div(new BN(plan.duration))
-      const usdcToSwap = totalFeeUsdc.add(dailyUsdcCalc)
+      const totalFeeStable = plan.price.mul(totalFeeBpsCalc).div(BPS_DENOMINATOR)
+      const remainder = plan.price.sub(totalFeeStable)
+      const dailyStableCalc = remainder.div(new BN(plan.duration))
+      const stableToSwap = totalFeeStable.add(dailyStableCalc)
 
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -805,7 +805,7 @@ export const subscriptionTests = () =>
         plan: accounts.plan,
         device: accounts.device,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -813,11 +813,11 @@ export const subscriptionTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        userUsdcAccount: accounts.userUsdcAccount,
+        raydiumStableVault: accounts.raydiumStableVault,
+        userStableAccount: accounts.userStableAccount,
         userDawnAccount: accounts.userDawnAccount,
         feePoolDawnAccount: accounts.feePoolDawnAccount,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         tokenProgram: accounts.tokenProgram,
         associatedTokenProgram: accounts.associatedTokenProgram,
@@ -838,36 +838,36 @@ export const subscriptionTests = () =>
       assert.ok(swapPriceBN.gt(new BN(0)), 'swapPrice should be greater than 0')
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
-      // make sure the customer USDC account was debited
-      const testerUsdcBalanceAfter = await getBalance(
+      // make sure the customer USD.tel account was debited
+      const testerStableBalanceAfter = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
-      assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+      assert.ok(testerStableBalanceAfter.lt(testerStableBalanceBefore))
 
       // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
-      const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+      const diff = testerStableBalanceBefore.sub(testerStableBalanceAfter)
       assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
-      // calculate total fee in USDC
+      // calculate total fee in USD.tel
       const totalFeeBpsAssert1 = mock.daoFee
         .add(mock.validatorFee)
         .add(mock.medallionFee)
-      const totalUsdcFee = plan.price
+      const totalStableFee = plan.price
         .mul(totalFeeBpsAssert1)
         .div(BPS_DENOMINATOR)
 
-      // make sure the device owner escrow USDC vault account was debited
-      const usdcRemainder = plan.price.sub(totalUsdcFee)
-      const dailyUsdcAssert1 = usdcRemainder.div(new BN(plan.duration))
-      const dailyDawn = dailyUsdcAssert1.mul(price).div(Q32)
-      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert1)
-      const escrowUsdcBalanceAfter = await getBalance(
+      // make sure the device owner escrow USD.tel vault account was debited
+      const stableRemainder = plan.price.sub(totalStableFee)
+      const dailyStableAssert1 = stableRemainder.div(new BN(plan.duration))
+      const dailyDawn = dailyStableAssert1.mul(price).div(Q32)
+      const stableExpected = stableRemainder.sub(dailyStableAssert1)
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
+        escrowStableBalanceAfter.sub(escrowStableBalanceBefore).eq(stableExpected),
       )
 
       // make sure the device owner escrow DAWN vault account was credited with the daily DAWN portion
@@ -877,10 +877,10 @@ export const subscriptionTests = () =>
       )
 
       // swapPriceBN is the actual DAWN output from the swap - calculate exact expected escrow
-      // escrow_dawn = (actual_dawn_out * daily_usdc) / total_usdc
+      // escrow_dawn = (actual_dawn_out * daily_stable) / total_stable
       const expectedEscrowDawn = swapPriceBN
-        .mul(dailyUsdcAssert1)
-        .div(usdcToSwap)
+        .mul(dailyStableAssert1)
+        .div(stableToSwap)
 
       const actualEscrowDawn = escrowDawnBalanceAfter.sub(
         escrowDawnBalanceBefore,
@@ -924,7 +924,7 @@ export const subscriptionTests = () =>
       )
       // claimable_dawn is set to the actual escrow amount from proportional allocation
       assert.ok(subscription.claimableDawn.eq(actualEscrowDawn))
-      assert.ok(subscription.dailyUsdc.eq(dailyUsdcAssert1))
+      assert.ok(subscription.dailyStable.eq(dailyStableAssert1))
       assert.equal(subscription.bump, mock.subscriptionBump)
     })
 
@@ -937,9 +937,9 @@ export const subscriptionTests = () =>
       )
       const expirationBefore = new BN(subscriptionBefore.expiration)
 
-      const testerUsdcBalanceBefore = await getBalance(
+      const testerStableBalanceBefore = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
 
       const feePoolDawnBalanceBefore = await getBalance(
@@ -947,9 +947,9 @@ export const subscriptionTests = () =>
         mock.feePoolDawnAccount,
       )
 
-      const escrowUsdcBalanceBefore = await getBalance(
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
 
       const escrowDawnBalanceBefore = await getBalance(
@@ -962,23 +962,23 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Calculate fee amounts for active subscription extension
       const config2 = await program.account.config.fetch(mock.configPda)
       const totalFeeBps2 = config2.daoFee
         .add(config2.validatorFee)
         .add(config2.medallionFee)
-      const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
-      const remainder2 = plan.price.sub(totalFeeUsdc2)
-      const dailyUsdc2 = remainder2.div(new BN(plan.duration))
+      const totalFeeStable2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
+      const remainder2 = plan.price.sub(totalFeeStable2)
+      const dailyStable2 = remainder2.div(new BN(plan.duration))
 
       // For active extensions: provide minDawnOut for full plan.price
       // Code will scale it down for fee-only swap
@@ -994,7 +994,7 @@ export const subscriptionTests = () =>
         config: accounts.config,
         plan: accounts.plan,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -1002,11 +1002,11 @@ export const subscriptionTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        userUsdcAccount: accounts.userUsdcAccount,
+        raydiumStableVault: accounts.raydiumStableVault,
+        userStableAccount: accounts.userStableAccount,
         userDawnAccount: accounts.userDawnAccount,
         feePoolDawnAccount: accounts.feePoolDawnAccount,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         tokenProgram: accounts.tokenProgram,
         associatedTokenProgram: accounts.associatedTokenProgram,
@@ -1039,29 +1039,29 @@ export const subscriptionTests = () =>
       )
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
-      // make sure the customer USDC account was debited
-      const testerUsdcBalanceAfter = await getBalance(
+      // make sure the customer USD.tel account was debited
+      const testerStableBalanceAfter = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
-      assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+      assert.ok(testerStableBalanceAfter.lt(testerStableBalanceBefore))
 
       // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
-      const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+      const diff = testerStableBalanceBefore.sub(testerStableBalanceAfter)
       assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
-      // calculate total fee in USDC
+      // calculate total fee in USD.tel
       const totalFeeBpsAssert2 = mock.daoFee
         .add(mock.validatorFee)
         .add(mock.medallionFee)
-      const totalUsdcFee = plan.price
+      const totalStableFee = plan.price
         .mul(totalFeeBpsAssert2)
         .div(BPS_DENOMINATOR)
 
-      // For active subscriptions: fees are swapped to DAWN, non-fee USDC goes to escrow
-      const escrowUsdcBalanceAfter = await getBalance(
+      // For active subscriptions: fees are swapped to DAWN, non-fee USD.tel goes to escrow
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
@@ -1072,13 +1072,13 @@ export const subscriptionTests = () =>
         mock.feePoolDawnAccount,
       )
 
-      // Only non-fee USDC goes to escrow (plan.price - totalFeeUsdc)
-      const expectedEscrowUsdcIncrease = plan.price.sub(totalUsdcFee)
+      // Only non-fee USD.tel goes to escrow (plan.price - totalFeeStable)
+      const expectedEscrowStableIncrease = plan.price.sub(totalStableFee)
       assert.ok(
-        escrowUsdcBalanceAfter
-          .sub(escrowUsdcBalanceBefore)
-          .eq(expectedEscrowUsdcIncrease),
-        'Escrow USDC should increase by (plan.price - fees) for active subscriptions',
+        escrowStableBalanceAfter
+          .sub(escrowStableBalanceBefore)
+          .eq(expectedEscrowStableIncrease),
+        'Escrow USD.tel should increase by (plan.price - fees) for active subscriptions',
       )
       assert.ok(
         escrowDawnBalanceAfter.eq(escrowDawnBalanceBefore),
@@ -1108,7 +1108,7 @@ export const subscriptionTests = () =>
       assert.ok(subscription.lastClaim.eq(subscriptionBefore.lastClaim))
       // claimableDawn should remain unchanged for active subscriptions
       assert.ok(subscription.claimableDawn.eq(subscriptionBefore.claimableDawn))
-      assert.ok(subscription.dailyUsdc.eq(subscriptionBefore.dailyUsdc))
+      assert.ok(subscription.dailyStable.eq(subscriptionBefore.dailyStable))
       assert.equal(subscription.bump, subscriptionBefore.bump)
     })
 
@@ -1134,9 +1134,9 @@ export const subscriptionTests = () =>
         ),
       )
 
-      const testerUsdcBalanceBefore = await getBalance(
+      const testerStableBalanceBefore = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
 
       const feePoolDawnBalanceBefore = await getBalance(
@@ -1144,9 +1144,9 @@ export const subscriptionTests = () =>
         mock.feePoolDawnAccount,
       )
 
-      const escrowUsdcBalanceBefore = await getBalance(
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
 
       const escrowDawnBalanceBefore = await getBalance(
@@ -1159,24 +1159,24 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Calculate fee amounts for assertions later
       const config2 = await program.account.config.fetch(mock.configPda)
       const totalFeeBps2 = config2.daoFee
         .add(config2.validatorFee)
         .add(config2.medallionFee)
-      const totalFeeUsdc2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
-      const remainder2 = plan.price.sub(totalFeeUsdc2)
-      const dailyUsdc2 = remainder2.div(new BN(plan.duration))
-      const usdcToSwap2 = totalFeeUsdc2.add(dailyUsdc2)
+      const totalFeeStable2 = plan.price.mul(totalFeeBps2).div(BPS_DENOMINATOR)
+      const remainder2 = plan.price.sub(totalFeeStable2)
+      const dailyStable2 = remainder2.div(new BN(plan.duration))
+      const stableToSwap2 = totalFeeStable2.add(dailyStable2)
 
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -1191,7 +1191,7 @@ export const subscriptionTests = () =>
         config: accounts.config,
         plan: accounts.plan,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -1199,11 +1199,11 @@ export const subscriptionTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        userUsdcAccount: accounts.userUsdcAccount,
+        raydiumStableVault: accounts.raydiumStableVault,
+        userStableAccount: accounts.userStableAccount,
         userDawnAccount: accounts.userDawnAccount,
         feePoolDawnAccount: accounts.feePoolDawnAccount,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         tokenProgram: accounts.tokenProgram,
         associatedTokenProgram: accounts.associatedTokenProgram,
@@ -1236,48 +1236,48 @@ export const subscriptionTests = () =>
       )
       expect(new BN(event.createdAt).gt(new BN(0))).toBeTruthy()
 
-      // make sure the customer USDC account was debited
-      const testerUsdcBalanceAfter = await getBalance(
+      // make sure the customer USD.tel account was debited
+      const testerStableBalanceAfter = await getBalance(
         provider.connection,
-        mock.customerUsdcAccount,
+        mock.customerStableAccount,
       )
-      assert.ok(testerUsdcBalanceAfter.lt(testerUsdcBalanceBefore))
+      assert.ok(testerStableBalanceAfter.lt(testerStableBalanceBefore))
 
       // make sure the amount debited is the plan price with 0.25% tolerance (to account for slippage)
-      const diff = testerUsdcBalanceBefore.sub(testerUsdcBalanceAfter)
+      const diff = testerStableBalanceBefore.sub(testerStableBalanceAfter)
       assert.ok(diff.gte(plan.price.mul(TOLERANCE_BPS).div(BPS_DENOMINATOR)))
 
-      // calculate total fee in USDC
+      // calculate total fee in USD.tel
       const totalFeeBpsAssert2 = mock.daoFee
         .add(mock.validatorFee)
         .add(mock.medallionFee)
-      const totalUsdcFee = plan.price
+      const totalStableFee = plan.price
         .mul(totalFeeBpsAssert2)
         .div(BPS_DENOMINATOR)
 
       // For expired subscriptions: fees are swapped immediately, remainder goes to escrow
-      const escrowUsdcBalanceAfter = await getBalance(
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
       const escrowDawnBalanceAfter = await getBalance(
         provider.connection,
         accounts.escrowDawnVault,
       )
 
-      const usdcRemainder = plan.price.sub(totalUsdcFee)
-      const dailyUsdcAssert2 = usdcRemainder.div(new BN(plan.duration))
-      const usdcExpected = usdcRemainder.sub(dailyUsdcAssert2)
+      const stableRemainder = plan.price.sub(totalStableFee)
+      const dailyStableAssert2 = stableRemainder.div(new BN(plan.duration))
+      const stableExpected = stableRemainder.sub(dailyStableAssert2)
       assert.ok(
-        escrowUsdcBalanceAfter.sub(escrowUsdcBalanceBefore).eq(usdcExpected),
-        'Escrow USDC should increase by remainder after fees for expired subscriptions',
+        escrowStableBalanceAfter.sub(escrowStableBalanceBefore).eq(stableExpected),
+        'Escrow USD.tel should increase by remainder after fees for expired subscriptions',
       )
 
       // swapPriceBN is the actual DAWN output from the swap - calculate exact expected escrow
-      // escrow_dawn = (actual_dawn_out * daily_usdc) / total_usdc
+      // escrow_dawn = (actual_dawn_out * daily_stable) / total_stable
       const expectedEscrowDawn = swapPriceBN
-        .mul(dailyUsdcAssert2)
-        .div(usdcToSwap2)
+        .mul(dailyStableAssert2)
+        .div(stableToSwap2)
 
       const actualEscrowDawn = escrowDawnBalanceAfter.sub(
         escrowDawnBalanceBefore,
@@ -1339,13 +1339,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
       const plan = await program.account.plan.fetch(mock.planPda)
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -1363,7 +1363,7 @@ export const subscriptionTests = () =>
           plan: accounts.plan,
           device: accounts.device,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -1371,11 +1371,11 @@ export const subscriptionTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          userUsdcAccount: accounts.userUsdcAccount,
+          raydiumStableVault: accounts.raydiumStableVault,
+          userStableAccount: accounts.userStableAccount,
           userDawnAccount: accounts.userDawnAccount,
           feePoolDawnAccount: accounts.feePoolDawnAccount,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           tokenProgram: accounts.tokenProgram,
           associatedTokenProgram: accounts.associatedTokenProgram,
@@ -1441,13 +1441,13 @@ export const subscriptionTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
       const planAccount = await program.account.plan.fetch(mock.planPda)
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(planAccount.price, price)
@@ -1463,7 +1463,7 @@ export const subscriptionTests = () =>
         plan: accounts.plan,
         device: devicePda,
         subscription: subscriptionPda,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -1471,11 +1471,11 @@ export const subscriptionTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        userUsdcAccount: mock.walletUsdcAccount,
+        raydiumStableVault: accounts.raydiumStableVault,
+        userStableAccount: mock.walletStableAccount,
         userDawnAccount: mock.walletDawnAccount,
         feePoolDawnAccount: accounts.feePoolDawnAccount,
-        escrowUsdcVault: mock.escrowUsdcVault,
+        escrowStableVault: mock.escrowStableVault,
         escrowDawnVault: mock.escrowDawnVault,
         tokenProgram: accounts.tokenProgram,
         associatedTokenProgram: accounts.associatedTokenProgram,
@@ -1528,9 +1528,9 @@ export const subscriptionTests = () =>
         provider.wallet = new Wallet(caller)
 
         // Get balances before
-        const callerUsdcBalanceBefore = await getBalance(
+        const callerStableBalanceBefore = await getBalance(
           provider.connection,
-          mock.walletUsdcAccount,
+          mock.walletStableAccount,
         )
 
         // Calculate valid minDawnOut
@@ -1538,13 +1538,13 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const plan = await program.account.plan.fetch(mock.planPda)
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -1562,7 +1562,7 @@ export const subscriptionTests = () =>
             plan: mock.planPda,
             device: null,
             subscription: subscriptionForPda,
-            usdcMint: mock.usdcMint,
+            stableMint: mock.stableMint,
             dawnMint: mock.dawnMint,
             raydium: mock.raydium,
             raydiumAuthority: mock.raydiumAuthority,
@@ -1570,11 +1570,11 @@ export const subscriptionTests = () =>
             raydiumPool: mock.raydiumPool,
             raydiumObservation: mock.raydiumObservation,
             raydiumDawnVault: mock.raydiumDawnVault,
-            raydiumUsdcVault: mock.raydiumUsdcVault,
-            userUsdcAccount: mock.walletUsdcAccount,
+            raydiumStableVault: mock.raydiumStableVault,
+            userStableAccount: mock.walletStableAccount,
             userDawnAccount: mock.walletDawnAccount,
             feePoolDawnAccount: mock.feePoolDawnAccount,
-            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowStableVault: mock.escrowStableVault,
             escrowDawnVault: mock.escrowDawnVault,
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1598,14 +1598,14 @@ export const subscriptionTests = () =>
           expect(event.device).toBeNull()
           assert.ok(event.expiration > 0)
 
-          // Verify caller's USDC was debited
-          const callerUsdcBalanceAfter = await getBalance(
+          // Verify caller's USD.tel was debited
+          const callerStableBalanceAfter = await getBalance(
             provider.connection,
-            mock.walletUsdcAccount,
+            mock.walletStableAccount,
           )
           assert.ok(
-            callerUsdcBalanceAfter.lt(callerUsdcBalanceBefore),
-            'Caller USDC should be debited',
+            callerStableBalanceAfter.lt(callerStableBalanceBefore),
+            'Caller USD.tel should be debited',
           )
 
           // Verify subscription was created for beneficiary
@@ -1654,13 +1654,13 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const plan = await program.account.plan.fetch(mock.planPda)
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -1678,7 +1678,7 @@ export const subscriptionTests = () =>
             plan: mock.planPda,
             device: devicePda, // Device owned by caller, not beneficiary
             subscription: subscriptionForPda,
-            usdcMint: mock.usdcMint,
+            stableMint: mock.stableMint,
             dawnMint: mock.dawnMint,
             raydium: mock.raydium,
             raydiumAuthority: mock.raydiumAuthority,
@@ -1686,11 +1686,11 @@ export const subscriptionTests = () =>
             raydiumPool: mock.raydiumPool,
             raydiumObservation: mock.raydiumObservation,
             raydiumDawnVault: mock.raydiumDawnVault,
-            raydiumUsdcVault: mock.raydiumUsdcVault,
-            userUsdcAccount: mock.walletUsdcAccount,
+            raydiumStableVault: mock.raydiumStableVault,
+            userStableAccount: mock.walletStableAccount,
             userDawnAccount: mock.walletDawnAccount,
             feePoolDawnAccount: mock.feePoolDawnAccount,
-            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowStableVault: mock.escrowStableVault,
             escrowDawnVault: mock.escrowDawnVault,
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1732,9 +1732,9 @@ export const subscriptionTests = () =>
         provider.wallet = new Wallet(caller)
 
         // Get balances before
-        const callerUsdcBalanceBefore = await getBalance(
+        const callerStableBalanceBefore = await getBalance(
           provider.connection,
-          mock.walletUsdcAccount,
+          mock.walletStableAccount,
         )
 
         // Calculate valid minDawnOut
@@ -1742,21 +1742,21 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const config = await program.account.config.fetch(mock.configPda)
         const plan = await program.account.plan.fetch(mock.planPda)
         const totalFeeBps = config.daoFee
           .add(config.validatorFee)
           .add(config.medallionFee)
-        const totalFeeUsdc = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
-        const remainder = plan.price.sub(totalFeeUsdc)
-        const dailyUsdc = remainder.div(new BN(plan.duration))
+        const totalFeeStable = plan.price.mul(totalFeeBps).div(BPS_DENOMINATOR)
+        const remainder = plan.price.sub(totalFeeStable)
+        const dailyStable = remainder.div(new BN(plan.duration))
 
         // For active extensions: provide minDawnOut for full plan.price
         // Code will scale it down for fee-only swap
@@ -1773,7 +1773,7 @@ export const subscriptionTests = () =>
           config: mock.configPda,
           plan: mock.planPda,
           subscription: subscriptionForPda,
-          usdcMint: mock.usdcMint,
+          stableMint: mock.stableMint,
           dawnMint: mock.dawnMint,
           raydium: mock.raydium,
           raydiumAuthority: mock.raydiumAuthority,
@@ -1781,11 +1781,11 @@ export const subscriptionTests = () =>
           raydiumPool: mock.raydiumPool,
           raydiumObservation: mock.raydiumObservation,
           raydiumDawnVault: mock.raydiumDawnVault,
-          raydiumUsdcVault: mock.raydiumUsdcVault,
-          userUsdcAccount: mock.walletUsdcAccount,
+          raydiumStableVault: mock.raydiumStableVault,
+          userStableAccount: mock.walletStableAccount,
           userDawnAccount: mock.walletDawnAccount,
           feePoolDawnAccount: mock.feePoolDawnAccount,
-          escrowUsdcVault: mock.escrowUsdcVault,
+          escrowStableVault: mock.escrowStableVault,
           escrowDawnVault: mock.escrowDawnVault,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1813,14 +1813,14 @@ export const subscriptionTests = () =>
           'Expiration should be extended by plan duration',
         )
 
-        // Verify caller's USDC was debited
-        const callerUsdcBalanceAfter = await getBalance(
+        // Verify caller's USD.tel was debited
+        const callerStableBalanceAfter = await getBalance(
           provider.connection,
-          mock.walletUsdcAccount,
+          mock.walletStableAccount,
         )
         assert.ok(
-          callerUsdcBalanceAfter.lt(callerUsdcBalanceBefore),
-          'Caller USDC should be debited',
+          callerStableBalanceAfter.lt(callerStableBalanceBefore),
+          'Caller USD.tel should be debited',
         )
 
         // Verify subscription was extended
@@ -1860,13 +1860,13 @@ export const subscriptionTests = () =>
           provider.connection,
           accounts.raydiumDawnVault,
         )
-        const raydiumUsdcVault = await getAccount(
+        const raydiumStableVault = await getAccount(
           provider.connection,
-          accounts.raydiumUsdcVault,
+          accounts.raydiumStableVault,
         )
         const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-        const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-        const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+        const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+        const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
         const plan = await program.account.plan.fetch(mock.planPda)
         // Use plan.price for minDawnOut - program will scale it proportionally
         const minDawnOut = calculateMinDawnOut(plan.price, price)
@@ -1883,7 +1883,7 @@ export const subscriptionTests = () =>
             config: mock.configPda,
             plan: mock.planPda,
             subscription: subscriptionForPda, // Subscription belongs to mock.customer
-            usdcMint: mock.usdcMint,
+            stableMint: mock.stableMint,
             dawnMint: mock.dawnMint,
             raydium: mock.raydium,
             raydiumAuthority: mock.raydiumAuthority,
@@ -1891,11 +1891,11 @@ export const subscriptionTests = () =>
             raydiumPool: mock.raydiumPool,
             raydiumObservation: mock.raydiumObservation,
             raydiumDawnVault: mock.raydiumDawnVault,
-            raydiumUsdcVault: mock.raydiumUsdcVault,
-            userUsdcAccount: mock.walletUsdcAccount,
+            raydiumStableVault: mock.raydiumStableVault,
+            userStableAccount: mock.walletStableAccount,
             userDawnAccount: mock.walletDawnAccount,
             feePoolDawnAccount: mock.feePoolDawnAccount,
-            escrowUsdcVault: mock.escrowUsdcVault,
+            escrowStableVault: mock.escrowStableVault,
             escrowDawnVault: mock.escrowDawnVault,
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

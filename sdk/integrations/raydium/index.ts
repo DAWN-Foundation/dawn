@@ -40,29 +40,29 @@ export async function setupRaydium(
   provider: BankrunProvider | AnchorProvider,
   wallet: Keypair,
   dawnMint: PublicKey,
-  usdcMint: PublicKey,
+  stableMint: PublicKey,
   walletDawnAccount: PublicKey,
-  walletUsdcAccount: PublicKey,
+  walletStableAccount: PublicKey,
 ) {
   console.log('Getting Raydium program...')
   const program = getRaydiumProgram(provider)
 
   // Sort the tokens
   const [mint0, mint1, walletMint0, walletMint1, dawnIsBase] =
-    Buffer.compare(dawnMint.toBuffer(), usdcMint.toBuffer()) < 0
-      ? [dawnMint, usdcMint, walletDawnAccount, walletUsdcAccount, true]
-      : [usdcMint, dawnMint, walletUsdcAccount, walletDawnAccount, false]
+    Buffer.compare(dawnMint.toBuffer(), stableMint.toBuffer()) < 0
+      ? [dawnMint, stableMint, walletDawnAccount, walletStableAccount, true]
+      : [stableMint, dawnMint, walletStableAccount, walletDawnAccount, false]
 
   console.log({
     mint0: mint0.toBase58(),
     mint1: mint1.toBase58(),
     walletMint0: walletMint0.toBase58(),
     walletMint1: walletMint1.toBase58(),
-    pool_symbol: dawnIsBase ? 'DAWN/USDC' : 'USDC/DAWN',
+    pool_symbol: dawnIsBase ? 'DAWN/USD.tel' : 'USD.tel/DAWN',
   })
 
-  // Create DAWN-USDC pool
-  console.log('Creating DAWN-USDC pool...')
+  // Create DAWN-USD.tel pool
+  console.log('Creating DAWN-USD.tel pool...')
   const { pool, auth, obs } = await createPool(
     program,
     wallet,
@@ -88,7 +88,7 @@ export async function setupRaydium(
   )
 
   const [dawnVault] = getPoolVaultAddress(pool, dawnMint, program.programId)
-  const [usdcVault] = getPoolVaultAddress(pool, usdcMint, program.programId)
+  const [stableVault] = getPoolVaultAddress(pool, stableMint, program.programId)
 
   return {
     raydium: RAYDIUM_PROGRAM_ID,
@@ -97,6 +97,6 @@ export async function setupRaydium(
     auth,
     obs,
     dawnVault,
-    usdcVault,
+    stableVault,
   }
 }

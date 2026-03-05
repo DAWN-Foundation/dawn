@@ -15,7 +15,7 @@ async function main() {
     daoFee: configAccount.daoFee.toString(),
     validatorFee: configAccount.validatorFee.toString(),
     medallionFee: configAccount.medallionFee.toString(),
-    usdcMint: configAccount.usdcMint.toBase58(),
+    stableMint: configAccount.stableMint.toBase58(),
     dawnMint: configAccount.dawnMint.toBase58(),
     daoDawnAccount: configAccount.daoDawnAccount.toBase58(),
     validatorDawnAccount: configAccount.validatorDawnAccount.toBase58(),

@@ -25,8 +25,8 @@ import { Dawn } from '../../../target/types/dawn'
 import { ensureRootBlockInitialized } from '../utils/ipam'
 
 // Plan constants
-const MIN_PRICE = 50_000_000 // 50 USDC
-const MAX_PRICE = 200_000_000 // 200 USDC
+const MIN_PRICE = 50_000_000 // 50 USD.tel
+const MAX_PRICE = 200_000_000 // 200 USD.tel
 const MIN_DURATION = 7 // 7 days
 const MAX_DURATION = 90 // 90 days
 const MIN_SPEED = 50 // 50 Mbps
