@@ -223,21 +223,21 @@ export const pskAmfTests = () =>
         provider.connection,
         mock.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        mock.raydiumUsdcVault,
+        mock.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Use plan.price for minDawnOut - program will scale it proportionally
       const minDawnOut = calculateMinDawnOut(plan.price, price)
       const deadline = await getDeadline(provider)
 
-      const escrowUsdcVault = await getAssociatedTokenAddress(
-        mock.usdcMint,
+      const escrowStableVault = await getAssociatedTokenAddress(
+        mock.stableMint,
         planPda,
         true,
       )
@@ -265,7 +265,7 @@ export const pskAmfTests = () =>
         plan: planPda,
         device: null,
         subscription: subscriptionPda,
-        usdcMint: mock.usdcMint,
+        stableMint: mock.stableMint,
         dawnMint: mock.dawnMint,
         raydium: mock.raydium,
         raydiumAuthority: mock.raydiumAuthority,
@@ -273,11 +273,11 @@ export const pskAmfTests = () =>
         raydiumPool: mock.raydiumPool,
         raydiumObservation: mock.raydiumObservation,
         raydiumDawnVault: mock.raydiumDawnVault,
-        raydiumUsdcVault: mock.raydiumUsdcVault,
-        userUsdcAccount: mock.customerUsdcAccount,
+        raydiumStableVault: mock.raydiumStableVault,
+        userStableAccount: mock.customerStableAccount,
         userDawnAccount: mock.customerDawnAccount,
         feePoolDawnAccount: mock.feePoolDawnAccount,
-        escrowUsdcVault: escrowUsdcVault,
+        escrowStableVault: escrowStableVault,
         escrowDawnVault: escrowDawnVault,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

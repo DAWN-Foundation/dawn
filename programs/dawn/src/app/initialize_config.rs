@@ -30,9 +30,9 @@ pub struct InitializeConfig<'info> {
     )]
     pub token_config: Account<'info, TokenConfig>,
 
-    /// The USDC mint account
+    /// The USD.tel mint account
     #[account()]
-    pub usdc_mint: Account<'info, Mint>,
+    pub stable_mint: Account<'info, Mint>,
 
     /// The DAWN mint account
     #[account(
@@ -81,8 +81,8 @@ pub struct InitializeConfig<'info> {
     /// CHECK: Assumes authority has set this to Raydium config account correctly
     pub raydium_config: UncheckedAccount<'info>,
 
-    /// The Raydium DAWN/USDC pool account
-    /// CHECK: Assumes authority has set this to Raydium DAWN/USDC pool account correctly
+    /// The Raydium DAWN/USD.tel pool account
+    /// CHECK: Assumes authority has set this to Raydium DAWN/USD.tel pool account correctly
     pub raydium_pool: UncheckedAccount<'info>,
 
     /// The Raydium observation account
@@ -125,7 +125,7 @@ impl DawnApp {
 
         // Set mints
         config.token_config = ctx.accounts.token_config.key();
-        config.usdc_mint = ctx.accounts.usdc_mint.key();
+        config.stable_mint = ctx.accounts.stable_mint.key();
         config.dawn_mint = ctx.accounts.dawn_mint.key();
 
         // Set token accounts

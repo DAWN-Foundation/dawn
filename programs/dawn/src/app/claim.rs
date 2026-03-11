@@ -62,18 +62,18 @@ pub struct Claim<'info> {
     #[account(address = config.dawn_mint)]
     pub dawn_mint: Box<Account<'info, Mint>>,
 
-    /// The USDC token mint
-    #[account(address = config.usdc_mint)]
-    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// The USD.tel token mint
+    #[account(address = config.stable_mint)]
+    pub stable_mint: Box<Account<'info, Mint>>,
 
     // TOKEN ACCOUNTS
-    /// The plan owner escrow USDC token vault
+    /// The plan owner escrow USD.tel token vault
     #[account(
         mut,
-        associated_token::mint = usdc_mint,
+        associated_token::mint = stable_mint,
         associated_token::authority = plan,
     )]
-    pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
+    pub escrow_stable_vault: Box<Account<'info, TokenAccount>>,
 
     /// The plan owner escrow DAWN token vault
     #[account(
@@ -131,12 +131,12 @@ pub struct Claim<'info> {
     )]
     pub raydium_dawn_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The USDC pool vault account
+    /// The USD.tel pool vault account
     #[account(
         mut,
-        token::mint = usdc_mint,
+        token::mint = stable_mint,
     )]
-    pub raydium_usdc_vault: Box<Account<'info, TokenAccount>>,
+    pub raydium_stable_vault: Box<Account<'info, TokenAccount>>,
 
     // PROGRAMS
     pub token_program: Program<'info, Token>,
@@ -152,7 +152,7 @@ impl DawnApp {
         let plan_key = plan_account.key();
         let last_claim = ctx.accounts.subscription.last_claim;
         let claimable_dawn = ctx.accounts.subscription.claimable_dawn;
-        let daily_usdc = ctx.accounts.subscription.daily_usdc;
+        let daily_stable = ctx.accounts.subscription.daily_stable;
 
         let clock = Clock::get()?;
         let current_time = clock.unix_timestamp;
@@ -227,17 +227,17 @@ impl DawnApp {
 
         let mut swap_price = 0;
 
-        // Handle swapping USDC for next period
-        let remaining_usdc = ctx.accounts.escrow_usdc_vault.amount;
-        if days_since_claim > 0 && remaining_usdc > 0 {
-            // Swap daily USDC times the number of days since last claim
-            // Or the remaining USDC if it's less than the cumulative daily USDC
-            let usdc_to_swap = days_since_claim
-                .checked_mul(daily_usdc)
+        // Handle swapping USD.tel for next period
+        let remaining_stable = ctx.accounts.escrow_stable_vault.amount;
+        if days_since_claim > 0 && remaining_stable > 0 {
+            // Swap daily USD.tel times the number of days since last claim
+            // Or the remaining USD.tel if it's less than the cumulative daily USD.tel
+            let stable_to_swap = days_since_claim
+                .checked_mul(daily_stable)
                 .ok_or(DawnError::Overflow)?
-                .min(remaining_usdc);
+                .min(remaining_stable);
 
-            if usdc_to_swap > 0 {
+            if stable_to_swap > 0 {
                 // Perform swap using Raydium
                 let (pool_mint_0, pool_mint_1, pool_vault_0, pool_vault_1) = {
                     let pool_state = ctx.accounts.raydium_pool.load()?;
@@ -257,27 +257,27 @@ impl DawnApp {
                     output_mint,
                     output_vault,
                     output_token_account,
-                    is_usdc_base,
+                    is_stable_base,
                 ) = sort_accounts(
                     pool_mint_0,
                     pool_mint_1,
                     pool_vault_0,
                     pool_vault_1,
-                    ctx.accounts.usdc_mint.to_account_info(),
+                    ctx.accounts.stable_mint.to_account_info(),
                     ctx.accounts.dawn_mint.to_account_info(),
-                    ctx.accounts.raydium_usdc_vault.to_account_info(),
+                    ctx.accounts.raydium_stable_vault.to_account_info(),
                     ctx.accounts.raydium_dawn_vault.to_account_info(),
-                    ctx.accounts.escrow_usdc_vault.to_account_info(),
+                    ctx.accounts.escrow_stable_vault.to_account_info(),
                     ctx.accounts.escrow_dawn_vault.to_account_info(),
                 )?;
 
                 // Get swap amounts for account ordering
-                let (usdc_amount_in, _expected_dawn_out) = swap_amounts(
+                let (stable_amount_in, _expected_dawn_out) = swap_amounts(
                     &ctx.accounts.raydium_pool,
-                    &ctx.accounts.raydium_usdc_vault,
+                    &ctx.accounts.raydium_stable_vault,
                     &ctx.accounts.raydium_dawn_vault,
-                    is_usdc_base,
-                    usdc_to_swap,
+                    is_stable_base,
+                    stable_to_swap,
                 )?;
 
                 // Read escrow DAWN vault balance before swap
@@ -307,7 +307,7 @@ impl DawnApp {
                 );
 
                 // Execute swap with user-supplied minimum
-                cpi::swap_base_input(swap_cpi_ctx, usdc_amount_in, min_dawn_out)?;
+                cpi::swap_base_input(swap_cpi_ctx, stable_amount_in, min_dawn_out)?;
 
                 // Reload escrow DAWN vault to get actual received amount
                 ctx.accounts.escrow_dawn_vault.reload()?;

@@ -95,7 +95,7 @@ DAWN Protocol is a decentralized wireless access network built on Solana, provid
 
 - `authority`: Protocol administrator
 - `token_config`: Reference to TokenConfig account
-- `usdc_mint`: USDC token mint
+- `stable_mint`: USD.tel token mint
 - `dawn_mint`: DAWN token mint
 - Fee accounts: `fee_pool_dawn_account`, `dao_dawn_account`, `validator_dawn_account`, `medallion_dawn_account`
 - Raydium integration: `raydium`, `raydium_authority`, `raydium_config`, `raydium_pool`, `raydium_observation`
@@ -348,7 +348,7 @@ Plans represent service offerings with two tiers: L3 (wholesale) and L2 (retail 
 - `distribution_domain`: Set for L3 plans (Option<Pubkey>)
 - `parent_plan`: Set for L2 plans (Option<Pubkey>)
 - `name`: Plan name (max 32 chars)
-- `price`: Price in USDC (6 decimals)
+- `price`: Price in USD.tel (6 decimals)
 - `duration`: Duration in days (u16)
 - `speed`: Speed in Mbps (u32)
 - `capacity`: Data capacity in MB (u64, 0 = unlimited)
@@ -387,15 +387,15 @@ Plans represent service offerings with two tiers: L3 (wholesale) and L2 (retail 
 - `expiration`: Subscription end time (Unix timestamp)
 - `last_claim`: Last DAWN token claim timestamp
 - `claimable_dawn`: Accumulated DAWN tokens
-- `daily_usdc`: Daily USDC portion for swaps
+- `daily_stable`: Daily USD.tel portion for swaps
 
 **Payment Flow**:
 
-1. User pays USDC for plan
+1. User pays USD.tel for plan
 2. Fee distribution (DAO, validators, medallion pools)
 3. Portion swapped to DAWN via Raydium
 4. DAWN locked for 24h claiming period
-5. Plan owner receives USDC in escrow
+5. Plan owner receives USD.tel in escrow
 6. User can claim DAWN after 24h
 
 ### 7. Authentication Method Framework (AMF)
@@ -500,7 +500,7 @@ Step 3: Initialize Configuration
       ├── Creates: Config account
       ├── Sets: Fee percentages (BPS, max 10,000)
       ├── Validates: Total fees <= 100%
-      ├── Links: TokenConfig, USDC mint, DAWN mint
+      ├── Links: TokenConfig, USD.tel mint, DAWN mint
       ├── Links: Fee distribution accounts
       └── Links: Raydium pool accounts for swaps
 
@@ -677,20 +677,20 @@ subscribe(plan, device?)
   ├── Caller: Subscriber
   ├── Validates: Plan started (start_at <= now)
   ├── Payment Processing:
-  │   ├── User transfers USDC for plan.price
+  │   ├── User transfers USD.tel for plan.price
   │   ├── Fee Distribution:
   │   │   ├── DAO fee → dao_dawn_account
   │   │   ├── Validator fee → validator_dawn_account
   │   │   └── Medallion fee → medallion_dawn_account
   │   ├── Swap portion to DAWN via Raydium CPI
   │   ├── Lock DAWN in subscription for 24h
-  │   └── Transfer USDC to plan owner escrow
+  │   └── Transfer USD.tel to plan owner escrow
   ├── Creates: Subscription account
   ├── Sets:
   │   ├── expiration = now + (duration * 86400)
   │   ├── last_claim = now
   │   ├── claimable_dawn = locked DAWN amount
-  │   └── daily_usdc = price / duration
+  │   └── daily_stable = price / duration
   ├── Optional: Links device for fixed installations
   └── Emits: Subscribed(swap_price, claimable_dawn)
 ```
@@ -1079,7 +1079,7 @@ getConnectionPda(authMethod, entityA, entityB, programId)
 ```bash
 # Initialize protocol (one-time)
 dawn config init --authority <keypair-path> \
-  --usdc-mint <address> \
+  --stable-mint <address> \
   --dao-fee 300 \
   --validator-fee 300 \
   --medallion-fee 900
@@ -1219,11 +1219,11 @@ dawn subscriptions get --subscriber <address>
 ### Utilities
 
 ```bash
-# Mint test USDC (devnet/testnet)
-dawn utils mint-usdc --amount 1000000000
+# Mint test USD.tel (devnet/testnet)
+dawn utils mint-stable --amount 1000000000
 
-# Get USDC balance
-dawn utils get-usdc-balance --address <address>
+# Get USD.tel balance
+dawn utils get-stable-balance --address <address>
 
 # Parse keypair
 dawn utils parse-key --file <keypair-path>
@@ -1269,7 +1269,7 @@ The test suite in `tests/dawn/` provides comprehensive coverage following the pr
 
    - Subscribe to plans
    - Test payment processing
-   - Validates: Subscription creation, USDC payment, DAWN swap, escrow
+   - Validates: Subscription creation, USD.tel payment, DAWN swap, escrow
 
 7. **06_claim.ts** - Token claiming
 

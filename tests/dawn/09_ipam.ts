@@ -51,19 +51,19 @@ interface SubscriberSetup {
   wallet: Keypair
   devicePda: PublicKey
   subscriptionPda: PublicKey
-  usdcAccount: PublicKey
+  stableAccount: PublicKey
   dawnAccount: PublicKey
 }
 
 const Q32 = new BN(2).pow(new BN(32))
 
 function calculateMinDawnOut(
-  usdcAmount: BN,
+  stableAmount: BN,
   price: BN,
   slippageBps: number = 500,
 ): BN {
-  // expectedOut = (usdcAmount * price) / Q32
-  const expectedOut = usdcAmount.mul(price).div(Q32)
+  // expectedOut = (stableAmount * price) / Q32
+  const expectedOut = stableAmount.mul(price).div(Q32)
   // Apply slippage: minOut = expectedOut * (10000 - slippageBps) / 10000
   const minOut = expectedOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
   return minOut
@@ -101,11 +101,11 @@ const createSubscriber = async (
   // Process transaction with bankrun
   await provider.context.banksClient.processTransaction(transferTx)
 
-  // 2. Create token accounts for USDC and DAWN
-  const usdcAccount = await createAssociatedTokenAccount(
+  // 2. Create token accounts for USD.tel and DAWN
+  const stableAccount = await createAssociatedTokenAccount(
     provider.context.banksClient,
     wallet.payer,
-    mock.usdcMint,
+    mock.stableMint,
     subscriberWallet.publicKey,
   )
 
@@ -116,14 +116,14 @@ const createSubscriber = async (
     subscriberWallet.publicKey,
   )
 
-  // 3. Mint USDC tokens to subscriber (for subscription payment)
+  // 3. Mint USD.tel tokens to subscriber (for subscription payment)
   await mintTo(
     provider.context.banksClient,
     wallet.payer, // Payer for transaction
-    mock.usdcMint,
-    usdcAccount,
+    mock.stableMint,
+    stableAccount,
     wallet, // Mint authority
-    BigInt(100_000_000_000), // 100,000 USDC (6 decimals)
+    BigInt(100_000_000_000), // 100,000 USD.tel (6 decimals)
   )
 
   // 4. Create device PDA
@@ -170,13 +170,13 @@ const createSubscriber = async (
     provider.connection,
     mock.raydiumDawnVault,
   )
-  const raydiumUsdcVault = await getAccount(
+  const raydiumStableVault = await getAccount(
     provider.connection,
-    mock.raydiumUsdcVault,
+    mock.raydiumStableVault,
   )
   const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-  const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-  const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+  const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+  const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
   const planData = await program.account.plan.fetch(plan)
   // Use plan.price for minDawnOut - program will scale it proportionally
   const minDawnOut = calculateMinDawnOut(planData.price, price, 50)
@@ -191,7 +191,7 @@ const createSubscriber = async (
     plan: plan,
     device: devicePda, // Include device for IPAM compatibility if available
     subscription: subscriptionPda,
-    usdcMint: mock.usdcMint,
+    stableMint: mock.stableMint,
     dawnMint: mock.dawnMint,
     raydium: mock.raydium,
     raydiumAuthority: mock.raydiumAuthority,
@@ -199,11 +199,11 @@ const createSubscriber = async (
     raydiumPool: mock.raydiumPool,
     raydiumObservation: mock.raydiumObservation,
     raydiumDawnVault: mock.raydiumDawnVault,
-    raydiumUsdcVault: mock.raydiumUsdcVault,
-    userUsdcAccount: usdcAccount,
+    raydiumStableVault: mock.raydiumStableVault,
+    userStableAccount: stableAccount,
     userDawnAccount: dawnAccount,
     feePoolDawnAccount: mock.feePoolDawnAccount,
-    escrowUsdcVault: mock.escrowUsdcVault,
+    escrowStableVault: mock.escrowStableVault,
     escrowDawnVault: mock.escrowDawnVault,
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -214,7 +214,7 @@ const createSubscriber = async (
     wallet: subscriberWallet,
     devicePda,
     subscriptionPda,
-    usdcAccount,
+    stableAccount,
     dawnAccount,
   }
 }

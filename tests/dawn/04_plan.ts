@@ -12,7 +12,7 @@ import {
   getPlanPda,
   getProvider,
   confirmTx,
-  USDC_DECIMALS,
+  USD_DECIMALS,
   loadWallet,
   getDeviceLocationPda,
   AuthMethodType,
@@ -759,7 +759,7 @@ export const planTests = () =>
 
     test('adds second L3 plan with different parameters to the same local domain', async () => {
       const name = 'test plan 2'
-      const price = new BN(10).mul(USDC_DECIMALS)
+      const price = new BN(10).mul(USD_DECIMALS)
       const duration = 60
       const speed = 2_000
       const capacity = new BN(2000)

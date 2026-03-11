@@ -15,8 +15,8 @@ pub struct Config {
     // MINTS
     /// The token config account that owns the DAWN mint
     pub token_config: Pubkey,
-    /// The USDC mint account
-    pub usdc_mint: Pubkey,
+    /// The USD.tel mint account
+    pub stable_mint: Pubkey,
     /// The DAWN mint account
     pub dawn_mint: Pubkey,
 
@@ -37,7 +37,7 @@ pub struct Config {
     pub raydium_authority: Pubkey,
     /// The Raydium config account
     pub raydium_config: Pubkey,
-    /// The Raydium DAWN/USDC pool account
+    /// The Raydium DAWN/USD.tel pool account
     pub raydium_pool: Pubkey,
     /// The Raydium observation account
     pub raydium_observation: Pubkey,

@@ -10,7 +10,7 @@
  *
  * For active subscriptions:
  *   - Protocol fees are swapped to DAWN immediately
- *   - Remaining USDC goes to escrow for future daily claims
+ *   - Remaining USD.tel goes to escrow for future daily claims
  *   - Expiration is extended from current expiration
  *
  * For expired subscriptions:
@@ -54,10 +54,10 @@ async function main() {
     ).toISOString(),
   })
 
-  const { address: escrowUsdcVault } = await getOrCreateAssociatedTokenAccount(
+  const { address: escrowStableVault } = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
-    mock.usdcMint,
+    mock.stableMint,
     planPda,
     true,
   )
@@ -71,16 +71,16 @@ async function main() {
   )
 
   // get wallet token accounts
-  const { address: walletUsdcAccount } =
+  const { address: walletStableAccount } =
     await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
-      mock.usdcMint,
+      mock.stableMint,
       wallet.publicKey,
       false,
     )
 
-  console.log({ walletUsdcAccount: walletUsdcAccount.toBase58() })
+  console.log({ walletStableAccount: walletStableAccount.toBase58() })
 
   const { address: walletDawnAccount } =
     await getOrCreateAssociatedTokenAccount(
@@ -106,7 +106,7 @@ async function main() {
     mock.raydiumPool,
     mock.raydiumConfig,
     mock.raydiumDawnVault,
-    mock.raydiumUsdcVault,
+    mock.raydiumStableVault,
     planData.price, // Use full plan price for minDawnOut calculation
     slippageBps,
   )
@@ -126,7 +126,7 @@ async function main() {
       plan: planPda,
       subscription: subscriptionPda,
       // mints
-      usdcMint: mock.usdcMint,
+      stableMint: mock.stableMint,
       dawnMint: mock.dawnMint,
       // raydium
       raydium: mock.raydium,
@@ -136,12 +136,12 @@ async function main() {
       raydiumObservation: mock.raydiumObservation,
       // vaults
       raydiumDawnVault: mock.raydiumDawnVault,
-      raydiumUsdcVault: mock.raydiumUsdcVault,
+      raydiumStableVault: mock.raydiumStableVault,
       // token accounts
-      userUsdcAccount: walletUsdcAccount,
+      userStableAccount: walletStableAccount,
       userDawnAccount: walletDawnAccount,
       feePoolDawnAccount: mock.feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       // programs
       tokenProgram: TOKEN_PROGRAM_ID,
@@ -163,7 +163,7 @@ async function main() {
       newExpiration: new Date(
         updatedSubscription.expiration.toNumber() * 1000,
       ).toISOString(),
-      dailyUsdc: updatedSubscription.dailyUsdc.toString(),
+      dailyStable: updatedSubscription.dailyStable.toString(),
       claimableDawn: updatedSubscription.claimableDawn.toString(),
     })
   } catch (error) {

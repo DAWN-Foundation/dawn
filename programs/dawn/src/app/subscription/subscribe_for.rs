@@ -83,9 +83,9 @@ pub struct SubscribeFor<'info> {
     /// The DAWN mint account
     #[account(address = config.dawn_mint)]
     pub dawn_mint: Box<Account<'info, Mint>>,
-    /// The USDC mint account
-    #[account(address = config.usdc_mint)]
-    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// The USD.tel mint account
+    #[account(address = config.stable_mint)]
+    pub stable_mint: Box<Account<'info, Mint>>,
 
     // RAYDIUM
     /// The Raydium program account - MUST be the official Raydium CP Swap program
@@ -127,12 +127,12 @@ pub struct SubscribeFor<'info> {
     )]
     pub raydium_dawn_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The USDC pool vault account
+    /// The USD.tel pool vault account
     #[account(
         mut,
-        token::mint = usdc_mint,
+        token::mint = stable_mint,
     )]
-    pub raydium_usdc_vault: Box<Account<'info, TokenAccount>>,
+    pub raydium_stable_vault: Box<Account<'info, TokenAccount>>,
 
     // TOKEN ACCOUNTS
     /// The callers associated DAWN token account (caller provides tokens)
@@ -143,26 +143,26 @@ pub struct SubscribeFor<'info> {
     )]
     pub user_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The callers associated USDC token account (caller provides tokens)
+    /// The callers associated USD.tel token account (caller provides tokens)
     #[account(
         mut,
-        associated_token::mint = usdc_mint,
+        associated_token::mint = stable_mint,
         associated_token::authority = caller,
     )]
-    pub user_usdc_account: Box<Account<'info, TokenAccount>>,
+    pub user_stable_account: Box<Account<'info, TokenAccount>>,
 
     /// The fee pool DAWN token account
     #[account(mut, address = config.fee_pool_dawn_account)]
     pub fee_pool_dawn_account: Box<Account<'info, TokenAccount>>,
 
-    /// The device owner escrow USDC token vault
+    /// The device owner escrow USD.tel token vault
     #[account(
         init_if_needed,
         payer = caller,
-        associated_token::mint = usdc_mint,
+        associated_token::mint = stable_mint,
         associated_token::authority = plan,
     )]
-    pub escrow_usdc_vault: Box<Account<'info, TokenAccount>>,
+    pub escrow_stable_vault: Box<Account<'info, TokenAccount>>,
 
     /// The device owner escrow DAWN token vault
     #[account(
@@ -196,15 +196,15 @@ impl DawnApp {
             raydium_authority: &ctx.accounts.raydium_authority,
             raydium_config: &ctx.accounts.raydium_config,
             raydium_observation: &ctx.accounts.raydium_observation,
-            usdc_mint: &ctx.accounts.usdc_mint,
+            stable_mint: &ctx.accounts.stable_mint,
             dawn_mint: &ctx.accounts.dawn_mint,
             raydium: &ctx.accounts.raydium,
-            raydium_usdc_vault: &ctx.accounts.raydium_usdc_vault,
+            raydium_stable_vault: &ctx.accounts.raydium_stable_vault,
             raydium_dawn_vault: &ctx.accounts.raydium_dawn_vault,
-            user_usdc_account: &ctx.accounts.user_usdc_account,
+            user_stable_account: &ctx.accounts.user_stable_account,
             user_dawn_account: &mut ctx.accounts.user_dawn_account,
             fee_pool_dawn_account: &ctx.accounts.fee_pool_dawn_account,
-            escrow_usdc_vault: &ctx.accounts.escrow_usdc_vault,
+            escrow_stable_vault: &ctx.accounts.escrow_stable_vault,
             escrow_dawn_vault: &ctx.accounts.escrow_dawn_vault,
             token_program: &ctx.accounts.token_program,
         };

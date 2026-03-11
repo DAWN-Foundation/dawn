@@ -20,8 +20,8 @@ pub struct Subscription {
     pub last_claim: i64,
     /// Next claimable amount of DAWN tokens
     pub claimable_dawn: u64,
-    /// Daily USDC portion for swaps
-    pub daily_usdc: u64,
+    /// Daily USD.tel portion for swaps
+    pub daily_stable: u64,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -37,7 +37,7 @@ impl Subscription {
         subscriber: Pubkey,
         device: Option<Pubkey>,
         claimable_dawn: u64,
-        daily_usdc: u64,
+        daily_stable: u64,
         bump: u8,
         current_timestamp: i64,
         expiration: i64,
@@ -49,7 +49,7 @@ impl Subscription {
         self.expiration = expiration;
         self.last_claim = current_timestamp;
         self.claimable_dawn = claimable_dawn;
-        self.daily_usdc = daily_usdc;
+        self.daily_stable = daily_stable;
         self.bump = bump;
     }
 }

@@ -33,7 +33,7 @@ const Q32 = new BN(2).pow(new BN(32))
 /**
  * Helper function to calculate minDawnOut with slippage tolerance
  *
- * @param usdcAmount - Amount of USDC to swap
+ * @param stableAmount - Amount of USD.tel to swap
  * @param price - Current pool price (Q32 format)
  * @param slippageBps - Slippage tolerance in basis points (default: 500 = 5%)
  *                      Can be 0-500 bps (0%-5%) to match program validation
@@ -42,12 +42,12 @@ const Q32 = new BN(2).pow(new BN(32))
  * @returns Minimum DAWN output that will be accepted
  */
 function calculateMinDawnOut(
-  usdcAmount: BN,
+  stableAmount: BN,
   price: BN,
   slippageBps: number = 500,
 ): BN {
-  // expectedOut = (usdcAmount * price) / Q32
-  const expectedOut = usdcAmount.mul(price).div(Q32)
+  // expectedOut = (stableAmount * price) / Q32
+  const expectedOut = stableAmount.mul(price).div(Q32)
   // Apply slippage: minOut = expectedOut * (10000 - slippageBps) / 10000
   const minOut = expectedOut.mul(new BN(10000 - slippageBps)).div(new BN(10000))
   return minOut
@@ -114,7 +114,7 @@ export const claimTests = () =>
         plan: mock.planPda,
         subscription: mock.subscriptionPda,
         // mints
-        usdcMint: mock.usdcMint,
+        stableMint: mock.stableMint,
         dawnMint: mock.dawnMint,
         // raydium
         raydium: mock.raydium,
@@ -124,9 +124,9 @@ export const claimTests = () =>
         raydiumObservation: mock.raydiumObservation,
         // vaults
         raydiumDawnVault: mock.raydiumDawnVault,
-        raydiumUsdcVault: mock.raydiumUsdcVault,
+        raydiumStableVault: mock.raydiumStableVault,
         // token accounts
-        escrowUsdcVault: mock.escrowUsdcVault,
+        escrowStableVault: mock.escrowStableVault,
         escrowDawnVault: mock.escrowDawnVault,
         serviceProviderDawnAccount: mock.serviceProviderDawnAccount,
         // programs
@@ -153,14 +153,14 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
 
       try {
         const deadline = await getDeadline(provider)
@@ -174,7 +174,7 @@ export const claimTests = () =>
           config: accounts.config,
           plan: accounts.plan,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -182,8 +182,8 @@ export const claimTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          raydiumStableVault: accounts.raydiumStableVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
           tokenProgram: accounts.tokenProgram,
@@ -228,14 +228,14 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
 
       try {
         const deadline = await getDeadline(provider)
@@ -249,7 +249,7 @@ export const claimTests = () =>
           config: accounts.config,
           plan: badPlanPda,
           subscription: badSubscriptionPda,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -257,8 +257,8 @@ export const claimTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          raydiumStableVault: accounts.raydiumStableVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
           tokenProgram: accounts.tokenProgram,
@@ -287,14 +287,14 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
 
       try {
         const deadline = await getDeadline(provider)
@@ -308,7 +308,7 @@ export const claimTests = () =>
           config: accounts.config,
           plan: accounts.plan,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -316,8 +316,8 @@ export const claimTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          raydiumStableVault: accounts.raydiumStableVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
           tokenProgram: accounts.tokenProgram,
@@ -333,10 +333,10 @@ export const claimTests = () =>
     })
 
     test('claims daily DAWN', async () => {
-      // get balances of escrow USDC vault BEFORE claim
-      const escrowUsdcBalanceBefore = await getBalance(
+      // get balances of escrow USD.tel vault BEFORE claim
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
 
       // get balance of escrow DAWN vault BEFORE claim
@@ -355,14 +355,14 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // forward time to the next day
       const clock = await provider.context.banksClient.getClock()
@@ -380,7 +380,7 @@ export const claimTests = () =>
       const subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
       const tx = await claimTx({
@@ -392,7 +392,7 @@ export const claimTests = () =>
         config: accounts.config,
         plan: accounts.plan,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -400,8 +400,8 @@ export const claimTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        raydiumStableVault: accounts.raydiumStableVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
         tokenProgram: accounts.tokenProgram,
@@ -433,17 +433,17 @@ export const claimTests = () =>
           .eq(subscription.claimableDawn),
       ).toBeTruthy()
 
-      // make sure the escrow USDC vault was debited by the daily USDC amount
-      const escrowUsdcBalanceAfter = await getBalance(
+      // make sure the escrow USD.tel vault was debited by the daily USD.tel amount
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
+      const actualDebit = escrowStableBalanceBefore.sub(escrowStableBalanceAfter)
 
-      // Verify amount debited - should be daily USDC (or less if remaining escrow is lower)
+      // Verify amount debited - should be daily USD.tel (or less if remaining escrow is lower)
       // event.swapPrice contains the actual DAWN received from the swap
       expect(actualDebit.gte(new BN(0))).toBeTruthy()
-      expect(actualDebit.lte(subscription.dailyUsdc)).toBeTruthy()
+      expect(actualDebit.lte(subscription.dailyStable)).toBeTruthy()
 
       // make sure the escrow DAWN vault was credited by the actual swap amount
       const escrowDawnBalanceAfter = await getBalance(
@@ -478,14 +478,14 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
 
       try {
         const deadline = await getDeadline(provider)
@@ -499,7 +499,7 @@ export const claimTests = () =>
           config: accounts.config,
           plan: accounts.plan,
           subscription: accounts.subscription,
-          usdcMint: accounts.usdcMint,
+          stableMint: accounts.stableMint,
           dawnMint: accounts.dawnMint,
           raydium: accounts.raydium,
           raydiumAuthority: accounts.raydiumAuthority,
@@ -507,8 +507,8 @@ export const claimTests = () =>
           raydiumPool: accounts.raydiumPool,
           raydiumObservation: accounts.raydiumObservation,
           raydiumDawnVault: accounts.raydiumDawnVault,
-          raydiumUsdcVault: accounts.raydiumUsdcVault,
-          escrowUsdcVault: accounts.escrowUsdcVault,
+          raydiumStableVault: accounts.raydiumStableVault,
+          escrowStableVault: accounts.escrowStableVault,
           escrowDawnVault: accounts.escrowDawnVault,
           serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
           tokenProgram: accounts.tokenProgram,
@@ -541,9 +541,9 @@ export const claimTests = () =>
       )
 
       // get balances BEFORE claim
-      const escrowUsdcBalanceBefore = await getBalance(
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
       const escrowDawnBalanceBefore = await getBalance(
         provider.connection,
@@ -559,20 +559,20 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Calculate valid minDawnOut (uses default 500 bps = 5% slippage)
       subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
       const tx = await claimTx({
@@ -584,7 +584,7 @@ export const claimTests = () =>
         config: accounts.config,
         plan: accounts.plan,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -592,8 +592,8 @@ export const claimTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        raydiumStableVault: accounts.raydiumStableVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
         tokenProgram: accounts.tokenProgram,
@@ -624,16 +624,16 @@ export const claimTests = () =>
       ).toBeTruthy()
 
       // Verify amount debited - should be up to 3 days worth
-      const escrowUsdcBalanceAfter = await getBalance(
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
-      const maxThreeDaysUsdc = subscription.dailyUsdc.mul(new BN(3))
+      const actualDebit = escrowStableBalanceBefore.sub(escrowStableBalanceAfter)
+      const maxThreeDaysStable = subscription.dailyStable.mul(new BN(3))
 
       // Should debit some amount (actual amount depends on remaining escrow)
       expect(actualDebit.gt(new BN(0))).toBeTruthy()
-      expect(actualDebit.lte(maxThreeDaysUsdc)).toBeTruthy()
+      expect(actualDebit.lte(maxThreeDaysStable)).toBeTruthy()
 
       // Verify exact DAWN deposited from swap
       const escrowDawnBalanceAfter = await getBalance(
@@ -683,10 +683,10 @@ export const claimTests = () =>
         accounts.serviceProviderDawnAccount,
       )
 
-      // get balances of escrow USDC vault
-      const escrowUsdcBalanceBefore = await getBalance(
+      // get balances of escrow USD.tel vault
+      const escrowStableBalanceBefore = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
 
       // get raydium vaults
@@ -694,20 +694,20 @@ export const claimTests = () =>
         provider.connection,
         accounts.raydiumDawnVault,
       )
-      const raydiumUsdcVault = await getAccount(
+      const raydiumStableVault = await getAccount(
         provider.connection,
-        accounts.raydiumUsdcVault,
+        accounts.raydiumStableVault,
       )
 
       const dawnVaultAmount = new BN(raydiumDawnVault.amount.toString())
-      const usdcVaultAmount = new BN(raydiumUsdcVault.amount.toString())
-      const price = dawnVaultAmount.mul(Q32).div(usdcVaultAmount)
+      const stableVaultAmount = new BN(raydiumStableVault.amount.toString())
+      const price = dawnVaultAmount.mul(Q32).div(stableVaultAmount)
 
       // Calculate valid minDawnOut (uses default 500 bps = 5% slippage)
       subscription = await program.account.subscription.fetch(
         mock.subscriptionPda,
       )
-      const minDawnOut = calculateMinDawnOut(subscription.dailyUsdc, price) // Uses default 500 bps
+      const minDawnOut = calculateMinDawnOut(subscription.dailyStable, price) // Uses default 500 bps
       const deadline = await getDeadline(provider)
 
       await claimRpc({
@@ -719,7 +719,7 @@ export const claimTests = () =>
         config: accounts.config,
         plan: accounts.plan,
         subscription: accounts.subscription,
-        usdcMint: accounts.usdcMint,
+        stableMint: accounts.stableMint,
         dawnMint: accounts.dawnMint,
         raydium: accounts.raydium,
         raydiumAuthority: accounts.raydiumAuthority,
@@ -727,8 +727,8 @@ export const claimTests = () =>
         raydiumPool: accounts.raydiumPool,
         raydiumObservation: accounts.raydiumObservation,
         raydiumDawnVault: accounts.raydiumDawnVault,
-        raydiumUsdcVault: accounts.raydiumUsdcVault,
-        escrowUsdcVault: accounts.escrowUsdcVault,
+        raydiumStableVault: accounts.raydiumStableVault,
+        escrowStableVault: accounts.escrowStableVault,
         escrowDawnVault: accounts.escrowDawnVault,
         serviceProviderDawnAccount: accounts.serviceProviderDawnAccount,
         tokenProgram: accounts.tokenProgram,
@@ -736,18 +736,18 @@ export const claimTests = () =>
         systemProgram: accounts.systemProgram,
       })
 
-      // make sure the escrow USDC vault was debited by the daily USDC amount
-      const escrowUsdcBalanceAfter = await getBalance(
+      // make sure the escrow USD.tel vault was debited by the daily USD.tel amount
+      const escrowStableBalanceAfter = await getBalance(
         provider.connection,
-        accounts.escrowUsdcVault,
+        accounts.escrowStableVault,
       )
-      const actualDebit = escrowUsdcBalanceBefore.sub(escrowUsdcBalanceAfter)
+      const actualDebit = escrowStableBalanceBefore.sub(escrowStableBalanceAfter)
 
       // The amount debited depends on:
-      // 1. days_since_claim * daily_usdc, or
-      // 2. remaining_usdc if less than that
-      // Since claim only happens once per day, actualDebit should be >= 0 and <= days * dailyUsdc
-      expect(actualDebit.gt(new BN(0))).toBeTruthy() // At least some USDC was swapped
+      // 1. days_since_claim * daily_stable, or
+      // 2. remaining_stable if less than that
+      // Since claim only happens once per day, actualDebit should be >= 0 and <= days * dailyStable
+      expect(actualDebit.gt(new BN(0))).toBeTruthy() // At least some USD.tel was swapped
 
       // make sure the service provider DAWN account was credited with the claimable DAWN amount
       const serviceProviderDawnBalanceAfter = await getBalance(
@@ -761,7 +761,7 @@ export const claimTests = () =>
       ).toBeTruthy()
 
       // make sure the escrow DAWN vault was credited by the next daily claimable DAWN amount (1 day)
-      const nextDailyDawn = subscription.dailyUsdc
+      const nextDailyDawn = subscription.dailyStable
         .mul(price)
         .div(Q32)
         .mul(SLIPPAGE_BPS)

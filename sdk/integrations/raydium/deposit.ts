@@ -41,9 +41,9 @@ export async function deposit(
 
   // deposit more of each token
   const dawn_amount = new BN(100_000_000_000)
-  const usdc_amount = new BN(200_000_000_000)
-  const maximum_token_0_amount = dawnIsBase ? dawn_amount : usdc_amount
-  const maximum_token_1_amount = dawnIsBase ? usdc_amount : dawn_amount
+  const stable_amount = new BN(200_000_000_000)
+  const maximum_token_0_amount = dawnIsBase ? dawn_amount : stable_amount
+  const maximum_token_1_amount = dawnIsBase ? stable_amount : dawn_amount
 
   await program.methods
     .deposit(lp_token_amount, maximum_token_0_amount, maximum_token_1_amount)

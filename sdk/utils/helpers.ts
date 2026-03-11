@@ -968,7 +968,7 @@ export interface SubscribeParams {
   plan: PublicKey
   device: PublicKey | null
   subscription: PublicKey
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -976,11 +976,11 @@ export interface SubscribeParams {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
-  userUsdcAccount: PublicKey
+  raydiumStableVault: PublicKey
+  userStableAccount: PublicKey
   userDawnAccount: PublicKey
   feePoolDawnAccount: PublicKey
-  escrowUsdcVault: PublicKey
+  escrowStableVault: PublicKey
   escrowDawnVault: PublicKey
   tokenProgram: PublicKey
   associatedTokenProgram: PublicKey
@@ -1004,7 +1004,7 @@ export async function subscribeTx(
     plan,
     device,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1012,11 +1012,11 @@ export async function subscribeTx(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1031,7 +1031,7 @@ export async function subscribeTx(
       plan,
       device,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1039,11 +1039,11 @@ export async function subscribeTx(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1067,7 +1067,7 @@ export async function subscribeRpc(params: SubscribeParams): Promise<string> {
     plan,
     device,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1075,11 +1075,11 @@ export async function subscribeRpc(params: SubscribeParams): Promise<string> {
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1094,7 +1094,7 @@ export async function subscribeRpc(params: SubscribeParams): Promise<string> {
       plan,
       device,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1102,11 +1102,11 @@ export async function subscribeRpc(params: SubscribeParams): Promise<string> {
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1128,7 +1128,7 @@ export interface ExtendSubscriptionParams {
   config: PublicKey
   plan: PublicKey
   subscription: PublicKey
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -1136,11 +1136,11 @@ export interface ExtendSubscriptionParams {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
-  userUsdcAccount: PublicKey
+  raydiumStableVault: PublicKey
+  userStableAccount: PublicKey
   userDawnAccount: PublicKey
   feePoolDawnAccount: PublicKey
-  escrowUsdcVault: PublicKey
+  escrowStableVault: PublicKey
   escrowDawnVault: PublicKey
   tokenProgram: PublicKey
   associatedTokenProgram: PublicKey
@@ -1163,7 +1163,7 @@ export async function extendSubscriptionTx(
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1171,11 +1171,11 @@ export async function extendSubscriptionTx(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1189,7 +1189,7 @@ export async function extendSubscriptionTx(
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1197,11 +1197,11 @@ export async function extendSubscriptionTx(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1226,7 +1226,7 @@ export async function extendSubscriptionRpc(
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1234,11 +1234,11 @@ export async function extendSubscriptionRpc(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1252,7 +1252,7 @@ export async function extendSubscriptionRpc(
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1260,11 +1260,11 @@ export async function extendSubscriptionRpc(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1288,7 +1288,7 @@ export interface SubscribeForParams {
   plan: PublicKey
   device: PublicKey | null
   subscription: PublicKey
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -1296,11 +1296,11 @@ export interface SubscribeForParams {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
-  userUsdcAccount: PublicKey
+  raydiumStableVault: PublicKey
+  userStableAccount: PublicKey
   userDawnAccount: PublicKey
   feePoolDawnAccount: PublicKey
-  escrowUsdcVault: PublicKey
+  escrowStableVault: PublicKey
   escrowDawnVault: PublicKey
   tokenProgram: PublicKey
   associatedTokenProgram: PublicKey
@@ -1325,7 +1325,7 @@ export async function subscribeForTx(
     plan,
     device,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1333,11 +1333,11 @@ export async function subscribeForTx(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1353,7 +1353,7 @@ export async function subscribeForTx(
       plan,
       device,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1361,11 +1361,11 @@ export async function subscribeForTx(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1392,7 +1392,7 @@ export async function subscribeForRpc(
     plan,
     device,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1400,11 +1400,11 @@ export async function subscribeForRpc(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1420,7 +1420,7 @@ export async function subscribeForRpc(
       plan,
       device,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1428,11 +1428,11 @@ export async function subscribeForRpc(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1455,7 +1455,7 @@ export interface ExtendSubscriptionForParams {
   config: PublicKey
   plan: PublicKey
   subscription: PublicKey
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -1463,11 +1463,11 @@ export interface ExtendSubscriptionForParams {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
-  userUsdcAccount: PublicKey
+  raydiumStableVault: PublicKey
+  userStableAccount: PublicKey
   userDawnAccount: PublicKey
   feePoolDawnAccount: PublicKey
-  escrowUsdcVault: PublicKey
+  escrowStableVault: PublicKey
   escrowDawnVault: PublicKey
   tokenProgram: PublicKey
   associatedTokenProgram: PublicKey
@@ -1491,7 +1491,7 @@ export async function extendSubscriptionForTx(
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1499,11 +1499,11 @@ export async function extendSubscriptionForTx(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1518,7 +1518,7 @@ export async function extendSubscriptionForTx(
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1526,11 +1526,11 @@ export async function extendSubscriptionForTx(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1556,7 +1556,7 @@ export async function extendSubscriptionForRpc(
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1564,11 +1564,11 @@ export async function extendSubscriptionForRpc(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    userUsdcAccount,
+    raydiumStableVault,
+    userStableAccount,
     userDawnAccount,
     feePoolDawnAccount,
-    escrowUsdcVault,
+    escrowStableVault,
     escrowDawnVault,
     tokenProgram,
     associatedTokenProgram,
@@ -1583,7 +1583,7 @@ export async function extendSubscriptionForRpc(
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1591,11 +1591,11 @@ export async function extendSubscriptionForRpc(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      userUsdcAccount,
+      raydiumStableVault,
+      userStableAccount,
       userDawnAccount,
       feePoolDawnAccount,
-      escrowUsdcVault,
+      escrowStableVault,
       escrowDawnVault,
       tokenProgram,
       associatedTokenProgram,
@@ -1617,7 +1617,7 @@ export interface ClaimParams {
   config: PublicKey
   plan: PublicKey
   subscription: PublicKey
-  usdcMint: PublicKey
+  stableMint: PublicKey
   dawnMint: PublicKey
   raydium: PublicKey
   raydiumAuthority: PublicKey
@@ -1625,8 +1625,8 @@ export interface ClaimParams {
   raydiumPool: PublicKey
   raydiumObservation: PublicKey
   raydiumDawnVault: PublicKey
-  raydiumUsdcVault: PublicKey
-  escrowUsdcVault: PublicKey
+  raydiumStableVault: PublicKey
+  escrowStableVault: PublicKey
   escrowDawnVault: PublicKey
   serviceProviderDawnAccount: PublicKey
   tokenProgram: PublicKey
@@ -1650,7 +1650,7 @@ export async function claimTx(
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1658,8 +1658,8 @@ export async function claimTx(
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    escrowUsdcVault,
+    raydiumStableVault,
+    escrowStableVault,
     escrowDawnVault,
     serviceProviderDawnAccount,
     tokenProgram,
@@ -1674,7 +1674,7 @@ export async function claimTx(
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1682,8 +1682,8 @@ export async function claimTx(
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      escrowUsdcVault,
+      raydiumStableVault,
+      escrowStableVault,
       escrowDawnVault,
       serviceProviderDawnAccount,
       tokenProgram,
@@ -1707,7 +1707,7 @@ export async function claimRpc(params: ClaimParams): Promise<string> {
     config,
     plan,
     subscription,
-    usdcMint,
+    stableMint,
     dawnMint,
     raydium,
     raydiumAuthority,
@@ -1715,8 +1715,8 @@ export async function claimRpc(params: ClaimParams): Promise<string> {
     raydiumPool,
     raydiumObservation,
     raydiumDawnVault,
-    raydiumUsdcVault,
-    escrowUsdcVault,
+    raydiumStableVault,
+    escrowStableVault,
     escrowDawnVault,
     serviceProviderDawnAccount,
     tokenProgram,
@@ -1731,7 +1731,7 @@ export async function claimRpc(params: ClaimParams): Promise<string> {
       config,
       plan,
       subscription,
-      usdcMint,
+      stableMint,
       dawnMint,
       raydium,
       raydiumAuthority,
@@ -1739,8 +1739,8 @@ export async function claimRpc(params: ClaimParams): Promise<string> {
       raydiumPool,
       raydiumObservation,
       raydiumDawnVault,
-      raydiumUsdcVault,
-      escrowUsdcVault,
+      raydiumStableVault,
+      escrowStableVault,
       escrowDawnVault,
       serviceProviderDawnAccount,
       tokenProgram,

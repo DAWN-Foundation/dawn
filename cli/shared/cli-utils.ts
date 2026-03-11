@@ -68,7 +68,7 @@ export function getMock(): Mock {
       Uint8Array.from(mock.customer.secretKey.split(',').map(Number)),
     ),
     // mints
-    usdcMint: new PublicKey(mock.usdcMint),
+    stableMint: new PublicKey(mock.stableMint),
     dawnMint: new PublicKey(mock.dawnMint),
     // token accounts
     feePoolDawnAccount: new PublicKey(mock.feePoolDawnAccount),
@@ -76,13 +76,13 @@ export function getMock(): Mock {
     validatorDawnAccount: new PublicKey(mock.validatorDawnAccount),
     medallionDawnAccount: new PublicKey(mock.medallionDawnAccount),
     serviceProviderDawnAccount: new PublicKey(mock.serviceProviderDawnAccount),
-    serviceProviderUsdcAccount: new PublicKey(mock.serviceProviderUsdcAccount),
+    serviceProviderStableAccount: new PublicKey(mock.serviceProviderStableAccount),
     customerDawnAccount: new PublicKey(mock.customerDawnAccount),
-    customerUsdcAccount: new PublicKey(mock.customerUsdcAccount),
+    customerStableAccount: new PublicKey(mock.customerStableAccount),
     walletDawnAccount: new PublicKey(mock.walletDawnAccount),
-    walletUsdcAccount: new PublicKey(mock.walletUsdcAccount),
+    walletStableAccount: new PublicKey(mock.walletStableAccount),
     escrowDawnVault: new PublicKey(mock.escrowDawnVault),
-    escrowUsdcVault: new PublicKey(mock.escrowUsdcVault),
+    escrowStableVault: new PublicKey(mock.escrowStableVault),
     // raydium
     raydium: new PublicKey(mock.raydium),
     raydiumAuthority: new PublicKey(mock.raydiumAuthority),
@@ -90,7 +90,7 @@ export function getMock(): Mock {
     raydiumPool: new PublicKey(mock.raydiumPool),
     raydiumObservation: new PublicKey(mock.raydiumObservation),
     raydiumDawnVault: new PublicKey(mock.raydiumDawnVault),
-    raydiumUsdcVault: new PublicKey(mock.raydiumUsdcVault),
+    raydiumStableVault: new PublicKey(mock.raydiumStableVault),
     // config
     daoFee: new BN(mock.daoFee),
     validatorFee: new BN(mock.validatorFee),

@@ -15,7 +15,7 @@ async function main() {
       apiAuthority: wallet.payer.publicKey,
       tokenConfig: mock.tokenConfigPda,
       config: mock.configPda,
-      usdcMint: mock.usdcMint,
+      stableMint: mock.stableMint,
       dawnMint: mock.dawnMint,
       feePoolDawnAccount: mock.feePoolDawnAccount,
       daoDawnAccount: mock.daoDawnAccount,

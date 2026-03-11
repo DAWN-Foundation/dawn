@@ -93,7 +93,7 @@ export const configTests = () =>
           apiAuthority: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
-          usdcMint: mock.usdcMint,
+          stableMint: mock.stableMint,
           dawnMint: mock.dawnMint,
           feePoolDawnAccount: mock.feePoolDawnAccount,
           daoDawnAccount: mock.daoDawnAccount,
@@ -124,7 +124,7 @@ export const configTests = () =>
       assert.ok(config.medallionFee.eq(mock.medallionFee))
 
       // accounts
-      assert.ok(config.usdcMint.equals(mock.usdcMint))
+      assert.ok(config.stableMint.equals(mock.stableMint))
       assert.ok(config.dawnMint.equals(mock.dawnMint))
       assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
       assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))
@@ -161,7 +161,7 @@ export const configTests = () =>
           caller: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
-          usdcMint: mock.usdcMint,
+          stableMint: mock.stableMint,
           dawnMint: mock.dawnMint,
           feePoolDawnAccount: mock.feePoolDawnAccount,
           daoDawnAccount: mock.daoDawnAccount,
@@ -208,7 +208,7 @@ export const configTests = () =>
           caller: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
-          usdcMint: mock.usdcMint,
+          stableMint: mock.stableMint,
           dawnMint: mock.dawnMint,
           feePoolDawnAccount: mock.feePoolDawnAccount,
           daoDawnAccount: mock.daoDawnAccount,
@@ -228,7 +228,7 @@ export const configTests = () =>
       assert.ok(config.daoFee.eq(mock.daoFee))
 
       // accounts should remain the same
-      assert.ok(config.usdcMint.equals(mock.usdcMint))
+      assert.ok(config.stableMint.equals(mock.stableMint))
       assert.ok(config.dawnMint.equals(mock.dawnMint))
       assert.ok(config.feePoolDawnAccount.equals(mock.feePoolDawnAccount))
       assert.ok(config.daoDawnAccount.equals(mock.daoDawnAccount))

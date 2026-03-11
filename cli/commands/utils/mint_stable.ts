@@ -3,7 +3,7 @@ import { PublicKey } from '@solana/web3.js'
 const { mintTo } = require('@solana/spl-token')
 
 import { connect, getMock, getFlag } from '../../shared/cli-utils'
-import { USDC_DECIMALS } from '../../../sdk/utils'
+import { USD_DECIMALS } from '../../../sdk/utils'
 import {
   getAssociatedTokenAddressSync,
   getOrCreateAssociatedTokenAccount,
@@ -20,17 +20,17 @@ async function main() {
 
   const recipient = new PublicKey(recipientParam)
 
-  const mintAmount = new BN(amount).mul(USDC_DECIMALS)
+  const mintAmount = new BN(amount).mul(USD_DECIMALS)
 
   const { wallet, connection } = await connect()
   const mock = getMock()
 
-  const usdcMint = new PublicKey(mock.usdcMint)
+  const stableMint = new PublicKey(mock.stableMint)
   const { address: recipientTokenAccount } =
     await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
-      usdcMint,
+      stableMint,
       recipient,
       false,
     )
@@ -41,12 +41,12 @@ async function main() {
   const tx = await mintTo(
     connection,
     wallet.payer,
-    usdcMint,
+    stableMint,
     recipientTokenAccount,
     wallet.publicKey,
     mintAmount,
   )
-  console.log(`Minted ${amount} USDC to ${recipient}`, { tx })
+  console.log(`Minted ${amount} USD.tel to ${recipient}`, { tx })
 }
 
 main().catch(console.error)
