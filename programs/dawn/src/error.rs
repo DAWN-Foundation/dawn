@@ -304,4 +304,7 @@ pub enum DawnError {
     // SUBSCRIPTION PAYMENT ERRORS
     #[msg("Daily swap amount too small - plan price minus fees must be >= duration")]
     DailySwapTooSmall,
+
+    #[msg("Invalid beneficiary")]
+    InvalidBeneficiary,
 }

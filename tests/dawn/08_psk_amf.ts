@@ -167,6 +167,7 @@ export const pskAmfTests = () =>
 
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,
@@ -335,6 +336,7 @@ export const pskAmfTests = () =>
       const planName = 'test PSK plan'
       const [planPda] = getPlanPda(
         program,
+        mock.serviceProvider.publicKey,
         mock.localDomainPda,
         null,
         planName,

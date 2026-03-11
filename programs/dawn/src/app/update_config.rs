@@ -101,8 +101,14 @@ impl DawnApp {
         raydium_pool: Option<Pubkey>,
         raydium_config: Option<Pubkey>,
         raydium_observation: Option<Pubkey>,
+        api_authority: Option<Pubkey>,
     ) -> Result<()> {
         let config = &mut ctx.accounts.config;
+
+        // Update API authority if provided
+        if let Some(api_authority_account) = api_authority {
+            config.api_authority = api_authority_account;
+        }
 
         // Update fees if provided, with validation
         if let Some(fee) = dao_fee {

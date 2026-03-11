@@ -18,7 +18,7 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct SubscribeFor<'info> {
-    #[account(mut)]
+    #[account(mut, address = config.api_authority)]
     pub caller: Signer<'info>,
 
     /// The beneficiary who will receive the subscription
@@ -36,6 +36,7 @@ pub struct SubscribeFor<'info> {
     #[account(
         seeds = [
             Plan::SEED_PREFIX.as_ref(),
+            plan.owner.as_ref(),
             &plan.local_domain.as_ref(),
             &optional_pubkey_seed(plan.parent_plan),
             &hash_string_seed(&plan.name),

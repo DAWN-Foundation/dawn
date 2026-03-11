@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     app::{lease_subscriber_ip_helper, DawnApp},
-    state::Device,
+    state::{Config, Device},
     utils::hash_string_seed,
     DawnError, IpRegistry, IpTier, Subscription,
 };
@@ -11,13 +11,24 @@ use crate::{IpBlock, IpLease, RootIpBlock};
 
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
-pub struct LeaseSubscriberIp<'info> {
-    #[account(mut)]
+pub struct LeaseSubscriberIpFor<'info> {
+    #[account(mut, address = config.api_authority)]
     pub caller: Signer<'info>,
+
+    /// The beneficiary who will receive the subscription
+    /// CHECK: Used only for PDA derivation and as subscriber
+    pub beneficiary: AccountInfo<'info>,
+
+    /// The config with fees and accounts
+    #[account(
+        seeds = [Config::SEED_PREFIX.as_ref()],
+        bump = config.bump,
+    )]
+    pub config: Box<Account<'info, Config>>,
 
     /// Device account - optional for mobile subscribers without devices
     #[account(
-        constraint = device.owner == caller.key() @DawnError::InvalidDevice,
+        constraint = device.owner == beneficiary.key() @DawnError::InvalidDevice,
         seeds = [
             Device::SEED_PREFIX.as_ref(),
             device.owner.as_ref(),
@@ -85,6 +96,7 @@ pub struct LeaseSubscriberIp<'info> {
     /// Subscription account to update
     #[account(
         mut,
+        constraint = subscription.subscriber == beneficiary.key() @DawnError::InvalidBeneficiary,
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
             subscription.plan.as_ref(),
@@ -100,7 +112,7 @@ pub struct LeaseSubscriberIp<'info> {
 impl DawnApp {
     /// Lease IP using strict-first allocation algorithm
     /// Follows the IPAM bitmap specification for O(1) allocation
-    pub fn lease_subscription_ip(ctx: Context<LeaseSubscriberIp>) -> Result<()> {
+    pub fn lease_subscription_ip_for(ctx: Context<LeaseSubscriberIpFor>) -> Result<()> {
         lease_subscriber_ip_helper::process_lease_subscription_ip(
             &mut ctx.accounts.root_ip_block,
             &mut ctx.accounts.ip_block,

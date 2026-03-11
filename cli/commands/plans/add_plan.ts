@@ -35,6 +35,7 @@ async function main() {
     // Create L3 plan (original plan with distribution domain)
     const [planPda] = getPlanPda(
       program,
+      wallet.payer.publicKey,
       localDomainPda,
       null,
       name,
@@ -92,6 +93,7 @@ async function main() {
 
     const [planPda] = getPlanPda(
       program,
+      wallet.payer.publicKey,
       localDomainPda,
       parentPlanAddress ? new PublicKey(parentPlanAddress) : null,
       name,

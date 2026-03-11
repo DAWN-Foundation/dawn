@@ -313,6 +313,7 @@ export async function prepare(
 
   const [planPda, planBump] = getPlanPda(
     program,
+    serviceProvider.publicKey,
     localDomainPda,
     null,
     planName,

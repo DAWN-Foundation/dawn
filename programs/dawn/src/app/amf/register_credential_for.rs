@@ -4,16 +4,27 @@ use crate::{
     app::{amf::register_credential_helper, DawnApp},
     error::DawnError,
     events::CredentialRegistered,
-    state::{AuthMethod, Credential, Plan, Subscription},
+    state::{AuthMethod, Config, Credential, Plan, Subscription},
     utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
 };
 
 /// Context for registering client credentials
 #[derive(Accounts)]
 #[instruction(credential_data: [u8; 128])]
-pub struct RegisterCredential<'info> {
-    #[account(mut)]
+pub struct RegisterCredentialFor<'info> {
+    #[account(mut, address = config.api_authority)]
     pub caller: Signer<'info>,
+
+    /// The beneficiary who will receive the subscription
+    /// CHECK: Used only for PDA derivation and as subscriber
+    pub beneficiary: AccountInfo<'info>,
+
+    /// The config with fees and accounts
+    #[account(
+        seeds = [Config::SEED_PREFIX.as_ref()],
+        bump = config.bump,
+        )]
+    pub config: Box<Account<'info, Config>>,
 
     #[account(
         seeds = [
@@ -48,10 +59,11 @@ pub struct RegisterCredential<'info> {
     pub plan: Account<'info, Plan>,
 
     #[account(
+        constraint = subscription.subscriber == beneficiary.key() @DawnError::InvalidBeneficiary,
         seeds = [
             Subscription::SEED_PREFIX,
             plan.key().as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
         ],
         bump = subscription.bump
     )]
@@ -66,7 +78,7 @@ pub struct RegisterCredential<'info> {
             subscription.key().as_ref(),
             plan.key().as_ref(),
             auth_method.key().as_ref(),
-            caller.key().as_ref(),
+            beneficiary.key().as_ref(),
         ],
         bump
     )]
@@ -77,15 +89,15 @@ pub struct RegisterCredential<'info> {
 
 impl DawnApp {
     /// Register client credentials for an auth method
-    pub fn register_credential(
-        ctx: Context<RegisterCredential>,
+    pub fn register_credential_for(
+        ctx: Context<RegisterCredentialFor>,
         credential_data: [u8; 128],
     ) -> Result<()> {
         register_credential_helper::process_register_credential(
             &ctx.accounts.plan,
             &ctx.accounts.subscription,
             &ctx.accounts.auth_method,
-            ctx.accounts.caller.key(),
+            ctx.accounts.beneficiary.key(),
             &mut ctx.accounts.credential,
             credential_data,
             ctx.bumps.credential,

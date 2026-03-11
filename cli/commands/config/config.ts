@@ -10,8 +10,9 @@ async function main() {
 
   const itx = await program.methods
     .initializeConfig(mock.daoFee, mock.validatorFee, mock.medallionFee)
-    .accountsPartial({
+    .accountsStrict({
       caller: wallet.payer.publicKey,
+      apiAuthority: wallet.payer.publicKey,
       tokenConfig: mock.tokenConfigPda,
       config: mock.configPda,
       stableMint: mock.stableMint,
@@ -25,6 +26,9 @@ async function main() {
       raydiumConfig: mock.raydiumConfig,
       raydiumPool: mock.raydiumPool,
       raydiumObservation: mock.raydiumObservation,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .signers([wallet.payer])
     .instruction()
