@@ -29,12 +29,12 @@ export async function createPool(
   userMint1: PublicKey,
   dawnIsBase: boolean,
 ) {
-  // initial price 2 USDC per 1 DAWN
+  // initial price 2 USD.tel per 1 DAWN
   const dawnAmount = new BN(100_000_000_000)
-  const usdcAmount = new BN(200_000_000_000)
+  const stableAmount = new BN(200_000_000_000)
 
-  const mint0Amount = dawnIsBase ? dawnAmount : usdcAmount
-  const mint1Amount = dawnIsBase ? usdcAmount : dawnAmount
+  const mint0Amount = dawnIsBase ? dawnAmount : stableAmount
+  const mint1Amount = dawnIsBase ? stableAmount : dawnAmount
 
   const [auth] = getAuthAddress(program.programId)
   const [pool] = getPoolAddress(configPda, mint0, mint1, program.programId)

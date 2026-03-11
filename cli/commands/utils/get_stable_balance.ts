@@ -12,14 +12,14 @@ async function main() {
   const { connection } = await connect()
   const mock = getMock()
 
-  const usdcMint = new PublicKey(mock.usdcMint)
+  const stableMint = new PublicKey(mock.stableMint)
   const tokenAccount = getAssociatedTokenAddressSync(
-    usdcMint,
+    stableMint,
     new PublicKey(address),
   )
 
   const balance = await connection.getTokenAccountBalance(tokenAccount)
-  console.log(`USDC balance for ${address}`, {
+  console.log(`USD.tel balance for ${address}`, {
     balance: balance.value.uiAmount,
   })
 }

@@ -165,7 +165,7 @@ These command allow interaction with the DAWN contract deployed on local testnet
 # yarn dawn:add_device --service-provider
 # yarn dawn:add_plan --service-provider
 # yarn dawn:subscribe --customer
-# --customer or --wallet {FILE_PATH} should have some USDC and can be used to pay for plan subscription
+# --customer or --wallet {FILE_PATH} should have some USD.tel and can be used to pay for plan subscription
 # yarn dawn:subscribe --wallet wallet-1.json
 # # Initialize the DAWN contract (as local identity)
 # yarn dawn:config
@@ -217,8 +217,8 @@ yarn dawn:get_plans
 # Get all plans for a specific devices
 yarn dawn:get_plans --device <device>
 
-# Mint USDC
-yarn mint:usdc \
+# Mint USD.tel
+yarn mint:stable \
     --recipient <recipient> \
     --amount 240
 
@@ -362,8 +362,8 @@ yarn dawn:add_plan \
     --capacity 5500 \
     --auth-methods <auth-method>
 
-# Mint USDC to customer.publicKey (from testnet.json)
-yarn usdc:mint --recipient <pubkey>
+# Mint USD.tel to customer.publicKey (from testnet.json)
+yarn stable:mint --recipient <pubkey>
 
 # Subscribe to plan (as --customer)
 yarn dawn:subscribe \

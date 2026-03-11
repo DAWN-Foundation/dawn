@@ -25,9 +25,9 @@ pub struct UpdateConfig<'info> {
     )]
     pub token_config: Account<'info, TokenConfig>,
 
-    /// The USDC mint account
+    /// The USD.tel mint account
     #[account()]
-    pub usdc_mint: Account<'info, Mint>,
+    pub stable_mint: Account<'info, Mint>,
 
     /// The DAWN mint account
     #[account(
@@ -76,8 +76,8 @@ pub struct UpdateConfig<'info> {
     /// CHECK: Assumes authority has set this to Raydium config account correctly
     pub raydium_config: UncheckedAccount<'info>,
 
-    /// The Raydium DAWN/USDC pool account
-    /// CHECK: Assumes authority has set this to Raydium DAWN/USDC pool account correctly
+    /// The Raydium DAWN/USD.tel pool account
+    /// CHECK: Assumes authority has set this to Raydium DAWN/USD.tel pool account correctly
     pub raydium_pool: UncheckedAccount<'info>,
 
     /// The Raydium observation account
