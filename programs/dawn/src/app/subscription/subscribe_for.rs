@@ -15,6 +15,7 @@ use crate::{
     DawnApp,
 };
 
+#[cfg(not(feature = "_idl-only"))]
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct SubscribeFor<'info> {
@@ -179,6 +180,7 @@ pub struct SubscribeFor<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[cfg(not(feature = "_idl-only"))]
 impl DawnApp {
     pub fn subscribe_for(
         ctx: Context<SubscribeFor>,

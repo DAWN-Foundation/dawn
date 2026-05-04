@@ -220,6 +220,7 @@ pub mod dawn {
         DawnApp::subscribe(ctx, min_dawn_out, deadline)
     }
 
+    #[cfg(not(feature = "_idl-only"))]
     pub fn subscribe_for(
         ctx: Context<SubscribeFor>,
         min_dawn_out: u64,
@@ -275,5 +276,15 @@ pub mod dawn {
     pub fn revoke_ip(ctx: Context<RevokeIp>, tier: u8) -> Result<()> {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
         DawnApp::revoke_ip(ctx, tier_enum)
+    }
+
+    /// Mutate a LocalDomain's coverage_status. Used as the BSS/OSS
+    /// bridge trigger — off-chain billing/provisioning systems read
+    /// this state to react to declared maintenance windows etc.
+    pub fn update_local_domain_status(
+        ctx: Context<UpdateLocalDomainStatus>,
+        new_status: u8,
+    ) -> Result<()> {
+        DawnApp::update_local_domain_status(ctx, new_status)
     }
 }

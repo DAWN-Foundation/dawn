@@ -307,4 +307,8 @@ pub enum DawnError {
 
     #[msg("Invalid beneficiary")]
     InvalidBeneficiary,
+
+    // DOMAIN STATE ERRORS
+    #[msg("Invalid coverage status (must be 0..=3)")]
+    InvalidStatus,
 }

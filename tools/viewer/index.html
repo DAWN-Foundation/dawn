@@ -1,0 +1,2580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN sim viewer</title>
+<style>
+:root {
+  --bg-primary:      #1E1E1E;
+  --bg-card:         #2A2A2A;
+  --bg-card-alt:     #252525;
+  --border:          #3A3A3A;
+  --border-strong:   #4A4A4A;
+  --accent:          #E8713A;
+  --accent-2:        #F08C4A;
+  --accent-3:        #E8A54A;
+  --green:           #2EA87E;
+  --red:             #C05020;
+  --text-primary:    #FFFFFF;
+  --text-secondary:  #BBBBBB;
+  --text-muted:      #999999;
+  --text-disabled:   #666666;
+  --font:            "Roboto", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:       "Roboto Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius-sm:       4px;
+  --radius-md:       6px;
+  --transition-fast: 200ms ease-out;
+  --transition-med:  300ms ease-in-out;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  height: 100%; margin: 0;
+  font-family: var(--font); font-size: 13px;
+  color: var(--text-secondary); background: var(--bg-primary);
+}
+body {
+  /* Flex column so .layout fills whatever remains after header + chips,
+     no matter how the chip rows wrap. */
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+header, .gradient-strip, .chip-row { flex: 0 0 auto; }
+
+/* Subtle radial highlight under the canvas, as if the protocol is glowing
+   from within. Gives the graph some depth without fighting the dark palette. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 35% 45%, rgba(232, 113, 58, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 75% 75%, rgba(91, 141, 239, 0.04) 0%, transparent 50%);
+}
+body > * { position: relative; z-index: 1; }
+
+header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+header .brand {
+  font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
+  color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+}
+header .brand .accent-bar {
+  display: inline-block; width: 4px; height: 18px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-3) 100%);
+  border-radius: 2px;
+}
+header .brand .sub {
+  color: var(--text-muted); font-weight: 400; font-size: 12px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+header input[type=file] {
+  font-family: var(--font); font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-card-alt); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 6px 8px;
+}
+header input[type=file]::file-selector-button {
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 3px;
+  padding: 3px 10px; margin-right: 10px;
+  font-family: var(--font); font-size: 11px;
+  cursor: pointer; transition: background var(--transition-fast);
+}
+header input[type=file]::file-selector-button:hover {
+  background: rgba(232, 113, 58, 0.12);
+}
+header .meta {
+  font-size: 11px; color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.gradient-strip {
+  height: 2px;
+  background: linear-gradient(135deg, #E85D3A 0%, #F08C4A 50%, #E8A54A 100%);
+}
+
+.chip-row {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  padding: 8px 18px;
+  background: var(--bg-card-alt);
+  border-bottom: 1px solid var(--border);
+}
+.chip-row .chip-section-label {
+  font-size: 10px; color: var(--text-muted);
+  margin-right: 8px;
+  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
+}
+.chip {
+  padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer; user-select: none;
+  font-size: 11px; line-height: 16px;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+.chip:hover { border-color: var(--border-strong); }
+.chip.active {
+  background: transparent; border-color: var(--color-fill, var(--accent));
+  color: var(--color-fill, var(--accent));
+}
+.chip.muted { opacity: 0.4; }
+
+.layout {
+  flex: 1 1 auto;
+  min-height: 0;            /* required for flex children to size to remaining space */
+  display: grid;
+  /* Timeline row sizes to its content (cards + chrome). Graph row
+     takes whatever's left. Reactive — no hard-coded pixel guesswork. */
+  grid-template-rows: 1fr min-content;
+}
+.layout-top {
+  display: grid; grid-template-columns: 1fr 380px;
+  min-height: 0;
+}
+
+#graph {
+  background:
+    radial-gradient(ellipse at center, rgba(255, 255, 255, 0.015) 0%, transparent 70%),
+    var(--bg-primary);
+  border-right: 1px solid var(--border); min-height: 0;
+}
+
+#inspector {
+  background: var(--bg-card);
+  padding: 14px 16px; overflow: auto;
+  border-left: 1px solid var(--border);
+}
+#inspector h2 {
+  font-size: 13px; margin: 0 0 4px;
+  font-weight: 700; color: var(--text-primary);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+#inspector h2 .type-pill {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; vertical-align: 2px;
+  background: var(--bg-card-alt); border: 1px solid var(--border);
+  color: var(--text-primary); margin-left: 6px;
+  text-transform: none; letter-spacing: 0;
+}
+#inspector .inspector-tabs {
+  display: flex; gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+#inspector .inspector-tab {
+  padding: 4px 10px;
+  font-size: 11px; font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+#inspector .inspector-tab:hover { color: var(--text-secondary); }
+#inspector .inspector-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+#inspector .inspector-tab.has-fail { color: var(--red); }
+#inspector .inspector-tab.has-fail.active { border-bottom-color: var(--red); }
+
+#inspector .invariant-list { display: flex; flex-direction: column; gap: 4px; }
+#inspector .invariant-row {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+#inspector .invariant-row.ok { border-color: var(--border); }
+#inspector .invariant-row.fail { border-color: var(--red); }
+#inspector .invariant-row.warning { border-color: var(--accent-3); }
+#inspector .invariant-row-head {
+  display: flex; align-items: center; gap: 8px;
+}
+#inspector .invariant-status {
+  font-weight: 700; font-size: 14px; line-height: 1;
+  flex-shrink: 0;
+}
+#inspector .invariant-row.ok .invariant-status { color: var(--green); }
+#inspector .invariant-row.fail .invariant-status { color: var(--red); }
+#inspector .invariant-name {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-primary);
+  flex: 1 1 auto;
+}
+#inspector .invariant-fail-detail {
+  margin: 6px 0 0 22px;
+  font-size: 11px; color: var(--text-secondary);
+}
+#inspector .invariant-message {
+  margin: 4px 0; font-style: italic;
+  color: var(--text-secondary);
+}
+
+#inspector .pubkey {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-muted); word-break: break-all;
+  margin-bottom: 6px;
+}
+#inspector .hash {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-secondary);
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  word-break: break-all; margin: 4px 0 8px;
+}
+#inspector .section-label {
+  font-size: 10px; color: var(--accent);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 14px 0 6px;
+}
+#inspector dl { margin: 0; }
+#inspector dl dt {
+  font-weight: 500; color: var(--text-muted);
+  margin-top: 8px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+#inspector dl dd {
+  margin: 2px 0 0 8px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-primary); word-break: break-all;
+}
+
+#inspector details { margin: 2px 0 0 8px; }
+#inspector details summary {
+  cursor: pointer; padding: 2px 0;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-secondary);
+  list-style: none;
+}
+#inspector details summary::-webkit-details-marker { display: none; }
+#inspector details summary::before {
+  content: '▸'; display: inline-block; margin-right: 4px;
+  color: var(--text-muted); transition: transform var(--transition-fast);
+}
+#inspector details[open] summary::before { transform: rotate(90deg); }
+#inspector details summary .ref-pill {
+  font-size: 9px; padding: 1px 7px; border-radius: 999px;
+  margin-left: 6px; color: #1E1E1E; vertical-align: 1px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+}
+#inspector details summary .ref-link {
+  color: var(--accent); cursor: pointer;
+  margin-left: 8px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+#inspector details summary .ref-link:hover { color: var(--accent-2); }
+#inspector details > div.ref-fields {
+  margin: 6px 0 8px 18px; padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+#inspector details > div.ref-fields .kv {
+  display: flex; gap: 8px; padding: 2px 0; font-size: 11px;
+  font-family: var(--font-mono);
+}
+#inspector details > div.ref-fields .kv .k {
+  color: var(--text-muted); min-width: 110px;
+}
+#inspector details > div.ref-fields .kv .v {
+  color: var(--text-primary);
+}
+
+#inspector .tx-list { margin-top: 14px; }
+#inspector .tx-list .tx-row {
+  font-size: 11px; padding: 5px 6px;
+  cursor: pointer; border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  display: flex; align-items: center; gap: 6px;
+  transition: all var(--transition-fast);
+}
+#inspector .tx-list .tx-row:hover {
+  background: var(--bg-card-alt); border-color: var(--border);
+}
+#inspector .tx-list .tx-row.current {
+  background: rgba(232, 113, 58, 0.10);
+  border-color: var(--accent);
+}
+#inspector .tx-list .tx-row .ix-name {
+  color: var(--text-primary); font-family: var(--font-mono);
+}
+#inspector .tx-list .tx-row .role {
+  color: var(--text-muted); font-size: 10px;
+  margin-left: auto; text-transform: uppercase; letter-spacing: 0.05em;
+}
+#inspector .event-breadcrumb {
+  font-size: 11px; color: var(--text-muted);
+  margin-bottom: 8px; line-height: 1.4;
+}
+#inspector .event-breadcrumb .event-crumb {
+  color: var(--accent); cursor: pointer;
+}
+#inspector .event-breadcrumb .event-crumb:hover { color: var(--accent-2); }
+#inspector .event-breadcrumb .crumb-sep { color: var(--text-disabled); margin: 0 4px; }
+#inspector .event-description {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.55;
+  background: var(--bg-card-alt);
+  border-left: 2px solid var(--accent);
+  padding: 8px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 6px 0 10px;
+}
+#inspector .event-tree {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 4px;
+}
+#inspector .event-tree .tree-event {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  transition: border-color var(--transition-fast);
+}
+#inspector .event-tree .tree-event:hover { border-color: var(--border-strong); }
+#inspector .event-tree .tree-event-head {
+  display: flex; align-items: center; gap: 6px;
+}
+#inspector .event-tree .tree-event-head .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+#inspector .event-tree .tree-event-name {
+  font-weight: 600; color: var(--text-primary); font-size: 12px;
+}
+#inspector .event-tree .tree-event-desc {
+  font-size: 11px; color: var(--text-muted);
+  line-height: 1.45; margin: 4px 0 4px 14px;
+}
+#inspector .event-tree .tree-tx-list {
+  margin: 4px 0 0 14px;
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+#inspector .event-tree .tree-tx-list .tx-row {
+  padding: 2px 4px;
+}
+
+#timeline {
+  background: var(--bg-card-alt);
+  border-top: 1px solid var(--border);
+  padding: 8px 18px 10px;
+  display: grid;
+  /* Three rows: callout, event-bands, tick-controls. All auto-sized
+     to their content so the timeline shrinks/grows reactively as
+     cards expand or collapse. */
+  grid-template-rows: auto auto auto;
+  gap: 6px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.callout-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.callout-label {
+  font-size: 10px; color: var(--accent);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+}
+.callout-label::before {
+  content: ''; display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); margin-right: 8px; vertical-align: 1px;
+  box-shadow: 0 0 8px var(--accent);
+}
+.callout-row .legend {
+  font-size: 10px; color: var(--text-muted);
+  display: inline-flex; gap: 12px; flex-wrap: wrap;
+  margin-left: auto;
+}
+.callout-row .legend .legend-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--text-secondary);
+}
+.callout-row .legend .legend-item .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+}
+
+/* Event timeline as horizontal expandable cards. Top-level events sit
+   in a flex row; click a card to expand it inline — sub-events become
+   smaller cards inside their parent's body (recursively), and txs at
+   the leaves render as chips. The whole row scrolls horizontally if
+   expanded cards push it wide. */
+#event-bands {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* Horizontal timeline: cards lay out left-to-right, the row scrolls
+     horizontally if it grows past the viewport. Height is intrinsic
+     to its tallest card — capped to keep the timeline reasonable on
+     deeply-expanded scenarios, with vertical scroll as the fallback. */
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 60vh;
+  padding: 8px;
+}
+#event-bands .card-row {
+  display: flex; flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+#event-bands .card-row.top-row {
+  /* Top-level row gets `width: max-content` so the parent's overflow-x
+     works (rather than the row being constrained to viewport width). */
+  width: max-content;
+  min-width: 100%;
+}
+#event-bands .event-card {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 140px;
+  transition: border-color var(--transition-fast),
+              background var(--transition-fast),
+              filter var(--transition-fast);
+}
+#event-bands .event-card:hover { filter: brightness(1.15); }
+#event-bands .event-card.top { min-width: 200px; padding: 8px 12px; }
+#event-bands .event-card.selected {
+  border-color: var(--accent);
+  background: rgba(232, 113, 58, 0.06);
+}
+#event-bands .event-card.active:not(.selected) {
+  background: rgba(232, 113, 58, 0.03);
+}
+#event-bands .card-head {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+#event-bands .card-chev {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 10px; flex-shrink: 0;
+}
+#event-bands .card-chev.empty { color: var(--text-disabled); }
+#event-bands .card-title {
+  font-size: 12px; font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#event-bands .event-card.top > .card-head .card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+#event-bands .actor-pill {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #1E1E1E;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+#event-bands .card-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex; gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#event-bands .card-body {
+  display: flex; flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+#event-bands .card-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-width: 320px;
+  /* Card descriptions clamp to 2 lines so cards stay short and the
+     timeline doesn't grow vertical. The full text lives in the right-
+     pane inspector when an event is selected. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#event-bands .tx-chip-row {
+  display: flex; flex-direction: row;
+  flex-wrap: wrap; gap: 4px;
+  align-items: center;
+}
+#event-bands .tx-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700;
+  color: #1E1E1E;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter var(--transition-fast), transform var(--transition-fast);
+}
+#event-bands .tx-chip:hover { filter: brightness(1.2); transform: translateY(-1px); }
+#event-bands .tx-chip.current {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 8px rgba(232, 113, 58, 0.5);
+}
+/* Red ring on tx chips whose tick has any failed invariant. */
+#event-bands .tx-chip.invariant-fail {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+  box-shadow: 0 0 8px rgba(192, 80, 32, 0.55);
+}
+#event-bands .tx-chip.invariant-fail.current {
+  outline: 2px solid var(--red);
+  box-shadow: 0 0 10px var(--red);
+}
+/* When the "only failed" filter is active, fade non-failing chips. */
+#event-bands.show-failed-only .tx-chip:not(.invariant-fail) {
+  opacity: 0.18;
+  filter: saturate(0.3);
+}
+#event-bands .tx-chip .tx-tick {
+  background: rgba(0, 0, 0, 0.3); color: #FFFFFF;
+  padding: 0 5px; border-radius: 999px;
+  font-size: 9px;
+}
+
+
+#tick-controls {
+  display: flex; align-items: center; gap: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+#tick-controls .tick-arrow {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 20px; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition-fast);
+  font-family: var(--font);
+  flex-shrink: 0;
+}
+#tick-controls .tick-arrow:hover {
+  background: rgba(232, 113, 58, 0.15);
+  border-color: var(--accent);
+}
+#tick-controls .tick-arrow:disabled {
+  opacity: 0.3; cursor: not-allowed;
+}
+#tick-controls .tick-display {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 90px;
+}
+#tick-controls .tick-display .tick-num {
+  font-family: var(--font-mono); color: var(--text-primary);
+  font-size: 18px; font-weight: 700; line-height: 1;
+}
+#tick-controls .tick-display .tick-sub {
+  font-size: 9px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+#tick-controls #scrubber-wrap {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+}
+#timeline-scrubber {
+  flex: 1; min-width: 160px;
+  -webkit-appearance: none; appearance: none;
+  height: 4px; background: var(--bg-primary); border-radius: 2px;
+  outline: none;
+}
+#timeline-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+#timeline-scrubber::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+  border: 2px solid var(--bg-primary);
+}
+
+.muted-text { color: var(--text-disabled); font-style: italic; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card); border-radius: 5px;
+  border: 2px solid var(--bg-primary);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand"><span class="accent-bar"></span>DAWN <span class="sub">sim viewer</span></span>
+  <input type="file" id="file-input" accept=".jsonl">
+  <span class="meta" id="meta-line">no trace loaded</span>
+</header>
+<div class="gradient-strip"></div>
+<div class="chip-row" id="macro-chips"><span class="chip-section-label">Domain</span></div>
+<div class="chip-row" id="type-chips"><span class="chip-section-label">Types</span></div>
+<div class="chip-row" id="edge-chips"><span class="chip-section-label">Edges</span></div>
+<div class="layout">
+  <div class="layout-top">
+    <div id="graph"></div>
+    <div id="inspector"><span class="muted-text">click a node to inspect</span></div>
+  </div>
+  <div id="timeline">
+    <div class="callout-row">
+      <span class="callout-label">Event Timeline</span>
+      <span class="chip" id="failed-only-chip" style="display:none">Only failed invariants</span>
+      <span class="legend" id="legend"></span>
+    </div>
+    <div id="event-bands"></div>
+    <div id="tick-controls">
+      <button class="tick-arrow" id="tick-prev" title="Previous tick (←)">‹</button>
+      <button class="tick-arrow" id="tick-next" title="Next tick (→)">›</button>
+      <div class="tick-display">
+        <span class="tick-num" id="tick-label">0 / 0</span>
+        <span class="tick-sub" id="tick-sub">tick</span>
+      </div>
+      <div id="scrubber-wrap">
+        <input type="range" id="timeline-scrubber" min="0" max="0" value="0" step="1">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/cytoscape.min.js"></script>
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// JSONL parsing — undo the capture's bigint serialization (`${n}n` strings)
+// ---------------------------------------------------------------------------
+function parseJsonlLine(line) {
+  return JSON.parse(line);
+}
+
+// ---------------------------------------------------------------------------
+// Trace state machine. Reduces a sequence of records up to a target tick.
+// ---------------------------------------------------------------------------
+function buildState(records, throughTick) {
+  const accounts = new Map(); // pubkey -> { type, decoded, hash, lastTickIdx }
+  const txs = [];
+  let metadata = null;
+  let scenarioStart = null;
+  for (const r of records) {
+    if (r.type === 'scenario_start') {
+      scenarioStart = r;
+      metadata = r.metadata || null;
+      continue;
+    }
+    if (r.type !== 'tx') continue;
+    if (throughTick != null && r.tick > throughTick) break;
+    txs.push(r);
+    for (const d of (r.diff || [])) {
+      accounts.set(d.pubkey, {
+        type: d.account_type,
+        decoded: d.decoded,
+        hash: d.raw_bytes_sha256,
+        existed_before: d.existed_before,
+        bytes_b64: d.raw_bytes_b64,
+        owner: d.owner,
+        lastTickIdx: txs.length - 1,
+      });
+    }
+  }
+  return { accounts, txs, metadata, scenarioStart };
+}
+
+// ---------------------------------------------------------------------------
+// Custom layout: actor-clustered radial.
+//
+//   Foundation hub at the origin (Config + TokenConfig stack).
+//   Foundation-owned support accounts (catalog, IPAM stack, externals)
+//   sit on rings AROUND the hub, occupying the full 360°.
+//   Each SP gets a wedge of the OUTER perimeter for their owned accounts.
+//
+// Each node is assigned an actor either (a) from its creation tx's actor
+// field, or (b) directly via the actorByName map for declared actors.
+// IpLeases are re-attributed to their device's actor so they land in the
+// SP's wedge instead of the central cluster.
+// ---------------------------------------------------------------------------
+function computeActorClusteredPositions(nodes, txs) {
+  const positions = new Map();
+
+  // Per-pubkey: the tx that first created it, indexed for quick actor lookup.
+  const creatorByPk = new Map();
+  for (const tx of txs) {
+    for (const d of (tx.diff || [])) {
+      if (!d.existed_before && !creatorByPk.has(d.pubkey)) {
+        creatorByPk.set(d.pubkey, tx);
+      }
+    }
+  }
+
+  // Decide actor for each node. Foundation = central; named SPs = wedge.
+  const actorOf = new Map();
+  for (const pk of nodes.keys()) {
+    const creator = creatorByPk.get(pk);
+    const a = creator?.actor;
+    actorOf.set(pk, a && a !== 'foundation' ? a : null);
+  }
+  // Declared-actor wallets always land in their own wedge regardless of
+  // whether they appear in any creation tx (they often don't — wallets
+  // are referenced via Plan.owner etc., not created via dawn instructions).
+  for (const [name, pk] of Object.entries(actorByName)) {
+    if (name === 'foundation') continue;
+    if (nodes.has(pk)) actorOf.set(pk, name);
+  }
+  // IpLease physically belongs to a device; pull it into the device's wedge.
+  for (const [pk, info] of nodes) {
+    if (info.type === 'IpLease' && info.decoded?.device) {
+      const a = actorOf.get(info.decoded.device);
+      if (a) actorOf.set(pk, a);
+    }
+  }
+
+  // Ring (radius offset) per type. Lower = closer to its cluster center.
+  const RING = {
+    Config: 0, TokenConfig: 1,
+    Wallet: 0,                                                // SP anchor (or foundation in central case)
+    ServiceAgreement: 2, IpRegistry: 2, DeviceModel: 2,
+    RootIpBlock: 3, AuthMethod: 3,
+    LocalDomain: 1,
+    Plan: 2, Device: 2, Subscription: 2,
+    DistributionDomain: 3, AccessDomain: 3, DeviceLocation: 3, IpLease: 3, IpBlock: 3,
+    Credential: 4, Connection: 4,
+    Mint: 4, TokenAccount: 5, ExternalProgram: 6,
+  };
+  const ringOf = (pk) => RING[nodes.get(pk)?.type] ?? 4;
+
+  // Group nodes by actor. Null actor → foundation cluster.
+  const groups = new Map();
+  for (const [pk, a] of actorOf) {
+    const key = a || '__foundation';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(pk);
+  }
+
+  // Foundation cluster: full-circle rings around origin.
+  const FOUNDATION_RING_PX = 180;
+  const foundation = groups.get('__foundation') || [];
+  const foundationByRing = new Map();
+  for (const pk of foundation) {
+    const r = ringOf(pk);
+    if (!foundationByRing.has(r)) foundationByRing.set(r, []);
+    foundationByRing.get(r).push(pk);
+  }
+  for (const [ring, list] of foundationByRing) {
+    if (ring === 0 && list.length === 1) {
+      // Single Config at origin
+      positions.set(list[0], { x: 0, y: 0 });
+      continue;
+    }
+    const radius = ring * FOUNDATION_RING_PX;
+    const n = list.length;
+    list.forEach((pk, i) => {
+      // Stagger each ring's start angle so siblings don't line up radially.
+      const angle = (i / Math.max(n, 1)) * 2 * Math.PI - Math.PI / 2 + ring * 0.4;
+      positions.set(pk, {
+        x: ring === 0 ? 0 : Math.cos(angle) * radius,
+        y: ring === 0 ? 0 : Math.sin(angle) * radius,
+      });
+    });
+  }
+
+  // SP clusters: each wedge around the perimeter, beyond foundation.
+  const sps = Array.from(groups.keys()).filter((k) => k !== '__foundation').sort();
+  if (sps.length === 0) return positions;
+
+  const SP_BASE_RADIUS = 800;          // distance from origin to cluster anchor
+  const SP_RING_GAP = 150;             // additional radius per inner-cluster ring
+  const wedgePerSp = (2 * Math.PI) / sps.length;
+
+  sps.forEach((actor, i) => {
+    const wedgeCenter = i * wedgePerSp - Math.PI / 2;
+    // Each wedge has up to ~70% of its share for actual content; the rest
+    // is angular padding so neighbors don't crowd.
+    const wedgeWidth = wedgePerSp * 0.65;
+
+    const cluster = groups.get(actor);
+    const byRing = new Map();
+    for (const pk of cluster) {
+      const r = ringOf(pk);
+      if (!byRing.has(r)) byRing.set(r, []);
+      byRing.get(r).push(pk);
+    }
+
+    for (const [ring, list] of byRing) {
+      // The Wallet (ring 0 of an SP cluster) sits at the cluster anchor;
+      // other types radiate outward.
+      const radius = SP_BASE_RADIUS + ring * SP_RING_GAP;
+      const n = list.length;
+      list.forEach((pk, j) => {
+        const t = n > 1 ? j / (n - 1) - 0.5 : 0;
+        const angle = wedgeCenter + t * wedgeWidth;
+        positions.set(pk, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
+      });
+    }
+  });
+
+  return positions;
+}
+
+// ---------------------------------------------------------------------------
+// pubkey -> tx index that first created the account (existed_before=false).
+// ---------------------------------------------------------------------------
+function buildCreationMap(txs) {
+  const m = new Map();
+  for (let i = 0; i < txs.length; i++) {
+    for (const d of (txs[i].diff || [])) {
+      if (!d.existed_before && !m.has(d.pubkey)) m.set(d.pubkey, i);
+    }
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------------------
+// Build the full graph from a (possibly truncated) trace state. Edges come
+// strictly from ACCOUNT_EDGES (decoded fields + creation-context resolution).
+// ---------------------------------------------------------------------------
+function buildGraph(state) {
+  const nodes = new Map();
+  const edges = [];
+  const edgeMap = state.metadata?.account_edges || {};
+  const creationTxIdx = buildCreationMap(state.txs);
+
+  for (const [pk, info] of state.accounts.entries()) {
+    nodes.set(pk, { type: info.type ?? 'Unknown', decoded: info.decoded, owner: info.owner });
+  }
+
+  for (const [pk, info] of state.accounts.entries()) {
+    if (!info.type || !edgeMap[info.type]) continue;
+    for (const spec of edgeMap[info.type]) {
+      let targets = [];
+      if (spec.from_creation) {
+        const idx = creationTxIdx.get(pk);
+        if (idx == null) continue;
+        const tx = state.txs[idx];
+        for (const d of (tx.diff || [])) {
+          if (d.pubkey === pk) continue;
+          if (d.account_type === spec.target) targets.push(d.pubkey);
+        }
+      } else {
+        const v = info.decoded ? info.decoded[spec.field] : undefined;
+        if (spec.many) {
+          if (Array.isArray(v)) for (const t of v) if (t) targets.push(String(t));
+        } else {
+          if (v) targets.push(String(v));
+        }
+      }
+      for (const t of targets) {
+        if (!nodes.has(t)) nodes.set(t, { type: spec.target, decoded: null, owner: '' });
+        edges.push({ source: pk, target: t, label: spec.label, type: spec.target });
+      }
+    }
+  }
+  return { nodes, edges };
+}
+
+// ---------------------------------------------------------------------------
+// Top-level state
+// ---------------------------------------------------------------------------
+let cy = null;
+let allRecords = [];
+let metadata = null;
+let scenarioStart = null;
+let allTxList = [];
+let dawnTxList = [];
+let currentTick = 0;
+let captureVersion = 1;
+/** Invariant + expectation records pulled from the trace (v2 only).
+ *  Map: tick → array of invariant_check records produced after that tick. */
+let invariantsByTick = new Map();
+let allInvariants = [];        // every invariant_check record, in order
+let allExpectations = [];      // every expectation_result record, in order
+/** Filter: when true, hide passing invariants in inspector + timeline. */
+let onlyFailedInvariants = false;
+const hiddenTypes = new Set();
+const hiddenEdgeLabels = new Set();
+
+/**
+ * Macro-domain classification for each account type. The user toggles
+ * domain chips at the top of the chip rail; only nodes whose macro
+ * domain is enabled are drawn.
+ *
+ *   crypto_bootstrap : the protocol's own token + fee + config infrastructure
+ *   crypto_external  : programs the protocol depends on (Raydium pool, etc)
+ *   bss              : commercial/billing surface (plans, subscriptions, SLA)
+ *   oss              : operational/network plane (devices, IPAM, auth, conns)
+ *   domains          : the bridge layer between BSS and OSS
+ *
+ * Wallet maps to "all" — actor identity is relevant in every domain, so
+ * wallets bypass macro filtering and show whenever any domain is enabled.
+ */
+const MACRO_DOMAIN = {
+  Config: 'crypto_bootstrap',
+  TokenConfig: 'crypto_bootstrap',
+  Mint: 'crypto_bootstrap',
+  TokenAccount: 'crypto_bootstrap',
+
+  ExternalProgram: 'crypto_external',
+
+  Plan: 'bss',
+  Subscription: 'bss',
+  ServiceAgreement: 'bss',
+
+  Device: 'oss',
+  DeviceModel: 'oss',
+  DeviceLocation: 'oss',
+  IpRegistry: 'oss',
+  RootIpBlock: 'oss',
+  IpBlock: 'oss',
+  IpLease: 'oss',
+  AuthMethod: 'oss',
+  Credential: 'oss',
+  Connection: 'oss',
+
+  LocalDomain: 'domains',
+  AccessDomain: 'domains',
+  DistributionDomain: 'domains',
+
+  Wallet: 'all',
+};
+
+const MACRO_LIST = [
+  { id: 'crypto_bootstrap', label: 'Crypto bootstrap', color: '#E8713A' },
+  { id: 'crypto_external',  label: 'Crypto external',  color: '#666666' },
+  { id: 'bss',              label: 'BSS',              color: '#2EA87E' },
+  { id: 'oss',              label: 'OSS',              color: '#5B8DEF' },
+  { id: 'domains',          label: 'Domains',          color: '#E8A54A' },
+];
+
+/** Currently-enabled macro domains. Default = all enabled. */
+const enabledMacros = new Set(MACRO_LIST.map((m) => m.id));
+let selectedPk = null;
+/** Has cose layout been computed yet for the all-time graph? */
+let layoutReady = false;
+/** Parsed event tree from event_begin / event_end records.
+ *  Shape: [{ id, name, parent, actor, begin_tick, end_tick, depth, children }] */
+let allEvents = [];
+/** Map: actor_name -> wallet pubkey (from scenario_start.metadata.actors). */
+let actorByName = {};
+/** Map: wallet pubkey -> actor_name (reverse). */
+let actorByPubkey = {};
+/** Currently-inspected event id, if any (set by clicking an event band). */
+let selectedEventId = null;
+
+const $ = (id) => document.getElementById(id);
+
+function colorFor(type) {
+  return (metadata?.account_type_colors || {})[type] || '#888888';
+}
+
+function darkerColor(hex, amount = 0.35) {
+  // Simple darken: parse hex → blend toward black by `amount`.
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const [r, g, b] = [m[1], m[2], m[3]].map((c) => Math.round(parseInt(c, 16) * (1 - amount)));
+  const h = (n) => n.toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+/**
+ * Semantic instruction → color mapping. Each color matches the GRAPH
+ * node color of the account-type the instruction primarily creates or
+ * touches. Cross-view consistency: a green tx chip in the timeline is
+ * the same green as the Plan node in the graph because that tx creates
+ * a Plan. Unmapped instructions fall back to a stable hash-based color.
+ */
+const INSTRUCTION_COLOR = {
+  // Protocol setup (foundation)
+  init_token:                 '#F08C4A',  // TokenConfig (sibling orange)
+  init_fee_accounts:          '#F08C4A',  // TokenConfig
+  init_metadata:              '#E8713A',  // Config
+  initialize_config:          '#E8713A',  // Config (the hub)
+  update_config:              '#E8713A',
+
+  // Catalog
+  add_device_model:           '#7DA8F0',  // DeviceModel
+  add_service_agreement:      '#999999',  // ServiceAgreement (muted)
+
+  // Devices
+  add_device:                 '#5B8DEF',  // Device
+  add_device_for:             '#5B8DEF',
+  verify_device_location:     '#4A7BB8',  // LocalDomain (dark blue family)
+
+  // Plans
+  add_l3_plan:                '#2EA87E',  // Plan
+  add_l2_plan:                '#2EA87E',
+
+  // Subscriptions
+  subscribe:                  '#3FBA90',  // Subscription
+  subscribe_for:              '#3FBA90',
+  extend_subscription:        '#3FBA90',
+  extend_subscription_for:    '#3FBA90',
+  claim:                      '#E8A54A',  // amber (DAWN payout)
+
+  // IPAM
+  initialize_root_ip_block:   '#9B59B6',  // IpRegistry
+  allocate_ip:                '#A56DC4',  // IpBlock / IpLease family
+  lease_subscription_ip:      '#B57BC9',
+  lease_subscription_ip_for:  '#B57BC9',
+  revoke_ip:                  '#7C3AED',
+
+  // AMF / credentials / connections
+  register_auth_method:       '#A56DC4',  // AuthMethod
+  add_auth_method:            '#A56DC4',
+  register_credential:        '#C084FC',  // Credential
+  register_credential_for:    '#C084FC',
+  revoke_credential:          '#C084FC',
+  register_connection:        '#C084FC',  // Connection
+  revoke_connection:          '#C084FC',
+};
+
+function instructionColor(name) {
+  if (!name) return '#666666';
+  if (INSTRUCTION_COLOR[name]) return INSTRUCTION_COLOR[name];
+  // Fallback for any instruction we haven't mapped: stable hash → series.
+  const series = ['#E8713A', '#2EA87E', '#F08C4A', '#E8A54A', '#5B8DEF', '#9B59B6', '#C084FC'];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return series[h % series.length];
+}
+
+/**
+ * Best human-readable label for a node, given its type, decoded state,
+ * and pubkey. Returns { primary, secondary } so the viewer can render a
+ * two-line label: the primary identifier (actor name / device name /
+ * plan name / IP / etc.) and a secondary type tag.
+ */
+function smartLabel(type, decoded, pubkey) {
+  const actor = actorByPubkey[pubkey];
+  if (actor) return { primary: actor, secondary: 'Wallet' };
+
+  if (decoded) {
+    switch (type) {
+      case 'Device':
+      case 'LocalDomain':
+      case 'Plan':
+        if (decoded.name) return { primary: decoded.name, secondary: type };
+        break;
+      case 'DeviceModel':
+        if (decoded.manufacturer && decoded.model) {
+          return { primary: `${decoded.manufacturer} ${decoded.model}`, secondary: 'DeviceModel' };
+        }
+        break;
+      case 'IpLease': {
+        // ipv4 was a 4-byte Buffer in the decoder, serialized as base64
+        // string by the capture's jsonReplacer. Decode for display.
+        if (typeof decoded.ipv4 === 'string') {
+          const bin = atob(decoded.ipv4);
+          if (bin.length === 4) {
+            const ip = `${bin.charCodeAt(0)}.${bin.charCodeAt(1)}.${bin.charCodeAt(2)}.${bin.charCodeAt(3)}`;
+            return { primary: `${ip}/${decoded.ipv4CidrMask ?? '?'}`, secondary: 'IpLease' };
+          }
+        }
+        return { primary: 'IpLease', secondary: decoded.tier || '' };
+      }
+      case 'IpBlock':
+      case 'RootIpBlock':
+      case 'IpRegistry':
+        if (decoded.tier) return { primary: type, secondary: decoded.tier };
+        break;
+      case 'AuthMethod':
+        if (decoded.methodType) return { primary: decoded.methodType, secondary: 'AuthMethod' };
+        break;
+    }
+  }
+  // Fallback: type as primary, pubkey snippet as secondary.
+  const short = `${pubkey.slice(0, 4)}…${pubkey.slice(-4)}`;
+  return { primary: type, secondary: short };
+}
+
+/**
+ * Stable color per actor. Foundation always gets DAWN orange so the
+ * authority's events are immediately recognizable; other actors are
+ * spread across the brand series.
+ */
+function actorColor(actor) {
+  if (!actor) return '#444444';
+  if (actor === 'foundation') return '#E8713A';
+  const series = ['#5B8DEF', '#2EA87E', '#9B59B6', '#E8A54A', '#F08C4A', '#C084FC'];
+  let h = 0;
+  for (let i = 0; i < actor.length; i++) h = (h * 31 + actor.charCodeAt(i)) >>> 0;
+  return series[h % series.length];
+}
+
+function maxTick() {
+  let m = 0;
+  for (const r of allRecords) if (r.type === 'tx' && r.tick > m) m = r.tick;
+  return m;
+}
+
+// ---------------------------------------------------------------------------
+// Chips
+// ---------------------------------------------------------------------------
+function renderMacroChips() {
+  const root = $('macro-chips');
+  if (!root) return;
+  root.querySelectorAll('.chip').forEach((c) => c.remove());
+  for (const m of MACRO_LIST) {
+    const el = document.createElement('span');
+    const active = enabledMacros.has(m.id);
+    el.className = 'chip ' + (active ? 'active' : 'muted');
+    el.textContent = m.label;
+    el.style.setProperty('--color-fill', m.color);
+    el.onclick = () => {
+      if (enabledMacros.has(m.id)) enabledMacros.delete(m.id);
+      else enabledMacros.add(m.id);
+      renderMacroChips();
+      applyVisibility();
+    };
+    root.appendChild(el);
+  }
+}
+
+function renderChips() {
+  renderMacroChips();
+  const types = new Set();
+  for (const r of allRecords) {
+    if (r.type === 'tx') for (const d of (r.diff || [])) if (d.account_type) types.add(d.account_type);
+  }
+  for (const specs of Object.values(metadata?.account_edges || {})) {
+    for (const s of specs) types.add(s.target);
+  }
+  const typeChipsRoot = $('type-chips');
+  typeChipsRoot.querySelectorAll('.chip').forEach(c => c.remove());
+  Array.from(types).sort().forEach(t => {
+    const el = document.createElement('span');
+    el.className = 'chip ' + (hiddenTypes.has(t) ? 'muted' : 'active');
+    el.textContent = t;
+    el.style.setProperty('--color-fill', colorFor(t));
+    el.onclick = () => {
+      if (hiddenTypes.has(t)) hiddenTypes.delete(t);
+      else hiddenTypes.add(t);
+      renderChips();
+      applyVisibility();
+    };
+    typeChipsRoot.appendChild(el);
+  });
+
+  const labels = new Set();
+  for (const specs of Object.values(metadata?.account_edges || {})) {
+    for (const s of specs) labels.add(s.label);
+  }
+  const edgeChipsRoot = $('edge-chips');
+  edgeChipsRoot.querySelectorAll('.chip').forEach(c => c.remove());
+  Array.from(labels).sort().forEach(l => {
+    const el = document.createElement('span');
+    el.className = 'chip ' + (hiddenEdgeLabels.has(l) ? 'muted' : 'active');
+    el.textContent = l;
+    el.onclick = () => {
+      if (hiddenEdgeLabels.has(l)) hiddenEdgeLabels.delete(l);
+      else hiddenEdgeLabels.add(l);
+      renderChips();
+      applyVisibility();
+    };
+    edgeChipsRoot.appendChild(el);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Graph: build ONCE over the full all-time graph. Subsequent ticks just
+// toggle node/edge visibility — positions stay stable.
+// ---------------------------------------------------------------------------
+function initGraphOnce() {
+  if (layoutReady) return;
+  const fullState = buildState(allRecords, undefined);
+  const { nodes, edges } = buildGraph(fullState);
+
+  const elements = [];
+  for (const [pk, n] of nodes.entries()) {
+    const { primary, secondary } = smartLabel(n.type, n.decoded, pk);
+    elements.push({
+      data: {
+        id: pk,
+        type: n.type,
+        label: primary,
+        sublabel: secondary,
+        color: colorFor(n.type),
+        colorDark: darkerColor(colorFor(n.type), 0.45),
+      },
+    });
+  }
+  for (const e of edges) {
+    elements.push({
+      data: {
+        id: `${e.source}->${e.target}#${e.label}`,
+        source: e.source, target: e.target,
+        label: e.label, type: e.type,
+      },
+    });
+  }
+
+  if (cy) { cy.destroy(); cy = null; }
+  // NOTE: do NOT pass `layout` to the cytoscape constructor. If the layout
+  // happens to finish synchronously (small graphs do, with cose) the
+  // layoutstop event fires before we have a chance to attach our listener,
+  // and applyVisibility() never runs. We construct first, attach handlers,
+  // then run layout explicitly.
+  cy = cytoscape({
+    container: $('graph'),
+    elements,
+    // Slow the wheel zoom WAY down — default zooms in/out too fast.
+    wheelSensitivity: 0.2,
+    minZoom: 0.1,
+    maxZoom: 4.0,
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'background-fill': 'radial-gradient',
+          'background-gradient-stop-colors': (ele) =>
+            `${ele.data('color')} ${ele.data('colorDark')}`,
+          'background-gradient-stop-positions': '0% 100%',
+          'background-color': 'data(color)',
+          'border-color': (ele) => ele.data('colorDark'),
+          'border-width': 1,
+          // Primary label below the node — the human-readable identifier.
+          'label': 'data(label)',
+          'color': '#FFFFFF',
+          'font-family': 'Roboto, "Helvetica Neue", Arial, sans-serif',
+          'font-size': '12px',
+          'font-weight': 600,
+          'text-valign': 'bottom',
+          'text-halign': 'center',
+          'text-margin-y': 8,
+          'text-outline-color': '#1E1E1E',
+          'text-outline-width': 3,
+          'text-max-width': 160,
+          'text-wrap': 'ellipsis',
+          'width': 18, 'height': 18,
+          'overlay-padding': 6,
+          // No min-zoomed-font-size: we control on-screen pixel size
+          // dynamically via a zoom event handler so labels are always
+          // legible without ever growing too large.
+          'transition-property': 'border-width, border-color, opacity',
+          'transition-duration': '200ms',
+        },
+      },
+      {
+        // Highlights every node touched by the current tick's tx — the
+        // "living" pulse signaling what just changed.
+        selector: 'node.active-now',
+        style: {
+          'border-width': 3,
+          'border-color': '#E8713A',
+          'overlay-color': '#E8713A',
+          'overlay-opacity': 0.18,
+        },
+      },
+      {
+        // Persistent halo around every node that participated in the
+        // currently-selected event — stays as the user clicks around
+        // individual nodes.
+        selector: 'node.event-related',
+        style: {
+          'border-width': 3,
+          'border-color': '#E8713A',
+          'border-opacity': 1,
+          'overlay-color': '#E8713A',
+          'overlay-opacity': 0.12,
+        },
+      },
+      {
+        // Nodes that are NOT part of the focused event get pushed back
+        // visually so the spotlight is unambiguous.
+        selector: 'node.dimmed',
+        style: {
+          'opacity': 0.18,
+          'text-opacity': 0.18,
+        },
+      },
+      {
+        // Edges incident to event-related nodes light up so the user
+        // can see the structural deltas the event involved.
+        selector: 'edge.event-related',
+        style: {
+          'line-color': '#E8713A',
+          'target-arrow-color': '#E8713A',
+          'width': 2.5,
+          'color': '#FFFFFF',
+          'opacity': 1,
+        },
+      },
+      {
+        selector: 'edge.dimmed',
+        style: {
+          'opacity': 0.12,
+          'text-opacity': 0.12,
+        },
+      },
+      {
+        // The selected node — slightly thicker accent ring.
+        selector: 'node:selected',
+        style: {
+          'border-width': 3,
+          'border-color': '#FFFFFF',
+        },
+      },
+      // Hide nodes/edges that are filtered out or not-yet-existing
+      { selector: 'node.hidden, edge.hidden', style: { display: 'none' } },
+      {
+        selector: 'edge',
+        style: {
+          'curve-style': 'bezier',
+          'target-arrow-shape': 'triangle',
+          'arrow-scale': 0.9,
+          'line-color': '#5A5A5A',
+          'target-arrow-color': '#5A5A5A',
+          'width': 1.4,
+          'label': 'data(label)',
+          'font-family': 'Roboto, "Helvetica Neue", Arial, sans-serif',
+          'font-size': '10px',
+          'color': '#BBBBBB',
+          'text-rotation': 'autorotate',
+          'text-background-color': '#1E1E1E',
+          'text-background-opacity': 0.92,
+          'text-background-padding': 3,
+          'text-background-shape': 'roundrectangle',
+          'text-border-color': '#3A3A3A',
+          'text-border-width': 1,
+          'text-border-opacity': 1,
+        },
+      },
+      {
+        // Edges incident to the selected node light up in DAWN orange.
+        selector: 'edge.incident-selected',
+        style: {
+          'line-color': '#E8713A',
+          'target-arrow-color': '#E8713A',
+          'width': 2,
+          'color': '#E8A54A',
+        },
+      },
+    ],
+  });
+
+  cy.on('tap', 'node', (ev) => {
+    // Selecting a node does NOT clear the active event — the event stays
+    // visually highlighted in the timeline, and graph nodes that were
+    // touched during it keep their `event-related` ring. The inspector
+    // pane prioritises the node, so clicking around stays useful while
+    // event context is preserved.
+    selectedPk = ev.target.id();
+    applyVisibility();
+    renderInspector();
+  });
+  cy.on('tap', (ev) => {
+    if (ev.target === cy) {
+      // Clicking empty space clears EVERYTHING — node and event focus.
+      selectedPk = null;
+      selectedEventId = null;
+      applyVisibility();
+      renderTimeline();
+      renderInspector();
+    }
+  });
+
+  // Zoom-constant labels: keep on-screen pixel size constant so labels
+  // are always legible without becoming overwhelming when zoomed in.
+  // Cytoscape's font-size is in graph units; dividing by zoom gives a
+  // constant on-screen pixel size, clamped at both ends. Apply via
+  // per-element inline styles so the change is unambiguous (the
+  // stylesheet-rule path doesn't always propagate visibly).
+  const NODE_TARGET_PX = 15;
+  const EDGE_TARGET_PX = 12;
+  function updateLabelScale() {
+    if (!cy) return;
+    const z = cy.zoom();
+    const nodePx = Math.max(10, Math.min(36, NODE_TARGET_PX / z));
+    const edgePx = Math.max(8, Math.min(28, EDGE_TARGET_PX / z));
+    cy.batch(() => {
+      cy.nodes().style('font-size', nodePx);
+      cy.edges().style('font-size', edgePx);
+    });
+  }
+  cy.on('zoom', updateLabelScale);
+
+  // Apply initial visibility immediately so the user sees nodes (at default
+  // positions) even before layout completes.
+  applyVisibility();
+
+  // Custom radial-by-actor layout. Foundation hub at center, each SP
+  // gets its own angular wedge. Within a wedge, owned nodes are placed
+  // by ring-radius (type → ring) and angularly distributed within the
+  // wedge. Cytoscape `preset` layout means we precompute (x, y) and
+  // hand them in — no force simulation, fully deterministic.
+  const positions = computeActorClusteredPositions(nodes, fullState.txs);
+  const layout = cy.layout({
+    name: 'preset',
+    positions: (n) => positions.get(n.id()) || { x: 0, y: 0 },
+    fit: false,
+  });
+  layout.on('layoutstop', () => {
+    layoutReady = true;
+    cy.fit(undefined, 80);
+    updateLabelScale();
+    applyVisibility();
+  });
+  layout.run();
+
+  // Belt and suspenders: if layoutstop hasn't fired in 2s, apply visibility
+  // and fit anyway. Lets the graph appear even if Cytoscape's layout event
+  // misbehaves on this configuration.
+  setTimeout(() => {
+    if (!layoutReady) {
+      console.warn('[viewer] layoutstop did not fire within 2s; forcing fit');
+      cy.fit(undefined, 40);
+      applyVisibility();
+      layoutReady = true;
+    }
+  }, 2000);
+}
+
+// ---------------------------------------------------------------------------
+// Visibility: hide/show nodes and edges based on the current tick + filters.
+// Layout is never re-run — this is purely a CSS-class toggle.
+// ---------------------------------------------------------------------------
+function applyVisibility() {
+  if (!cy) return;
+
+  // Which accounts exist at currentTick?
+  const visibleAccounts = new Set();
+  for (let i = 0; i < allTxList.length; i++) {
+    const tx = allTxList[i];
+    if (tx.tick > currentTick) break;
+    for (const d of (tx.diff || [])) visibleAccounts.add(d.pubkey);
+  }
+  // Edge targets that don't have captured state still appear as nodes (e.g.
+  // Wallet/Mint externals); those should also be visible whenever any captured
+  // account references them.
+  for (const e of cy.edges()) {
+    if (visibleAccounts.has(e.source().id())) {
+      visibleAccounts.add(e.target().id());
+    }
+  }
+
+  // Which accounts were touched at the current tick — those get the active ring.
+  const activeNow = new Set();
+  for (const tx of allTxList) {
+    if (tx.tick === currentTick && currentTick >= 0) {
+      for (const d of (tx.diff || [])) activeNow.add(d.pubkey);
+    }
+  }
+
+  // Which accounts participated in the SELECTED event (if any) — those
+  // get a persistent white halo so the user can see the event's footprint
+  // even while clicking through individual nodes.
+  const eventTouched = new Set();
+  if (selectedEventId) {
+    for (const tx of allTxList) {
+      if (tx.tick < 0) continue;
+      const path = tx.event_path || [];
+      if (!path.includes(selectedEventId)) continue;
+      for (const d of (tx.diff || [])) eventTouched.add(d.pubkey);
+    }
+  }
+
+  cy.batch(() => {
+    cy.nodes().forEach((n) => {
+      const id = n.id();
+      const type = n.data('type');
+      const macro = MACRO_DOMAIN[type] ?? 'crypto_bootstrap';
+      // Wallet ('all') bypasses macro filter — actor identity is relevant
+      // in every domain, so wallets show whenever ANY domain is enabled.
+      const macroOk =
+        macro === 'all'
+          ? enabledMacros.size > 0
+          : enabledMacros.has(macro);
+      const visible =
+        visibleAccounts.has(id) && !hiddenTypes.has(type) && macroOk;
+      n.toggleClass('hidden', !visible);
+      n.toggleClass('active-now', visible && activeNow.has(id));
+      n.toggleClass('event-related', visible && eventTouched.has(id));
+      // Dim nodes that aren't part of the focused event so the spotlight
+      // is unambiguous when an event is selected.
+      const dim =
+        visible && selectedEventId && !eventTouched.has(id);
+      n.toggleClass('dimmed', dim);
+    });
+    cy.edges().forEach((e) => {
+      const visible =
+        !e.source().hasClass('hidden') &&
+        !e.target().hasClass('hidden') &&
+        !hiddenEdgeLabels.has(e.data('label'));
+      e.toggleClass('hidden', !visible);
+      // Edge highlight: an edge is "event-related" if either endpoint is
+      // touched by the focused event. Dimmed if there's a focused event
+      // but neither endpoint participated.
+      const incident =
+        e.source().hasClass('event-related') ||
+        e.target().hasClass('event-related');
+      e.toggleClass('event-related', visible && incident);
+      const eDim =
+        visible && selectedEventId && !incident;
+      e.toggleClass('dimmed', eDim);
+    });
+    // Selected-node edge highlight
+    cy.edges().removeClass('incident-selected');
+    if (selectedPk) {
+      cy.elements().unselect();
+      const node = cy.getElementById(selectedPk);
+      if (node && node.length) {
+        node.select();
+        node.connectedEdges().addClass('incident-selected');
+      }
+    }
+  });
+
+  renderTimeline();
+}
+
+// ---------------------------------------------------------------------------
+// Inspector — three tabs: focus (selected node or event), Invariants
+// (every check across the run), and Expectations (scenario-level results).
+// ---------------------------------------------------------------------------
+let inspectorTab = 'focus';
+
+function renderInspectorTabs(activeTab) {
+  // Renders the tab switcher and dispatches to the correct body. Only
+  // surfaces Invariants/Expectations tabs when the v2 trace has them.
+  const root = $('inspector');
+  const hasInv = allInvariants.length > 0;
+  const hasExp = allExpectations.length > 0;
+  const failedInv = allInvariants.filter((r) => !r.ok).length;
+  const failedExp = allExpectations.filter((r) => !r.ok).length;
+  const tabs = [
+    { id: 'focus', label: selectedEventId ? 'Event' : selectedPk ? 'Node' : 'Focus' },
+  ];
+  if (hasInv) tabs.push({ id: 'invariants', label: `Invariants${failedInv ? ` (${failedInv})` : ''}` });
+  if (hasExp) tabs.push({ id: 'expectations', label: `Expectations${failedExp ? ` (${failedExp})` : ''}` });
+  const tabBar =
+    `<div class="inspector-tabs">` +
+    tabs.map((t) =>
+      `<span class="inspector-tab${activeTab === t.id ? ' active' : ''}${(t.id === 'invariants' && failedInv) || (t.id === 'expectations' && failedExp) ? ' has-fail' : ''}" data-tab="${t.id}">${t.label}</span>`,
+    ).join('') +
+    `</div><div class="inspector-body" id="inspector-body"></div>`;
+  root.innerHTML = tabBar;
+  // Hook tab clicks.
+  root.querySelectorAll('.inspector-tab').forEach((el) => {
+    el.onclick = () => {
+      inspectorTab = el.dataset.tab;
+      renderInspector();
+    };
+  });
+}
+
+function renderInspector() {
+  const hasInv = allInvariants.length > 0;
+  const hasExp = allExpectations.length > 0;
+  if (inspectorTab !== 'focus' && !hasInv && !hasExp) inspectorTab = 'focus';
+  if (inspectorTab === 'invariants' && !hasInv) inspectorTab = 'focus';
+  if (inspectorTab === 'expectations' && !hasExp) inspectorTab = 'focus';
+
+  renderInspectorTabs(inspectorTab);
+  const body = $('inspector-body');
+
+  if (inspectorTab === 'invariants') {
+    renderInvariantsPanel(body);
+    return;
+  }
+  if (inspectorTab === 'expectations') {
+    renderExpectationsPanel(body);
+    return;
+  }
+
+  // focus tab — original event/node logic, with `body` as the render target.
+  if (selectedEventId) {
+    return renderEventInspector(body);
+  }
+  if (!selectedPk) {
+    body.innerHTML = '<span class="muted-text">click a node or event to inspect</span>';
+    return;
+  }
+  const state = buildState(allRecords, currentTick);
+  const info = state.accounts.get(selectedPk);
+
+  let type = info?.type;
+  let decoded = info?.decoded;
+  let hash = info?.hash;
+  let owner = info?.owner;
+  if (!type && metadata) {
+    for (const [otherPk, other] of state.accounts.entries()) {
+      if (!other.type) continue;
+      const specs = (metadata.account_edges[other.type] || []);
+      for (const s of specs) {
+        const v = other.decoded?.[s.field];
+        if (s.many && Array.isArray(v) && v.includes(selectedPk)) { type = s.target; break; }
+        if (!s.many && v === selectedPk) { type = s.target; break; }
+      }
+      if (type) break;
+    }
+  }
+
+  const history = [];
+  for (let i = 0; i < state.txs.length; i++) {
+    const tx = state.txs[i];
+    const inDiff = (tx.diff || []).some(d => d.pubkey === selectedPk);
+    const inReads = (tx.reads || []).some(d => d.pubkey === selectedPk);
+    if (inDiff || inReads) history.push({ idx: i, tx, role: inDiff ? 'write' : 'read' });
+  }
+
+  const color = colorFor(type || 'Unknown');
+  const actorName = actorByPubkey[selectedPk];
+  let html = '';
+  html += `<h2>${escapeHtml(type || '(unknown type)')}<span class="type-pill" style="border-color:${color};color:${color}">${escapeHtml(type || '?')}</span></h2>`;
+  if (actorName) {
+    html += `<div style="display:flex;align-items:center;gap:6px;margin:4px 0 6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${actorColor(actorName)};box-shadow:0 0 6px ${actorColor(actorName)}"></span><span style="color:var(--text-primary);font-weight:600;font-size:12px">${escapeHtml(actorName)}</span><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">actor</span></div>`;
+  }
+  html += `<div class="pubkey">${escapeHtml(selectedPk)}</div>`;
+  if (hash) html += `<div class="hash">sha256: ${escapeHtml(hash)}</div>`;
+  if (owner) html += `<div class="hash">owner: ${escapeHtml(owner)}</div>`;
+  if (decoded && typeof decoded === 'object') {
+    const edgeSpecs = (metadata?.account_edges?.[type] || []);
+    const fieldToSpec = new Map();
+    for (const s of edgeSpecs) if (!s.from_creation) fieldToSpec.set(s.field, s);
+    html += '<div class="section-label">State</div>';
+    html += '<dl>';
+    for (const [k, v] of Object.entries(decoded)) {
+      html += `<dt>${escapeHtml(k)}</dt>`;
+      const spec = fieldToSpec.get(k);
+      if (spec && v) {
+        if (spec.many && Array.isArray(v)) {
+          if (v.length === 0) html += `<dd class="muted-text">[]</dd>`;
+          else for (const t of v) html += `<dd>${renderRef(state, String(t), spec.target)}</dd>`;
+        } else {
+          html += `<dd>${renderRef(state, String(v), spec.target)}</dd>`;
+        }
+      } else {
+        html += `<dd>${escapeHtml(formatValue(v))}</dd>`;
+      }
+    }
+    html += '</dl>';
+  } else if (!decoded) {
+    html += '<div class="muted-text">no decoded data (external account or non-dawn type)</div>';
+  }
+  html += '<div class="section-label">Tx history</div>';
+  html += '<div class="tx-list">';
+  if (history.length === 0) {
+    html += '<div class="muted-text">none</div>';
+  } else {
+    for (const h of history) {
+      const txi = h.tx;
+      const isCurrent = txi.tick === currentTick;
+      const ic = instructionColor(txi.instruction.name);
+      const ac = txi.actor ? actorColor(txi.actor) : null;
+      const actorBadge = txi.actor
+        ? `<span style="font-size:9px;background:${ac};color:#1E1E1E;padding:0 6px;border-radius:999px;font-weight:700;letter-spacing:0.04em">${escapeHtml(txi.actor)}</span>`
+        : '';
+      html += `<div class="tx-row${isCurrent ? ' current' : ''}" data-idx="${h.idx}">`
+        + `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ic}"></span>`
+        + `<span style="color:var(--text-muted)">tick ${txi.tick}</span>`
+        + `<span class="ix-name">${escapeHtml(txi.instruction.name || '(non-dawn)')}</span>`
+        + actorBadge
+        + `<span class="role">${h.role}</span>`
+        + '</div>';
+    }
+  }
+  html += '</div>';
+  body.innerHTML = html;
+  body.querySelectorAll('.tx-row').forEach(r => {
+    r.onclick = () => {
+      const idx = +r.dataset.idx;
+      currentTick = state.txs[idx]?.tick ?? idx;
+      $('timeline-scrubber').value = String(currentTick);
+      $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+      applyVisibility();
+      renderInspector();
+    };
+  });
+  body.querySelectorAll('.ref-link').forEach(el => {
+    el.onclick = (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const pk = el.dataset.jump;
+      if (!pk) return;
+      selectedPk = pk;
+      if (cy && cy.getElementById(pk).length) {
+        cy.elements().unselect();
+        cy.getElementById(pk).select();
+        cy.animate({ center: { eles: cy.getElementById(pk) }, zoom: cy.zoom() }, { duration: 250 });
+      }
+      applyVisibility();
+      renderInspector();
+    };
+  });
+}
+
+/**
+ * Invariants tab — pass/fail summary across the run, ordered by first
+ * violating tick. Hovering an entry highlights its timeline marker
+ * (via the existing `.tx-chip.invariant-fail` chip; not changing that
+ * here). Clicking jumps to the offending tick + selects offending account.
+ */
+function renderInvariantsPanel(body) {
+  // Group by invariant name. For each, find the earliest failing tick
+  // (or null if all pass). Sort: failures first by earliest fail tick,
+  // passes after.
+  const byName = new Map();
+  for (const r of allInvariants) {
+    if (!byName.has(r.name)) byName.set(r.name, { name: r.name, severity: r.severity, results: [] });
+    byName.get(r.name).results.push(r);
+  }
+  const summary = Array.from(byName.values()).map((g) => {
+    const failures = g.results.filter((r) => !r.ok);
+    const passes = g.results.length - failures.length;
+    const firstFail = failures[0]?.tick ?? null;
+    return { ...g, failures, passes, total: g.results.length, firstFail };
+  });
+  summary.sort((a, b) => {
+    const aFail = a.firstFail == null ? Infinity : a.firstFail;
+    const bFail = b.firstFail == null ? Infinity : b.firstFail;
+    return aFail - bFail || a.name.localeCompare(b.name);
+  });
+
+  let html = '<div class="section-label">Global invariants</div>';
+  if (summary.length === 0) {
+    html += '<div class="muted-text">no invariant_check records (v1 trace or no invariants applied yet)</div>';
+  } else {
+    html += '<div class="invariant-list">';
+    for (const g of summary) {
+      const status = g.firstFail == null ? 'ok' : 'fail';
+      const sevClass = g.severity === 'warning' ? ' warning' : '';
+      const failCount = g.failures.length;
+      html += `<div class="invariant-row ${status}${sevClass}">`
+        + `<div class="invariant-row-head">`
+        + `<span class="invariant-status">${status === 'ok' ? '✓' : '✕'}</span>`
+        + `<span class="invariant-name">${escapeHtml(g.name)}</span>`
+        + `<span class="role">${g.passes} pass${g.passes === 1 ? '' : 'es'}${failCount ? ` · ${failCount} fail` : ''}</span>`
+        + `</div>`;
+      if (g.firstFail != null && failCount > 0) {
+        const f0 = g.failures[0];
+        html += `<div class="invariant-fail-detail">`
+          + `<span class="role">first failure tick ${f0.tick}</span> `
+          + `<span class="ref-link" data-jump-tick="${f0.tick}" data-pks="${(f0.accounts || []).join(',')}">jump →</span>`
+          + (f0.message ? `<div class="invariant-message">${escapeHtml(f0.message)}</div>` : '')
+          + `</div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+  body.querySelectorAll('[data-jump-tick]').forEach((el) => {
+    el.style.cursor = 'pointer';
+    el.style.color = 'var(--accent)';
+    el.onclick = () => {
+      const tick = +el.dataset.jumpTick;
+      currentTick = tick;
+      $('timeline-scrubber').value = String(tick);
+      $('tick-label').textContent = `${tick} / ${maxTick()}`;
+      updateTickArrows();
+      const pks = (el.dataset.pks || '').split(',').filter(Boolean);
+      if (pks[0] && cy && cy.getElementById(pks[0]).length) {
+        selectedPk = pks[0];
+        cy.elements().unselect();
+        cy.getElementById(pks[0]).select();
+      }
+      applyVisibility();
+      renderEventTree();
+      // Stay on the Invariants tab so the user can keep scrolling.
+    };
+  });
+}
+
+/**
+ * Expectations tab — per-scenario expectation results.
+ */
+function renderExpectationsPanel(body) {
+  let html = '<div class="section-label">Scenario expectations</div>';
+  if (allExpectations.length === 0) {
+    html += '<div class="muted-text">no expectation_result records (scenario declared no `expects`)</div>';
+  } else {
+    html += '<div class="invariant-list">';
+    for (const r of allExpectations) {
+      const status = r.ok ? 'ok' : 'fail';
+      html += `<div class="invariant-row ${status}">`
+        + `<div class="invariant-row-head">`
+        + `<span class="invariant-status">${r.ok ? '✓' : '✕'}</span>`
+        + `<span class="invariant-name">${escapeHtml(r.name)}</span>`
+        + `<span class="role">${r.severity}</span>`
+        + `</div>`;
+      if (!r.ok) {
+        html += `<div class="invariant-fail-detail">`
+          + (r.message ? `<div class="invariant-message">${escapeHtml(r.message)}</div>` : '')
+          + (r.accounts && r.accounts.length
+              ? `<div class="role">${r.accounts.length} account${r.accounts.length === 1 ? '' : 's'} flagged</div>`
+              : '')
+          + `</div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  body.innerHTML = html;
+}
+
+function renderEventInspector(root) {
+  const e = allEvents.find((x) => x.id === selectedEventId);
+  if (!e) {
+    root.innerHTML = '<span class="muted-text">event not found</span>';
+    return;
+  }
+  // Direct children of this event (one level only — drilling deeper requires
+  // clicking).
+  const children = allEvents.filter((x) => x.parent === e.id);
+
+  // Every dawn tx in this event's path. Used both for the leaf-event tx
+  // listing and for grouping under each child event.
+  const allTxsInEvent = allTxList.filter(
+    (t) => t.tick >= 0 && (t.event_path || []).includes(e.id),
+  );
+
+  // Aggregate touched accounts across the whole event.
+  const touched = new Map();
+  for (const tx of allTxsInEvent) {
+    for (const d of (tx.diff || [])) {
+      touched.set(d.pubkey, { type: d.account_type, role: 'write', decoded: d.decoded });
+    }
+    for (const r of (tx.reads || [])) {
+      if (!touched.has(r.pubkey)) {
+        touched.set(r.pubkey, { type: r.account_type, role: 'read', decoded: r.decoded });
+      }
+    }
+  }
+
+  // Breadcrumb: path from root to this event, with siblings showing as
+  // muted text.
+  const breadcrumb = [];
+  let cur = e;
+  while (cur) {
+    breadcrumb.unshift(cur);
+    cur = cur.parent ? allEvents.find((x) => x.id === cur.parent) : null;
+  }
+  const aColor = actorColor(e.actor);
+
+  let html = '';
+  html += `<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Event</div>`;
+  html += `<h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${escapeHtml(e.name)}`;
+  if (e.actor) {
+    html += `<span class="type-pill" style="background:${aColor};color:#1E1E1E;border-color:${aColor}">${escapeHtml(e.actor)}</span>`;
+  }
+  html += '</h2>';
+
+  // Breadcrumb (path from root to this event), all but last clickable
+  if (breadcrumb.length > 1) {
+    html += '<div class="event-breadcrumb">';
+    html += breadcrumb.map((b, i) => {
+      const isLast = i === breadcrumb.length - 1;
+      if (isLast) return `<span style="color:var(--text-primary)">${escapeHtml(b.name)}</span>`;
+      return `<span class="event-crumb" data-eid="${escapeHtml(b.id)}">${escapeHtml(b.name)}</span>`;
+    }).join(' <span class="crumb-sep">›</span> ');
+    html += '</div>';
+  }
+
+  // Description — the plain-English business explanation
+  if (e.description) {
+    html += `<div class="event-description">${escapeHtml(e.description)}</div>`;
+  }
+
+  html += `<div class="hash">ticks ${e.begin_tick}..${e.end_tick} · ${allTxsInEvent.length} dawn tx${allTxsInEvent.length === 1 ? '' : 's'} · ${touched.size} account${touched.size === 1 ? '' : 's'} touched · ${children.length} sub-event${children.length === 1 ? '' : 's'}</div>`;
+
+  // Activity tree: if this event has children, render it as a tree where
+  // each child is a clickable header followed by its own txs nested
+  // beneath. Otherwise render the flat tx list.
+  if (children.length > 0) {
+    html += '<div class="section-label">Sub-events &amp; transactions</div>';
+    html += '<div class="event-tree">';
+    for (const child of children) {
+      const childTxs = allTxList.filter(
+        (t) => t.tick >= 0 && (t.event_path || []).includes(child.id),
+      );
+      const grandkids = allEvents.filter((x) => x.parent === child.id);
+      const grandkidsTag = grandkids.length
+        ? `<span class="role">+${grandkids.length} nested</span>`
+        : '';
+      const ac = actorColor(child.actor || e.actor);
+      html += `<div class="tree-event" data-eid="${escapeHtml(child.id)}">`
+        + `<div class="tree-event-head">`
+        + `<span class="dot" style="background:${ac}"></span>`
+        + `<span class="tree-event-name">${escapeHtml(child.name)}</span>`
+        + `<span class="role">tick ${child.begin_tick}${child.end_tick !== child.begin_tick ? '..' + child.end_tick : ''}</span>`
+        + `${grandkidsTag}`
+        + `</div>`;
+      if (child.description) {
+        html += `<div class="tree-event-desc">${escapeHtml(child.description)}</div>`;
+      }
+      if (childTxs.length > 0) {
+        html += '<div class="tree-tx-list">';
+        for (const tx of childTxs) {
+          const isCurrent = tx.tick === currentTick;
+          const ic = instructionColor(tx.instruction.name);
+          html += `<div class="tx-row${isCurrent ? ' current' : ''} tree-tx" data-tick="${tx.tick}">`
+            + `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${ic}"></span>`
+            + `<span style="color:var(--text-muted);font-size:10px">${tx.tick}</span>`
+            + `<span class="ix-name" style="font-size:10px">${escapeHtml(tx.instruction.name || '?')}</span>`
+            + `<span class="role">${tx.compute_units_consumed ?? ''} cu</span>`
+            + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  } else if (allTxsInEvent.length > 0) {
+    // Leaf event: flat tx list
+    html += '<div class="section-label">Transactions</div>';
+    html += '<div class="tx-list">';
+    for (const tx of allTxsInEvent) {
+      const isCurrent = tx.tick === currentTick;
+      const ic = instructionColor(tx.instruction.name);
+      html += `<div class="tx-row${isCurrent ? ' current' : ''}" data-tick="${tx.tick}">`
+        + `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ic}"></span>`
+        + `<span style="color:var(--text-muted)">tick ${tx.tick}</span>`
+        + `<span class="ix-name">${escapeHtml(tx.instruction.name || '?')}</span>`
+        + `<span class="role">${tx.compute_units_consumed ?? ''} cu</span>`
+        + '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Accounts touched
+  if (touched.size > 0) {
+    html += '<div class="section-label">Accounts touched</div>';
+    html += '<div class="tx-list">';
+    for (const [pk, info] of touched) {
+      const tColor = colorFor(info.type || 'Unknown');
+      const labelObj = smartLabel(info.type, info.decoded, pk);
+      html += `<div class="tx-row" data-pk="${escapeHtml(pk)}">`
+        + `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tColor}"></span>`
+        + `<span class="ix-name">${escapeHtml(labelObj.primary)}</span>`
+        + `<span style="color:var(--text-muted);font-size:10px">${escapeHtml(info.type || '?')}</span>`
+        + `<span class="role">${info.role}</span>`
+        + '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Clear selection link
+  html += '<div style="margin-top:14px"><span class="ref-link" id="event-clear" style="cursor:pointer">‹ back to graph inspect</span></div>';
+
+  root.innerHTML = html;
+
+  // Drill-down: click a sub-event to make it the new selection.
+  root.querySelectorAll('.tree-event').forEach((el) => {
+    const head = el.querySelector('.tree-event-head');
+    if (!head) return;
+    head.style.cursor = 'pointer';
+    head.onclick = () => {
+      const eid = el.dataset.eid;
+      selectedEventId = eid;
+      const ev = allEvents.find((x) => x.id === eid);
+      if (ev) {
+        currentTick = ev.end_tick;
+        $('timeline-scrubber').value = String(currentTick);
+        $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+        updateTickArrows();
+      }
+      applyVisibility();
+      renderTimeline();
+      renderInspector();
+    };
+  });
+
+  // Wire up clicks
+  root.querySelectorAll('.tx-row[data-pk]').forEach((el) => {
+    el.onclick = () => {
+      selectedPk = el.dataset.pk;
+      selectedEventId = null;
+      if (cy && cy.getElementById(selectedPk).length) {
+        cy.elements().unselect();
+        cy.getElementById(selectedPk).select();
+        cy.animate({ center: { eles: cy.getElementById(selectedPk) }, zoom: cy.zoom() }, { duration: 250 });
+      }
+      applyVisibility();
+      renderTimeline();
+      renderInspector();
+    };
+  });
+  root.querySelectorAll('.tx-row[data-tick]').forEach((el) => {
+    el.onclick = () => {
+      currentTick = +el.dataset.tick;
+      $('timeline-scrubber').value = String(currentTick);
+      $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+      updateTickArrows();
+      applyVisibility();
+      renderTimeline();
+      renderInspector();
+    };
+  });
+  root.querySelectorAll('.event-crumb').forEach((el) => {
+    el.onclick = () => {
+      selectedEventId = el.dataset.eid;
+      const ev = allEvents.find((x) => x.id === selectedEventId);
+      if (ev) {
+        currentTick = ev.end_tick;
+        $('timeline-scrubber').value = String(currentTick);
+        $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+        updateTickArrows();
+      }
+      applyVisibility();
+      renderTimeline();
+      renderInspector();
+    };
+  });
+  const clearBtn = $('event-clear');
+  if (clearBtn) clearBtn.onclick = () => {
+    selectedEventId = null;
+    renderTimeline();
+    renderInspector();
+  };
+}
+
+function renderRef(state, targetPk, targetType) {
+  const target = state.accounts.get(targetPk);
+  const knownType = target?.type || targetType;
+  const color = colorFor(knownType);
+  const short = `${targetPk.slice(0, 4)}…${targetPk.slice(-4)}`;
+  const pill = `<span class="ref-pill" style="background:${color}">${escapeHtml(knownType)}</span>`;
+  const goLink = `<span class="ref-link" data-jump="${escapeHtml(targetPk)}">focus →</span>`;
+  if (!target?.decoded) {
+    return `<details><summary><span style="color:var(--text-secondary)">${escapeHtml(short)}</span> ${pill} ${goLink}</summary>`
+      + `<div class="ref-fields"><div class="kv"><span class="k">pubkey</span><span class="v">${escapeHtml(targetPk)}</span></div></div>`
+      + `</details>`;
+  }
+  const interesting = Object.entries(target.decoded).filter(([k, v]) => {
+    if (Array.isArray(v) && v.length > 4) return false;
+    if (typeof v === 'string' && v.length > 64) return false;
+    return true;
+  });
+  const fields = interesting.map(([k, v]) =>
+    `<div class="kv"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(formatValue(v))}</span></div>`,
+  ).join('');
+  return `<details><summary><span style="color:var(--text-secondary)">${escapeHtml(short)}</span> ${pill} ${goLink}</summary>`
+    + `<div class="ref-fields">${fields}</div></details>`;
+}
+
+function formatValue(v) {
+  if (v == null) return 'null';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'boolean') return String(v);
+  if (Array.isArray(v)) return '[' + v.map(formatValue).join(', ') + ']';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ---------------------------------------------------------------------------
+// Timeline (dot strip + Gantt event bands)
+// ---------------------------------------------------------------------------
+
+/** Parse event_begin / event_end records into a flat list with depth. */
+function parseEvents(records) {
+  const open = new Map(); // event_id -> { ...begin record, depth }
+  const stack = [];
+  const events = [];
+  for (const r of records) {
+    if (r.type === 'event_begin') {
+      const depth = stack.length;
+      const e = {
+        id: r.event_id,
+        name: r.name,
+        parent: r.parent,
+        actor: r.actor,
+        begin_tick: r.begin_tick,
+        end_tick: r.begin_tick, // overwritten on event_end
+        depth,
+        children: [],
+      };
+      open.set(e.id, e);
+      events.push(e);
+      stack.push(e);
+    } else if (r.type === 'event_end') {
+      const e = open.get(r.event_id);
+      if (e) {
+        e.end_tick = r.end_tick;
+        open.delete(r.event_id);
+      }
+      // Pop the stack until this id is gone.
+      while (stack.length && stack[stack.length - 1].id !== r.event_id) stack.pop();
+      stack.pop();
+    }
+  }
+  // Build parent → children map
+  const byId = new Map(events.map((e) => [e.id, e]));
+  for (const e of events) {
+    if (e.parent && byId.has(e.parent)) byId.get(e.parent).children.push(e);
+  }
+  return events;
+}
+
+
+// ---------------------------------------------------------------------------
+// EVENT TIMELINE — collapsible tree.
+//
+// Every row is one thing. Indentation = hierarchy. Chevrons toggle
+// expand/collapse. The structure is:
+//
+//   ▼ Business event              [actor]   ticks N..M
+//      ▼ Sub-business event                 ticks ..
+//         • tx_name                         tick X
+//         • tx_name                         tick Y
+//      ▶ Sub-business event (collapsed)
+//
+// No alignment magic, no Gantt, no overlapping bars. Just a tree.
+// ---------------------------------------------------------------------------
+
+/** Set of expanded event-ids. Default: all top-level + first level expanded. */
+const expandedEvents = new Set();
+let _treeDefaultsApplied = false;
+
+function applyTreeDefaults() {
+  if (_treeDefaultsApplied) return;
+  _treeDefaultsApplied = true;
+  // Default: expand everything so the user sees the full picture; they
+  // can collapse what they don't care about. Persisted in localStorage
+  // so reloads remember choices.
+  try {
+    const saved = JSON.parse(localStorage.getItem('expandedEvents') || 'null');
+    if (Array.isArray(saved)) {
+      expandedEvents.clear();
+      for (const id of saved) expandedEvents.add(id);
+      return;
+    }
+  } catch {}
+  // No saved state: expand everything.
+  for (const e of allEvents) expandedEvents.add(e.id);
+}
+function persistExpanded() {
+  try {
+    localStorage.setItem('expandedEvents', JSON.stringify(Array.from(expandedEvents)));
+  } catch {}
+}
+
+function toggleExpanded(eid) {
+  if (expandedEvents.has(eid)) expandedEvents.delete(eid);
+  else expandedEvents.add(eid);
+  persistExpanded();
+  renderEventTree();
+}
+
+function renderEventTree() {
+  const root = $('event-bands');
+  root.innerHTML = '';
+  if (!allEvents.length) return;
+  applyTreeDefaults();
+
+  // Top-level events in scenario order.
+  const topLevel = allEvents.filter((e) => !e.parent).slice();
+  topLevel.sort(
+    (a, b) => a.begin_tick - b.begin_tick || a.id.localeCompare(b.id),
+  );
+
+  // Pre-index sub-events and txs.
+  const childrenOf = new Map();
+  for (const e of allEvents) {
+    if (e.parent) {
+      if (!childrenOf.has(e.parent)) childrenOf.set(e.parent, []);
+      childrenOf.get(e.parent).push(e);
+    }
+  }
+  for (const list of childrenOf.values()) {
+    list.sort((a, b) => a.begin_tick - b.begin_tick || a.id.localeCompare(b.id));
+  }
+  const txsOf = new Map();
+  for (const tx of dawnTxList) {
+    const eid = (tx.event_path || []).slice(-1)[0];
+    if (!eid) continue;
+    if (!txsOf.has(eid)) txsOf.set(eid, []);
+    txsOf.get(eid).push(tx);
+  }
+  for (const list of txsOf.values()) list.sort((a, b) => a.tick - b.tick);
+
+  // Top-level cards laid out horizontally in one flex row.
+  const row = document.createElement('div');
+  row.className = 'card-row top-row';
+  for (const e of topLevel) {
+    row.appendChild(renderEventCard(e, 0, childrenOf, txsOf));
+  }
+  root.appendChild(row);
+}
+
+function renderEventCard(e, depth, childrenOf, txsOf) {
+  const subs = childrenOf.get(e.id) || [];
+  const txs = txsOf.get(e.id) || [];
+  const hasKids = subs.length > 0 || txs.length > 0;
+  const isExpanded = expandedEvents.has(e.id);
+  const isSelected = selectedEventId === e.id;
+  const isActive = e.begin_tick <= currentTick && currentTick <= e.end_tick;
+
+  const card = document.createElement('div');
+  card.className =
+    'event-card' +
+    (depth === 0 ? ' top' : ' sub') +
+    (isSelected ? ' selected' : '') +
+    (isActive ? ' active' : '');
+  card.style.borderLeftColor = actorColor(e.actor);
+
+  // Header (always visible)
+  const head = document.createElement('div');
+  head.className = 'card-head';
+
+  const chev = document.createElement('span');
+  chev.className = 'card-chev' + (hasKids ? '' : ' empty');
+  chev.textContent = hasKids ? (isExpanded ? '▾' : '▸') : '·';
+  head.appendChild(chev);
+
+  const title = document.createElement('span');
+  title.className = 'card-title';
+  title.textContent = e.name;
+  head.appendChild(title);
+
+  if (e.actor && depth === 0) {
+    const pill = document.createElement('span');
+    pill.className = 'actor-pill';
+    pill.textContent = e.actor;
+    pill.style.background = actorColor(e.actor);
+    head.appendChild(pill);
+  }
+  card.appendChild(head);
+
+  // Meta line — tick range + counts
+  const meta = document.createElement('div');
+  meta.className = 'card-meta';
+  const tickStr = e.begin_tick === e.end_tick
+    ? `tick ${e.begin_tick}`
+    : `ticks ${e.begin_tick}..${e.end_tick}`;
+  meta.textContent = tickStr;
+  if (subs.length) {
+    const c = document.createElement('span');
+    c.textContent = `${subs.length} sub${subs.length === 1 ? '' : 's'}`;
+    meta.appendChild(c);
+  }
+  if (txs.length) {
+    const c = document.createElement('span');
+    c.textContent = `${txs.length} tx${txs.length === 1 ? '' : 's'}`;
+    meta.appendChild(c);
+  }
+  card.appendChild(meta);
+
+  // Body (only when expanded)
+  if (isExpanded && hasKids) {
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    // Sub-event cards in a horizontal row.
+    if (subs.length > 0) {
+      const subRow = document.createElement('div');
+      subRow.className = 'card-row sub-row';
+      for (const s of subs) {
+        subRow.appendChild(renderEventCard(s, depth + 1, childrenOf, txsOf));
+      }
+      body.appendChild(subRow);
+    }
+
+    // If this card has direct txs (leaf event), render them as chips.
+    if (txs.length > 0) {
+      const chipRow = document.createElement('div');
+      chipRow.className = 'tx-chip-row';
+      for (const tx of txs) {
+        chipRow.appendChild(renderTxChip(tx));
+      }
+      body.appendChild(chipRow);
+    }
+
+    card.appendChild(body);
+  }
+
+  // Chevron click → toggle expand/collapse only (no selection change).
+  if (hasKids) {
+    chev.style.cursor = 'pointer';
+    chev.onclick = (ev) => {
+      ev.stopPropagation();
+      if (expandedEvents.has(e.id)) expandedEvents.delete(e.id);
+      else expandedEvents.add(e.id);
+      persistExpanded();
+      renderEventTree();
+    };
+  }
+
+  // Card click (anywhere except chevron) → just select. Does NOT
+  // collapse the card — selection and expansion are independent.
+  card.onclick = (ev) => {
+    ev.stopPropagation();
+    selectedEventId = e.id;
+    selectedPk = null;
+    // Scrub to the START of the event so you can watch it unfold.
+    currentTick = e.begin_tick;
+    // If the card has kids and isn't already expanded, expand it (so
+    // a fresh click reveals content). But never collapse on click.
+    if (hasKids && !expandedEvents.has(e.id)) {
+      expandedEvents.add(e.id);
+      persistExpanded();
+    }
+    $('timeline-scrubber').value = String(currentTick);
+    $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+    updateTickArrows();
+    applyVisibility();
+    renderEventTree();
+    renderInspector();
+  };
+
+  return card;
+}
+
+function renderTxChip(tx) {
+  const chip = document.createElement('div');
+  const isCurrent = tx.tick === currentTick;
+  // v2: a tx-chip carries a red ring if any invariant failed at its tick.
+  const failed = (invariantsByTick.get(tx.tick) || []).filter((r) => !r.ok);
+  const hasFailure = failed.length > 0;
+  chip.className =
+    'tx-chip' +
+    (isCurrent ? ' current' : '') +
+    (hasFailure ? ' invariant-fail' : '');
+  chip.style.background = instructionColor(tx.instruction.name);
+  const failNames = failed.map((r) => r.name).join(', ');
+  chip.title =
+    `${tx.instruction.name} · tick ${tx.tick}` +
+    (tx.compute_units_consumed ? ' · ' + tx.compute_units_consumed + ' cu' : '') +
+    (hasFailure ? `\n${failed.length} invariant failure(s): ${failNames}` : '');
+
+  const name = document.createElement('span');
+  name.className = 'tx-chip-name';
+  name.textContent = tx.instruction.name || '?';
+  chip.appendChild(name);
+
+  const tick = document.createElement('span');
+  tick.className = 'tx-tick';
+  tick.textContent = tx.tick;
+  chip.appendChild(tick);
+
+  chip.onclick = (ev) => {
+    ev.stopPropagation();
+    currentTick = tx.tick;
+    // Pin the tx's deepest parent event as the selection context so the
+    // graph spotlight (event-related halo + dimmed bystanders) follows.
+    const deepestEid = (tx.event_path || []).slice(-1)[0];
+    if (deepestEid) selectedEventId = deepestEid;
+    // If this tick has invariant failures, pre-select the FIRST offending
+    // account in the graph so the user lands on something concrete.
+    if (hasFailure) {
+      const firstAccount = failed
+        .flatMap((r) => r.accounts || [])
+        .find((pk) => cy && cy.getElementById(pk).length > 0);
+      if (firstAccount) {
+        selectedPk = firstAccount;
+        cy.elements().unselect();
+        cy.getElementById(firstAccount).select();
+      }
+    } else {
+      selectedPk = null;
+    }
+    $('timeline-scrubber').value = String(currentTick);
+    $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+    updateTickArrows();
+    applyVisibility();
+    renderEventTree();
+    renderInspector();
+  };
+  return chip;
+}
+
+function renderLegend() {
+  // Show actor legend instead of instruction legend — actors are more
+  // semantically useful at a glance.
+  const seen = new Map();
+  for (const e of allEvents) {
+    if (e.actor && !seen.has(e.actor)) seen.set(e.actor, actorColor(e.actor));
+  }
+  $('legend').innerHTML = Array.from(seen.entries())
+    .map(([n, c]) => `<span class="legend-item"><span class="dot" style="background:${c}"></span>${escapeHtml(n)}</span>`)
+    .join('');
+}
+
+function renderTimeline() {
+  renderEventTree();
+  renderLegend();
+}
+
+// ---------------------------------------------------------------------------
+// Trace load
+// ---------------------------------------------------------------------------
+function loadTrace(text) {
+  allRecords = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try { allRecords.push(parseJsonlLine(line)); } catch (e) { console.warn('bad line', e); }
+  }
+  scenarioStart = allRecords.find(r => r.type === 'scenario_start');
+  metadata = scenarioStart?.metadata || { account_edges: {}, account_type_colors: {}, actors: {} };
+  captureVersion = scenarioStart?.capture_version ?? 1;
+  allTxList = allRecords.filter(r => r.type === 'tx');
+  dawnTxList = allTxList.filter(t => t.tick >= 0);
+  allEvents = parseEvents(allRecords);
+  // v2: pull invariant + expectation results.
+  allInvariants = allRecords.filter(r => r.type === 'invariant_check');
+  allExpectations = allRecords.filter(r => r.type === 'expectation_result');
+  invariantsByTick = new Map();
+  for (const r of allInvariants) {
+    if (!invariantsByTick.has(r.tick)) invariantsByTick.set(r.tick, []);
+    invariantsByTick.get(r.tick).push(r);
+  }
+  // v2: actor_declared records merge into the actors map (the
+  // scenario_start snapshot only captures actors declared before start()).
+  actorByName = { ...(metadata.actors || {}) };
+  for (const r of allRecords) {
+    if (r.type === 'actor_declared') actorByName[r.name] = r.pubkey;
+  }
+  actorByPubkey = {};
+  for (const [name, pk] of Object.entries(actorByName)) actorByPubkey[pk] = name;
+  const max = maxTick();
+  currentTick = max;
+  $('timeline-scrubber').max = String(max);
+  $('timeline-scrubber').value = String(max);
+  $('tick-label').textContent = `${max} / ${max}`;
+  $('meta-line').textContent = scenarioStart
+    ? `${scenarioStart.scenario_name} · seed ${scenarioStart.seed} · ticks 0..${max} · ${Object.keys(actorByName).length} actors`
+    : '(no scenario_start record)';
+  layoutReady = false;
+  selectedPk = null;
+  selectedEventId = null;
+  // v2: surface the "only failed" filter chip if there are any failures
+  // in the trace; otherwise keep it hidden so the chrome isn't noisy.
+  const anyFailures = allInvariants.some((r) => !r.ok) ||
+                      allExpectations.some((r) => !r.ok);
+  const failedChip = $('failed-only-chip');
+  if (failedChip) {
+    failedChip.style.display = anyFailures ? '' : 'none';
+    failedChip.classList.toggle('active', onlyFailedInvariants);
+    failedChip.classList.toggle('muted', !onlyFailedInvariants);
+    failedChip.style.setProperty('--color-fill', '#C05020');
+    failedChip.onclick = () => {
+      onlyFailedInvariants = !onlyFailedInvariants;
+      const eb = $('event-bands');
+      if (eb) eb.classList.toggle('show-failed-only', onlyFailedInvariants);
+      failedChip.classList.toggle('active', onlyFailedInvariants);
+      failedChip.classList.toggle('muted', !onlyFailedInvariants);
+      renderInspector();
+    };
+  }
+  renderChips();
+  initGraphOnce();
+  renderTimeline();
+  updateTickArrows();
+}
+
+function updateTickArrows() {
+  const max = maxTick();
+  $('tick-prev').disabled = currentTick <= 0;
+  $('tick-next').disabled = currentTick >= max;
+}
+
+function stepTick(delta) {
+  const max = maxTick();
+  // Step through dawn ticks (0..max). Skip negative setup ticks.
+  currentTick = Math.max(0, Math.min(max, currentTick + delta));
+  $('timeline-scrubber').value = String(currentTick);
+  $('tick-label').textContent = `${currentTick} / ${max}`;
+  updateTickArrows();
+  applyVisibility();
+  renderTimeline();
+  renderInspector();
+}
+
+$('tick-prev').addEventListener('click', () => stepTick(-1));
+$('tick-next').addEventListener('click', () => stepTick(+1));
+window.addEventListener('keydown', (ev) => {
+  if (ev.target.tagName === 'INPUT') return;
+  if (ev.key === 'ArrowLeft') { ev.preventDefault(); stepTick(-1); }
+  if (ev.key === 'ArrowRight') { ev.preventDefault(); stepTick(+1); }
+});
+
+// Convert vertical wheel scroll into horizontal scroll while the cursor
+// is over the event timeline. Trackpad horizontal scroll (deltaX) is
+// passed through unchanged so two-finger sideways still works as expected.
+$('event-bands').addEventListener('wheel', (ev) => {
+  const el = $('event-bands');
+  if (!el) return;
+  // Only intercept pure-vertical wheel events; let native horizontal
+  // gestures through.
+  if (Math.abs(ev.deltaY) > Math.abs(ev.deltaX)) {
+    if (el.scrollWidth > el.clientWidth) {
+      el.scrollLeft += ev.deltaY;
+      ev.preventDefault();
+    }
+  }
+}, { passive: false });
+
+$('file-input').addEventListener('change', async (ev) => {
+  const f = ev.target.files?.[0];
+  if (!f) return;
+  const text = await f.text();
+  try { localStorage.setItem('lastTraceName', f.name); } catch {}
+  try { localStorage.setItem('lastTraceText', text); } catch {}
+  loadTrace(text);
+});
+
+$('timeline-scrubber').addEventListener('input', (ev) => {
+  currentTick = +ev.target.value;
+  $('tick-label').textContent = `${currentTick} / ${maxTick()}`;
+  updateTickArrows();
+  applyVisibility();
+  // Re-render bands so the "active" highlight tracks the current tick.
+  renderTimeline();
+  if (selectedPk) renderInspector();
+});
+
+window.addEventListener('resize', () => {
+  if (cy) cy.resize();
+  renderTimeline();
+});
+
+(() => {
+  try {
+    const text = localStorage.getItem('lastTraceText');
+    if (text) {
+      loadTrace(text);
+      const name = localStorage.getItem('lastTraceName') || '?';
+      $('meta-line').textContent += ` · restored: ${name}`;
+    }
+  } catch {}
+})();
+</script>
+</body>
+</html>

@@ -21,3 +21,6 @@ tests/fixtures/dawn.so
 devices.csv
 
 custom-wallets
+
+# Simulator-generated traces and snapshots.
+runs/

@@ -1,9 +1,6 @@
 [workspace]
-members = ["programs/*"]
 resolver = "2"
-
-[patch."https://github.com/raydium-io/raydium-cp-swap"]
-raydium-cp-swap = { path = "vendor/raydium-cp-swap/programs/cp-swap" }
+members = ["programs/*", "client"]
 
 [profile.release]
 overflow-checks = true

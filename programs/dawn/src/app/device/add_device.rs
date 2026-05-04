@@ -134,10 +134,15 @@ impl DawnApp {
         // Initialize local_domain if not already created
         if ctx.accounts.local_domain.created_at == 0 {
             let local_domain = &mut ctx.accounts.local_domain;
-            local_domain.created_at = Clock::get()?.unix_timestamp;
+            let now = Clock::get()?.unix_timestamp;
+            local_domain.created_at = now;
             local_domain.owner = caller;
             local_domain.bump = ctx.bumps.local_domain;
             local_domain.name = local_domain_name.trim().to_string();
+            // Coverage starts Active. Off-chain BSS/OSS systems read these
+            // fields to track the domain's operational state.
+            local_domain.coverage_status = 0;
+            local_domain.last_status_change_at = now;
 
             // Emit event
             emit!(LocalDomainAdded {
