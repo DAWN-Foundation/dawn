@@ -1,12 +1,14 @@
 /**
  * Shared simulator harness primitives.
  *
- * - check / fail counters used by every milestone driver
- * - send(ctx, ix, signers) helper that builds + signs + processes a tx
- * - bootProtocol(): boots bankrun, creates a USD.tel mint, runs the
- *   one-time protocol bootstrap (init_token + init_fee_accounts +
- *   initialize_config), and returns all the addresses subsequent
- *   milestones need.
+ * - check / fail counters used by scenario drivers
+ * - send / sendExpectFail / registerCredentialForIdempotent helpers
+ * - bootProtocol(): boots bankrun, runs the one-shot
+ *   `initialize_config` ix, returns the BootedProtocol.
+ *
+ * Lean access-domain build: no token bootstrap, no Raydium, no fee
+ * accounts. Just Config (cold-admin authority) + the access-domain
+ * model.
  */
 
 import {
@@ -18,32 +20,10 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js'
 import { startAnchor, BanksClient, ProgramTestContext } from 'solana-bankrun'
-import {
-  createInitializeMint2Instruction,
-  getAssociatedTokenAddressSync,
-  MINT_SIZE,
-} from '@solana/spl-token'
 
-import {
-  DAWN_PROGRAM_ID,
-  METADATA_PROGRAM_ID,
-  RAYDIUM_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-} from './codec/program'
-import {
-  buildInitFeeAccounts,
-  buildInitToken,
-  buildInitializeConfig,
-} from './codec/encoders'
-import {
-  configPda,
-  daoDawnAccountPda,
-  dawnMintPda,
-  feePoolDawnAccountPda,
-  medallionDawnAccountPda,
-  tokenConfigPda,
-  validatorDawnAccountPda,
-} from './codec/pda'
+import { DAWN_PROGRAM_ID } from './codec/program'
+import { buildInitializeConfig } from './codec/encoders'
+import { configPda } from './codec/pda'
 import { Capture } from '../tools/capture/capture'
 import { Expectation } from './expectations'
 
@@ -117,6 +97,133 @@ export async function send(
   passes += 1
 }
 
+/**
+ * Submit a tx that we EXPECT to fail. Verifies the failure happened,
+ * optionally that the error message contains an expected substring.
+ * Records the failed tx in the trace (capture-side preserves failed
+ * txs for `failed-tx-no-diff` and other invariants).
+ */
+export async function sendExpectFail(
+  capture: Capture,
+  ix: TransactionInstruction,
+  signers: Keypair[],
+  label: string,
+  opts: { errorContains?: string } = {},
+) {
+  const result = await capture.processTransaction(ix, signers)
+  if (result.ok) {
+    console.log(`[FAIL] ${label} — expected tx to fail, but it succeeded`)
+    failures += 1
+    process.exitCode = 1
+    throw new Error(`${label} unexpectedly succeeded`)
+  }
+  if (opts.errorContains) {
+    const err = result.error ?? ''
+    const log = (result.logs ?? []).join(' ')
+    if (!err.includes(opts.errorContains) && !log.includes(opts.errorContains)) {
+      console.log(
+        `[FAIL] ${label} — failed (expected) but error did not contain '${opts.errorContains}'`,
+      )
+      console.log(`         error: ${err}`)
+      for (const l of result.logs ?? []) console.log(`         ${l}`)
+      failures += 1
+      process.exitCode = 1
+      throw new Error(`${label} failed with unexpected error`)
+    }
+  }
+  console.log(`[PASS] ${label} (expected fail: ${result.error})`)
+  passes += 1
+}
+
+/**
+ * Outcome of an idempotent register_credential_for attempt.
+ *
+ *   - 'created'    — fresh tx succeeded, PDA written for the first time
+ *   - 'idempotent' — tx failed (init constraint), PDA already exists,
+ *                    on-chain sealed_payload byte-equals what we tried to
+ *                    write. Safe to treat as success: same operation, no
+ *                    state change between attempt and observed state.
+ *   - 'conflict'   — tx failed, PDA exists, sealed_payload differs.
+ *                    A previous tx wrote a *different* credential for the
+ *                    same (access_domain, auth_method, customer) tuple.
+ *                    Operator-api should NOT silently retry — escalate.
+ */
+export type IdempotentOutcome = 'created' | 'idempotent' | 'conflict'
+
+/**
+ * Submit a `register_credential_for` ix with idempotent retry semantics.
+ *
+ * This wraps the operator-api's expected behavior: the network may drop
+ * the connection mid-flight, so the same logical operation may be
+ * retried. The helper:
+ *
+ *   1. Tries the tx.
+ *   2. On success, returns 'created'.
+ *   3. On failure, fetches the credential PDA. If absent, the failure
+ *      was something else entirely — re-throws. If present, byte-compares
+ *      `sealed_payload` against `expectedSealedPayload`:
+ *        - match    → 'idempotent' (operator-api treats as success)
+ *        - mismatch → 'conflict' (real collision; surface as error)
+ *
+ * IMPORTANT — operator-api implementation requirement:
+ *
+ *   libsodium sealed-box envelopes are NON-DETERMINISTIC. Each call to
+ *   `sealForRecipient(pk, plaintext)` uses a fresh random ephemeral
+ *   keypair, so sealing the same PSK twice produces two different
+ *   128-byte envelopes. To make retry idempotent, the operator-api MUST
+ *   persist the envelope bytes locally (in a database write-ahead log
+ *   keyed by customer_id) BEFORE submitting the tx, and re-submit the
+ *   exact same bytes on retry. This helper assumes the caller has done
+ *   that — it byte-compares against `expectedSealedPayload` which the
+ *   caller is responsible for keeping stable across retry attempts.
+ *
+ *   PSK rotation (intentional change of a customer's PSK) is a separate
+ *   operation; it would either close-and-recreate the credential, or
+ *   use a future `update_credential_payload` ix. It is NOT what this
+ *   helper handles — a "conflict" outcome here means an unintended
+ *   collision, not a legitimate rotation.
+ */
+export async function registerCredentialForIdempotent(
+  capture: Capture,
+  banks: BanksClient,
+  ix: TransactionInstruction,
+  signers: Keypair[],
+  expectedSealedPayload: Buffer,
+  credentialPda: PublicKey,
+  label: string,
+): Promise<IdempotentOutcome> {
+  const result = await capture.processTransaction(ix, signers)
+  if (result.ok) {
+    console.log(`[PASS] ${label} (created)`)
+    passes += 1
+    return 'created'
+  }
+
+  // Tx failed. Disambiguate: was it a duplicate (PDA already exists) or
+  // some other failure?
+  const acc = await banks.getAccount(credentialPda)
+  if (!acc) {
+    // Genuine failure — surface it.
+    console.log(`[FAIL] ${label} — ${result.error} (no credential PDA exists; not an idempotent retry)`)
+    for (const log of result.logs ?? []) console.log(`         ${log}`)
+    failures += 1
+    process.exitCode = 1
+    throw new Error(`${label} failed`)
+  }
+
+  // PDA exists. Byte-compare sealed_payload.
+  const { decodeCredential } = await import('./codec/decoders')
+  const decoded = decodeCredential(Buffer.from(acc.data))
+  if (decoded.sealedPayload.equals(expectedSealedPayload)) {
+    console.log(`[PASS] ${label} (idempotent: PDA already has byte-equal sealed_payload)`)
+    passes += 1
+    return 'idempotent'
+  }
+  console.log(`[PASS] ${label} (conflict detected: existing sealed_payload differs)`)
+  passes += 1
+  return 'conflict'
+}
+
 // ---------------------------------------------------------------------------
 // Protocol bootstrap (one shot)
 // ---------------------------------------------------------------------------
@@ -125,25 +232,8 @@ export interface BootedProtocol {
   ctx: ProgramTestContext
   banks: BanksClient
   capture: Capture
-  payer: Keypair
-  // PDAs / mints created by the bootstrap
-  tokenConfig: PublicKey
-  dawnMint: PublicKey
+  payer: Keypair // also the cold-admin authority on Config
   config: PublicKey
-  stableMint: PublicKey
-  feePool: PublicKey
-  daoFeeAccount: PublicKey
-  validatorFeeAccount: PublicKey
-  medallionFeeAccount: PublicKey
-  apiAuthority: PublicKey
-  // raydium placeholders stored in Config (real pool wired up later)
-  raydiumPlaceholders: {
-    raydium: PublicKey
-    raydiumAuthority: PublicKey
-    raydiumConfig: PublicKey
-    raydiumPool: PublicKey
-    raydiumObservation: PublicKey
-  }
 }
 
 export interface BootOptions {
@@ -198,28 +288,18 @@ export async function runScenario(scenario: Scenario): Promise<void> {
   }
 }
 
-// Module-level retained references for the program names. The napi
-// boundary into solana-bankrun has an intermittent issue on Node 23
-// where short-lived inline string literals get GC'd between handoff and
-// Rust read, producing the random "Possible bogus program name" panic.
-// Holding the strings as top-level constants pins them for the whole
-// process so the panic doesn't fire.
+// Module-level retained reference for the program name. napi to
+// solana-bankrun has an intermittent issue on Node 23 where short-lived
+// inline string literals get GC'd between handoff and Rust read,
+// producing "Possible bogus program name". Pinning the string here for
+// the whole process avoids that.
 const PROGRAM_NAME_DAWN = 'dawn'
-const PROGRAM_NAME_RAYDIUM = 'raydium'
-const PROGRAM_NAME_META = 'meta'
 
 export async function bootProtocol(opts: BootOptions): Promise<BootedProtocol> {
-  // Build the program list with retained strings. Stash the array in
-  // globalThis so even if module-level retention isn't enough, this
-  // process-lifetime reference is.
   const programs = [
     { name: PROGRAM_NAME_DAWN, programId: DAWN_PROGRAM_ID },
-    { name: PROGRAM_NAME_RAYDIUM, programId: RAYDIUM_PROGRAM_ID },
-    { name: PROGRAM_NAME_META, programId: METADATA_PROGRAM_ID },
   ]
   ;(globalThis as any).__bankrun_programs = programs
-  // Force a GC pass (if --expose-gc is enabled) so memory is calm
-  // before the napi handoff. Falls back silently otherwise.
   try { (globalThis as any).gc?.() } catch {}
   const ctx = await startAnchor('.', programs, [])
   const banks = ctx.banksClient
@@ -230,165 +310,36 @@ export async function bootProtocol(opts: BootOptions): Promise<BootedProtocol> {
     seed: opts.seed,
     runsDir: opts.runsDir,
   })
-  // The DAWN authority is the bankrun default payer for this scenario.
+  // Cold-admin "foundation" actor = bankrun default payer.
   capture.declareActor('foundation', payer.publicKey)
   await capture.start()
 
-  // Create USD.tel mint via raw SystemProgram + InitializeMint2.
-  // The mint creation tx is two SPL/system instructions (not dawn) — capture
-  // them anyway as `tick = -1` setup transactions, since we want a complete
-  // record of state mutations. Wrapped in a setup event so the timeline
-  // shows what happened even though no dawn ticks advance.
-  const stableMintKp = Keypair.generate()
-  const stableMint = stableMintKp.publicKey
-  await capture.event(
-    'Mint USD.tel stablecoin',
-    {
-      actor: 'foundation',
-      description:
-        'External setup: mint the USD.tel stablecoin (a 6-decimal SPL token) ' +
-        'that DAWN plans charge their subscribers in. This is one-time test ' +
-        'infrastructure — in production USD.tel is a real Solana SPL mint not ' +
-        'created by the protocol.',
-    },
-    async () => {
-    const rent = await banks.getRent()
-    const lamports = Number(await rent.minimumBalance(BigInt(MINT_SIZE)))
-    const createIx = SystemProgram.createAccount({
-      fromPubkey: payer.publicKey,
-      newAccountPubkey: stableMint,
-      space: MINT_SIZE,
-      lamports,
-      programId: TOKEN_PROGRAM_ID,
-    })
-    const initIx = createInitializeMint2Instruction(
-      stableMint,
-      6,
-      payer.publicKey,
-      null,
-    )
-    const r1 = await capture.processTransaction(createIx, [payer, stableMintKp])
-    if (!r1.ok) throw new Error(`stable mint createAccount failed: ${r1.error}`)
-    const r2 = await capture.processTransaction(initIx, [payer])
-    if (!r2.ok) throw new Error(`stable mint initializeMint2 failed: ${r2.error}`)
-  })
-
-  // PDAs
-  const [tokenConfig] = tokenConfigPda()
-  const [dawnMint] = dawnMintPda()
   const [config] = configPda()
-  const [feePool] = feePoolDawnAccountPda()
-  const [dao] = daoDawnAccountPda()
-  const [validator] = validatorDawnAccountPda()
-  const [medallion] = medallionDawnAccountPda()
-  const callerDawnAta = getAssociatedTokenAddressSync(dawnMint, payer.publicKey)
 
-  // The bootstrap is a single business-level event with two sub-events.
-  const apiAuthority = Keypair.generate().publicKey
-  const raydiumPlaceholders = {
-    raydium: Keypair.generate().publicKey,
-    raydiumAuthority: Keypair.generate().publicKey,
-    raydiumConfig: Keypair.generate().publicKey,
-    raydiumPool: Keypair.generate().publicKey,
-    raydiumObservation: Keypair.generate().publicKey,
-  }
   await capture.event(
     'Protocol Genesis',
     {
       actor: 'foundation',
       description:
-        'The DAWN authority bootstraps the protocol: mints the DAWN governance ' +
-        'token, creates the four fee-pool token accounts (DAO, validator, ' +
-        'medallion, accumulator), and writes the Config PDA that records the ' +
-        'fee schedule, API delegate, and Raydium swap pool. After Genesis, ' +
-        'service providers can begin onboarding.',
+        'Cold admin initializes the protocol Config singleton. Sets the ' +
+        'cold-admin authority that gates global operations like DeviceModel ' +
+        'registration. One-shot.',
     },
     async () => {
-    await capture.event(
-      'Mint protocol tokens',
-      {
-        description:
-          'Initialise the DAWN SPL mint and the four fee-pool token accounts. ' +
-          'init_token mints 1 billion DAWN to the bootstrap caller as the ' +
-          'genesis supply; init_fee_accounts creates the four fee-pool PDAs ' +
-          'whose authorities will be set when initialize_config runs.',
-      },
-      async () => {
       await send(
         capture,
-        buildInitToken({
-          caller: payer.publicKey,
-          tokenConfig,
-          dawnMint,
-          callerDawnAccount: callerDawnAta,
-        }),
-        [payer],
-        'init_token',
-      )
-      await send(
-        capture,
-        buildInitFeeAccounts({
-          caller: payer.publicKey,
-          tokenConfig,
-          dawnMint,
-          feePoolDawnAccount: feePool,
-          daoDawnAccount: dao,
-          validatorDawnAccount: validator,
-          medallionDawnAccount: medallion,
-        }),
-        [payer],
-        'init_fee_accounts',
-      )
-    })
-    await capture.event(
-      'Configure economics',
-      {
-        description:
-          'Records the fee parameters (3% DAO, 3% validator, 9% medallion ' +
-          'accumulator), the Raydium swap pool addresses, the API delegate, ' +
-          'and the stable + DAWN mints into the Config PDA. This is the ' +
-          'singleton account every later instruction reads to learn who is ' +
-          'authorised and which pool to swap against.',
-      },
-      async () => {
-      await send(
-        capture,
-        buildInitializeConfig(
-          {
-            caller: payer.publicKey,
-            apiAuthority,
-            config,
-            tokenConfig,
-            stableMint,
-            dawnMint,
-            feePoolDawnAccount: feePool,
-            daoDawnAccount: dao,
-            validatorDawnAccount: validator,
-            medallionDawnAccount: medallion,
-            ...raydiumPlaceholders,
-          },
-          { daoFee: 300n, validatorFee: 300n, medallionFee: 900n },
-        ),
+        buildInitializeConfig({ caller: payer.publicKey, config }),
         [payer],
         'initialize_config',
       )
-    })
-  })
+    },
+  )
 
   return {
     ctx,
     banks,
     capture,
     payer,
-    tokenConfig,
-    dawnMint,
     config,
-    stableMint,
-    feePool,
-    daoFeeAccount: dao,
-    validatorFeeAccount: validator,
-    medallionFeeAccount: medallion,
-    apiAuthority,
-    raydiumPlaceholders,
   }
 }

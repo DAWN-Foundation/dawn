@@ -1,7 +1,7 @@
 [package]
 name = "dawn"
-version = "1.1.0"
-description = "DAWN Protocol Program"
+version = "2.0.0-access-domain"
+description = "DAWN Access-Domain Program (lean build)"
 edition = "2021"
 
 [lib]
@@ -13,23 +13,15 @@ no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
-devnet = ["raydium-cp-swap/devnet"]
+devnet = []
 default = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "raydium-cp-swap/no-broken-ix", "_idl-only"]
-_idl-only = []
+idl-build = ["anchor-lang/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = "0.31.1"
-anchor-spl = "0.31.1"
-mpl-token-metadata = "5.1.1"
-raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", rev = "91a035ae0396412a91db6e7d121293156db7cbae", default-features = false, features = [
-    "no-entrypoint",
-    "cpi",
-] }
-spl-memo = "6.0.0"
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
 
 [build-dependencies]
 toml = "0.7"

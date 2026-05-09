@@ -19,7 +19,7 @@ function find(seeds: (Buffer | Uint8Array)[], programId = DAWN_PROGRAM_ID) {
 /**
  * Mirror of utils::hash_string_seed in the Rust source: trim, then
  * sha256 (called `solana_program::hash::hash`), returning 32 bytes.
- * Used by Device, DeviceModel, LocalDomain, Plan PDA seeds.
+ * Used by Device, DeviceModel, LocalDomain, AccessDomain PDA seeds.
  */
 export function hashStringSeed(input: string): Buffer {
   const trimmed = input.trim()
@@ -34,64 +34,13 @@ export function optionalPubkeySeed(pk: PublicKey | null): Buffer {
   return pk ? Buffer.from(pk.toBytes()) : Buffer.alloc(32, 0)
 }
 
-const u16le = (n: number) => {
-  const b = Buffer.alloc(2)
-  b.writeUInt16LE(n, 0)
-  return b
-}
-const u32le = (n: number) => {
-  const b = Buffer.alloc(4)
-  b.writeUInt32LE(n, 0)
-  return b
-}
-const u64le = (n: bigint) => {
-  const b = Buffer.alloc(8)
-  b.writeBigUInt64LE(n, 0)
-  return b
-}
-const i64le = (n: bigint) => {
-  const b = Buffer.alloc(8)
-  b.writeBigInt64LE(n, 0)
-  return b
-}
-
 // ---------------------------------------------------------------------------
-// Token / config bootstrap
+// Config
 // ---------------------------------------------------------------------------
 
-/** PDA: ["token"] — owns the DAWN mint. */
-export function tokenConfigPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('token')], programId)
-}
-
-/** PDA: ["dawn"] — the DAWN SPL mint itself. */
-export function dawnMintPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('dawn')], programId)
-}
-
-/** PDA: ["config"] — protocol config singleton. */
+/** PDA: ["config"] — protocol config singleton (cold-admin authority). */
 export function configPda(programId = DAWN_PROGRAM_ID) {
   return find([Buffer.from('config')], programId)
-}
-
-/** PDA: ["fee_pool_dawn_account"] — accumulates all DAWN fees. */
-export function feePoolDawnAccountPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('fee_pool_dawn_account')], programId)
-}
-
-/** PDA: ["dao_dawn_account"] — DAO-share fee pool. */
-export function daoDawnAccountPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('dao_dawn_account')], programId)
-}
-
-/** PDA: ["validator_dawn_account"] — validator-share fee pool. */
-export function validatorDawnAccountPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('validator_dawn_account')], programId)
-}
-
-/** PDA: ["medallion_dawn_account"] — medallion-share fee pool. */
-export function medallionDawnAccountPda(programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('medallion_dawn_account')], programId)
 }
 
 // ---------------------------------------------------------------------------
@@ -160,122 +109,119 @@ export function localDomainPda(
 }
 
 // ---------------------------------------------------------------------------
-// Service agreements + plans + domains
+// Access domain
 // ---------------------------------------------------------------------------
 
-/** PDA: ["service_agreement", threshold(u64 LE), payout_ratio(u64 LE)] */
-export function serviceAgreementPda(
-  threshold: bigint,
-  payoutRatio: bigint,
+/**
+ * PDA: ["access_domain", owner, hash(name)]
+ *
+ * AccessDomain is a top-level account keyed by (owner, name).
+ */
+export function accessDomainPda(
+  owner: PublicKey,
+  name: string,
   programId = DAWN_PROGRAM_ID,
 ) {
   return find(
-    [Buffer.from('service_agreement'), u64le(threshold), u64le(payoutRatio)],
+    [Buffer.from('access_domain'), owner.toBytes(), hashStringSeed(name)],
     programId,
   )
 }
 
+// ---------------------------------------------------------------------------
+// Tier-2 domain role grants (DomainAuthority)
+// ---------------------------------------------------------------------------
+
+/** Mirror of the on-chain `DomainAuthorityRole` enum. Byte values are
+ *  stable — once assigned, never reused for a different variant. */
+export enum DomainAuthorityRole {
+  Registrar = 0,
+  ConfigPlaneManager = 1,
+  // Future variants: AuthMethodManager, PlanCreator, AdminDeputy
+}
+
 /**
- * PDA for an L3 plan. Seeds:
- *   ["plan", owner, local_domain, optional_pubkey_seed(parent_plan),
- *    sha256(name.trim()), price(u64), duration(u16), speed(u32),
- *    capacity(u64), start_at(i64), service_agreement]
+ * PDA: ["domain_authority", domain, role_byte, authority]
  *
- * For L3 plans, parent_plan is None → 32 zero bytes for that seed.
+ * `domain` is the AccessDomain (or DistributionDomain in the future) PDA.
  */
-export function planPda(
+export function domainAuthorityPda(
   args: {
-    owner: PublicKey
-    localDomain: PublicKey
-    parentPlan: PublicKey | null
-    name: string
-    price: bigint
-    duration: number
-    speed: number
-    capacity: bigint
-    startAt: bigint
-    serviceAgreement: PublicKey
+    domain: PublicKey
+    role: DomainAuthorityRole
+    authority: PublicKey
   },
   programId = DAWN_PROGRAM_ID,
 ) {
   return find(
     [
-      Buffer.from('plan'),
-      args.owner.toBytes(),
-      args.localDomain.toBytes(),
-      optionalPubkeySeed(args.parentPlan),
-      hashStringSeed(args.name),
-      u64le(args.price),
-      u16le(args.duration),
-      u32le(args.speed),
-      u64le(args.capacity),
-      i64le(args.startAt),
-      args.serviceAgreement.toBytes(),
+      Buffer.from('domain_authority'),
+      args.domain.toBytes(),
+      Buffer.from([args.role]),
+      args.authority.toBytes(),
     ],
     programId,
   )
 }
 
-/** PDA: ["distribution_domain", plan, local_domain] */
-export function distributionDomainPda(
-  plan: PublicKey,
-  localDomain: PublicKey,
-  programId = DAWN_PROGRAM_ID,
-) {
-  return find(
-    [Buffer.from('distribution_domain'), plan.toBytes(), localDomain.toBytes()],
-    programId,
-  )
-}
-
 // ---------------------------------------------------------------------------
-// IPAM
+// AMF (auth methods, credentials)
 // ---------------------------------------------------------------------------
 
-/** IpTier enum mirror — used in args and PDA seeds. */
-export enum IpTier {
-  Subscriber = 0,
-  Loopback = 1,
-  PtP = 2,
+/**
+ * Mirror of the on-chain `AuthMethodType` enum. The numeric value here is
+ * what the program writes to disk and what `as_seed()` returns as a single
+ * byte for PDA derivation.
+ */
+export enum AuthMethodType {
+  Psk = 0,
+  Mpsk = 1,
 }
 
-/** PDA: ["ip_registry", tier(u8)] */
-export function ipRegistryPda(tier: IpTier, programId = DAWN_PROGRAM_ID) {
-  return find([Buffer.from('ip_registry'), Buffer.from([tier])], programId)
-}
-
-/** PDA: ["root_ip_block", tier(u8), index(u32 LE)] */
-export function rootIpBlockPda(
-  tier: IpTier,
-  index: number,
+/**
+ * PDA: ["auth_method", access_domain, method_type(1B)]
+ *
+ * One AuthMethod per (AccessDomain, method_type). Params can be updated
+ * in place at the same PDA via update_auth_method_params; the PDA
+ * itself does not depend on parameter contents.
+ */
+export function authMethodPda(
+  args: {
+    accessDomain: PublicKey
+    methodType: AuthMethodType
+  },
   programId = DAWN_PROGRAM_ID,
 ) {
   return find(
-    [Buffer.from('root_ip_block'), Buffer.from([tier]), u32le(index)],
+    [
+      Buffer.from('auth_method'),
+      args.accessDomain.toBytes(),
+      Buffer.from([args.methodType]),
+    ],
     programId,
   )
 }
 
-/** PDA: ["ip_block", root_ip_block, block_idx(u32 LE)] */
-export function ipBlockPda(
-  rootIpBlock: PublicKey,
-  blockIdx: number,
+/**
+ * PDA: ["credential", access_domain, auth_method, authority]
+ *
+ * Identity is (access_domain, auth_method, customer).
+ */
+export function credentialPda(
+  args: {
+    accessDomain: PublicKey
+    authMethod: PublicKey
+    authority: PublicKey // the customer
+  },
   programId = DAWN_PROGRAM_ID,
 ) {
   return find(
-    [Buffer.from('ip_block'), rootIpBlock.toBytes(), u32le(blockIdx)],
-    programId,
-  )
-}
-
-/** PDA: ["ip_lease", tier(u8), seed_key (device or subscription)] */
-export function ipLeasePda(
-  tier: IpTier,
-  seedKey: PublicKey,
-  programId = DAWN_PROGRAM_ID,
-) {
-  return find(
-    [Buffer.from('ip_lease'), Buffer.from([tier]), seedKey.toBytes()],
+    [
+      Buffer.from('credential'),
+      args.accessDomain.toBytes(),
+      args.authMethod.toBytes(),
+      args.authority.toBytes(),
+    ],
     programId,
   )
 }

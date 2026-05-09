@@ -5,14 +5,21 @@ import {
 } from '@solana/web3.js'
 
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   DAWN_PROGRAM_ID,
   SYSTEM_PROGRAM_ID,
-  SYSVAR_RENT_PUBKEY,
-  TOKEN_PROGRAM_ID,
 } from './program'
 import { IX_DISC } from './discriminators'
-import { DeviceType, IpTier } from './pda'
+import { AuthMethodType, DeviceType, DomainAuthorityRole } from './pda'
+
+/**
+ * Each instruction has a corresponding `build*` function here that
+ * takes the named accounts (as PublicKeys) and any args, and returns
+ * a fully-formed TransactionInstruction ready to be signed and sent.
+ *
+ * Account ordering must exactly match the `#[derive(Accounts)]` struct
+ * field order in the program's app/*.rs file. Comments below cite the
+ * source file and field for each entry.
+ */
 
 // ---------------------------------------------------------------------------
 // Borsh encoding helpers
@@ -25,6 +32,35 @@ function encodeString(s: string): Buffer {
   return Buffer.concat([len, bytes])
 }
 
+function encodeOptionPubkey(v: PublicKey | null): Buffer {
+  if (v === null) return Buffer.from([0])
+  return Buffer.concat([Buffer.from([1]), Buffer.from(v.toBytes())])
+}
+
+function encodeOptionFixed(v: Buffer | Uint8Array | null, n: number): Buffer {
+  if (v === null) return Buffer.from([0])
+  if (v.length !== n) throw new Error(`option<[u8;${n}]>: expected ${n} bytes, got ${v.length}`)
+  return Buffer.concat([Buffer.from([1]), Buffer.from(v)])
+}
+
+function encodeOptionU16(v: number | null): Buffer {
+  if (v === null) return Buffer.from([0])
+  const out = Buffer.alloc(3)
+  out[0] = 1
+  out.writeUInt16LE(v >>> 0, 1)
+  return out
+}
+
+function encodeOptionU8(v: number | null): Buffer {
+  if (v === null) return Buffer.from([0])
+  return Buffer.from([1, v & 0xff])
+}
+
+function encodeOptionString(v: string | null): Buffer {
+  if (v === null) return Buffer.from([0])
+  return Buffer.concat([Buffer.from([1]), encodeString(v)])
+}
+
 function encodeOptionI64(v: bigint | null): Buffer {
   if (v === null) return Buffer.from([0])
   const out = Buffer.alloc(9)
@@ -32,16 +68,6 @@ function encodeOptionI64(v: bigint | null): Buffer {
   out.writeBigInt64LE(v, 1)
   return out
 }
-
-/**
- * Each instruction has a corresponding `build*` function here that
- * takes the named accounts (as PublicKeys) and any args, and returns
- * a fully-formed TransactionInstruction ready to be signed and sent.
- *
- * Account ordering must exactly match the `#[derive(Accounts)]` struct
- * field order in the program's app/*.rs file. Comments below cite the
- * source file and field for each entry.
- */
 
 function meta(
   pubkey: PublicKey,
@@ -52,133 +78,53 @@ function meta(
 }
 
 // ---------------------------------------------------------------------------
-// init_token (no args)
-// app/init_token.rs InitializeToken<'info>
-// ---------------------------------------------------------------------------
-export interface InitTokenAccounts {
-  caller: PublicKey
-  tokenConfig: PublicKey
-  dawnMint: PublicKey
-  callerDawnAccount: PublicKey
-}
-
-export function buildInitToken(
-  a: InitTokenAccounts,
-  programId = DAWN_PROGRAM_ID,
-): TransactionInstruction {
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      meta(a.caller, true, true),                  // caller
-      meta(a.tokenConfig, false, true),            // token_config (init)
-      meta(a.dawnMint, false, true),               // dawn_mint (init)
-      meta(a.callerDawnAccount, false, true),      // caller_dawn_account (init ATA)
-      meta(TOKEN_PROGRAM_ID, false, false),        // token_program
-      meta(ASSOCIATED_TOKEN_PROGRAM_ID, false, false), // associated_token_program
-      meta(SYSTEM_PROGRAM_ID, false, false),       // system_program
-    ],
-    data: IX_DISC.init_token,
-  })
-}
-
-// ---------------------------------------------------------------------------
-// init_fee_accounts (no args)
-// app/init_fee_accounts.rs InitializeFeeAccounts<'info>
-// ---------------------------------------------------------------------------
-export interface InitFeeAccountsAccounts {
-  caller: PublicKey
-  tokenConfig: PublicKey
-  dawnMint: PublicKey
-  feePoolDawnAccount: PublicKey
-  daoDawnAccount: PublicKey
-  validatorDawnAccount: PublicKey
-  medallionDawnAccount: PublicKey
-}
-
-export function buildInitFeeAccounts(
-  a: InitFeeAccountsAccounts,
-  programId = DAWN_PROGRAM_ID,
-): TransactionInstruction {
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      meta(a.caller, true, true),                       // caller
-      meta(a.tokenConfig, false, true),                 // token_config (mut, sets bumps)
-      meta(a.dawnMint, false, false),                   // dawn_mint
-      meta(a.feePoolDawnAccount, false, true),          // fee_pool_dawn_account (init)
-      meta(a.daoDawnAccount, false, true),              // dao_dawn_account (init)
-      meta(a.validatorDawnAccount, false, true),        // validator_dawn_account (init)
-      meta(a.medallionDawnAccount, false, true),        // medallion_dawn_account (init)
-      meta(TOKEN_PROGRAM_ID, false, false),             // token_program
-      meta(SYSTEM_PROGRAM_ID, false, false),            // system_program
-    ],
-    data: IX_DISC.init_fee_accounts,
-  })
-}
-
-// ---------------------------------------------------------------------------
-// initialize_config(dao_fee: u64, validator_fee: u64, medallion_fee: u64)
-// app/initialize_config.rs InitializeConfig<'info>
+// initialize_config (no args; cold-admin authority captured from caller)
+// app/initialize_config.rs
 // ---------------------------------------------------------------------------
 export interface InitializeConfigAccounts {
   caller: PublicKey
-  apiAuthority: PublicKey
   config: PublicKey
-  tokenConfig: PublicKey
-  stableMint: PublicKey
-  dawnMint: PublicKey
-  feePoolDawnAccount: PublicKey
-  daoDawnAccount: PublicKey
-  validatorDawnAccount: PublicKey
-  medallionDawnAccount: PublicKey
-  raydium: PublicKey
-  raydiumAuthority: PublicKey
-  raydiumConfig: PublicKey
-  raydiumPool: PublicKey
-  raydiumObservation: PublicKey
-}
-
-export interface InitializeConfigArgs {
-  daoFee: bigint
-  validatorFee: bigint
-  medallionFee: bigint
 }
 
 export function buildInitializeConfig(
   a: InitializeConfigAccounts,
-  args: InitializeConfigArgs,
   programId = DAWN_PROGRAM_ID,
 ): TransactionInstruction {
-  // Encode args: 3 × u64 little-endian
-  const data = Buffer.alloc(8 + 8 + 8 + 8)
-  IX_DISC.initialize_config.copy(data, 0)
-  data.writeBigUInt64LE(args.daoFee, 8)
-  data.writeBigUInt64LE(args.validatorFee, 16)
-  data.writeBigUInt64LE(args.medallionFee, 24)
-
   return new TransactionInstruction({
     programId,
     keys: [
-      meta(a.caller, true, true),                      // caller
-      meta(a.apiAuthority, false, true),               // api_authority (mut, UncheckedAccount)
-      meta(a.config, false, true),                     // config (init)
-      meta(a.tokenConfig, false, false),               // token_config
-      meta(a.stableMint, false, false),                // stable_mint
-      meta(a.dawnMint, false, false),                  // dawn_mint
-      meta(a.feePoolDawnAccount, false, false),        // fee_pool_dawn_account
-      meta(a.daoDawnAccount, false, false),            // dao_dawn_account
-      meta(a.validatorDawnAccount, false, false),      // validator_dawn_account
-      meta(a.medallionDawnAccount, false, false),      // medallion_dawn_account
-      meta(a.raydium, false, false),                   // raydium (UncheckedAccount)
-      meta(a.raydiumAuthority, false, false),          // raydium_authority
-      meta(a.raydiumConfig, false, false),             // raydium_config
-      meta(a.raydiumPool, false, false),               // raydium_pool
-      meta(a.raydiumObservation, false, false),        // raydium_observation
-      meta(TOKEN_PROGRAM_ID, false, false),            // token_program
-      meta(SYSTEM_PROGRAM_ID, false, false),           // system_program
-      meta(SYSVAR_RENT_PUBKEY, false, false),          // rent
+      meta(a.caller, true, true),
+      meta(a.config, false, true),
+      meta(SYSTEM_PROGRAM_ID, false, false),
     ],
-    data,
+    data: Buffer.from(IX_DISC.initialize_config),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// update_config_authority(new_authority: Pubkey)
+// app/update_config.rs
+// ---------------------------------------------------------------------------
+export interface UpdateConfigAuthorityAccounts {
+  caller: PublicKey
+  config: PublicKey
+}
+
+export function buildUpdateConfigAuthority(
+  a: UpdateConfigAuthorityAccounts,
+  newAuthority: PublicKey,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.config, false, true),
+    ],
+    data: Buffer.concat([
+      IX_DISC.update_config_authority,
+      Buffer.from(newAuthority.toBytes()),
+    ]),
   })
 }
 
@@ -278,146 +224,6 @@ export function buildAddDevice(
 }
 
 // ---------------------------------------------------------------------------
-// add_service_agreement(threshold: u64, payout_ratio: u64)
-// app/plan/service_agreement.rs AddServiceAgreement<'info>
-// ---------------------------------------------------------------------------
-export interface AddServiceAgreementAccounts {
-  caller: PublicKey
-  config: PublicKey
-  serviceAgreement: PublicKey
-}
-
-export interface AddServiceAgreementArgs {
-  threshold: bigint
-  payoutRatio: bigint
-}
-
-export function buildAddServiceAgreement(
-  a: AddServiceAgreementAccounts,
-  args: AddServiceAgreementArgs,
-  programId = DAWN_PROGRAM_ID,
-): TransactionInstruction {
-  const data = Buffer.alloc(8 + 8 + 8)
-  IX_DISC.add_service_agreement.copy(data, 0)
-  data.writeBigUInt64LE(args.threshold, 8)
-  data.writeBigUInt64LE(args.payoutRatio, 16)
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      meta(a.caller, true, true),             // caller
-      meta(a.config, false, false),           // config
-      meta(a.serviceAgreement, false, true),  // service_agreement (init)
-      meta(SYSTEM_PROGRAM_ID, false, false),
-    ],
-    data,
-  })
-}
-
-// ---------------------------------------------------------------------------
-// add_l3_plan(name, price, duration, speed, capacity, start_at)
-// app/plan/add_l3_plan.rs AddL3Plan<'info>
-//
-// Note: the program reads auth_methods from `ctx.remaining_accounts`. To pass
-// auth methods, append additional AccountMeta entries to `keys` after the
-// fixed accounts. For the milestone we pass none.
-// ---------------------------------------------------------------------------
-export interface AddL3PlanAccounts {
-  caller: PublicKey
-  serviceAgreement: PublicKey
-  plan: PublicKey
-  localDomain: PublicKey
-  distributionDomain: PublicKey
-  authMethods?: PublicKey[] // remaining_accounts
-}
-
-export interface AddL3PlanArgs {
-  name: string
-  price: bigint
-  duration: number
-  speed: number
-  capacity: bigint
-  startAt: bigint | null
-}
-
-export function buildAddL3Plan(
-  a: AddL3PlanAccounts,
-  args: AddL3PlanArgs,
-  programId = DAWN_PROGRAM_ID,
-): TransactionInstruction {
-  const fixedArgs = Buffer.alloc(8 + 2 + 4 + 8)
-  let o = 0
-  fixedArgs.writeBigUInt64LE(args.price, o); o += 8
-  fixedArgs.writeUInt16LE(args.duration, o); o += 2
-  fixedArgs.writeUInt32LE(args.speed, o); o += 4
-  fixedArgs.writeBigUInt64LE(args.capacity, o); o += 8
-
-  const data = Buffer.concat([
-    IX_DISC.add_l3_plan,
-    encodeString(args.name),
-    fixedArgs,
-    encodeOptionI64(args.startAt),
-  ])
-
-  const remaining = (a.authMethods ?? []).map((k) => meta(k, false, false))
-
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      meta(a.caller, true, true),                 // caller
-      meta(a.serviceAgreement, false, false),     // service_agreement
-      meta(a.plan, false, true),                  // plan (init)
-      meta(a.localDomain, false, false),          // local_domain
-      meta(a.distributionDomain, false, true),    // distribution_domain (init)
-      meta(SYSTEM_PROGRAM_ID, false, false),
-      ...remaining,
-    ],
-    data,
-  })
-}
-
-// ---------------------------------------------------------------------------
-// initialize_root_ip_block(tier: u8, base_ipv4: u32, base_cidr: u8)
-// app/ipam/init_root_blocks.rs InitializeRootIpBlock<'info>
-// ---------------------------------------------------------------------------
-export interface InitializeRootIpBlockAccounts {
-  caller: PublicKey
-  config: PublicKey
-  ipRegistry: PublicKey
-  rootIpBlock: PublicKey
-  authority: PublicKey
-}
-
-export interface InitializeRootIpBlockArgs {
-  tier: IpTier
-  baseIpv4: number // u32
-  baseCidr: number // u8
-}
-
-export function buildInitializeRootIpBlock(
-  a: InitializeRootIpBlockAccounts,
-  args: InitializeRootIpBlockArgs,
-  programId = DAWN_PROGRAM_ID,
-): TransactionInstruction {
-  const data = Buffer.alloc(8 + 1 + 4 + 1)
-  IX_DISC.initialize_root_ip_block.copy(data, 0)
-  data.writeUInt8(args.tier, 8)
-  data.writeUInt32LE(args.baseIpv4, 9)
-  data.writeUInt8(args.baseCidr, 13)
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      meta(a.caller, true, true),                  // caller
-      meta(a.config, false, false),                // config
-      meta(a.ipRegistry, false, true),             // ip_registry (init_if_needed)
-      meta(a.rootIpBlock, false, true),            // root_ip_block (init)
-      meta(a.authority, false, false),             // authority (UncheckedAccount)
-      meta(SYSTEM_PROGRAM_ID, false, false),
-    ],
-    data,
-  })
-}
-
-// ---------------------------------------------------------------------------
 // update_local_domain_status(new_status: u8)
 // app/local_domain/update_status.rs UpdateLocalDomainStatus<'info>
 //
@@ -453,40 +259,341 @@ export function buildUpdateLocalDomainStatus(
 }
 
 // ---------------------------------------------------------------------------
-// allocate_ip(tier: u8)
-// app/ipam/allocate_ip.rs AllocateIp<'info>
+// add_access_domain(name, control_plane_device, gateway_device,
+//                   local_domain, external_uuid)
+// app/access_domain/add_access_domain.rs AddAccessDomain<'info>
+//
+// PDA seeds: ["access_domain", caller, hash(name)].
+// `control_plane_device` is required (Device PDA whose owner decrypts
+// credential payloads). `gateway_device`, `local_domain`, `external_uuid`
+// are optional.
 // ---------------------------------------------------------------------------
-export interface AllocateIpAccounts {
-  authority: PublicKey
-  device: PublicKey
-  ipRegistry: PublicKey
-  rootIpBlock: PublicKey
-  ipBlock: PublicKey
-  ipLease: PublicKey
+export interface AddAccessDomainAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
 }
 
-export interface AllocateIpArgs {
-  tier: IpTier
+export interface AddAccessDomainArgs {
+  name: string
+  controlPlaneDevice: PublicKey
+  gatewayDevice: PublicKey | null
+  localDomain: PublicKey | null
+  externalUuid: Buffer | Uint8Array | null // 16 bytes when present
 }
 
-export function buildAllocateIp(
-  a: AllocateIpAccounts,
-  args: AllocateIpArgs,
+export function buildAddAccessDomain(
+  a: AddAccessDomainAccounts,
+  args: AddAccessDomainArgs,
   programId = DAWN_PROGRAM_ID,
 ): TransactionInstruction {
-  const data = Buffer.alloc(8 + 1)
-  IX_DISC.allocate_ip.copy(data, 0)
-  data.writeUInt8(args.tier, 8)
+  const data = Buffer.concat([
+    IX_DISC.add_access_domain,
+    encodeString(args.name),
+    Buffer.from(args.controlPlaneDevice.toBytes()),
+    encodeOptionPubkey(args.gatewayDevice),
+    encodeOptionPubkey(args.localDomain),
+    encodeOptionFixed(args.externalUuid, 16),
+  ])
   return new TransactionInstruction({
     programId,
     keys: [
-      meta(a.authority, true, true),               // authority (signer, mut)
-      meta(a.device, false, false),                // device
-      meta(a.ipRegistry, false, true),             // ip_registry (mut)
-      meta(a.rootIpBlock, false, true),            // root_ip_block (mut)
-      meta(a.ipBlock, false, true),                // ip_block (init_if_needed)
-      meta(a.ipLease, false, true),                // ip_lease (init)
+      meta(a.caller, true, true),         // caller (signer, mut, becomes owner)
+      meta(a.accessDomain, false, true),  // access_domain (init)
       meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// set_control_plane_device(new_control_plane_device: Pubkey)
+// ---------------------------------------------------------------------------
+export interface SetControlPlaneDeviceAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+}
+
+export function buildSetControlPlaneDevice(
+  a: SetControlPlaneDeviceAccounts,
+  newControlPlaneDevice: PublicKey,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.concat([
+    IX_DISC.set_control_plane_device,
+    Buffer.from(newControlPlaneDevice.toBytes()),
+  ])
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, true),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// set_access_domain_gateway_device(new_gateway_device: Option<Pubkey>)
+// ---------------------------------------------------------------------------
+export interface SetAccessDomainGatewayAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+}
+
+export function buildSetAccessDomainGatewayDevice(
+  a: SetAccessDomainGatewayAccounts,
+  newGatewayDevice: PublicKey | null,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.concat([
+    IX_DISC.set_access_domain_gateway_device,
+    encodeOptionPubkey(newGatewayDevice),
+  ])
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, true),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// grant_domain_authority_for_access_domain(role, authority, label?, expires_at?)
+// app/domain_authority/grant_domain_authority.rs
+//
+// Caller must equal access_domain.owner. PDA seeds:
+//   ["domain_authority", access_domain, role_byte, authority]
+// ---------------------------------------------------------------------------
+export interface GrantDomainAuthorityForAccessDomainAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  domainAuthority: PublicKey
+}
+
+export interface GrantDomainAuthorityForAccessDomainArgs {
+  role: DomainAuthorityRole
+  authority: PublicKey
+  label: string | null
+  expiresAt: bigint | null
+}
+
+export function buildGrantDomainAuthorityForAccessDomain(
+  a: GrantDomainAuthorityForAccessDomainAccounts,
+  args: GrantDomainAuthorityForAccessDomainArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.concat([
+    IX_DISC.grant_domain_authority_for_access_domain,
+    Buffer.from([args.role]),
+    Buffer.from(args.authority.toBytes()),
+    encodeOptionString(args.label),
+    encodeOptionI64(args.expiresAt),
+  ])
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(a.domainAuthority, false, true), // init
+      meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// revoke_domain_authority_for_access_domain (no args)
+// ---------------------------------------------------------------------------
+export interface RevokeDomainAuthorityForAccessDomainAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  domainAuthority: PublicKey
+}
+
+export function buildRevokeDomainAuthorityForAccessDomain(
+  a: RevokeDomainAuthorityForAccessDomainAccounts,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.from(IX_DISC.revoke_domain_authority_for_access_domain)
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(a.domainAuthority, false, true), // close = caller
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// register_auth_method(method_type, parameters[256])
+// app/amf/register_auth_method.rs
+//
+// Caller must equal access_domain.owner. PDA seeds:
+//   ["auth_method", access_domain, method_type_byte]
+// ---------------------------------------------------------------------------
+export interface RegisterAuthMethodAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  authMethod: PublicKey
+}
+
+export interface RegisterAuthMethodArgs {
+  methodType: AuthMethodType
+  parameters: Buffer | Uint8Array // 256 bytes
+}
+
+export function buildRegisterAuthMethod(
+  a: RegisterAuthMethodAccounts,
+  args: RegisterAuthMethodArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  if (args.parameters.length !== 256) {
+    throw new Error('parameters must be 256 bytes')
+  }
+  const data = Buffer.concat([
+    IX_DISC.register_auth_method,
+    Buffer.from([args.methodType]),
+    Buffer.from(args.parameters),
+  ])
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),         // caller (= access_domain.owner)
+      meta(a.accessDomain, false, false), // access_domain
+      meta(a.authMethod, false, true),    // auth_method (init)
+      meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// update_auth_method_params(new_parameters: [u8; 256])
+// app/amf/update_auth_method_params.rs
+//
+// Same PDA as register_auth_method — mutates params in place. Caller is
+// either access_domain.owner or a live ConfigPlaneManager DomainAuthority.
+// Pass the optional ConfigPlaneManager PDA when caller != owner.
+// ---------------------------------------------------------------------------
+export interface UpdateAuthMethodParamsAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  authMethod: PublicKey
+  configPlaneManager: PublicKey | null // Optional DomainAuthority (role=CPM)
+}
+
+export interface UpdateAuthMethodParamsArgs {
+  newParameters: Buffer | Uint8Array // 256 bytes
+}
+
+export function buildUpdateAuthMethodParams(
+  a: UpdateAuthMethodParamsAccounts,
+  args: UpdateAuthMethodParamsArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  if (args.newParameters.length !== 256) {
+    throw new Error('newParameters must be 256 bytes')
+  }
+  const data = Buffer.concat([
+    IX_DISC.update_auth_method_params,
+    Buffer.from(args.newParameters),
+  ])
+  // Anchor convention for Optional<Account>: pass programId for None.
+  const cpmKey = a.configPlaneManager ?? programId
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(a.authMethod, false, true),
+      meta(cpmKey, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// register_credential_for(vlan_id, qos_tag, sealed_payload)
+// app/amf/register_credential_for.rs
+//
+// Two authorization regimes (resolved server-side):
+//   BSS w/ Registrar: registrar is Some — caller == registrar.authority
+//   BSS direct:       registrar is None — caller == access_domain.owner
+// PDA seeds: ["credential", access_domain, auth_method, beneficiary]
+// ---------------------------------------------------------------------------
+export interface RegisterCredentialForAccounts {
+  caller: PublicKey
+  beneficiary: PublicKey
+  accessDomain: PublicKey
+  authMethod: PublicKey
+  registrar: PublicKey | null  // Optional DomainAuthority (Registrar) PDA
+  credential: PublicKey
+}
+
+export interface RegisterCredentialForArgs {
+  vlanId: number | null
+  qosTag: number | null
+  sealedPayload: Buffer | Uint8Array // 128 bytes
+}
+
+export function buildRegisterCredentialFor(
+  a: RegisterCredentialForAccounts,
+  args: RegisterCredentialForArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  if (args.sealedPayload.length !== 128) {
+    throw new Error('sealedPayload must be 128 bytes')
+  }
+  const data = Buffer.concat([
+    IX_DISC.register_credential_for,
+    encodeOptionU16(args.vlanId),
+    encodeOptionU8(args.qosTag),
+    Buffer.from(args.sealedPayload),
+  ])
+  // Anchor convention for Optional<Account>: pass programId for None.
+  const registrarKey = a.registrar ?? programId
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.beneficiary, false, false),
+      meta(a.accessDomain, false, false),
+      meta(a.authMethod, false, false),
+      meta(registrarKey, false, false),
+      meta(a.credential, false, true),
+      meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// revoke_credential (no args)
+// Caller must be the credential authority OR the access_domain owner.
+// ---------------------------------------------------------------------------
+export interface RevokeCredentialAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  authMethod: PublicKey
+  credential: PublicKey
+}
+
+export function buildRevokeCredential(
+  a: RevokeCredentialAccounts,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.from(IX_DISC.revoke_credential)
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(a.authMethod, false, false),
+      meta(a.credential, false, true), // close = caller
     ],
     data,
   })

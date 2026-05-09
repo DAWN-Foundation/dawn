@@ -23,13 +23,9 @@ import { PublicKey } from '@solana/web3.js'
 
 import {
   ACCOUNT_EDGES,
-  EXTERNAL_TARGETS,
   EdgeSpec,
   EdgeTarget,
-  resolveSeedKeyTarget,
 } from './codec/edges'
-import { dawnMintPda } from './codec/pda'
-import { SplMint, SplTokenAccount } from './codec/spl'
 import { AccountSnapshot, WorldState } from './world-state'
 
 export type InvariantResult =
@@ -62,201 +58,7 @@ export function canonicalizeResult(r: InvariantResult): InvariantResult {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 1: dawn-supply-conserved
-// ---------------------------------------------------------------------------
-const DAWN_MINT_PUBKEY = dawnMintPda()[0]
-
-const dawnSupplyConserved: Invariant = {
-  name: 'dawn-supply-conserved',
-  severity: 'error',
-  appliesTo: (state) => state.byPubkey(DAWN_MINT_PUBKEY) != null,
-  check: (state) => {
-    const mintSnap = state.byPubkey(DAWN_MINT_PUBKEY)
-    if (!mintSnap || mintSnap.kind !== 'spl-mint') {
-      return { ok: false, message: 'DAWN mint not present or not a Mint account' }
-    }
-    const mintSupply = (mintSnap.decoded as SplMint).supply
-    const summed = state.tokenSupplyOnAccounts(DAWN_MINT_PUBKEY)
-    if (mintSupply !== summed) {
-      return {
-        ok: false,
-        message: `DAWN supply mismatch: mint reports ${mintSupply}, sum across known token accounts is ${summed}`,
-        accounts: [DAWN_MINT_PUBKEY],
-        details: { mintSupply: mintSupply.toString(), summed: summed.toString() },
-      }
-    }
-    return { ok: true }
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Invariant 2: lease-ipv4-uniqueness
-// ---------------------------------------------------------------------------
-const leaseIpv4Uniqueness: Invariant = {
-  name: 'lease-ipv4-uniqueness',
-  severity: 'error',
-  appliesTo: (state) => state.byType('IpLease').length > 0,
-  check: (state) => {
-    const leases = state.byType('IpLease')
-    const byIp = new Map<string, string[]>()
-    for (const snap of leases) {
-      const ipv4 = (snap.decoded as any).ipv4
-      // ipv4 is a base64-encoded 4-byte buffer in the captured state.
-      // Decode to dotted-quad and key on it.
-      const bin = typeof ipv4 === 'string' ? atobNode(ipv4) : ipv4
-      const dotted = `${bin[0]}.${bin[1]}.${bin[2]}.${bin[3]}/${(snap.decoded as any).ipv4CidrMask}`
-      if (!byIp.has(dotted)) byIp.set(dotted, [])
-      byIp.get(dotted)!.push(snap.pubkey)
-    }
-    const conflicts: string[] = []
-    const offenders: string[] = []
-    for (const [ip, pks] of byIp.entries()) {
-      if (pks.length > 1) {
-        conflicts.push(`${ip}: ${pks.length} leases`)
-        offenders.push(...pks)
-      }
-    }
-    if (conflicts.length > 0) {
-      return {
-        ok: false,
-        message: `IP collision detected: ${conflicts.join('; ')}`,
-        accounts: offenders.map((p) => new PublicKey(p)),
-      }
-    }
-    return { ok: true }
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Invariant 3: lease-bitmap-consistency
-// For every IpLease, the corresponding bit in its IpBlock is set.
-// For every IpBlock, free_units + popcount(slots_chunks) == unit_capacity.
-// ---------------------------------------------------------------------------
-const leaseBitmapConsistency: Invariant = {
-  name: 'lease-bitmap-consistency',
-  severity: 'error',
-  appliesTo: (state) => state.byType('IpBlock').length > 0,
-  check: (state) => {
-    const offenders: string[] = []
-    const messages: string[] = []
-
-    // Part A: every IpBlock obeys free_units + popcount = unit_capacity
-    for (const snap of state.byType('IpBlock')) {
-      const ip = snap.decoded as any
-      const slots: bigint[] = ip.slotsChunks ?? []
-      const popcount = slots.reduce((acc, w) => acc + popcount64(w), 0)
-      const expected = (ip.unitCapacity ?? 0) - (ip.freeUnits ?? 0)
-      if (popcount !== expected) {
-        offenders.push(snap.pubkey)
-        messages.push(
-          `IpBlock ${shortPk(snap.pubkey)} popcount=${popcount} != allocated=${expected}`,
-        )
-      }
-    }
-
-    // Part B: every IpLease's bit is set in its block
-    for (const lease of state.byType('IpLease')) {
-      const l = lease.decoded as any
-      // Find the IpBlock by (tier, block_index). Multiple roots per tier
-      // are not yet exercised by our scenarios, so this matches uniquely.
-      const block = state.byType('IpBlock').find((b) => {
-        const bd = b.decoded as any
-        return bd.tier === l.tier && bd.rootBlockIndex === l.blockIndex
-      })
-      if (!block) {
-        offenders.push(lease.pubkey)
-        messages.push(
-          `IpLease ${shortPk(lease.pubkey)} references missing IpBlock (tier=${l.tier}, blockIndex=${l.blockIndex})`,
-        )
-        continue
-      }
-      const blockData = block.decoded as any
-      const slots: bigint[] = blockData.slotsChunks ?? []
-      const unitIdx = l.unitIndex
-      const chunkIdx = unitIdx >> 6
-      const bitIdx = unitIdx & 63
-      const word = slots[chunkIdx] ?? 0n
-      const isSet = (word >> BigInt(bitIdx)) & 1n
-      if (isSet !== 1n) {
-        offenders.push(lease.pubkey, block.pubkey)
-        messages.push(
-          `IpLease ${shortPk(lease.pubkey)} unit_index=${unitIdx} not set in IpBlock bitmap`,
-        )
-      }
-    }
-
-    if (offenders.length === 0) return { ok: true }
-    return {
-      ok: false,
-      message: messages.join('; '),
-      accounts: offenders.map((p) => new PublicKey(p)),
-    }
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Invariant 4: subscription-plan-exists
-// ---------------------------------------------------------------------------
-const subscriptionPlanExists: Invariant = {
-  name: 'subscription-plan-exists',
-  severity: 'error',
-  appliesTo: (state) => state.byType('Subscription').length > 0,
-  check: (state) => {
-    const offenders: string[] = []
-    for (const sub of state.byType('Subscription')) {
-      const planPk = (sub.decoded as any).plan as PublicKey
-      const plan = state.byPubkey(planPk)
-      if (!plan || plan.kind !== 'dawn' || plan.type !== 'Plan') {
-        offenders.push(sub.pubkey)
-      }
-    }
-    if (offenders.length === 0) return { ok: true }
-    return {
-      ok: false,
-      message: `${offenders.length} Subscription(s) reference a missing or wrong-type Plan account`,
-      accounts: offenders.map((p) => new PublicKey(p)),
-    }
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Invariant 5: l2-bounds-respected
-// L2 plan's duration/speed/capacity must be <= its parent_plan's.
-// ---------------------------------------------------------------------------
-const l2BoundsRespected: Invariant = {
-  name: 'l2-bounds-respected',
-  severity: 'error',
-  appliesTo: (state) => state.byType('Plan').some((p) => (p.decoded as any).parentPlan != null),
-  check: (state) => {
-    const plans = state.byType('Plan')
-    const offenders: string[] = []
-    const messages: string[] = []
-    for (const plan of plans) {
-      const p = plan.decoded as any
-      if (p.parentPlan == null) continue
-      const parent = state.byPubkey(p.parentPlan as PublicKey)
-      if (!parent || parent.type !== 'Plan') continue
-      const pp = parent.decoded as any
-      const violations: string[] = []
-      if (p.duration > pp.duration) violations.push(`duration ${p.duration} > parent ${pp.duration}`)
-      if (p.speed > pp.speed) violations.push(`speed ${p.speed} > parent ${pp.speed}`)
-      if (p.capacity > pp.capacity) violations.push(`capacity ${p.capacity} > parent ${pp.capacity}`)
-      if (violations.length) {
-        offenders.push(plan.pubkey)
-        messages.push(`L2 plan ${shortPk(plan.pubkey)}: ${violations.join(', ')}`)
-      }
-    }
-    if (offenders.length === 0) return { ok: true }
-    return {
-      ok: false,
-      message: messages.join('; '),
-      accounts: offenders.map((p) => new PublicKey(p)),
-    }
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Invariant 6: device-local-domain-exists
+// Invariant: device-local-domain-exists
 // ---------------------------------------------------------------------------
 const deviceLocalDomainExists: Invariant = {
   name: 'device-local-domain-exists',
@@ -281,7 +83,7 @@ const deviceLocalDomainExists: Invariant = {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 7: failed-tx-no-diff
+// Invariant: failed-tx-no-diff
 // If the most-recent tx errored, its diff[] must be empty (a failed
 // tx must not have produced state mutations).
 // ---------------------------------------------------------------------------
@@ -302,7 +104,7 @@ const failedTxNoDiff: Invariant = {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 8: created-at-sane (warning)
+// Invariant: created-at-sane (warning)
 // ---------------------------------------------------------------------------
 const createdAtSane: Invariant = {
   name: 'created-at-sane',
@@ -336,30 +138,11 @@ const createdAtSane: Invariant = {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 9: referential-integrity (edge-derived)
+// Invariant: referential-integrity (edge-derived)
 //
 // For every dawn account in the world, walk its declared EdgeSpec[] from
 // ACCOUNT_EDGES and check that each non-external, non-`from_creation`
 // pubkey field references an extant account of the right type.
-//
-// Coverage:
-//   - dawn → dawn:        target.kind === 'dawn' && target.type === edge.target
-//   - dawn → Mint:        target.kind === 'spl-mint'
-//   - dawn → TokenAccount: target.kind === 'spl-token-account'
-//   - dawn → Wallet/ExternalProgram: SKIPPED. Wallets have no decodable
-//     structure to verify, and external programs may legitimately not be
-//     present in our observed-set (Raydium isn't loaded in scenarios yet).
-//   - `from_creation` edges: SKIPPED. They're synthesized from creation-tx
-//     context for the viewer, not stored as struct fields.
-//
-// Polymorphism: IpLease.seedKey's expected target depends on lease.tier
-// (Subscriber → Subscription, Loopback/PtP → Device). Resolved via
-// resolveSeedKeyTarget().
-//
-// This invariant is the structural counterpart to the type-specific ones
-// above (subscription-plan-exists, device-local-domain-exists, etc.). Any
-// new pubkey field a contributor adds gets covered the moment they update
-// ACCOUNT_EDGES — no new invariant required.
 // ---------------------------------------------------------------------------
 const referentialIntegrity: Invariant = {
   name: 'referential-integrity',
@@ -380,12 +163,7 @@ const referentialIntegrity: Invariant = {
         if (edge.from_creation) continue
         if (edge.target === 'Wallet' || edge.target === 'ExternalProgram') continue
 
-        // Resolve expected target with seed_key polymorphism.
-        const expectedTarget: EdgeTarget =
-          snap.type === 'IpLease' && edge.field === 'seedKey'
-            ? resolveSeedKeyTarget(decoded.tier as string)
-            : edge.target
-
+        const expectedTarget: EdgeTarget = edge.target
         const value = decoded[edge.field]
 
         if (edge.many) {
@@ -442,7 +220,6 @@ function checkRef(
     )
     return
   }
-  // Externals validated structurally by kind, not by dawn type name.
   if (expectedTarget === 'Mint') {
     if (target.kind !== 'spl-mint') {
       offenders.push(source.pubkey, targetPk.toBase58())
@@ -471,41 +248,246 @@ function checkRef(
 }
 
 // ---------------------------------------------------------------------------
+// Invariant: access-domain-cpd-set
+// Every AccessDomain has a non-default control_plane_device. Catches
+// "operator forgot to plug in the CPD on creation."
+// ---------------------------------------------------------------------------
+const DEFAULT_PUBKEY = PublicKey.default
+
+const accessDomainCpdSet: Invariant = {
+  name: 'access-domain-cpd-set',
+  severity: 'error',
+  appliesTo: (state) => state.byType('AccessDomain').length > 0,
+  check: (state) => {
+    const offenders: string[] = []
+    for (const ad of state.byType('AccessDomain')) {
+      const cpd = (ad.decoded as any).controlPlaneDevice as PublicKey
+      if (!cpd || cpd.equals(DEFAULT_PUBKEY)) offenders.push(ad.pubkey)
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: `${offenders.length} AccessDomain(s) have an unset control_plane_device`,
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Invariant: credential-sealed-well-formed
+// Every Credential.sealed_payload's first 32 bytes (the ephemeral X25519
+// pubkey portion of the libsodium sealed-box envelope) are non-zero.
+// ---------------------------------------------------------------------------
+const credentialSealedWellFormed: Invariant = {
+  name: 'credential-sealed-well-formed',
+  severity: 'error',
+  appliesTo: (state) => state.byType('Credential').length > 0,
+  check: (state) => {
+    const offenders: string[] = []
+    for (const cred of state.byType('Credential')) {
+      const sealed = (cred.decoded as any).sealedPayload as Buffer | undefined
+      if (!sealed || sealed.length !== 128) {
+        offenders.push(cred.pubkey)
+        continue
+      }
+      const eph = sealed.subarray(0, 32)
+      let any = false
+      for (let i = 0; i < 32; i++) if (eph[i] !== 0) { any = true; break }
+      if (!any) offenders.push(cred.pubkey)
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: `${offenders.length} Credential(s) have a malformed sealed_payload`,
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Invariant: credential-vlan-id-valid
+// When Credential.vlan_id is Some, it's in 1..=4094 (mirrors on-chain check).
+// ---------------------------------------------------------------------------
+const credentialVlanIdValid: Invariant = {
+  name: 'credential-vlan-id-valid',
+  severity: 'error',
+  appliesTo: (state) =>
+    state.byType('Credential').some((c) => (c.decoded as any).vlanId != null),
+  check: (state) => {
+    const offenders: string[] = []
+    for (const cred of state.byType('Credential')) {
+      const v = (cred.decoded as any).vlanId as number | null
+      if (v == null) continue
+      if (v < 1 || v > 4094) offenders.push(cred.pubkey)
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: `${offenders.length} Credential(s) have an out-of-range VLAN id`,
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Invariant: domain-authority-not-expired
+// Every live DomainAuthority either has no expiry, or its expires_at is
+// in the future. An expired-but-still-on-chain grant is a structural
+// failure — the program rejects use of expired grants at register time,
+// but the operator should have revoked them already.
+// ---------------------------------------------------------------------------
+const domainAuthorityNotExpired: Invariant = {
+  name: 'domain-authority-not-expired',
+  severity: 'warning',
+  appliesTo: (state) => state.byType('DomainAuthority').length > 0,
+  check: (state) => {
+    const now = state.currentClock().unix_ts
+    const offenders: string[] = []
+    const messages: string[] = []
+    for (const da of state.byType('DomainAuthority')) {
+      const exp = (da.decoded as any).expiresAt as bigint | null
+      if (exp == null) continue
+      const expN = typeof exp === 'bigint' ? Number(exp) : exp
+      if (expN <= now) {
+        offenders.push(da.pubkey)
+        messages.push(
+          `DomainAuthority ${shortPk(da.pubkey)} expired at ${expN} (now=${now})`,
+        )
+      }
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: messages.join('; '),
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Invariant: psk-method-params-valid
+// For every Mpsk/Psk AuthMethod, the parameters[..128] prefix decodes
+// as a well-formed PSKMethodParams: at least one band populated, each
+// active band's label_len in 1..=32, each label is valid utf-8 in its
+// declared prefix, security/encryption/rotation in their valid ranges.
+// ---------------------------------------------------------------------------
+const pskMethodParamsValid: Invariant = {
+  name: 'psk-method-params-valid',
+  severity: 'error',
+  appliesTo: (state) =>
+    state
+      .byType('AuthMethod')
+      .some((a) => {
+        const t = (a.decoded as any).methodType
+        return t === 'Mpsk' || t === 'Psk'
+      }),
+  check: (state) => {
+    const offenders: string[] = []
+    const messages: string[] = []
+    for (const am of state.byType('AuthMethod')) {
+      const d = am.decoded as any
+      if (d.methodType !== 'Mpsk' && d.methodType !== 'Psk') continue
+      const params: Buffer = d.parameters
+      if (params.length !== 256) {
+        offenders.push(am.pubkey)
+        messages.push(`${shortPk(am.pubkey)}: parameters not 256 bytes`)
+        continue
+      }
+      const security = params.readUInt8(0)
+      const encryption = params.readUInt8(1)
+      const rotation = params.readUInt32LE(2)
+      const len2_4 = params.readUInt8(6)
+      const len5 = params.readUInt8(6 + 1 + 32)
+      const len6 = params.readUInt8(6 + 2 * (1 + 32))
+      const issues: string[] = []
+      if (security > 1) issues.push(`security=${security}`)
+      if (encryption > 2) issues.push(`encryption=${encryption}`)
+      if (rotation !== 0 && (rotation < 3600 || rotation > 604800)) {
+        issues.push(`rotation=${rotation}`)
+      }
+      if (len2_4 === 0 && len5 === 0 && len6 === 0) {
+        issues.push('no active band')
+      }
+      for (const [name, len, off] of [
+        ['2.4GHz', len2_4, 6 + 1],
+        ['5GHz', len5, 6 + 2 + 32],
+        ['6GHz', len6, 6 + 3 + 64],
+      ] as const) {
+        if (len === 0) continue
+        if (len > 32) {
+          issues.push(`${name} len=${len}`)
+          continue
+        }
+        const label = params.subarray(off, off + len)
+        try {
+          label.toString('utf8')
+        } catch {
+          issues.push(`${name} not utf8`)
+        }
+      }
+      if (issues.length > 0) {
+        offenders.push(am.pubkey)
+        messages.push(`${shortPk(am.pubkey)}: ${issues.join('; ')}`)
+      }
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: messages.join(' | '),
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Invariant: domain-authority-role-known
+// Every DomainAuthority's role is a known variant. Catches enum-drift
+// bugs (e.g. some old grant has a role byte that's been reassigned).
+// ---------------------------------------------------------------------------
+const KNOWN_DA_ROLES = new Set(['Registrar', 'ConfigPlaneManager'])
+
+const domainAuthorityRoleKnown: Invariant = {
+  name: 'domain-authority-role-known',
+  severity: 'error',
+  appliesTo: (state) => state.byType('DomainAuthority').length > 0,
+  check: (state) => {
+    const offenders: string[] = []
+    for (const da of state.byType('DomainAuthority')) {
+      const role = (da.decoded as any).role
+      if (typeof role !== 'string' || !KNOWN_DA_ROLES.has(role)) {
+        offenders.push(da.pubkey)
+      }
+    }
+    if (offenders.length === 0) return { ok: true }
+    return {
+      ok: false,
+      message: `${offenders.length} DomainAuthority(s) have an unknown role`,
+      accounts: offenders.map((p) => new PublicKey(p)),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
 export const GLOBAL_INVARIANTS: Invariant[] = [
-  dawnSupplyConserved,
-  leaseIpv4Uniqueness,
-  leaseBitmapConsistency,
-  subscriptionPlanExists,
-  l2BoundsRespected,
   deviceLocalDomainExists,
   failedTxNoDiff,
   createdAtSane,
   referentialIntegrity,
+  accessDomainCpdSet,
+  credentialSealedWellFormed,
+  credentialVlanIdValid,
+  domainAuthorityNotExpired,
+  pskMethodParamsValid,
+  domainAuthorityRoleKnown,
 ]
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function popcount64(x: bigint): number {
-  // Naive popcount — fine for the scenario sizes we run.
-  let n = 0
-  let v = x
-  while (v !== 0n) {
-    if ((v & 1n) === 1n) n += 1
-    v >>= 1n
-  }
-  return n
-}
-
 function shortPk(pk: string): string {
   return `${pk.slice(0, 4)}…${pk.slice(-4)}`
-}
-
-/** atob shim that works in Node and produces a Uint8Array view. */
-function atobNode(b64: string): Uint8Array {
-  return new Uint8Array(Buffer.from(b64, 'base64'))
 }

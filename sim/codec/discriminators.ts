@@ -29,35 +29,27 @@ export function eventDisc(name: string): Buffer {
 
 /** Precomputed instruction discriminators for every `pub fn` in lib.rs. */
 export const IX_DISC = {
-  init_token: ixDisc('init_token'),
-  init_fee_accounts: ixDisc('init_fee_accounts'),
+  // bootstrap
   initialize_config: ixDisc('initialize_config'),
-  init_metadata: ixDisc('init_metadata'),
-  update_config: ixDisc('update_config'),
+  update_config_authority: ixDisc('update_config_authority'),
+  // access domain
+  add_access_domain: ixDisc('add_access_domain'),
+  set_control_plane_device: ixDisc('set_control_plane_device'),
+  set_access_domain_gateway_device: ixDisc('set_access_domain_gateway_device'),
+  // domain authority (Tier-2 grants)
+  grant_domain_authority_for_access_domain: ixDisc('grant_domain_authority_for_access_domain'),
+  revoke_domain_authority_for_access_domain: ixDisc('revoke_domain_authority_for_access_domain'),
+  // amf
   register_auth_method: ixDisc('register_auth_method'),
-  add_auth_method: ixDisc('add_auth_method'),
-  register_credential: ixDisc('register_credential'),
+  update_auth_method_params: ixDisc('update_auth_method_params'),
   register_credential_for: ixDisc('register_credential_for'),
   revoke_credential: ixDisc('revoke_credential'),
-  register_connection: ixDisc('register_connection'),
-  revoke_connection: ixDisc('revoke_connection'),
+  // devices
   add_device_model: ixDisc('add_device_model'),
   add_device: ixDisc('add_device'),
   add_device_for: ixDisc('add_device_for'),
   verify_device_location: ixDisc('verify_device_location'),
-  add_service_agreement: ixDisc('add_service_agreement'),
-  add_l3_plan: ixDisc('add_l3_plan'),
-  add_l2_plan: ixDisc('add_l2_plan'),
-  subscribe: ixDisc('subscribe'),
-  subscribe_for: ixDisc('subscribe_for'),
-  extend_subscription: ixDisc('extend_subscription'),
-  extend_subscription_for: ixDisc('extend_subscription_for'),
-  claim: ixDisc('claim'),
-  initialize_root_ip_block: ixDisc('initialize_root_ip_block'),
-  allocate_ip: ixDisc('allocate_ip'),
-  lease_subscription_ip: ixDisc('lease_subscription_ip'),
-  lease_subscription_ip_for: ixDisc('lease_subscription_ip_for'),
-  revoke_ip: ixDisc('revoke_ip'),
+  // local domain (management plane)
   update_local_domain_status: ixDisc('update_local_domain_status'),
 } as const
 
@@ -66,19 +58,10 @@ export const ACCOUNT_DISC = {
   AccessDomain: accountDisc('AccessDomain'),
   AuthMethod: accountDisc('AuthMethod'),
   Config: accountDisc('Config'),
-  Connection: accountDisc('Connection'),
   Credential: accountDisc('Credential'),
   Device: accountDisc('Device'),
   DeviceLocation: accountDisc('DeviceLocation'),
   DeviceModel: accountDisc('DeviceModel'),
-  DistributionDomain: accountDisc('DistributionDomain'),
-  IpBlock: accountDisc('IpBlock'),
-  IpLease: accountDisc('IpLease'),
-  IpRegistry: accountDisc('IpRegistry'),
+  DomainAuthority: accountDisc('DomainAuthority'),
   LocalDomain: accountDisc('LocalDomain'),
-  Plan: accountDisc('Plan'),
-  RootIpBlock: accountDisc('RootIpBlock'),
-  ServiceAgreement: accountDisc('ServiceAgreement'),
-  Subscription: accountDisc('Subscription'),
-  TokenConfig: accountDisc('TokenConfig'),
 } as const

@@ -2,55 +2,23 @@ use anchor_lang::prelude::*;
 
 use crate::constants::DISCRIMINATOR_SIZE;
 
+/// Protocol singleton — the only off-chain-administered piece of state
+/// in the access-domain build. Holds the cold-admin authority that
+/// controls global gates such as `add_device_model`.
+///
+/// Initialized once with `initialize_config(authority)`. Subsequent
+/// updates (rotating the authority) go through `update_config_authority`,
+/// signed by the current authority.
 #[account]
 #[derive(InitSpace)]
 pub struct Config {
-    /// The creation timestamp
+    /// Creation timestamp.
     pub created_at: i64,
-    /// The authority that can update the config
+    /// The cold-admin authority. Required signer for protocol-wide
+    /// operations (currently: registering DeviceModels). Each AccessDomain
+    /// has its own owner; this is separate.
     pub authority: Pubkey,
-    /// The authority that can make calls on user's behalf
-    pub api_authority: Pubkey,
-
-    // MINTS
-    /// The token config account that owns the DAWN mint
-    pub token_config: Pubkey,
-    /// The USD.tel mint account
-    pub stable_mint: Pubkey,
-    /// The DAWN mint account
-    pub dawn_mint: Pubkey,
-
-    // TOKEN ACCOUNTS
-    /// The fee pool DAWN token account (this holds all the fees until distributed)
-    pub fee_pool_dawn_account: Pubkey,
-    /// The DAWN DAO DAWN token account
-    pub dao_dawn_account: Pubkey,
-    /// The validator DAWN pool token account
-    pub validator_dawn_account: Pubkey,
-    /// The medallion DAWN pool token account
-    pub medallion_dawn_account: Pubkey,
-
-    // DEX SWAP
-    /// The Raydium program account
-    pub raydium: Pubkey,
-    /// The Raydium authority account
-    pub raydium_authority: Pubkey,
-    /// The Raydium config account
-    pub raydium_config: Pubkey,
-    /// The Raydium DAWN/USD.tel pool account
-    pub raydium_pool: Pubkey,
-    /// The Raydium observation account
-    pub raydium_observation: Pubkey,
-
-    // FEES - grouped the numeric types together
-    /// The fee for DAWN DAO (3%)
-    pub dao_fee: u64,
-    /// The fee for Validators (3%)
-    pub validator_fee: u64,
-    /// The fee for Medallion (9%)
-    pub medallion_fee: u64,
-
-    /// PDA bump seed
+    /// PDA bump seed.
     pub bump: u8,
 }
 

@@ -1,73 +1,62 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    app::{amf::register_credential_helper, DawnApp},
+    app::DawnApp,
     error::DawnError,
     events::CredentialRegistered,
-    state::{AuthMethod, Config, Credential, Plan, Subscription},
-    utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
+    state::{AccessDomain, AuthMethod, Credential, DomainAuthority, DomainAuthorityRole},
+    utils::hash_string_seed,
 };
 
-/// Context for registering client credentials
+/// Canonical entrypoint for creating a Credential on an AccessDomain.
+///
+/// Two authorization regimes:
+///   1. With Registrar: `registrar` is Some — caller must equal
+///      `registrar.authority`, the Registrar must reference this
+///      AccessDomain, role must be Registrar, must not be expired.
+///   2. Direct: `registrar` is None — caller must equal
+///      `access_domain.owner` (the cold-admin key).
+///
+/// PDA seeds for Credential: ["credential", access_domain, auth_method, beneficiary]
 #[derive(Accounts)]
-#[instruction(credential_data: [u8; 128])]
+#[instruction(
+    vlan_id: Option<u16>,
+    qos_tag: Option<u8>,
+    sealed_payload: [u8; 128],
+)]
 pub struct RegisterCredentialFor<'info> {
-    #[account(mut, address = config.api_authority)]
+    #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// The beneficiary who will receive the subscription
-    /// CHECK: Used only for PDA derivation and as subscriber
+    /// CHECK: used only as a key for PDA derivation; not deserialized.
     pub beneficiary: AccountInfo<'info>,
-
-    /// The config with fees and accounts
-    #[account(
-        seeds = [Config::SEED_PREFIX.as_ref()],
-        bump = config.bump,
-        )]
-    pub config: Box<Account<'info, Config>>,
 
     #[account(
         seeds = [
-            AuthMethod::SEED_PREFIX,
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            auth_method.device.as_ref(),
-            &auth_method.encryption_key,
-            &hash_parameters(&auth_method.parameters),
+            AccessDomain::SEED_PREFIX,
+            access_domain.owner.as_ref(),
+            &hash_string_seed(&access_domain.name),
         ],
-        bump = auth_method.bump
+        bump = access_domain.bump,
+    )]
+    pub access_domain: Account<'info, AccessDomain>,
+
+    #[account(
+        constraint = auth_method.access_domain == access_domain.key()
+            @ DawnError::AuthMethodAccessDomainMismatch,
+        seeds = [
+            AuthMethod::SEED_PREFIX,
+            auth_method.access_domain.as_ref(),
+            auth_method.method_type.as_seed(),
+        ],
+        bump = auth_method.bump,
     )]
     pub auth_method: Account<'info, AuthMethod>,
 
-    #[account(
-        mut,
-        seeds = [
-            Plan::SEED_PREFIX.as_ref(),
-            plan.owner.as_ref(),
-            plan.local_domain.as_ref(),
-            &optional_pubkey_seed(plan.parent_plan),
-            &hash_string_seed(&plan.name),
-            &plan.price.to_le_bytes(),
-            &plan.duration.to_le_bytes(),
-            &plan.speed.to_le_bytes(),
-            &plan.capacity.to_le_bytes(),
-            &plan.start_at.to_le_bytes(),
-            plan.service_agreement.as_ref(),
-        ],
-        bump = plan.bump,
-    )]
-    pub plan: Account<'info, Plan>,
-
-    #[account(
-        constraint = subscription.subscriber == beneficiary.key() @DawnError::InvalidBeneficiary,
-        seeds = [
-            Subscription::SEED_PREFIX,
-            plan.key().as_ref(),
-            beneficiary.key().as_ref(),
-        ],
-        bump = subscription.bump
-    )]
-    pub subscription: Account<'info, Subscription>,
+    /// Optional Registrar grant. When provided, caller must equal
+    /// `registrar.authority` and the Registrar must reference this
+    /// AccessDomain.
+    pub registrar: Option<Account<'info, DomainAuthority>>,
 
     #[account(
         init,
@@ -75,8 +64,7 @@ pub struct RegisterCredentialFor<'info> {
         space = Credential::SIZE,
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
-            subscription.key().as_ref(),
-            plan.key().as_ref(),
+            access_domain.key().as_ref(),
             auth_method.key().as_ref(),
             beneficiary.key().as_ref(),
         ],
@@ -88,19 +76,68 @@ pub struct RegisterCredentialFor<'info> {
 }
 
 impl DawnApp {
-    /// Register client credentials for an auth method
     pub fn register_credential_for(
         ctx: Context<RegisterCredentialFor>,
-        credential_data: [u8; 128],
+        vlan_id: Option<u16>,
+        qos_tag: Option<u8>,
+        sealed_payload: [u8; 128],
     ) -> Result<()> {
-        register_credential_helper::process_register_credential(
-            &ctx.accounts.plan,
-            &ctx.accounts.subscription,
-            &ctx.accounts.auth_method,
-            ctx.accounts.beneficiary.key(),
-            &mut ctx.accounts.credential,
-            credential_data,
-            ctx.bumps.credential,
-        )
+        let registrar_opt = ctx.accounts.registrar.as_ref();
+        let now = Clock::get()?.unix_timestamp;
+
+        match registrar_opt {
+            // With Registrar grant.
+            Some(registrar) => {
+                require!(
+                    registrar.domain == ctx.accounts.access_domain.key(),
+                    DawnError::DomainAuthorityDomainMismatch
+                );
+                require!(
+                    registrar.role == DomainAuthorityRole::Registrar,
+                    DawnError::DomainAuthorityWrongRole
+                );
+                require!(
+                    ctx.accounts.caller.key() == registrar.authority,
+                    DawnError::DomainAuthoritySignerMismatch
+                );
+                if let Some(exp) = registrar.expires_at {
+                    require!(exp > now, DawnError::DomainAuthorityExpired);
+                }
+            }
+            // No Registrar: caller must be the access-domain owner.
+            None => {
+                require!(
+                    ctx.accounts.caller.key() == ctx.accounts.access_domain.owner,
+                    DawnError::OnlyAccessDomainOwner
+                );
+            }
+        }
+
+        if let Some(v) = vlan_id {
+            require!(v >= 1 && v <= 4094, DawnError::InvalidVlanId);
+        }
+
+        let credential = &mut ctx.accounts.credential;
+        credential.created_at = now;
+        credential.authority = ctx.accounts.beneficiary.key();
+        credential.access_domain = ctx.accounts.access_domain.key();
+        credential.auth_method = ctx.accounts.auth_method.key();
+        credential.subscription = None;
+        credential.plan = None;
+        credential.vlan_id = vlan_id;
+        credential.qos_tag = qos_tag;
+        credential.sealed_payload = sealed_payload;
+        credential.bump = ctx.bumps.credential;
+
+        emit!(CredentialRegistered {
+            credential: credential.key(),
+            authority: credential.authority,
+            access_domain: credential.access_domain,
+            auth_method: credential.auth_method,
+            vlan_id,
+            qos_tag,
+            created_at: now,
+        });
+        Ok(())
     }
 }

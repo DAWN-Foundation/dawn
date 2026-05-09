@@ -2,91 +2,69 @@ use anchor_lang::prelude::*;
 
 use crate::{
     app::DawnApp,
+    error::DawnError,
     events::CredentialRevoked,
-    state::{AuthMethod, Credential, Plan, Subscription},
-    utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
+    state::{AccessDomain, AuthMethod, Credential},
+    utils::hash_string_seed,
 };
 
-/// Context for revoking client credentials
+/// Close a Credential. Two authorized signers:
+///   - the credential's `authority` (the customer themselves)
+///   - the access_domain owner (operator-driven cleanup)
 #[derive(Accounts)]
 pub struct RevokeCredential<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
     #[account(
-        mut,
         seeds = [
-            Subscription::SEED_PREFIX.as_ref(),
-            plan.key().as_ref(),
-            caller.key().as_ref(),
+            AccessDomain::SEED_PREFIX,
+            access_domain.owner.as_ref(),
+            &hash_string_seed(&access_domain.name),
         ],
-        bump = subscription.bump
+        bump = access_domain.bump,
     )]
-    pub subscription: Account<'info, Subscription>,
+    pub access_domain: Account<'info, AccessDomain>,
 
     #[account(
-        mut,
         seeds = [
-            Plan::SEED_PREFIX.as_ref(),
-            plan.owner.as_ref(),
-            plan.local_domain.as_ref(),
-            &optional_pubkey_seed(plan.parent_plan),
-            &hash_string_seed(&plan.name),
-            &plan.price.to_le_bytes(),
-            &plan.duration.to_le_bytes(),
-            &plan.speed.to_le_bytes(),
-            &plan.capacity.to_le_bytes(),
-            &plan.start_at.to_le_bytes(),
-            plan.service_agreement.as_ref(),
+            AuthMethod::SEED_PREFIX,
+            auth_method.access_domain.as_ref(),
+            auth_method.method_type.as_seed(),
         ],
-        bump = plan.bump,
-    )]
-    pub plan: Account<'info, Plan>,
-
-    #[account(
-        mut,
-        seeds = [
-            AuthMethod::SEED_PREFIX.as_ref(),
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            auth_method.device.as_ref(),
-            &auth_method.encryption_key,
-            &hash_parameters(&auth_method.parameters),
-        ],
-        bump = auth_method.bump
+        bump = auth_method.bump,
     )]
     pub auth_method: Account<'info, AuthMethod>,
 
     #[account(
         mut,
-        constraint = credential.authority == caller.key(),
+        constraint = (
+            credential.authority == caller.key()
+            || access_domain.owner == caller.key()
+        ) @ DawnError::UnauthorizedCredentialRevoke,
+        constraint = credential.access_domain == access_domain.key()
+            @ DawnError::CredentialAccessDomainMismatch,
+        constraint = credential.auth_method == auth_method.key()
+            @ DawnError::CredentialAuthMethodMismatch,
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
-            subscription.key().as_ref(),
-            plan.key().as_ref(),
+            access_domain.key().as_ref(),
             auth_method.key().as_ref(),
-            caller.key().as_ref(),
+            credential.authority.as_ref(),
         ],
         bump = credential.bump,
-        close = caller
+        close = caller,
     )]
     pub credential: Account<'info, Credential>,
 }
 
 impl DawnApp {
-    /// Revoke client credentials by closing the account
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
-        // Account will be automatically closed due to the `close = authority` constraint
-        let credential = &ctx.accounts.credential;
-        let subscription = &ctx.accounts.subscription;
-        let plan = &ctx.accounts.plan;
-        let auth_method = &ctx.accounts.auth_method;
-
         emit!(CredentialRevoked {
-            credential: credential.key(),
-            subscription: subscription.key(),
-            plan: plan.key(),
-            auth_method: auth_method.key(),
+            credential: ctx.accounts.credential.key(),
+            authority: ctx.accounts.credential.authority,
+            access_domain: ctx.accounts.access_domain.key(),
+            auth_method: ctx.accounts.auth_method.key(),
             revoked_at: Clock::get()?.unix_timestamp,
         });
         Ok(())

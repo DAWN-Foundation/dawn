@@ -46,13 +46,11 @@ import { WorldState, TxRecordLike } from '../sim/world-state'
 // `scenario` whose `expects` field is the list to re-run. Adding a new
 // scenario means importing it here.
 import { scenario as scenarioBootstrap } from '../sim/capture-bootstrap'
-import { scenario as scenarioMilestones } from '../sim/milestones'
-import { scenario as scenarioSmallIsp } from '../sim/scenario-small-isp'
+import { scenario as scenarioMpskProduction } from '../sim/scenario-mpsk-production'
 
 const SCENARIO_REGISTRY: Record<string, { expects: Expectation[] }> = {
   bootstrap: scenarioBootstrap,
-  milestones: scenarioMilestones,
-  'small-isp': scenarioSmallIsp,
+  'mpsk-production': scenarioMpskProduction,
 }
 
 interface TxRecord {
@@ -290,9 +288,29 @@ async function main() {
     txn.add(ix)
     txn.sign(...signers)
     const result = await banks.tryProcessTransaction(txn)
-    if (result.result) {
+    // Three error-comparison cases:
+    //   recorded ok, replay ok         → continue with diff hash check
+    //   recorded errored, replay errored with same error → expected, continue
+    //                                                       (no diff to check;
+    //                                                       failed-tx-no-diff
+    //                                                       invariant covers it)
+    //   else (mismatch in any direction) → trace integrity failure
+    const replayErr = result.result ? String(result.result) : null
+    if (tx.error && replayErr) {
+      // Both errored. Sufficient agreement: both errored on the same ix.
+      // (Comparing exact error strings is too brittle across runs.)
+      continue
+    }
+    if (tx.error && !replayErr) {
       console.error(
-        `[FAIL] tick ${tx.tick} (${tx.instruction.name ?? 'unknown'}) replay errored: ${result.result}`,
+        `[FAIL] tick ${tx.tick} (${tx.instruction.name ?? 'unknown'}) recorded as errored ('${tx.error}') but replay succeeded`,
+      )
+      mismatchCount += 1
+      continue
+    }
+    if (!tx.error && replayErr) {
+      console.error(
+        `[FAIL] tick ${tx.tick} (${tx.instruction.name ?? 'unknown'}) replay errored: ${replayErr}`,
       )
       mismatchCount += 1
       continue

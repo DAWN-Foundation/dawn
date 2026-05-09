@@ -12,21 +12,12 @@ import {
   decodeAccessDomain,
   decodeAuthMethod,
   decodeConfig,
-  decodeConnection,
   decodeCredential,
   decodeDevice,
   decodeDeviceLocation,
   decodeDeviceModel,
-  decodeDistributionDomain,
-  decodeIpBlock,
-  decodeIpLease,
-  decodeIpRegistry,
+  decodeDomainAuthority,
   decodeLocalDomain,
-  decodePlan,
-  decodeRootIpBlock,
-  decodeServiceAgreement,
-  decodeSubscription,
-  decodeTokenConfig,
 } from './decoders'
 
 export type DecodedAccount = {
@@ -36,23 +27,14 @@ export type DecodedAccount = {
 
 const REGISTRY: Record<string, (b: Buffer) => unknown> = {
   Config: decodeConfig,
-  TokenConfig: decodeTokenConfig,
   DeviceModel: decodeDeviceModel,
   Device: decodeDevice,
   DeviceLocation: decodeDeviceLocation,
   LocalDomain: decodeLocalDomain,
-  ServiceAgreement: decodeServiceAgreement,
-  Plan: decodePlan,
-  DistributionDomain: decodeDistributionDomain,
   AccessDomain: decodeAccessDomain,
+  DomainAuthority: decodeDomainAuthority,
   AuthMethod: decodeAuthMethod,
   Credential: decodeCredential,
-  Connection: decodeConnection,
-  Subscription: decodeSubscription,
-  IpRegistry: decodeIpRegistry,
-  RootIpBlock: decodeRootIpBlock,
-  IpBlock: decodeIpBlock,
-  IpLease: decodeIpLease,
 }
 
 /**
