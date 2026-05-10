@@ -1,6 +1,6 @@
 [package]
 name = "dawn"
-version = "2.0.0-access-domain"
+version = "2.1.0-access-domain"
 description = "DAWN Access-Domain Program (lean build)"
 edition = "2021"
 

@@ -247,7 +247,7 @@ String          name
 i64             created_at
 ```
 
-**`CredentialRegistered`** body:
+**`CredentialRegistered`** body (program v2.1.0+):
 ```
 Pubkey       credential
 Pubkey       authority
@@ -255,24 +255,35 @@ Pubkey       access_domain
 Pubkey       auth_method
 Option<u16>  vlan_id
 Option<u8>   qos_tag
+Pubkey       created_by      ← v2.1.0+: equals caller.key() at mint time
 i64          created_at
 ```
 
-**`CredentialRevoked`** body:
+> v2.1.0 schema migration: the `created_by` field was added so bridges
+> can attribute mints to the registrar wallet without per-tx fetching.
+> For direct mints `created_by == access_domain.owner`. For
+> Registrar-mediated mints `created_by == DomainAuthority.authority`
+> of the live Registrar grant. Events emitted before the v2.1.0 upgrade
+> are 32 bytes shorter and don't carry this field; backfill expects
+> `created_by` absent for old events.
+
+**`CredentialRevoked`** body (program v2.1.0+):
 ```
 Pubkey  credential
 Pubkey  authority
 Pubkey  access_domain
 Pubkey  auth_method
+Pubkey  revoked_by      ← v2.1.0+: caller.key() at revoke time
 i64     revoked_at
 ```
 
-**`AuthMethodRegistered`** body:
+**`AuthMethodRegistered`** body (program v2.1.0+):
 ```
 Pubkey  auth_method
 Pubkey  access_domain
 u8      method_type
 [u8;256] parameters
+Pubkey  created_by      ← v2.1.0+
 i64     created_at
 ```
 
@@ -289,8 +300,27 @@ i64     updated_at
 > the event. Re-fetch the AuthMethod account after observing this event
 > to get the updated 256-byte buffer.
 
-**`DomainAuthorityGranted`** / `DomainAuthorityRevoked`** bodies — see
-`programs/dawn/src/events.rs` (straightforward; rare events).
+**`DomainAuthorityGranted`** body:
+```
+Pubkey         domain_authority
+Pubkey         domain
+Pubkey         authority
+u8             role           (0=Registrar, 1=ConfigPlaneManager)
+Option<String> label          (4+N if Some, else 1 byte)
+Option<i64>    expires_at     (1+8 if Some, else 1 byte)
+Pubkey         created_by
+i64            created_at
+```
+
+**`DomainAuthorityRevoked`** body (program v2.1.0+):
+```
+Pubkey  domain_authority
+Pubkey  domain
+Pubkey  authority
+u8      role
+Pubkey  revoked_by      ← v2.1.0+: caller.key() at revoke time
+i64     revoked_at
+```
 
 ---
 

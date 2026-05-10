@@ -2,7 +2,7 @@
   "address": "4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC",
   "metadata": {
     "name": "dawn",
-    "version": "2.0.0-access-domain",
+    "version": "2.1.0-access-domain",
     "spec": "0.1.0",
     "description": "DAWN Access-Domain Program (lean build)"
   },
@@ -2073,6 +2073,15 @@
             }
           },
           {
+            "name": "created_by",
+            "docs": [
+              "The signer who registered this AuthMethod. Equals",
+              "`access_domain.owner` for direct mints; future delegation",
+              "patterns may allow other roles."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "created_at",
             "type": "i64"
           }
@@ -2330,6 +2339,18 @@
             }
           },
           {
+            "name": "created_by",
+            "docs": [
+              "The signer who minted this credential. For direct mints this",
+              "equals `access_domain.owner`; for Registrar-mediated mints this",
+              "equals the live `DomainAuthority{Registrar}.authority` (the",
+              "operator-api hot wallet). Lets downstream consumers correlate",
+              "credentials with the registrar that produced them without an",
+              "extra per-tx fetch."
+            ],
+            "type": "pubkey"
+          },
+          {
             "name": "created_at",
             "type": "i64"
           }
@@ -2355,6 +2376,15 @@
           },
           {
             "name": "auth_method",
+            "type": "pubkey"
+          },
+          {
+            "name": "revoked_by",
+            "docs": [
+              "The signer who closed this credential. Either",
+              "`access_domain.owner` (operator-driven cleanup) or the",
+              "credential's own `authority` (customer-driven self-revoke)."
+            ],
             "type": "pubkey"
           },
           {
@@ -2867,6 +2897,13 @@
           {
             "name": "role",
             "type": "u8"
+          },
+          {
+            "name": "revoked_by",
+            "docs": [
+              "The signer who revoked this grant. Equals `domain.owner`."
+            ],
+            "type": "pubkey"
           },
           {
             "name": "revoked_at",

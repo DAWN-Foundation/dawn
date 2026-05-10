@@ -65,6 +65,7 @@ impl DawnApp {
             authority: ctx.accounts.credential.authority,
             access_domain: ctx.accounts.access_domain.key(),
             auth_method: ctx.accounts.auth_method.key(),
+            revoked_by: ctx.accounts.caller.key(),
             revoked_at: Clock::get()?.unix_timestamp,
         });
         Ok(())

@@ -51,6 +51,7 @@ impl DawnApp {
             domain: da.domain,
             authority: da.authority,
             role: da.role as u8,
+            revoked_by: ctx.accounts.caller.key(),
             revoked_at: Clock::get()?.unix_timestamp,
         });
         Ok(())

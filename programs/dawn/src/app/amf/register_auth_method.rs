@@ -75,6 +75,7 @@ impl DawnApp {
             access_domain: auth_method.access_domain,
             method_type: auth_method.method_type as u8,
             parameters: auth_method.parameters,
+            created_by: ctx.accounts.caller.key(),
             created_at: now,
         });
         Ok(())

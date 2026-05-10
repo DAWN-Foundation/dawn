@@ -130,7 +130,7 @@ echo "==> binary: $BINARY ($SIZE bytes)"
 # at first deploy: 532,376 bytes → 3.71 SOL locked).
 #
 # Add 0.1 SOL of headroom for tx fees + future upgrade re-uploads.
-NEEDED_LAMPORTS=$(( SIZE * 6960 + 100_000_000 ))
+NEEDED_LAMPORTS=$(( SIZE * 6960 + 100000000 ))
 NEEDED_SOL=$(python3 -c "print(round(${NEEDED_LAMPORTS}/1e9, 3))")
 
 BALANCE_LAMPORTS=$(solana balance --url "$CLUSTER" --keypair "$DEPLOYER_KEYPAIR" --lamports | awk '{print $1}')

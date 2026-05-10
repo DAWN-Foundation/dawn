@@ -98,6 +98,10 @@ pub struct AuthMethodRegistered {
     pub access_domain: Pubkey,
     pub method_type: u8,
     pub parameters: [u8; 256],
+    /// The signer who registered this AuthMethod. Equals
+    /// `access_domain.owner` for direct mints; future delegation
+    /// patterns may allow other roles.
+    pub created_by: Pubkey,
     pub created_at: i64,
 }
 
@@ -118,6 +122,13 @@ pub struct CredentialRegistered {
     pub auth_method: Pubkey,
     pub vlan_id: Option<u16>,
     pub qos_tag: Option<u8>,
+    /// The signer who minted this credential. For direct mints this
+    /// equals `access_domain.owner`; for Registrar-mediated mints this
+    /// equals the live `DomainAuthority{Registrar}.authority` (the
+    /// operator-api hot wallet). Lets downstream consumers correlate
+    /// credentials with the registrar that produced them without an
+    /// extra per-tx fetch.
+    pub created_by: Pubkey,
     pub created_at: i64,
 }
 
@@ -127,6 +138,10 @@ pub struct CredentialRevoked {
     pub authority: Pubkey,
     pub access_domain: Pubkey,
     pub auth_method: Pubkey,
+    /// The signer who closed this credential. Either
+    /// `access_domain.owner` (operator-driven cleanup) or the
+    /// credential's own `authority` (customer-driven self-revoke).
+    pub revoked_by: Pubkey,
     pub revoked_at: i64,
 }
 
@@ -148,5 +163,7 @@ pub struct DomainAuthorityRevoked {
     pub domain: Pubkey,
     pub authority: Pubkey,
     pub role: u8,
+    /// The signer who revoked this grant. Equals `domain.owner`.
+    pub revoked_by: Pubkey,
     pub revoked_at: i64,
 }

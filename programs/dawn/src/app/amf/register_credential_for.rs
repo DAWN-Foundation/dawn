@@ -136,6 +136,7 @@ impl DawnApp {
             auth_method: credential.auth_method,
             vlan_id,
             qos_tag,
+            created_by: ctx.accounts.caller.key(),
             created_at: now,
         });
         Ok(())

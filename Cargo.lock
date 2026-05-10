@@ -513,7 +513,7 @@ dependencies = [
 
 [[package]]
 name = "dawn"
-version = "2.0.0-access-domain"
+version = "2.1.0-access-domain"
 dependencies = [
  "anchor-lang",
  "toml 0.7.8",
