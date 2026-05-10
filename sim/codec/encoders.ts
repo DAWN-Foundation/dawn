@@ -224,6 +224,60 @@ export function buildAddDevice(
 }
 
 // ---------------------------------------------------------------------------
+// add_device_for(name, height, latitude, longitude, placement, mac_address, local_domain_name)
+// app/device/add_device_for.rs AddDeviceFor<'info>
+//
+// Same wire shape as add_device but with an extra `beneficiary` account
+// in slot 1. The caller pays rent; the resulting Device.owner is the
+// beneficiary. Used when one party (e.g. operator) registers a Device on
+// behalf of another (e.g. SoT-bridge node) so the beneficiary's secret
+// key can later decrypt sealed credential payloads.
+// ---------------------------------------------------------------------------
+export interface AddDeviceForAccounts {
+  caller: PublicKey
+  beneficiary: PublicKey
+  deviceModel: PublicKey
+  device: PublicKey
+  deviceLocation: PublicKey
+  localDomain: PublicKey
+}
+
+export function buildAddDeviceFor(
+  a: AddDeviceForAccounts,
+  args: AddDeviceArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const argsBuf = Buffer.alloc(2 + 8 + 8 + 4 + 4 + 6)
+  let o = 0
+  argsBuf.writeUInt16LE(args.height, o); o += 2
+  argsBuf.writeBigInt64LE(args.latitude, o); o += 8
+  argsBuf.writeBigInt64LE(args.longitude, o); o += 8
+  argsBuf.writeInt32LE(args.placement[0], o); o += 4
+  argsBuf.writeInt32LE(args.placement[1], o); o += 4
+  Buffer.from(args.macAddress as any).copy(argsBuf, o)
+
+  const data = Buffer.concat([
+    IX_DISC.add_device_for,
+    encodeString(args.name),
+    argsBuf,
+    encodeString(args.localDomainName),
+  ])
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),             // caller (signer, mut, payer)
+      meta(a.beneficiary, false, false),      // beneficiary (becomes owner)
+      meta(a.deviceModel, false, false),      // device_model
+      meta(a.device, false, true),            // device (init, seeds use beneficiary)
+      meta(a.deviceLocation, false, true),    // device_location (init)
+      meta(a.localDomain, false, true),       // local_domain (init_if_needed)
+      meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
 // update_local_domain_status(new_status: u8)
 // app/local_domain/update_status.rs UpdateLocalDomainStatus<'info>
 //
