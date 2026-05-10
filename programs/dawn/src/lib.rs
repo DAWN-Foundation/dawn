@@ -334,4 +334,34 @@ pub mod dawn {
         let tier_enum = IpTier::from_u8(tier).ok_or(DawnError::InvalidTier)?;
         DawnApp::revoke_ip(ctx, tier_enum)
     }
+
+    // ---- access-domain authenticators (Access Points) ----------------------
+    pub fn register_authenticator(
+        ctx: Context<RegisterAuthenticator>,
+        mac_address: [u8; 6],
+        initial_pubkey: Pubkey,
+        device: Option<Pubkey>,
+        label: Option<String>,
+        expires_at: Option<i64>,
+    ) -> Result<()> {
+        DawnApp::register_authenticator(
+            ctx,
+            mac_address,
+            initial_pubkey,
+            device,
+            label,
+            expires_at,
+        )
+    }
+
+    pub fn rotate_authenticator_pubkey(
+        ctx: Context<RotateAuthenticatorPubkey>,
+        new_pubkey: Pubkey,
+    ) -> Result<()> {
+        DawnApp::rotate_authenticator_pubkey(ctx, new_pubkey)
+    }
+
+    pub fn revoke_authenticator(ctx: Context<RevokeAuthenticator>) -> Result<()> {
+        DawnApp::revoke_authenticator(ctx)
+    }
 }

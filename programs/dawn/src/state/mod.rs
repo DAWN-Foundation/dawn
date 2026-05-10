@@ -1,4 +1,5 @@
 mod access_domain;
+mod access_domain_authenticator;
 mod auth_method;
 mod auth_method_type;
 mod config;
@@ -21,6 +22,7 @@ mod subscription;
 mod token_config;
 
 pub use access_domain::*;
+pub use access_domain_authenticator::*;
 pub use auth_method::*;
 pub use auth_method_type::*;
 pub use config::*;

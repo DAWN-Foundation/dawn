@@ -59,6 +59,13 @@ pub enum DomainAuthorityRole {
     /// rotation interval). Applies to AccessDomain. Operational ops
     /// role for day-to-day config-plane management.
     ConfigPlaneManager,
+    /// Register / rotate / revoke AccessDomainAuthenticator records
+    /// (Access Points) on an AccessDomain. Operationally held by the
+    /// cold-admin-adjacent orchestrator (e.g. Nautobot) so per-AP
+    /// onboarding doesn't require the cold-admin signing key. Cannot
+    /// mint customer credentials or mutate AccessDomain fields — narrow
+    /// blast radius compared to the cold admin.
+    InfrastructureRegistrar,
     // Future variants — add as roles are needed:
     //   AuthMethodManager,    // register/replace AuthMethods (AccessDomain)
     //   PlanCreator,          // create Plans on this domain
@@ -72,6 +79,7 @@ impl DomainAuthorityRole {
         match self {
             Self::Registrar => &[0],
             Self::ConfigPlaneManager => &[1],
+            Self::InfrastructureRegistrar => &[2],
         }
     }
 }

@@ -384,4 +384,24 @@ pub enum DawnError {
 
     #[msg("PSKMethodParams: SSID label is not valid utf-8 in its declared prefix")]
     InvalidSsidUtf8,
+
+    // AUTHENTICATOR (Access Point on an AccessDomain)
+    #[msg("Invalid authenticator pubkey (cannot be default Pubkey)")]
+    InvalidAuthenticatorPubkey,
+
+    #[msg("Invalid authenticator MAC address (cannot be all zeros)")]
+    InvalidAuthenticatorMac,
+
+    #[msg("Authenticator label too long (max 32 chars)")]
+    AuthenticatorLabelTooLong,
+
+    #[msg("Authenticator expires_at is already in the past")]
+    AuthenticatorAlreadyExpired,
+
+    #[msg("Authenticator does not belong to the provided AccessDomain")]
+    AuthenticatorAccessDomainMismatch,
+
+    #[msg("Authenticator rotation must change the pubkey")]
+    AuthenticatorRotationNoOp,
+    // (InvalidUtf8InSeed already defined earlier in this enum — reused.)
 }
