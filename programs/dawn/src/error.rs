@@ -307,4 +307,81 @@ pub enum DawnError {
 
     #[msg("Invalid beneficiary")]
     InvalidBeneficiary,
+
+    // ACCESS DOMAIN REDESIGN — added with the integration of the lean
+    // access-domain schema. These codes are stable; do not reuse a slot.
+
+    #[msg("Access domain name is empty")]
+    EmptyAccessDomainName,
+
+    #[msg("Access domain name is too long")]
+    AccessDomainNameTooLong,
+
+    #[msg("Invalid control plane device (cannot be default Pubkey)")]
+    InvalidControlPlaneDevice,
+
+    #[msg("Only the access-domain owner may perform this action")]
+    OnlyAccessDomainOwner,
+
+    #[msg("AuthMethod's access_domain does not match the provided AccessDomain")]
+    AuthMethodAccessDomainMismatch,
+
+    #[msg("Credential's access_domain does not match the provided AccessDomain")]
+    CredentialAccessDomainMismatch,
+
+    #[msg("Credential's auth_method does not match the provided AuthMethod")]
+    CredentialAuthMethodMismatch,
+
+    #[msg("Caller is not authorized to revoke this credential")]
+    UnauthorizedCredentialRevoke,
+
+    #[msg("Invalid VLAN id (must be in 1..=4094)")]
+    InvalidVlanId,
+
+    #[msg("update_auth_method_params: caller must be access_domain.owner OR a live ConfigPlaneManager")]
+    OnlyOwnerOrConfigPlaneManager,
+
+    // DOMAIN AUTHORITY (Tier-2 grants)
+
+    #[msg("Invalid domain authority (cannot be default Pubkey)")]
+    InvalidDomainAuthority,
+
+    #[msg("Domain authority label too long (max 32 chars)")]
+    DomainAuthorityLabelTooLong,
+
+    #[msg("Domain authority expires_at is already in the past")]
+    DomainAuthorityAlreadyExpired,
+
+    #[msg("DomainAuthority.domain does not match the provided domain")]
+    DomainAuthorityDomainMismatch,
+
+    #[msg("DomainAuthority has the wrong role for this operation")]
+    DomainAuthorityWrongRole,
+
+    #[msg("Caller does not match DomainAuthority.authority")]
+    DomainAuthoritySignerMismatch,
+
+    #[msg("DomainAuthority has expired")]
+    DomainAuthorityExpired,
+
+    // PLAN ↔ ACCESS DOMAIN linkage
+
+    #[msg("Plan.access_domain does not match the provided AccessDomain")]
+    PlanAccessDomainMismatch,
+
+    // PSK PARAMETERS (multi-band)
+    // Note: InvalidSecurityStandard and InvalidEncryptionAlgorithm
+    // already exist earlier in this enum (master had them); reused here.
+
+    #[msg("Invalid PSK rotation interval")]
+    InvalidPskRotationInterval,
+
+    #[msg("PSKMethodParams: at least one band (2.4/5/6 GHz) must be active")]
+    PskNoActiveBand,
+
+    #[msg("PSKMethodParams: SSID label length out of range")]
+    InvalidSsidLabelLen,
+
+    #[msg("PSKMethodParams: SSID label is not valid utf-8 in its declared prefix")]
+    InvalidSsidUtf8,
 }

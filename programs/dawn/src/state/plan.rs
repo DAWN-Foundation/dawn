@@ -34,10 +34,15 @@ pub struct Plan {
     pub start_at: i64,
     /// The Service Level Agreement Account
     pub service_agreement: Pubkey,
-    /// The authentication methods for the plan (max 3)
-    #[max_len(3)]
-    pub auth_methods: Vec<Pubkey>,
-    /// PDA bump seed
+    /// PDA bump seed.
+    ///
+    /// Note: prior versions of this struct carried an `auth_methods:
+    /// Vec<Pubkey>` (max 3). With the access-domain redesign we have
+    /// one AuthMethod per AccessDomain (keyed on `(access_domain,
+    /// method_type)`), so the auth_method reference is implicit via
+    /// `Plan.access_domain`. Reading the AccessDomain's single
+    /// AuthMethod is now the authoritative source of truth for which
+    /// auth scheme a Plan uses.
     pub bump: u8,
 }
 

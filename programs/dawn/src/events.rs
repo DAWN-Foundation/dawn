@@ -50,16 +50,11 @@ pub struct PlanAdded {
     pub capacity: u64,
     pub start_at: i64,
     pub service_agreement: Pubkey,
-    pub auth_methods: Vec<Pubkey>,
     pub created_at: i64,
 }
 
-#[event]
-pub struct AuthMethodAdded {
-    pub auth_method: Pubkey,
-    pub plan: Pubkey,
-    pub created_at: i64,
-}
+// Note: AuthMethodAdded was emitted by add_auth_method (now removed).
+// AuthMethod attachment to Plans is implicit via Plan.access_domain.
 
 #[event]
 pub struct Subscribed {
@@ -128,8 +123,59 @@ pub struct LocalDomainAdded {
 pub struct AccessDomainAdded {
     pub access_domain: Pubkey,
     pub owner: Pubkey,
-    pub local_domain: Pubkey,
+    pub control_plane_device: Pubkey,
+    pub gateway_device: Option<Pubkey>,
+    pub local_domain: Option<Pubkey>,
+    pub external_uuid: Option<[u8; 16]>,
+    pub name: String,
     pub created_at: i64,
+}
+
+#[event]
+pub struct AccessDomainControlPlaneUpdated {
+    pub access_domain: Pubkey,
+    pub previous: Pubkey,
+    pub new: Pubkey,
+    pub updated_at: i64,
+}
+
+#[event]
+pub struct AccessDomainGatewayUpdated {
+    pub access_domain: Pubkey,
+    pub previous: Option<Pubkey>,
+    pub new: Option<Pubkey>,
+    pub updated_at: i64,
+}
+
+#[event]
+pub struct DomainAuthorityGranted {
+    pub domain_authority: Pubkey,
+    pub domain: Pubkey,
+    pub authority: Pubkey,
+    pub role: u8,
+    pub label: Option<String>,
+    pub expires_at: Option<i64>,
+    pub created_by: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct DomainAuthorityRevoked {
+    pub domain_authority: Pubkey,
+    pub domain: Pubkey,
+    pub authority: Pubkey,
+    pub role: u8,
+    pub revoked_by: Pubkey,
+    pub revoked_at: i64,
+}
+
+#[event]
+pub struct AuthMethodParamsUpdated {
+    pub auth_method: Pubkey,
+    pub access_domain: Pubkey,
+    pub method_type: u8,
+    pub updated_by: Pubkey,
+    pub updated_at: i64,
 }
 
 #[event]
@@ -221,10 +267,10 @@ pub struct RootIpBlockInitialized {
 #[event]
 pub struct AuthMethodRegistered {
     pub auth_method: Pubkey,
+    pub access_domain: Pubkey,
     pub method_type: u8,
-    pub device: Pubkey,
-    pub encryption_key: [u8; 32],
     pub parameters: [u8; 256],
+    pub created_by: Pubkey,
     pub created_at: i64,
 }
 
@@ -232,19 +278,21 @@ pub struct AuthMethodRegistered {
 pub struct CredentialRegistered {
     pub credential: Pubkey,
     pub authority: Pubkey,
-    pub plan: Pubkey,
-    pub subscription: Pubkey,
+    pub access_domain: Pubkey,
     pub auth_method: Pubkey,
-    pub credential_data: [u8; 128],
+    pub vlan_id: Option<u16>,
+    pub qos_tag: Option<u8>,
+    pub created_by: Pubkey,
     pub created_at: i64,
 }
 
 #[event]
 pub struct CredentialRevoked {
     pub credential: Pubkey,
-    pub subscription: Pubkey,
-    pub plan: Pubkey,
+    pub authority: Pubkey,
+    pub access_domain: Pubkey,
     pub auth_method: Pubkey,
+    pub revoked_by: Pubkey,
     pub revoked_at: i64,
 }
 

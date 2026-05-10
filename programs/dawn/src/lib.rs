@@ -56,7 +56,6 @@ pub mod dawn {
         raydium_pool: Option<Pubkey>,
         raydium_config: Option<Pubkey>,
         raydium_observation: Option<Pubkey>,
-        api_authority: Option<Pubkey>,
     ) -> Result<()> {
         DawnApp::update_config(
             ctx,
@@ -68,35 +67,94 @@ pub mod dawn {
             raydium_pool,
             raydium_config,
             raydium_observation,
-            api_authority,
         )
     }
+
+    // ---- AccessDomain (lifecycle) ----------------------------------
+
+    pub fn add_access_domain(
+        ctx: Context<AddAccessDomain>,
+        name: String,
+        control_plane_device: Pubkey,
+        gateway_device: Option<Pubkey>,
+        local_domain: Option<Pubkey>,
+        external_uuid: Option<[u8; 16]>,
+    ) -> Result<()> {
+        DawnApp::add_access_domain(
+            ctx,
+            name,
+            control_plane_device,
+            gateway_device,
+            local_domain,
+            external_uuid,
+        )
+    }
+
+    pub fn set_control_plane_device(
+        ctx: Context<SetControlPlaneDevice>,
+        new_control_plane_device: Pubkey,
+    ) -> Result<()> {
+        DawnApp::set_control_plane_device(ctx, new_control_plane_device)
+    }
+
+    pub fn set_access_domain_gateway_device(
+        ctx: Context<SetAccessDomainGatewayDevice>,
+        new_gateway_device: Option<Pubkey>,
+    ) -> Result<()> {
+        DawnApp::set_access_domain_gateway_device(ctx, new_gateway_device)
+    }
+
+    // ---- DomainAuthority (Tier-2 grants) ---------------------------
+
+    pub fn grant_domain_authority_for_access_domain(
+        ctx: Context<GrantDomainAuthorityForAccessDomain>,
+        role: DomainAuthorityRole,
+        authority: Pubkey,
+        label: Option<String>,
+        expires_at: Option<i64>,
+    ) -> Result<()> {
+        DawnApp::grant_domain_authority_for_access_domain(ctx, role, authority, label, expires_at)
+    }
+
+    pub fn revoke_domain_authority_for_access_domain(
+        ctx: Context<RevokeDomainAuthorityForAccessDomain>,
+    ) -> Result<()> {
+        DawnApp::revoke_domain_authority_for_access_domain(ctx)
+    }
+
+    // ---- AMF (auth methods + credentials) --------------------------
 
     pub fn register_auth_method(
         ctx: Context<RegisterAuthMethod>,
         method_type: AuthMethodType,
-        encryption_key: [u8; 32],
         parameters: [u8; 256],
     ) -> Result<()> {
-        DawnApp::register_auth_method(ctx, method_type, encryption_key, parameters)
+        DawnApp::register_auth_method(ctx, method_type, parameters)
     }
 
-    pub fn add_auth_method(ctx: Context<AddAuthMethod>) -> Result<()> {
-        DawnApp::add_auth_method(ctx)
+    pub fn update_auth_method_params(
+        ctx: Context<UpdateAuthMethodParams>,
+        new_parameters: [u8; 256],
+    ) -> Result<()> {
+        DawnApp::update_auth_method_params(ctx, new_parameters)
     }
 
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        credential_data: [u8; 128],
+        vlan_id: Option<u16>,
+        qos_tag: Option<u8>,
+        sealed_payload: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential(ctx, credential_data)
+        DawnApp::register_credential(ctx, vlan_id, qos_tag, sealed_payload)
     }
 
     pub fn register_credential_for(
         ctx: Context<RegisterCredentialFor>,
-        credential_data: [u8; 128],
+        vlan_id: Option<u16>,
+        qos_tag: Option<u8>,
+        sealed_payload: [u8; 128],
     ) -> Result<()> {
-        DawnApp::register_credential_for(ctx, credential_data)
+        DawnApp::register_credential_for(ctx, vlan_id, qos_tag, sealed_payload)
     }
 
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {

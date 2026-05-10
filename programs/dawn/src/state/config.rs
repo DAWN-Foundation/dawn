@@ -7,10 +7,15 @@ use crate::constants::DISCRIMINATOR_SIZE;
 pub struct Config {
     /// The creation timestamp
     pub created_at: i64,
-    /// The authority that can update the config
+    /// The authority that can update the config (cold admin).
     pub authority: Pubkey,
-    /// The authority that can make calls on user's behalf
-    pub api_authority: Pubkey,
+
+    // Note: prior versions of this struct carried an `api_authority`
+    // pubkey used to gate `register_credential_for`. The access-domain
+    // redesign replaces that single global hot-key with per-AccessDomain
+    // `DomainAuthority{role=Registrar}` grants — see
+    // state/domain_authority.rs. Granular delegation, expiry, and
+    // per-grant audit trail live there now.
 
     // MINTS
     /// The token config account that owns the DAWN mint

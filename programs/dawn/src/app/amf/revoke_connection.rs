@@ -4,7 +4,6 @@ use crate::{
     app::DawnApp,
     events::ConnectionRevoked,
     state::{AuthMethod, Connection},
-    utils::hash_parameters,
 };
 
 /// Context for revoking connection credentials
@@ -13,17 +12,13 @@ pub struct RevokeConnection<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    // auth method
     #[account(
         mut,
         constraint = auth_method.authority == caller.key(),
         seeds = [
             AuthMethod::SEED_PREFIX.as_ref(),
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            auth_method.device.as_ref(),
-            &auth_method.encryption_key,
-            &hash_parameters(&auth_method.parameters),
+            auth_method.access_domain.as_ref(),
+            auth_method.method_type.as_seed(),
         ],
         bump = auth_method.bump,
     )]

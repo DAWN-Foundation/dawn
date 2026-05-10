@@ -1,13 +1,25 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    events::{AccessDomainAdded, PlanAdded},
+    events::PlanAdded,
     state::{AccessDomain, LocalDomain, ServiceAgreement},
     utils::{hash_string_seed, optional_pubkey_seed},
     DawnApp, DawnError, Plan,
 };
 
-/// Context for adding an L2 plan (derived plan with access domain)
+/// Context for adding an L2 plan (derived/reseller plan attached to an
+/// existing AccessDomain).
+///
+/// Schema migration note: prior versions of this instruction created a
+/// new `AccessDomain` account as a side effect (PDA seeded on
+/// `(plan, local_domain)`). The access-domain redesign decouples the
+/// two: AccessDomains are first-class operator-owned identities created
+/// via the standalone `add_access_domain` instruction. An L2 plan now
+/// REFERENCES an existing AccessDomain by passing it as an account.
+///
+/// Plan.access_domain is set to `Some(access_domain.key())` for the
+/// commercial linkage. Customers subscribing to this Plan inherit
+/// access to that AccessDomain through their Subscription + Credential.
 #[derive(Accounts)]
 #[instruction(
     name: String,
@@ -32,26 +44,10 @@ pub struct AddL2Plan<'info> {
     )]
     pub service_agreement: Account<'info, ServiceAgreement>,
 
-    /// The parent plan account
-    #[account(
-        seeds = [
-            Plan::SEED_PREFIX.as_ref(),
-            parent_plan.owner.as_ref(),
-            parent_plan.local_domain.as_ref(),
-            &optional_pubkey_seed(parent_plan.parent_plan),
-            &hash_string_seed(&parent_plan.name),
-            &parent_plan.price.to_le_bytes(),
-            &parent_plan.duration.to_le_bytes(),
-            &parent_plan.speed.to_le_bytes(),
-            &parent_plan.capacity.to_le_bytes(),
-            &parent_plan.start_at.to_le_bytes(),
-            parent_plan.service_agreement.as_ref(),
-        ],
-        bump = parent_plan.bump,
-    )]
+    /// The parent plan account (optional, for resale)
     pub parent_plan: Option<Account<'info, Plan>>,
 
-    /// The plan account
+    /// The plan account (init)
     #[account(
         init,
         payer = caller,
@@ -84,17 +80,17 @@ pub struct AddL2Plan<'info> {
     )]
     pub local_domain: Account<'info, LocalDomain>,
 
-    /// The access domain account (for L2 plans)
+    /// The AccessDomain this plan attaches to. Must already exist
+    /// (created via `add_access_domain`). Caller must be its owner.
     #[account(
-        init,
-        payer = caller,
-        space = AccessDomain::SIZE,
+        constraint = access_domain.owner == caller.key()
+            @ DawnError::OnlyAccessDomainOwner,
         seeds = [
-            AccessDomain::SEED_PREFIX.as_ref(),
-            plan.key().as_ref(),
-            local_domain.key().as_ref(),
+            AccessDomain::SEED_PREFIX,
+            access_domain.owner.as_ref(),
+            &hash_string_seed(&access_domain.name),
         ],
-        bump,
+        bump = access_domain.bump,
     )]
     pub access_domain: Account<'info, AccessDomain>,
 
@@ -102,7 +98,7 @@ pub struct AddL2Plan<'info> {
 }
 
 impl DawnApp {
-    /// Add an L2 plan (derived plan with access domain)
+    /// Add an L2 plan (derived plan attached to an existing AccessDomain)
     #[allow(clippy::too_many_arguments)]
     pub fn add_l2_plan(
         ctx: Context<AddL2Plan>,
@@ -113,12 +109,7 @@ impl DawnApp {
         capacity: u64,
         start_at: Option<i64>,
     ) -> Result<()> {
-        // Validate basic plan parameters
         Self::validate_plan_params(&name, price, duration, speed, start_at)?;
-
-        // Validate auth methods from remaining accounts
-        let auth_methods =
-            Self::validate_auth_methods(&ctx.remaining_accounts, &ctx.accounts.caller.key())?;
 
         let plan = &mut ctx.accounts.plan;
         let parent_plan = &ctx.accounts.parent_plan;
@@ -140,28 +131,13 @@ impl DawnApp {
             }
         }
 
-        // Initialize Access Domain for L2 plan
-        let access_domain = &mut ctx.accounts.access_domain;
-        access_domain.created_at = now;
-        access_domain.owner = ctx.accounts.caller.key();
-        access_domain.local_domain = ctx.accounts.local_domain.key();
-        access_domain.bump = ctx.bumps.access_domain;
-
-        emit!(AccessDomainAdded {
-            access_domain: access_domain.key(),
-            owner: access_domain.owner,
-            local_domain: access_domain.local_domain,
-            created_at: access_domain.created_at,
-        });
-
         // Set plan fields for L2 plan
         plan.created_at = now;
         plan.owner = ctx.accounts.caller.key();
         plan.local_domain = ctx.accounts.local_domain.key();
-        plan.access_domain = Some(access_domain.key());
+        plan.access_domain = Some(ctx.accounts.access_domain.key());
         plan.distribution_domain = None;
         plan.parent_plan = parent_plan.as_ref().map(|acc| acc.key());
-        // Store trimmed name to match PDA seeds
         plan.name = name.trim().to_string();
         plan.price = price;
         plan.duration = duration;
@@ -169,7 +145,6 @@ impl DawnApp {
         plan.capacity = capacity;
         plan.start_at = start_at.unwrap_or(0);
         plan.service_agreement = ctx.accounts.service_agreement.key();
-        plan.auth_methods.clone_from(&auth_methods);
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -186,7 +161,6 @@ impl DawnApp {
             capacity: plan.capacity,
             start_at: plan.start_at,
             service_agreement: plan.service_agreement,
-            auth_methods,
             created_at: plan.created_at,
         });
 

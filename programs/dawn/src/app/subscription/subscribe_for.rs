@@ -18,7 +18,13 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(min_dawn_out: u64, deadline: i64)]
 pub struct SubscribeFor<'info> {
-    #[account(mut, address = config.api_authority)]
+    // Schema migration: previously gated on `config.api_authority`.
+    // The access-domain redesign drops that single global hot-key.
+    // For subscribe_for, the natural authority is the Plan owner —
+    // they're acting on behalf of a customer to enroll them in their
+    // own plan. (For BSS-direct credential mints, see the Registrar
+    // grant pattern in app/amf/register_credential_for.rs.)
+    #[account(mut, address = plan.owner)]
     pub caller: Signer<'info>,
 
     /// The beneficiary who will receive the subscription

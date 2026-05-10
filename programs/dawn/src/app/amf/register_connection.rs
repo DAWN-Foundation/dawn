@@ -4,7 +4,6 @@ use crate::{
     app::DawnApp,
     events::ConnectionRegistered,
     state::{AuthMethod, Connection},
-    utils::hash_parameters,
 };
 
 /// Context for registering connection credentials
@@ -23,13 +22,10 @@ pub struct RegisterConnection<'info> {
         constraint = auth_method.authority == caller.key(),
         seeds = [
             AuthMethod::SEED_PREFIX,
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            auth_method.device.as_ref(),
-            &auth_method.encryption_key,
-            &hash_parameters(&auth_method.parameters),
+            auth_method.access_domain.as_ref(),
+            auth_method.method_type.as_seed(),
         ],
-        bump = auth_method.bump
+        bump = auth_method.bump,
     )]
     pub auth_method: Account<'info, AuthMethod>,
 

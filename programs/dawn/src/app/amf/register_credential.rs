@@ -1,59 +1,81 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    app::{amf::register_credential_helper, DawnApp},
+    app::DawnApp,
     error::DawnError,
     events::CredentialRegistered,
-    state::{AuthMethod, Credential, Plan, Subscription},
-    utils::{hash_parameters, hash_string_seed, optional_pubkey_seed},
+    state::{AccessDomain, AuthMethod, Credential, Plan, Subscription},
+    utils::hash_string_seed,
 };
 
-/// Context for registering client credentials
+/// Customer self-mint path for plan-attached credentials.
+///
+/// This is the "subscriber pays for a Plan and signs to mint their own
+/// Credential" flow. Authorization is the Subscription itself: holding
+/// a valid Subscription that points at a Plan attached to this
+/// AccessDomain authorizes the subscriber to mint a Credential.
+///
+/// PDA seeds for the Credential:
+///   ["credential", access_domain, auth_method, caller(=beneficiary)]
+///
+/// `Credential.subscription` and `Credential.plan` are populated as
+/// `Some(...)` because the plan-attached path always carries the
+/// commercial context. For the BSS-direct path (no Subscription), use
+/// `register_credential_for` with a Registrar grant.
+///
+/// `sealed_payload[128]` is sealed off-chain to
+/// `access_domain.control_plane_device.owner` (the AAA appliance's
+/// wallet); the program treats it as opaque ciphertext. See
+/// `docs/sot-bridge-protocol.md` §6 for the wire format.
 #[derive(Accounts)]
-#[instruction(credential_data: [u8; 128])]
+#[instruction(
+    vlan_id: Option<u16>,
+    qos_tag: Option<u8>,
+    sealed_payload: [u8; 128],
+)]
 pub struct RegisterCredential<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
     #[account(
         seeds = [
-            AuthMethod::SEED_PREFIX,
-            auth_method.authority.as_ref(),
-            &auth_method.method_type.as_seed(),
-            auth_method.device.as_ref(),
-            &auth_method.encryption_key,
-            &hash_parameters(&auth_method.parameters),
+            AccessDomain::SEED_PREFIX,
+            access_domain.owner.as_ref(),
+            &hash_string_seed(&access_domain.name),
         ],
-        bump = auth_method.bump
+        bump = access_domain.bump,
+    )]
+    pub access_domain: Account<'info, AccessDomain>,
+
+    #[account(
+        constraint = auth_method.access_domain == access_domain.key()
+            @ DawnError::AuthMethodAccessDomainMismatch,
+        seeds = [
+            AuthMethod::SEED_PREFIX,
+            auth_method.access_domain.as_ref(),
+            auth_method.method_type.as_seed(),
+        ],
+        bump = auth_method.bump,
     )]
     pub auth_method: Account<'info, AuthMethod>,
 
+    /// The Plan being subscribed to. Must reference this AccessDomain.
     #[account(
-        mut,
-        seeds = [
-            Plan::SEED_PREFIX.as_ref(),
-            plan.owner.as_ref(),
-            plan.local_domain.as_ref(),
-            &optional_pubkey_seed(plan.parent_plan),
-            &hash_string_seed(&plan.name),
-            &plan.price.to_le_bytes(),
-            &plan.duration.to_le_bytes(),
-            &plan.speed.to_le_bytes(),
-            &plan.capacity.to_le_bytes(),
-            &plan.start_at.to_le_bytes(),
-            plan.service_agreement.as_ref(),
-        ],
-        bump = plan.bump,
+        constraint = plan.access_domain == Some(access_domain.key())
+            @ DawnError::PlanAccessDomainMismatch,
     )]
     pub plan: Account<'info, Plan>,
 
+    /// The caller's Subscription on the Plan. Authorizes the mint.
     #[account(
+        constraint = subscription.subscriber == caller.key()
+            @ DawnError::InvalidBeneficiary,
         seeds = [
             Subscription::SEED_PREFIX,
             plan.key().as_ref(),
             caller.key().as_ref(),
         ],
-        bump = subscription.bump
+        bump = subscription.bump,
     )]
     pub subscription: Account<'info, Subscription>,
 
@@ -63,12 +85,11 @@ pub struct RegisterCredential<'info> {
         space = Credential::SIZE,
         seeds = [
             Credential::SEED_PREFIX.as_ref(),
-            subscription.key().as_ref(),
-            plan.key().as_ref(),
+            access_domain.key().as_ref(),
             auth_method.key().as_ref(),
             caller.key().as_ref(),
         ],
-        bump
+        bump,
     )]
     pub credential: Account<'info, Credential>,
 
@@ -76,19 +97,39 @@ pub struct RegisterCredential<'info> {
 }
 
 impl DawnApp {
-    /// Register client credentials for an auth method
     pub fn register_credential(
         ctx: Context<RegisterCredential>,
-        credential_data: [u8; 128],
+        vlan_id: Option<u16>,
+        qos_tag: Option<u8>,
+        sealed_payload: [u8; 128],
     ) -> Result<()> {
-        register_credential_helper::process_register_credential(
-            &ctx.accounts.plan,
-            &ctx.accounts.subscription,
-            &ctx.accounts.auth_method,
-            ctx.accounts.caller.key(),
-            &mut ctx.accounts.credential,
-            credential_data,
-            ctx.bumps.credential,
-        )
+        if let Some(v) = vlan_id {
+            require!(v >= 1 && v <= 4094, DawnError::InvalidVlanId);
+        }
+
+        let now = Clock::get()?.unix_timestamp;
+        let credential = &mut ctx.accounts.credential;
+        credential.created_at = now;
+        credential.authority = ctx.accounts.caller.key();
+        credential.access_domain = ctx.accounts.access_domain.key();
+        credential.auth_method = ctx.accounts.auth_method.key();
+        credential.subscription = Some(ctx.accounts.subscription.key());
+        credential.plan = Some(ctx.accounts.plan.key());
+        credential.vlan_id = vlan_id;
+        credential.qos_tag = qos_tag;
+        credential.sealed_payload = sealed_payload;
+        credential.bump = ctx.bumps.credential;
+
+        emit!(CredentialRegistered {
+            credential: credential.key(),
+            authority: credential.authority,
+            access_domain: credential.access_domain,
+            auth_method: credential.auth_method,
+            vlan_id,
+            qos_tag,
+            created_by: ctx.accounts.caller.key(),
+            created_at: now,
+        });
+        Ok(())
     }
 }

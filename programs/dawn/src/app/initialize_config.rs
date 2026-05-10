@@ -9,9 +9,11 @@ pub struct InitializeConfig<'info> {
     #[account(mut)]
     pub caller: Signer<'info>,
 
-    /// CHECK: The API authority that can make calls on user's behalf
-    #[account(mut)]
-    pub api_authority: UncheckedAccount<'info>,
+    // Note: prior versions of this struct accepted an `api_authority`
+    // UncheckedAccount that was stored on Config and gated
+    // register_credential_for. The access-domain redesign replaces that
+    // single global hot key with per-AccessDomain
+    // DomainAuthority{role=Registrar} grants. See state/domain_authority.rs.
 
     /// The config with fees and ratios applied to the plan payments
     #[account(
@@ -121,7 +123,6 @@ impl DawnApp {
         // Set caller as the authority
         config.created_at = Clock::get()?.unix_timestamp;
         config.authority = ctx.accounts.caller.key();
-        config.api_authority = ctx.accounts.api_authority.key();
 
         // Set mints
         config.token_config = ctx.accounts.token_config.key();

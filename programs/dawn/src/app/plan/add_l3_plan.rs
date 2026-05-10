@@ -94,12 +94,7 @@ impl DawnApp {
         capacity: u64,
         start_at: Option<i64>,
     ) -> Result<()> {
-        // Validate basic plan parameters
         Self::validate_plan_params(&name, price, duration, speed, start_at)?;
-
-        // Validate auth methods from remaining accounts
-        let auth_methods =
-            Self::validate_auth_methods(&ctx.remaining_accounts, &ctx.accounts.caller.key())?;
 
         let plan = &mut ctx.accounts.plan;
         let now = Clock::get()?.unix_timestamp;
@@ -125,7 +120,6 @@ impl DawnApp {
         plan.distribution_domain = Some(distribution_domain.key());
         plan.access_domain = None;
         plan.parent_plan = None;
-        // Store trimmed name to match PDA seeds
         plan.name = name.trim().to_string();
         plan.price = price;
         plan.duration = duration;
@@ -133,7 +127,6 @@ impl DawnApp {
         plan.capacity = capacity;
         plan.start_at = start_at.unwrap_or(0);
         plan.service_agreement = ctx.accounts.service_agreement.key();
-        plan.auth_methods.clone_from(&auth_methods);
         plan.bump = ctx.bumps.plan;
 
         emit!(PlanAdded {
@@ -150,7 +143,6 @@ impl DawnApp {
             capacity: plan.capacity,
             start_at: plan.start_at,
             service_agreement: plan.service_agreement,
-            auth_methods,
             created_at: plan.created_at,
         });
 

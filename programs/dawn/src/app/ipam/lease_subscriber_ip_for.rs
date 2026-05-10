@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     app::{lease_subscriber_ip_helper, DawnApp},
-    state::{Config, Device},
+    state::{Config, Device, Plan},
     utils::hash_string_seed,
     DawnError, IpRegistry, IpTier, Subscription,
 };
@@ -12,7 +12,11 @@ use crate::{IpBlock, IpLease, RootIpBlock};
 /// Account context for leasing IP using strict-first allocation
 #[derive(Accounts)]
 pub struct LeaseSubscriberIpFor<'info> {
-    #[account(mut, address = config.api_authority)]
+    // Schema migration: previously gated on `config.api_authority`.
+    // The access-domain redesign drops that single global hot-key.
+    // For lease-on-behalf, the natural authority is the Plan owner
+    // (the operator who provisioned the plan the subscriber is on).
+    #[account(mut, address = plan.owner)]
     pub caller: Signer<'info>,
 
     /// The beneficiary who will receive the subscription
@@ -97,6 +101,7 @@ pub struct LeaseSubscriberIpFor<'info> {
     #[account(
         mut,
         constraint = subscription.subscriber == beneficiary.key() @DawnError::InvalidBeneficiary,
+        constraint = subscription.plan == plan.key() @DawnError::InvalidBeneficiary,
         seeds = [
             Subscription::SEED_PREFIX.as_ref(),
             subscription.plan.as_ref(),
@@ -105,6 +110,9 @@ pub struct LeaseSubscriberIpFor<'info> {
         bump = subscription.bump
     )]
     pub subscription: Account<'info, Subscription>,
+
+    /// The Plan the subscription belongs to. Caller must equal `plan.owner`.
+    pub plan: Account<'info, Plan>,
 
     pub system_program: Program<'info, System>,
 }
