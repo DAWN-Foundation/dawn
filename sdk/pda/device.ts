@@ -56,12 +56,23 @@ export function getDevicePda(
   return devicePda
 }
 
+/**
+ * AccessDomain PDA — keyed on (owner, sha256(name)).
+ *
+ * Schema migration: prior versions seeded on (device) or (plan,
+ * local_domain). The redesign makes AccessDomain a first-class
+ * operator-owned identity addressed by the operator's pubkey + a
+ * hashed human-readable name (the SSID label).
+ */
 export function getAccessDomainPda(
   program: Program<Dawn>,
-  devicePda: PublicKey,
+  owner: PublicKey,
+  name: string,
 ): PublicKey {
+  const trimmed = name.trim()
+  const nameHash = createHash('sha256').update(Buffer.from(trimmed, 'utf8')).digest()
   const [accessDomainPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('access_domain'), Buffer.from(devicePda.toBytes())],
+    [Buffer.from('access_domain'), owner.toBuffer(), nameHash],
     program.programId,
   )
 

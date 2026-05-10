@@ -380,7 +380,14 @@ export async function setup(
   )
 
   const distributionDomainPda = getDistributionDomainPda(program, devicePda)
-  const accessDomainPda = getAccessDomainPda(program, devicePda)
+  // AccessDomain redesign: addressed by (owner, hash(name)). Mock uses
+  // a deterministic SSID label so re-runs produce a stable PDA.
+  const accessDomainName = 'DawnTestNetwork'
+  const accessDomainPda = getAccessDomainPda(
+    program,
+    serviceProvider.publicKey,
+    accessDomainName,
+  )
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
   const localDomainPda = getLocalDomainPda(
     program,
@@ -403,6 +410,10 @@ export async function setup(
   const planSpeed = 1_000
   const planCapacity = new BN(1000)
 
+  // Schema migration: AuthMethod no longer carries an encryption_key
+  // (sealed payloads now decrypt via control_plane_device.owner).
+  // We retain the local mock keypair for tests that still need a
+  // recipient pubkey to seal against, but it is NOT stored on chain.
   const encryptionKey = nacl.box.keyPair().publicKey
 
   // Create PSK method parameters
@@ -413,13 +424,8 @@ export async function setup(
     pskRotationInterval: 86400, // 24 hours
   })
   const parametersBuffer = serializePSKMethodParams(params)
-  const [pskAuthMethodPda] = getPskAuthMethodPda(
-    program,
-    serviceProvider.publicKey,
-    devicePda,
-    encryptionKey,
-    parametersBuffer,
-  )
+  // AuthMethod PDA is now keyed on (access_domain, method_type).
+  const [pskAuthMethodPda] = getPskAuthMethodPda(program, accessDomainPda)
   const planAuthMethods = [pskAuthMethodPda]
 
   const [planPda, planBump] = getPlanPda(

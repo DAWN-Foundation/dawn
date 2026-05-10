@@ -89,6 +89,17 @@ pub fn validate_auth_params(method_type: AuthMethodType, parameters: &[u8; 256])
                 .map_err(|_| error!(DawnError::InvalidAuthMethodType))?;
             params.validate()?;
         }
+        // EAP / WPA2E / WPA3E / IPsec retained on the integrated branch
+        // for compatibility with master's commercial flows. Their
+        // existing param validators live in app/amf/{eap,wpa2e,
+        // ipsec}_method.rs; wire them in here when those flows are
+        // exercised on the integration path.
+        AuthMethodType::Wpa2Enterprise
+        | AuthMethodType::Eap
+        | AuthMethodType::Wpa3Enterprise
+        | AuthMethodType::IpsecAh => {
+            // No validation yet — params buffer is accepted as-is.
+        }
     }
     Ok(())
 }

@@ -819,17 +819,23 @@ export async function addL2PlanRpc(params: AddL2PlanParams): Promise<string> {
 }
 
 /**
- * Parameters for registering an auth method
+ * Parameters for registering an auth method.
+ *
+ * Schema migration (access-domain redesign):
+ *   - The AuthMethod is now keyed on (access_domain, method_type),
+ *     not (authority, method_type, device, encryption_key, hash(params)).
+ *   - encryption_key is no longer stored on AuthMethod; sealed
+ *     credential payloads are decrypted via
+ *     `access_domain.control_plane_device.owner` instead.
+ *   - The caller must equal `access_domain.owner`.
  */
 export interface RegisterAuthMethodParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
-  configPda: PublicKey
+  accessDomainPda: PublicKey
   authMethodPda: PublicKey
-  devicePda: PublicKey
   authMethodType: AuthMethodType
-  encryptionKey: Uint8Array
   parameters: Uint8Array
 }
 
@@ -844,25 +850,18 @@ export async function registerAuthMethodTx(
     program,
     caller,
     signer,
-    configPda,
+    accessDomainPda,
     authMethodPda,
-    devicePda,
     authMethodType,
-    encryptionKey,
     parameters,
   } = params
 
   return program.methods
-    .registerAuthMethod(
-      authMethodType,
-      Array.from(encryptionKey),
-      Array.from(parameters),
-    )
+    .registerAuthMethod(authMethodType, Array.from(parameters))
     .accountsPartial({
       caller,
-      config: configPda,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
-      device: devicePda,
     })
     .signers([signer])
     .transaction()
@@ -878,82 +877,27 @@ export async function registerAuthMethodRpc(
     program,
     caller,
     signer,
-    configPda,
+    accessDomainPda,
     authMethodPda,
-    devicePda,
     authMethodType,
-    encryptionKey,
     parameters,
   } = params
 
   return program.methods
-    .registerAuthMethod(
-      authMethodType,
-      Array.from(encryptionKey),
-      Array.from(parameters),
-    )
+    .registerAuthMethod(authMethodType, Array.from(parameters))
     .accountsPartial({
       caller,
-      config: configPda,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
-      device: devicePda,
     })
     .signers([signer])
     .rpc()
 }
 
-/**
- * Parameters for adding an auth method to a plan
- */
-export interface AddAuthMethodToPlanParams {
-  program: Program<Dawn>
-  caller: PublicKey
-  signer: Keypair
-  planPda: PublicKey
-  authMethodPda: PublicKey
-  devicePda: PublicKey
-}
-
-/**
- * Add an auth method to a plan
- * Returns the transaction for signing/confirmation
- */
-export async function addAuthMethodToPlanTx(
-  params: AddAuthMethodToPlanParams,
-): Promise<anchor.web3.Transaction> {
-  const { program, caller, signer, planPda, authMethodPda, devicePda } = params
-
-  return program.methods
-    .addAuthMethod()
-    .accountsPartial({
-      caller,
-      plan: planPda,
-      authMethod: authMethodPda,
-      device: devicePda,
-    })
-    .signers([signer])
-    .transaction()
-}
-
-/**
- * Add an auth method to a plan and send via RPC
- */
-export async function addAuthMethodToPlanRpc(
-  params: AddAuthMethodToPlanParams,
-): Promise<string> {
-  const { program, caller, signer, planPda, authMethodPda, devicePda } = params
-
-  return program.methods
-    .addAuthMethod()
-    .accountsPartial({
-      caller,
-      plan: planPda,
-      authMethod: authMethodPda,
-      device: devicePda,
-    })
-    .signers([signer])
-    .rpc()
-}
+// Note: addAuthMethodToPlan{Tx,Rpc} were removed along with the
+// `add_auth_method` instruction. Plan.auth_methods is gone (one
+// AuthMethod per AccessDomain, implicit via Plan.access_domain).
+// Use registerAuthMethod{Tx,Rpc} on the AccessDomain directly.
 
 /**
  * Parameters for subscribing to a plan
@@ -1752,23 +1696,33 @@ export async function claimRpc(params: ClaimParams): Promise<string> {
 }
 
 /**
- * Parameters for registering a credential
+ * Parameters for the customer-self-mint credential flow.
+ *
+ * Schema migration:
+ *   - Args changed from `credential_data: [u8; 128]` to
+ *     `(vlan_id: Option<u16>, qos_tag: Option<u8>, sealed_payload: [u8; 128])`.
+ *   - Credential PDA seeds changed to `(access_domain, auth_method,
+ *     beneficiary)` — `subscription` and `plan` are no longer in the PDA
+ *     seeds, but are stored on the Credential as `Some(...)` for the
+ *     plan-attached path.
+ *   - `sealed_payload` is a libsodium sealed-box encrypted to
+ *     `access_domain.control_plane_device.owner`. See
+ *     docs/sot-bridge-protocol.md §6.
  */
 export interface RegisterCredentialParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
+  accessDomainPda: PublicKey
   authMethodPda: PublicKey
   planPda: PublicKey
   subscriptionPda: PublicKey
   credentialPda: PublicKey
-  credentialData: number[]
+  vlanId: number | null
+  qosTag: number | null
+  sealedPayload: number[]
 }
 
-/**
- * Register a credential
- * Returns the transaction for signing/confirmation
- */
 export async function registerCredentialTx(
   params: RegisterCredentialParams,
 ): Promise<anchor.web3.Transaction> {
@@ -1776,17 +1730,21 @@ export async function registerCredentialTx(
     program,
     caller,
     signer,
+    accessDomainPda,
     authMethodPda,
     planPda,
     subscriptionPda,
     credentialPda,
-    credentialData,
+    vlanId,
+    qosTag,
+    sealedPayload,
   } = params
 
   return program.methods
-    .registerCredential(credentialData)
+    .registerCredential(vlanId, qosTag, sealedPayload)
     .accountsPartial({
       caller,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
       plan: planPda,
       subscription: subscriptionPda,
@@ -1796,9 +1754,6 @@ export async function registerCredentialTx(
     .transaction()
 }
 
-/**
- * Register a credential and send via RPC
- */
 export async function registerCredentialRpc(
   params: RegisterCredentialParams,
 ): Promise<string> {
@@ -1806,20 +1761,24 @@ export async function registerCredentialRpc(
     program,
     caller,
     signer,
+    accessDomainPda,
     authMethodPda,
     planPda,
     subscriptionPda,
     credentialPda,
-    credentialData,
+    vlanId,
+    qosTag,
+    sealedPayload,
   } = params
 
   return program.methods
-    .registerCredential(credentialData)
+    .registerCredential(vlanId, qosTag, sealedPayload)
     .accountsPartial({
       caller,
-      subscription: subscriptionPda,
-      plan: planPda,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
+      plan: planPda,
+      subscription: subscriptionPda,
       credential: credentialPda,
     })
     .signers([signer])
@@ -1827,22 +1786,21 @@ export async function registerCredentialRpc(
 }
 
 /**
- * Parameters for revoking a credential
+ * Parameters for revoking a credential.
+ *
+ * Schema migration: subscription/plan are no longer in the Credential's
+ * PDA seeds and are not part of `revoke_credential`'s account context.
+ * Caller must equal `credential.authority` OR `access_domain.owner`.
  */
 export interface RevokeCredentialParams {
   program: Program<Dawn>
   caller: PublicKey
   signer: Keypair
-  subscriptionPda: PublicKey
-  planPda: PublicKey
+  accessDomainPda: PublicKey
   authMethodPda: PublicKey
   credentialPda: PublicKey
 }
 
-/**
- * Revoke a credential
- * Returns the transaction for signing/confirmation
- */
 export async function revokeCredentialTx(
   params: RevokeCredentialParams,
 ): Promise<anchor.web3.Transaction> {
@@ -1850,8 +1808,7 @@ export async function revokeCredentialTx(
     program,
     caller,
     signer,
-    subscriptionPda,
-    planPda,
+    accessDomainPda,
     authMethodPda,
     credentialPda,
   } = params
@@ -1860,8 +1817,7 @@ export async function revokeCredentialTx(
     .revokeCredential()
     .accountsPartial({
       caller,
-      subscription: subscriptionPda,
-      plan: planPda,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
       credential: credentialPda,
     })
@@ -1869,9 +1825,6 @@ export async function revokeCredentialTx(
     .transaction()
 }
 
-/**
- * Revoke a credential and send via RPC
- */
 export async function revokeCredentialRpc(
   params: RevokeCredentialParams,
 ): Promise<string> {
@@ -1879,8 +1832,7 @@ export async function revokeCredentialRpc(
     program,
     caller,
     signer,
-    subscriptionPda,
-    planPda,
+    accessDomainPda,
     authMethodPda,
     credentialPda,
   } = params
@@ -1889,8 +1841,7 @@ export async function revokeCredentialRpc(
     .revokeCredential()
     .accountsPartial({
       caller,
-      subscription: subscriptionPda,
-      plan: planPda,
+      accessDomain: accessDomainPda,
       authMethod: authMethodPda,
       credential: credentialPda,
     })

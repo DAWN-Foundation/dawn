@@ -287,7 +287,13 @@ export async function prepare(
   )
 
   const distributionDomainPda = getDistributionDomainPda(program, devicePda)
-  const accessDomainPda = getAccessDomainPda(program, devicePda)
+  // AccessDomain redesign: addressed by (owner, hash(name)).
+  const accessDomainName = 'DawnTestNetwork'
+  const accessDomainPda = getAccessDomainPda(
+    program,
+    serviceProvider.publicKey,
+    accessDomainName,
+  )
   const deviceLocationPda = getDeviceLocationPda(program, devicePda)
   const localDomainPda = getLocalDomainPda(
     program,

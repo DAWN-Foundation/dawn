@@ -26,27 +26,25 @@ export function hashParameters(parameters: Buffer): Buffer {
   return createHash('sha256').update(parameters).digest()
 }
 
+/**
+ * AuthMethod PDA — keyed on (access_domain, method_type_byte).
+ *
+ * Schema migration: prior versions seeded on
+ * (authority, method_type, device, encryption_key, hash(parameters)).
+ * The redesign collapses to one AuthMethod per (AccessDomain,
+ * method_type) and makes parameters mutable in place via
+ * update_auth_method_params.
+ */
 export function getAuthMethodPda(
   program: Program<Dawn>,
-  authority: PublicKey,
+  accessDomain: PublicKey,
   methodType: AuthMethodType,
-  device: PublicKey,
-  encryptionKey: Uint8Array,
-  parameters: Buffer,
 ): PublicKey {
   const key = Object.keys(methodType)[0]
   const seed = methods[key]
-  const paramHash = hashParameters(parameters)
 
   const [authMethodPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('auth_method'),
-      authority.toBuffer(),
-      Buffer.from([seed]),
-      device.toBuffer(),
-      Buffer.from(encryptionKey),
-      paramHash,
-    ],
+    [Buffer.from('auth_method'), accessDomain.toBuffer(), Buffer.from([seed])],
     program.programId,
   )
 
@@ -60,20 +58,25 @@ export function getAuthMethodPda(
  * @param methodType The method type number
  * @returns The credential PDA
  */
+/**
+ * Credential PDA — keyed on (access_domain, auth_method, beneficiary).
+ *
+ * Schema migration: subscription and plan are no longer in the seeds.
+ * They're stored as Optional fields on the Credential when the
+ * plan-attached path is used; for the BSS-direct path both are None.
+ */
 export function getCredentialPda(
   program: Program<Dawn>,
-  subscription: PublicKey,
-  plan: PublicKey,
+  accessDomain: PublicKey,
   authMethod: PublicKey,
-  caller: PublicKey,
+  beneficiary: PublicKey,
 ): PublicKey {
   const [credentialPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('credential'),
-      subscription.toBuffer(),
-      plan.toBuffer(),
+      accessDomain.toBuffer(),
       authMethod.toBuffer(),
-      caller.toBuffer(),
+      beneficiary.toBuffer(),
     ],
     program.programId,
   )
@@ -101,25 +104,20 @@ export function getConnectionPda(
 }
 
 /**
- * Get the PDA for a PSK authentication method
+ * Get the PDA for a PSK auth method on an AccessDomain.
+ *
+ * Schema migration: see getAuthMethodPda above. PSK uses method_type
+ * byte 0; Mpsk uses byte 1.
  */
 export function getPskAuthMethodPda(
   program: Program<Dawn>,
-  authority: PublicKey,
-  device: PublicKey,
-  encryptionKey: Uint8Array,
-  parameters: Buffer,
+  accessDomain: PublicKey,
 ): [PublicKey, number] {
-  const paramHash = hashParameters(parameters)
-
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from('auth_method'),
-      authority.toBuffer(),
+      accessDomain.toBuffer(),
       Buffer.from([0]), // PSK method type seed
-      device.toBuffer(),
-      Buffer.from(encryptionKey),
-      paramHash,
     ],
     program.programId,
   )

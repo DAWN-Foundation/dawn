@@ -6,55 +6,49 @@ import {
 } from '@solana/web3.js'
 
 import { Dawn } from '../../../target/types/dawn'
-import { mock } from '../../utils'
-import { PSKNetworkConfig, PSKMethodParams } from '../../utils/types'
+import { PSKNetworkConfig } from '../../utils/types'
 import {
   createPSKMethodParams,
-  serializePskCredentialData,
   serializePSKMethodParams,
-  // createPskCredentialData,
-  // serializePskCredentialData,
   validatePSKMethodParams,
 } from '../../utils/auth'
 import { getPskAuthMethodPda, getCredentialPda } from '../../pda/amf'
 import { getSubscriptionPda } from '../../pda/subscription'
-import { encryptWithPublicKey } from '../../utils/encrypt'
 
+/**
+ * High-level auth helpers post-access-domain redesign.
+ *
+ * Schema migration notes:
+ *   - AuthMethod is keyed on (access_domain, method_type), not on a
+ *     device + encryption_key tuple. The caller of registerPskAuthMethod
+ *     must equal access_domain.owner.
+ *   - Credentials carry a 128-byte sealed_payload. The plaintext is a
+ *     framed PSK encrypted via libsodium sealed-box to
+ *     `access_domain.control_plane_device.owner`. The sealing logic
+ *     is implemented in `sim/codec/sealing.ts` on the lean branch and
+ *     should be ported here when the operator-api side is rewired.
+ *     For now, callers pass a pre-sealed 128-byte payload directly.
+ */
 export class AuthManager {
   constructor(private program: Program<Dawn>) {}
 
-  /** Register PSK authentication method */
+  /** Register a PSK auth method on an existing AccessDomain. */
   async registerPskAuthMethod(
-    configPda: PublicKey,
-    authority: PublicKey,
-    device: PublicKey,
+    accessDomainPda: PublicKey,
+    accessDomainOwner: PublicKey,
     pskParams: PSKNetworkConfig,
-    encryptionKey: Uint8Array,
   ): Promise<{ itx: TransactionInstruction; authMethodPda: PublicKey }> {
     const params = createPSKMethodParams(pskParams)
     validatePSKMethodParams(params)
     const parametersBuffer = serializePSKMethodParams(params)
 
-    const [authMethodPda] = getPskAuthMethodPda(
-      this.program,
-      authority,
-      device,
-      encryptionKey,
-      parametersBuffer,
-    )
-
-    console.log('device', device.toBase58())
+    const [authMethodPda] = getPskAuthMethodPda(this.program, accessDomainPda)
 
     const itx = await this.program.methods
-      .registerAuthMethod(
-        { psk: {} },
-        Array.from(encryptionKey),
-        Array.from(parametersBuffer),
-      )
+      .registerAuthMethod({ psk: {} }, Array.from(parametersBuffer))
       .accountsPartial({
-        caller: authority,
-        config: configPda,
-        device: device,
+        caller: accessDomainOwner,
+        accessDomain: accessDomainPda,
         authMethod: authMethodPda,
       })
       .instruction()
@@ -63,39 +57,48 @@ export class AuthManager {
   }
 
   /**
-   * Register PSK credential for a client (with hash using client pubkey as salt)
-   * Requires the caller to have an active subscription to the plan
+   * Register a PSK credential for a customer on the plan-attached path.
+   *
+   * `sealedPayload` MUST be exactly 128 bytes — a libsodium sealed-box
+   * envelope to `access_domain.control_plane_device.owner`. See
+   * `docs/sot-bridge-protocol.md` §6 for the wire format and
+   * `sim/codec/sealing.ts` for a reference implementation.
    */
   async registerPskCredential(
     caller: PublicKey,
+    accessDomainPda: PublicKey,
     planPda: PublicKey,
     authMethodPda: PublicKey,
-    psk: string,
+    sealedPayload: Uint8Array,
+    options: {
+      vlanId?: number | null
+      qosTag?: number | null
+    } = {},
   ): Promise<{ itx: TransactionInstruction; credentialPda: PublicKey }> {
-    const authMethod = await this.program.account.authMethod.fetch(
-      authMethodPda,
-    )
-    const encryptionKey = authMethod.encryptionKey
-    const encryptedPsk = encryptWithPublicKey(
-      psk,
-      new Uint8Array(encryptionKey),
-    )
-    const credentialData = serializePskCredentialData(encryptedPsk)
+    if (sealedPayload.length !== 128) {
+      throw new Error(
+        `sealedPayload must be 128 bytes (libsodium sealed-box envelope); got ${sealedPayload.length}`,
+      )
+    }
 
     const [subscriptionPda] = getSubscriptionPda(this.program, planPda, caller)
 
     const credentialPda = getCredentialPda(
       this.program,
-      subscriptionPda,
-      planPda,
+      accessDomainPda,
       authMethodPda,
       caller,
     )
 
     const itx = await this.program.methods
-      .registerCredential(Array.from(credentialData))
+      .registerCredential(
+        options.vlanId ?? null,
+        options.qosTag ?? null,
+        Array.from(sealedPayload),
+      )
       .accountsPartial({
-        caller: caller,
+        caller,
+        accessDomain: accessDomainPda,
         authMethod: authMethodPda,
         plan: planPda,
         subscription: subscriptionPda,

@@ -90,7 +90,6 @@ export const configTests = () =>
         .initializeConfig(mock.daoFee, mock.validatorFee, mock.medallionFee)
         .accountsStrict({
           caller: wallet.payer.publicKey,
-          apiAuthority: wallet.payer.publicKey,
           config: configPda,
           tokenConfig: mock.tokenConfigPda,
           stableMint: mock.stableMint,
@@ -155,7 +154,6 @@ export const configTests = () =>
           null, // Keep raydium pool
           null, // Keep raydium config
           null, // Keep raydium observation
-          null, // Keep api authority
         )
         .accountsStrict({
           caller: wallet.payer.publicKey,
@@ -195,7 +193,6 @@ export const configTests = () =>
       await program.methods
         .updateConfig(
           mock.daoFee, // Restore original dao fee
-          null,
           null,
           null,
           null,
