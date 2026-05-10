@@ -300,12 +300,16 @@ export function decodeAccessDomain(buf: Buffer): AccessDomainState {
 // ---------------------------------------------------------------------------
 // DomainAuthority (state/domain_authority.rs) — Tier-2 role grant
 // ---------------------------------------------------------------------------
-export type DomainAuthorityRoleName = 'Registrar' | 'ConfigPlaneManager'
+export type DomainAuthorityRoleName =
+  | 'Registrar'
+  | 'ConfigPlaneManager'
+  | 'InfrastructureRegistrar'
 
 function decodeDomainAuthorityRole(c: Cursor): DomainAuthorityRoleName {
   const tag = c.u8()
   if (tag === 0) return 'Registrar'
   if (tag === 1) return 'ConfigPlaneManager'
+  if (tag === 2) return 'InfrastructureRegistrar'
   throw new Error(`unknown DomainAuthorityRole tag ${tag}`)
 }
 
@@ -415,6 +419,45 @@ export function decodeCredential(buf: Buffer): CredentialState {
     vlanId: c.optionU16(),
     qosTag: c.optionU8(),
     sealedPayload: c.bytes(128),
+    bump: c.u8(),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AccessDomainAuthenticator (state/access_domain_authenticator.rs) — the
+// on-chain record binding an AP keypair + MAC to an AccessDomain.
+// The SoT-bridge scans these via memcmp on `access_domain` at offset 16.
+// ---------------------------------------------------------------------------
+export interface AccessDomainAuthenticatorState {
+  createdAt: bigint
+  accessDomain: PublicKey
+  macAddress: Buffer // 6 bytes
+  currentPubkey: PublicKey
+  keyRotatedAt: bigint
+  device: PublicKey | null
+  label: string | null
+  expiresAt: bigint | null
+  bump: number
+}
+
+export function decodeAccessDomainAuthenticator(
+  buf: Buffer,
+): AccessDomainAuthenticatorState {
+  checkDisc(
+    buf,
+    ACCOUNT_DISC.AccessDomainAuthenticator,
+    'AccessDomainAuthenticator',
+  )
+  const c = new Cursor(buf, 8)
+  return {
+    createdAt: c.i64(),
+    accessDomain: c.pubkey(),
+    macAddress: c.bytes(6),
+    currentPubkey: c.pubkey(),
+    keyRotatedAt: c.i64(),
+    device: c.optionPubkey(),
+    label: c.optionString(),
+    expiresAt: c.optionI64(),
     bump: c.u8(),
   }
 }

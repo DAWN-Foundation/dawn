@@ -23,6 +23,7 @@ export type EdgeTarget =
   | 'DeviceLocation'
   | 'LocalDomain'
   | 'AccessDomain'
+  | 'AccessDomainAuthenticator'
   | 'DomainAuthority'
   | 'AuthMethod'
   | 'Credential'
@@ -107,6 +108,12 @@ export const ACCOUNT_EDGES: Record<string, EdgeSpec[]> = {
     { field: 'accessDomain', label: 'access_domain', target: 'AccessDomain' },
     { field: 'authMethod', label: 'auth_method', target: 'AuthMethod' },
   ],
+
+  AccessDomainAuthenticator: [
+    { field: 'accessDomain', label: 'access_domain', target: 'AccessDomain' },
+    { field: 'currentPubkey', label: 'current_pubkey', target: 'Wallet' },
+    { field: 'device', label: 'device', target: 'Device', optional: true },
+  ],
 }
 
 /**
@@ -137,6 +144,7 @@ export const ACCOUNT_TYPE_COLORS: Record<string, string> = {
   AuthMethod: '#A56DC4',
   Credential: '#C084FC',
   DomainAuthority: '#8E44AD',
+  AccessDomainAuthenticator: '#B07ED4',
 
   // Synthetic externals — muted.
   Wallet: '#BBBBBB',

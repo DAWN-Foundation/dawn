@@ -10,6 +10,7 @@
 import { ACCOUNT_DISC } from './discriminators'
 import {
   decodeAccessDomain,
+  decodeAccessDomainAuthenticator,
   decodeAuthMethod,
   decodeConfig,
   decodeCredential,
@@ -32,6 +33,7 @@ const REGISTRY: Record<string, (b: Buffer) => unknown> = {
   DeviceLocation: decodeDeviceLocation,
   LocalDomain: decodeLocalDomain,
   AccessDomain: decodeAccessDomain,
+  AccessDomainAuthenticator: decodeAccessDomainAuthenticator,
   DomainAuthority: decodeDomainAuthority,
   AuthMethod: decodeAuthMethod,
   Credential: decodeCredential,

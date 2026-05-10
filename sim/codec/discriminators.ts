@@ -51,11 +51,16 @@ export const IX_DISC = {
   verify_device_location: ixDisc('verify_device_location'),
   // local domain (management plane)
   update_local_domain_status: ixDisc('update_local_domain_status'),
+  // access-domain authenticators (Access Points)
+  register_authenticator: ixDisc('register_authenticator'),
+  rotate_authenticator_pubkey: ixDisc('rotate_authenticator_pubkey'),
+  revoke_authenticator: ixDisc('revoke_authenticator'),
 } as const
 
 /** Precomputed account discriminators for every `#[account]` struct in state/. */
 export const ACCOUNT_DISC = {
   AccessDomain: accountDisc('AccessDomain'),
+  AccessDomainAuthenticator: accountDisc('AccessDomainAuthenticator'),
   AuthMethod: accountDisc('AuthMethod'),
   Config: accountDisc('Config'),
   Credential: accountDisc('Credential'),

@@ -138,6 +138,25 @@ pub enum DawnError {
     #[msg("DomainAuthority has expired")]
     DomainAuthorityExpired,
 
+    // AUTHENTICATOR (Access Point on an AccessDomain)
+    #[msg("Invalid authenticator pubkey (cannot be default Pubkey)")]
+    InvalidAuthenticatorPubkey,
+
+    #[msg("Invalid authenticator MAC address (cannot be all zeros)")]
+    InvalidAuthenticatorMac,
+
+    #[msg("Authenticator label too long (max 32 chars)")]
+    AuthenticatorLabelTooLong,
+
+    #[msg("Authenticator expires_at is already in the past")]
+    AuthenticatorAlreadyExpired,
+
+    #[msg("Authenticator does not belong to the provided AccessDomain")]
+    AuthenticatorAccessDomainMismatch,
+
+    #[msg("Authenticator rotation must change the pubkey")]
+    AuthenticatorRotationNoOp,
+
     // SEED ENCODING
     #[msg("Invalid UTF-8 in seed data")]
     InvalidUtf8InSeed,

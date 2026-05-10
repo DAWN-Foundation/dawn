@@ -652,3 +652,128 @@ export function buildRevokeCredential(
     data,
   })
 }
+
+// ---------------------------------------------------------------------------
+// register_authenticator(mac_address, initial_pubkey, device?, label?, expires_at?)
+// app/access_domain_authenticator/register_authenticator.rs
+//
+// Two authorization regimes (matches register_credential_for):
+//   With InfrastructureRegistrar: grant is Some — caller ==
+//     grant.authority, role == InfrastructureRegistrar, grant pinned
+//     to this AccessDomain.
+//   Direct: grant is None — caller == access_domain.owner.
+// PDA seeds: ["authenticator", access_domain, mac_address]
+// ---------------------------------------------------------------------------
+export interface RegisterAuthenticatorAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  /** Optional DomainAuthority{InfrastructureRegistrar} PDA. */
+  infrastructureRegistrar: PublicKey | null
+  authenticator: PublicKey
+}
+
+export interface RegisterAuthenticatorArgs {
+  macAddress: number[] | Uint8Array | Buffer // 6 bytes
+  initialPubkey: PublicKey
+  device: PublicKey | null
+  label: string | null
+  expiresAt: bigint | null
+}
+
+export function buildRegisterAuthenticator(
+  a: RegisterAuthenticatorAccounts,
+  args: RegisterAuthenticatorArgs,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const macBuf = Buffer.from(args.macAddress as any)
+  if (macBuf.length !== 6) {
+    throw new Error(`mac_address must be 6 bytes, got ${macBuf.length}`)
+  }
+  const data = Buffer.concat([
+    IX_DISC.register_authenticator,
+    macBuf,                                       // [u8; 6]
+    Buffer.from(args.initialPubkey.toBytes()),    // Pubkey (32)
+    encodeOptionPubkey(args.device),
+    encodeOptionString(args.label),
+    encodeOptionI64(args.expiresAt),
+  ])
+  // Anchor convention for Optional<Account>: pass programId for None.
+  const grantKey = a.infrastructureRegistrar ?? programId
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(grantKey, false, false),
+      meta(a.authenticator, false, true), // init
+      meta(SYSTEM_PROGRAM_ID, false, false),
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// rotate_authenticator_pubkey(new_pubkey)
+// app/access_domain_authenticator/rotate_authenticator_pubkey.rs
+//
+// PDA seeds for the authenticator account stay the same (mac_address
+// is immutable); only the `current_pubkey` field is mutated.
+// ---------------------------------------------------------------------------
+export interface RotateAuthenticatorPubkeyAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  infrastructureRegistrar: PublicKey | null
+  authenticator: PublicKey
+}
+
+export function buildRotateAuthenticatorPubkey(
+  a: RotateAuthenticatorPubkeyAccounts,
+  newPubkey: PublicKey,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.concat([
+    IX_DISC.rotate_authenticator_pubkey,
+    Buffer.from(newPubkey.toBytes()),
+  ])
+  const grantKey = a.infrastructureRegistrar ?? programId
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(grantKey, false, false),
+      meta(a.authenticator, false, true), // mut
+    ],
+    data,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// revoke_authenticator (no args)
+// app/access_domain_authenticator/revoke_authenticator.rs
+// Closes the authenticator PDA; rent returns to caller.
+// ---------------------------------------------------------------------------
+export interface RevokeAuthenticatorAccounts {
+  caller: PublicKey
+  accessDomain: PublicKey
+  infrastructureRegistrar: PublicKey | null
+  authenticator: PublicKey
+}
+
+export function buildRevokeAuthenticator(
+  a: RevokeAuthenticatorAccounts,
+  programId = DAWN_PROGRAM_ID,
+): TransactionInstruction {
+  const data = Buffer.from(IX_DISC.revoke_authenticator)
+  const grantKey = a.infrastructureRegistrar ?? programId
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      meta(a.caller, true, true),
+      meta(a.accessDomain, false, false),
+      meta(grantKey, false, false),
+      meta(a.authenticator, false, true), // close = caller
+    ],
+    data,
+  })
+}

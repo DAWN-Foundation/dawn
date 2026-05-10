@@ -167,3 +167,44 @@ pub struct DomainAuthorityRevoked {
     pub revoked_by: Pubkey,
     pub revoked_at: i64,
 }
+
+#[event]
+pub struct AuthenticatorRegistered {
+    pub authenticator: Pubkey,
+    pub access_domain: Pubkey,
+    pub mac_address: [u8; 6],
+    pub initial_pubkey: Pubkey,
+    pub device: Option<Pubkey>,
+    pub label: Option<String>,
+    pub expires_at: Option<i64>,
+    /// The signer who registered the authenticator. Either
+    /// `access_domain.owner` (cold-admin direct) or the live
+    /// `DomainAuthority{InfrastructureRegistrar}.authority`.
+    pub registered_by: Pubkey,
+    pub created_at: i64,
+}
+
+#[event]
+pub struct AuthenticatorRotated {
+    pub authenticator: Pubkey,
+    pub access_domain: Pubkey,
+    pub mac_address: [u8; 6],
+    pub old_pubkey: Pubkey,
+    pub new_pubkey: Pubkey,
+    /// Same authorization regime as the register event.
+    pub rotated_by: Pubkey,
+    pub rotated_at: i64,
+}
+
+#[event]
+pub struct AuthenticatorRevoked {
+    pub authenticator: Pubkey,
+    pub access_domain: Pubkey,
+    pub mac_address: [u8; 6],
+    /// The pubkey that was active immediately before revocation.
+    /// Useful for the SoT-bridge to drop the right cache entry without
+    /// re-reading the account (which is now closed).
+    pub last_pubkey: Pubkey,
+    pub revoked_by: Pubkey,
+    pub revoked_at: i64,
+}

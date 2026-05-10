@@ -1,4 +1,5 @@
 mod access_domain;
+mod access_domain_authenticator;
 mod auth_method;
 mod auth_method_type;
 mod config;
@@ -10,6 +11,7 @@ mod domain_authority;
 mod local_domain;
 
 pub use access_domain::*;
+pub use access_domain_authenticator::*;
 pub use auth_method::*;
 pub use auth_method_type::*;
 pub use config::*;

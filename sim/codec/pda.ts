@@ -137,6 +137,7 @@ export function accessDomainPda(
 export enum DomainAuthorityRole {
   Registrar = 0,
   ConfigPlaneManager = 1,
+  InfrastructureRegistrar = 2,
   // Future variants: AuthMethodManager, PlanCreator, AdminDeputy
 }
 
@@ -221,6 +222,33 @@ export function credentialPda(
       args.accessDomain.toBytes(),
       args.authMethod.toBytes(),
       args.authority.toBytes(),
+    ],
+    programId,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Access-domain authenticators (Access Points)
+// ---------------------------------------------------------------------------
+
+/**
+ * PDA: ["authenticator", access_domain, mac_address]
+ *
+ * `mac_address` is the stable hardware identifier. The authenticator's
+ * `current_pubkey` field is mutable via rotate; the PDA stays put.
+ */
+export function authenticatorPda(
+  args: {
+    accessDomain: PublicKey
+    macAddress: number[] | Uint8Array | Buffer // 6 bytes
+  },
+  programId = DAWN_PROGRAM_ID,
+) {
+  return find(
+    [
+      Buffer.from('authenticator'),
+      args.accessDomain.toBytes(),
+      Buffer.from(args.macAddress as any),
     ],
     programId,
   )
