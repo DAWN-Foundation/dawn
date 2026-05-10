@@ -1,0 +1,2983 @@
+{
+  "address": "4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC",
+  "metadata": {
+    "name": "dawn",
+    "version": "2.0.0-access-domain",
+    "spec": "0.1.0",
+    "description": "DAWN Access-Domain Program (lean build)"
+  },
+  "instructions": [
+    {
+      "name": "add_access_domain",
+      "discriminator": [
+        7,
+        94,
+        103,
+        38,
+        197,
+        189,
+        216,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "control_plane_device",
+          "type": "pubkey"
+        },
+        {
+          "name": "gateway_device",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "local_domain",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "external_uuid",
+          "type": {
+            "option": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "add_device",
+      "discriminator": [
+        21,
+        27,
+        66,
+        42,
+        18,
+        30,
+        14,
+        18
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "device_model",
+          "docs": [
+            "The device model account"
+          ]
+        },
+        {
+          "name": "device",
+          "docs": [
+            "The device account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "device_location",
+          "docs": [
+            "The device location account"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  118,
+                  105,
+                  99,
+                  101,
+                  95,
+                  108,
+                  111,
+                  99,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "device"
+              }
+            ]
+          }
+        },
+        {
+          "name": "local_domain",
+          "docs": [
+            "The local domain account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "height",
+          "type": "u16"
+        },
+        {
+          "name": "latitude",
+          "type": "i64"
+        },
+        {
+          "name": "longitude",
+          "type": "i64"
+        },
+        {
+          "name": "placement",
+          "type": {
+            "array": [
+              "i32",
+              2
+            ]
+          }
+        },
+        {
+          "name": "mac_address",
+          "type": {
+            "array": [
+              "u8",
+              6
+            ]
+          }
+        },
+        {
+          "name": "local_domain_name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "add_device_for",
+      "discriminator": [
+        25,
+        92,
+        93,
+        174,
+        112,
+        80,
+        227,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary",
+          "docs": [
+            "The beneficiary who will receive the device"
+          ]
+        },
+        {
+          "name": "device_model",
+          "docs": [
+            "The device model account"
+          ]
+        },
+        {
+          "name": "device",
+          "docs": [
+            "The device account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "device_location",
+          "docs": [
+            "The device location account"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  118,
+                  105,
+                  99,
+                  101,
+                  95,
+                  108,
+                  111,
+                  99,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "device"
+              }
+            ]
+          }
+        },
+        {
+          "name": "local_domain",
+          "docs": [
+            "The local domain account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "height",
+          "type": "u16"
+        },
+        {
+          "name": "latitude",
+          "type": "i64"
+        },
+        {
+          "name": "longitude",
+          "type": "i64"
+        },
+        {
+          "name": "placement",
+          "type": {
+            "array": [
+              "i32",
+              2
+            ]
+          }
+        },
+        {
+          "name": "mac_address",
+          "type": {
+            "array": [
+              "u8",
+              6
+            ]
+          }
+        },
+        {
+          "name": "local_domain_name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "add_device_model",
+      "discriminator": [
+        55,
+        83,
+        68,
+        60,
+        174,
+        133,
+        169,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "The config account"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "device_model",
+          "docs": [
+            "The device model account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "device_type",
+          "type": {
+            "defined": {
+              "name": "DeviceType"
+            }
+          }
+        },
+        {
+          "name": "manufacturer",
+          "type": "string"
+        },
+        {
+          "name": "model",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "grant_domain_authority_for_access_domain",
+      "discriminator": [
+        47,
+        129,
+        130,
+        43,
+        10,
+        89,
+        254,
+        98
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "domain_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  109,
+                  97,
+                  105,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "arg",
+                "path": "role"
+              },
+              {
+                "kind": "arg",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "role",
+          "type": {
+            "defined": {
+              "name": "DomainAuthorityRole"
+            }
+          }
+        },
+        {
+          "name": "authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "label",
+          "type": {
+            "option": "string"
+          }
+        },
+        {
+          "name": "expires_at",
+          "type": {
+            "option": "i64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_auth_method",
+      "discriminator": [
+        169,
+        197,
+        119,
+        70,
+        58,
+        248,
+        149,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "auth_method",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  109,
+                  101,
+                  116,
+                  104,
+                  111,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "arg",
+                "path": "method_type"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "method_type",
+          "type": {
+            "defined": {
+              "name": "AuthMethodType"
+            }
+          }
+        },
+        {
+          "name": "parameters",
+          "type": {
+            "array": [
+              "u8",
+              256
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "register_credential_for",
+      "discriminator": [
+        135,
+        224,
+        99,
+        134,
+        69,
+        106,
+        254,
+        28
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary"
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "auth_method",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  109,
+                  101,
+                  116,
+                  104,
+                  111,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auth_method.access_domain",
+                "account": "AuthMethod"
+              },
+              {
+                "kind": "account",
+                "path": "auth_method.method_type",
+                "account": "AuthMethod"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registrar",
+          "docs": [
+            "Optional Registrar grant. When provided, caller must equal",
+            "`registrar.authority` and the Registrar must reference this",
+            "AccessDomain."
+          ],
+          "optional": true
+        },
+        {
+          "name": "credential",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "account",
+                "path": "auth_method"
+              },
+              {
+                "kind": "account",
+                "path": "beneficiary"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "vlan_id",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "qos_tag",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "sealed_payload",
+          "type": {
+            "array": [
+              "u8",
+              128
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "revoke_credential",
+      "discriminator": [
+        38,
+        123,
+        95,
+        95,
+        223,
+        158,
+        169,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "auth_method",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  109,
+                  101,
+                  116,
+                  104,
+                  111,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auth_method.access_domain",
+                "account": "AuthMethod"
+              },
+              {
+                "kind": "account",
+                "path": "auth_method.method_type",
+                "account": "AuthMethod"
+              }
+            ]
+          }
+        },
+        {
+          "name": "credential",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "account",
+                "path": "auth_method"
+              },
+              {
+                "kind": "account",
+                "path": "credential.authority",
+                "account": "Credential"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "revoke_domain_authority_for_access_domain",
+      "discriminator": [
+        195,
+        18,
+        68,
+        233,
+        68,
+        188,
+        183,
+        171
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "domain_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  109,
+                  97,
+                  105,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "account",
+                "path": "domain_authority.role",
+                "account": "DomainAuthority"
+              },
+              {
+                "kind": "account",
+                "path": "domain_authority.authority",
+                "account": "DomainAuthority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_access_domain_gateway_device",
+      "discriminator": [
+        199,
+        44,
+        222,
+        73,
+        238,
+        233,
+        39,
+        97
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_gateway_device",
+          "type": {
+            "option": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_control_plane_device",
+      "discriminator": [
+        249,
+        185,
+        110,
+        208,
+        206,
+        138,
+        77,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_control_plane_device",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "update_auth_method_params",
+      "discriminator": [
+        206,
+        176,
+        223,
+        119,
+        39,
+        165,
+        198,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "auth_method",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  109,
+                  101,
+                  116,
+                  104,
+                  111,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "account",
+                "path": "auth_method.method_type",
+                "account": "AuthMethod"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config_plane_manager",
+          "docs": [
+            "Optional ConfigPlaneManager grant. When provided AND caller is",
+            "not the owner, the program checks role + expiry."
+          ],
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_parameters",
+          "type": {
+            "array": [
+              "u8",
+              256
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_config_authority",
+      "discriminator": [
+        199,
+        198,
+        63,
+        111,
+        40,
+        225,
+        188,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "update_local_domain_status",
+      "discriminator": [
+        211,
+        69,
+        54,
+        38,
+        247,
+        233,
+        7,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "local_domain",
+          "docs": [
+            "The domain to mutate. Verified by its stored bump."
+          ],
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_status",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "verify_device_location",
+      "discriminator": [
+        84,
+        71,
+        30,
+        156,
+        175,
+        42,
+        107,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "device"
+        },
+        {
+          "name": "device_location",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  118,
+                  105,
+                  99,
+                  101,
+                  95,
+                  108,
+                  111,
+                  99,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "device"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AccessDomain",
+      "discriminator": [
+        17,
+        255,
+        63,
+        91,
+        144,
+        13,
+        188,
+        174
+      ]
+    },
+    {
+      "name": "AuthMethod",
+      "discriminator": [
+        202,
+        206,
+        169,
+        4,
+        114,
+        44,
+        72,
+        182
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Credential",
+      "discriminator": [
+        145,
+        44,
+        68,
+        220,
+        67,
+        46,
+        100,
+        135
+      ]
+    },
+    {
+      "name": "Device",
+      "discriminator": [
+        153,
+        248,
+        23,
+        39,
+        83,
+        45,
+        68,
+        128
+      ]
+    },
+    {
+      "name": "DeviceLocation",
+      "discriminator": [
+        170,
+        132,
+        202,
+        65,
+        210,
+        141,
+        95,
+        108
+      ]
+    },
+    {
+      "name": "DeviceModel",
+      "discriminator": [
+        61,
+        105,
+        192,
+        113,
+        193,
+        4,
+        209,
+        160
+      ]
+    },
+    {
+      "name": "DomainAuthority",
+      "discriminator": [
+        204,
+        54,
+        22,
+        228,
+        204,
+        180,
+        12,
+        122
+      ]
+    },
+    {
+      "name": "LocalDomain",
+      "discriminator": [
+        198,
+        224,
+        126,
+        4,
+        192,
+        152,
+        238,
+        142
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AccessDomainAdded",
+      "discriminator": [
+        35,
+        85,
+        241,
+        73,
+        246,
+        168,
+        72,
+        246
+      ]
+    },
+    {
+      "name": "AccessDomainControlPlaneUpdated",
+      "discriminator": [
+        216,
+        79,
+        68,
+        186,
+        31,
+        188,
+        101,
+        181
+      ]
+    },
+    {
+      "name": "AccessDomainGatewayUpdated",
+      "discriminator": [
+        43,
+        39,
+        81,
+        161,
+        87,
+        46,
+        122,
+        88
+      ]
+    },
+    {
+      "name": "AuthMethodParamsUpdated",
+      "discriminator": [
+        255,
+        46,
+        80,
+        211,
+        3,
+        64,
+        62,
+        151
+      ]
+    },
+    {
+      "name": "AuthMethodRegistered",
+      "discriminator": [
+        5,
+        51,
+        237,
+        194,
+        29,
+        75,
+        14,
+        79
+      ]
+    },
+    {
+      "name": "ConfigAuthorityUpdated",
+      "discriminator": [
+        42,
+        9,
+        207,
+        82,
+        40,
+        62,
+        33,
+        108
+      ]
+    },
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "CredentialRegistered",
+      "discriminator": [
+        20,
+        222,
+        134,
+        161,
+        63,
+        209,
+        211,
+        125
+      ]
+    },
+    {
+      "name": "CredentialRevoked",
+      "discriminator": [
+        127,
+        131,
+        241,
+        234,
+        50,
+        139,
+        145,
+        204
+      ]
+    },
+    {
+      "name": "DeviceAdded",
+      "discriminator": [
+        102,
+        194,
+        14,
+        106,
+        49,
+        56,
+        29,
+        53
+      ]
+    },
+    {
+      "name": "DeviceLocationAdded",
+      "discriminator": [
+        141,
+        225,
+        217,
+        171,
+        125,
+        42,
+        237,
+        52
+      ]
+    },
+    {
+      "name": "DeviceLocationVerified",
+      "discriminator": [
+        110,
+        46,
+        230,
+        138,
+        89,
+        223,
+        159,
+        14
+      ]
+    },
+    {
+      "name": "DeviceModelAdded",
+      "discriminator": [
+        80,
+        30,
+        97,
+        42,
+        251,
+        12,
+        126,
+        113
+      ]
+    },
+    {
+      "name": "DomainAuthorityGranted",
+      "discriminator": [
+        38,
+        13,
+        29,
+        5,
+        108,
+        121,
+        4,
+        155
+      ]
+    },
+    {
+      "name": "DomainAuthorityRevoked",
+      "discriminator": [
+        202,
+        23,
+        232,
+        196,
+        229,
+        120,
+        228,
+        19
+      ]
+    },
+    {
+      "name": "LocalDomainAdded",
+      "discriminator": [
+        211,
+        180,
+        178,
+        54,
+        241,
+        97,
+        169,
+        231
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds"
+    },
+    {
+      "code": 6001,
+      "name": "Overflow",
+      "msg": "Arithmetic operation overflowed"
+    },
+    {
+      "code": 6002,
+      "name": "Underflow",
+      "msg": "Arithmetic operation underflowed"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: caller is not the authority"
+    },
+    {
+      "code": 6004,
+      "name": "EmptyDeviceManufacturer",
+      "msg": "Device manufacturer is empty"
+    },
+    {
+      "code": 6005,
+      "name": "EmptyDeviceModel",
+      "msg": "Device model is empty"
+    },
+    {
+      "code": 6006,
+      "name": "DeviceManufacturerTooLong",
+      "msg": "Device manufacturer is too long"
+    },
+    {
+      "code": 6007,
+      "name": "DeviceModelTooLong",
+      "msg": "Device model is too long"
+    },
+    {
+      "code": 6008,
+      "name": "EmptyDeviceName",
+      "msg": "Device name is empty"
+    },
+    {
+      "code": 6009,
+      "name": "DeviceNameTooLong",
+      "msg": "Device name is too long"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidHeight",
+      "msg": "Device height is invalid"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidLatitude",
+      "msg": "Latitude coordinate is invalid"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidLongitude",
+      "msg": "Longitude coordinate is invalid"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidPlacementAzimuth",
+      "msg": "Invalid placement azimuth"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidPlacementTilt",
+      "msg": "Invalid placement tilt"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidDeviceType",
+      "msg": "Device type is invalid"
+    },
+    {
+      "code": 6016,
+      "name": "LocalDomainNameTooLong",
+      "msg": "Local domain name is too long"
+    },
+    {
+      "code": 6017,
+      "name": "EmptyLocalDomainName",
+      "msg": "Local domain name is empty"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidStatus",
+      "msg": "Invalid coverage status (must be 0..=3)"
+    },
+    {
+      "code": 6019,
+      "name": "EmptyAccessDomainName",
+      "msg": "Access domain name is empty"
+    },
+    {
+      "code": 6020,
+      "name": "AccessDomainNameTooLong",
+      "msg": "Access domain name is too long"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidControlPlaneDevice",
+      "msg": "Invalid control plane device (cannot be default Pubkey)"
+    },
+    {
+      "code": 6022,
+      "name": "OnlyAccessDomainOwner",
+      "msg": "Only the access-domain owner may perform this action"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidAuthMethodType",
+      "msg": "Invalid auth method type"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidSecurityStandard",
+      "msg": "Invalid security standard"
+    },
+    {
+      "code": 6025,
+      "name": "InvalidEncryptionAlgorithm",
+      "msg": "Invalid encryption algorithm"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidRotationInterval",
+      "msg": "Invalid PSK rotation interval"
+    },
+    {
+      "code": 6027,
+      "name": "PskNoActiveBand",
+      "msg": "PSKMethodParams: at least one band (2.4/5/6 GHz) must be active"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidSsidLabelLen",
+      "msg": "PSKMethodParams: SSID label length out of range"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidSsidUtf8",
+      "msg": "PSKMethodParams: SSID label is not valid utf-8 in its declared prefix"
+    },
+    {
+      "code": 6030,
+      "name": "AuthMethodAccessDomainMismatch",
+      "msg": "AuthMethod's access_domain does not match the provided AccessDomain"
+    },
+    {
+      "code": 6031,
+      "name": "OnlyOwnerOrConfigPlaneManager",
+      "msg": "update_auth_method_params: caller must be access_domain.owner OR a live ConfigPlaneManager"
+    },
+    {
+      "code": 6032,
+      "name": "CredentialAccessDomainMismatch",
+      "msg": "Credential's access_domain does not match the provided AccessDomain"
+    },
+    {
+      "code": 6033,
+      "name": "CredentialAuthMethodMismatch",
+      "msg": "Credential's auth_method does not match the provided AuthMethod"
+    },
+    {
+      "code": 6034,
+      "name": "UnauthorizedCredentialRevoke",
+      "msg": "Caller is not authorized to revoke this credential"
+    },
+    {
+      "code": 6035,
+      "name": "InvalidVlanId",
+      "msg": "Invalid VLAN id (must be in 1..=4094)"
+    },
+    {
+      "code": 6036,
+      "name": "InvalidDomainAuthority",
+      "msg": "Invalid domain authority (cannot be default Pubkey)"
+    },
+    {
+      "code": 6037,
+      "name": "DomainAuthorityLabelTooLong",
+      "msg": "Domain authority label too long (max 32 chars)"
+    },
+    {
+      "code": 6038,
+      "name": "DomainAuthorityAlreadyExpired",
+      "msg": "Domain authority expires_at is already in the past"
+    },
+    {
+      "code": 6039,
+      "name": "DomainAuthorityDomainMismatch",
+      "msg": "DomainAuthority.domain does not match the provided domain"
+    },
+    {
+      "code": 6040,
+      "name": "DomainAuthorityWrongRole",
+      "msg": "DomainAuthority has the wrong role for this operation"
+    },
+    {
+      "code": 6041,
+      "name": "DomainAuthoritySignerMismatch",
+      "msg": "Caller does not match DomainAuthority.authority"
+    },
+    {
+      "code": 6042,
+      "name": "DomainAuthorityExpired",
+      "msg": "DomainAuthority has expired"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidUtf8InSeed",
+      "msg": "Invalid UTF-8 in seed data"
+    }
+  ],
+  "types": [
+    {
+      "name": "AccessDomain",
+      "docs": [
+        "The access-domain account.",
+        "",
+        "First-class top-level account representing a logical access-plane",
+        "network (e.g. an MPSK SSID, an EAP-TLS realm, an IPsec policy domain).",
+        "",
+        "Three Tier-1 attachments are referenced (intrinsic, identity-defining):",
+        "- `owner`: operator key. Authorizes creation and any subsequent change",
+        "to `gateway_device` / `control_plane_device`. Also authorizes",
+        "`grant_domain_authority` / `revoke_domain_authority` for delegating",
+        "Tier-2 roles (e.g. Registrar) to other keys.",
+        "- `control_plane_device`: Device PDA whose `owner` decrypts",
+        "`Credential.sealed_payload`. Conceptually the AAA appliance.",
+        "Required.",
+        "- `gateway_device`: optional Device PDA representing the upstream",
+        "data-plane gateway/router that forwards this access domain's",
+        "traffic (e.g. BNG, AP, building gateway). Optional because pure",
+        "BSS scenarios may not have a backhaul attachment yet.",
+        "",
+        "`local_domain` is preserved for forward compatibility — local domains",
+        "are a management-plane concept distinct from the access plane and may",
+        "or may not be linked. Optional and unused by access-plane logic today.",
+        "",
+        "`external_uuid` is a 16-byte handle for tying the access domain back",
+        "to an off-chain source-of-truth row (e.g. a record in the operator's",
+        "BSS database). Optional."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "owner",
+            "docs": [
+              "Operator key. Sole authority for set_* updates and for granting/revoking",
+              "Tier-2 DomainAuthority roles on this access domain."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "control_plane_device",
+            "docs": [
+              "Device PDA whose owner decrypts Credential.sealed_payload (the AAA",
+              "appliance)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway_device",
+            "docs": [
+              "Optional Device PDA: the data-plane gateway. None for pure-BSS",
+              "deployments without a backhaul attachment."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "local_domain",
+            "docs": [
+              "Optional management-plane attachment. Reserved for future use;",
+              "the access-plane logic does not read this field."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "external_uuid",
+            "docs": [
+              "Optional external UUID (16 bytes) for tying back to an off-chain",
+              "source of truth."
+            ],
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  16
+                ]
+              }
+            }
+          },
+          {
+            "name": "name",
+            "docs": [
+              "SSID-like human label (max 32 bytes)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccessDomainAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "control_plane_device",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway_device",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "local_domain",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "external_uuid",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  16
+                ]
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccessDomainControlPlaneUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": "pubkey"
+          },
+          {
+            "name": "new",
+            "type": "pubkey"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccessDomainGatewayUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthMethod",
+      "docs": [
+        "Account structure for an authentication method scheme attached to an",
+        "access domain.",
+        "",
+        "One AuthMethod per (AccessDomain, method_type, parameter set). Methods",
+        "are *not* bound to a specific Device — a 50-AP MPSK fleet uses one",
+        "AuthMethod, not 50.",
+        "",
+        "`parameters[256]` is a fixed buffer holding the method-specific config",
+        "(PSKMethodParams, EAPMethodParams, etc.). Method-specific data-plane",
+        "key material — when relevant (IPsec AH, WPA2-Enterprise) — lives",
+        "inside this buffer alongside the rest of the method config."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "Operator who registered this method (must equal access_domain.owner",
+              "at registration time)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "docs": [
+              "The AccessDomain this method serves."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "method_type",
+            "docs": [
+              "Which method this represents (maps to AuthMethodType enum)."
+            ],
+            "type": {
+              "defined": {
+                "name": "AuthMethodType"
+              }
+            }
+          },
+          {
+            "name": "parameters",
+            "docs": [
+              "Method-specific parameters (fixed size buffer). For Psk/Mpsk see",
+              "app/amf/psk_method.rs::PSKMethodParams."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthMethodParamsUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auth_method",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "method_type",
+            "type": "u8"
+          },
+          {
+            "name": "updated_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthMethodRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auth_method",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "method_type",
+            "type": "u8"
+          },
+          {
+            "name": "parameters",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthMethodType",
+      "docs": [
+        "Authentication method types supported by the access-domain build.",
+        "",
+        "Lean build: Psk and Mpsk only. Other 802.11 / IPsec / EAP variants",
+        "are reserved for a future enrichment of the schema and not currently",
+        "accepted by `register_auth_method`."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Psk"
+          },
+          {
+            "name": "Mpsk"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "docs": [
+        "Protocol singleton — the only off-chain-administered piece of state",
+        "in the access-domain build. Holds the cold-admin authority that",
+        "controls global gates such as `add_device_model`.",
+        "",
+        "Initialized once with `initialize_config(authority)`. Subsequent",
+        "updates (rotating the authority) go through `update_config_authority`,",
+        "signed by the current authority."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "Creation timestamp."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "The cold-admin authority. Required signer for protocol-wide",
+              "operations (currently: registering DeviceModels). Each AccessDomain",
+              "has its own owner; this is separate."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigAuthorityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": "pubkey"
+          },
+          {
+            "name": "new",
+            "type": "pubkey"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Credential",
+      "docs": [
+        "Per-customer credential on an AccessDomain.",
+        "",
+        "Identity is `(access_domain, auth_method, authority)`. Subscription",
+        "and Plan links are *optional* — a credential can exist for a pure-BSS",
+        "access domain with no commercial relationship attached. When present,",
+        "they record the commercial context and gate the registrar (the signer",
+        "must equal `plan.subscription_creation_authority`).",
+        "",
+        "`sealed_payload[128]` is a libsodium sealed-box envelope encrypted to",
+        "`access_domain.control_plane_device`'s Solana pubkey (Ed25519 →",
+        "Curve25519 conversion). Plaintext format is method-specific and",
+        "versioned; for MPSK it is the raw PSK with a small header. The on-",
+        "chain program never reads or validates this buffer; it is opaque",
+        "ciphertext."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "The customer this credential is for."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "docs": [
+              "The access domain."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "auth_method",
+            "docs": [
+              "The auth method scheme."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "subscription",
+            "docs": [
+              "Optional commercial-relationship link."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "plan",
+            "docs": [
+              "Optional plan link. Must be Some whenever subscription is Some."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "vlan_id",
+            "docs": [
+              "Optional 802.1Q VLAN tag. Interpretation is operator-side; we",
+              "store the raw u16 as provided."
+            ],
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "qos_tag",
+            "docs": [
+              "Optional QoS class. u8 raw; convention (DSCP / 802.1p) is",
+              "operator-side."
+            ],
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "sealed_payload",
+            "docs": [
+              "Sealed payload (libsodium sealed box envelope) encrypted to the",
+              "AccessDomain's control_plane_device. Layout:",
+              "bytes  0..32   ephemeral X25519 public key",
+              "bytes 32..128  ciphertext || Poly1305 tag, zero-padded"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CredentialRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "credential",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "auth_method",
+            "type": "pubkey"
+          },
+          {
+            "name": "vlan_id",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "qos_tag",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CredentialRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "credential",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "auth_method",
+            "type": "pubkey"
+          },
+          {
+            "name": "revoked_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Device",
+      "docs": [
+        "The device account, representing a device"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "owner",
+            "docs": [
+              "The owner's public key who registered this device"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "model",
+            "docs": [
+              "Reference to the DeviceModel account"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Name of the device"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "local_domain",
+            "docs": [
+              "Reference to the LocalDomain account"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mac_address",
+            "docs": [
+              "MAC address"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "device",
+            "type": "pubkey"
+          },
+          {
+            "name": "device_location",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "model",
+            "type": "pubkey"
+          },
+          {
+            "name": "local_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "mac_address",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceLocation",
+      "docs": [
+        "Device location account"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "device",
+            "docs": [
+              "The device account"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "height",
+            "docs": [
+              "Device antenna height (meters)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "latitude",
+            "docs": [
+              "Geographic position - latitude"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "longitude",
+            "docs": [
+              "Geographic position - longitude"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "placement",
+            "docs": [
+              "The placement of the device, consists of azimuth and tilt",
+              "azimuth: i32,       // Bird's eye view (horizontal angle, 0.00 - 360.00) scaled by 100",
+              "tilt: i32,          // Side view (vertical angle, -90.00 - 90.00) scaled by 100"
+            ],
+            "type": {
+              "array": [
+                "i32",
+                2
+              ]
+            }
+          },
+          {
+            "name": "verified",
+            "docs": [
+              "Verified by the DAWN authority"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "verified_at",
+            "docs": [
+              "The verification timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceLocationAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "device_location",
+            "type": "pubkey"
+          },
+          {
+            "name": "device",
+            "type": "pubkey"
+          },
+          {
+            "name": "height",
+            "type": "u16"
+          },
+          {
+            "name": "longitude",
+            "type": "i64"
+          },
+          {
+            "name": "latitude",
+            "type": "i64"
+          },
+          {
+            "name": "placement",
+            "type": {
+              "array": [
+                "i32",
+                2
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceLocationVerified",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "device_location",
+            "type": "pubkey"
+          },
+          {
+            "name": "device",
+            "type": "pubkey"
+          },
+          {
+            "name": "verified_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceModel",
+      "docs": [
+        "The device model account, representing a device model"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "device_type",
+            "docs": [
+              "The type of device"
+            ],
+            "type": {
+              "defined": {
+                "name": "DeviceType"
+              }
+            }
+          },
+          {
+            "name": "manufacturer",
+            "docs": [
+              "Device manufacturer name"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "model",
+            "docs": [
+              "Specific model identifier"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceModelAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "device_model",
+            "type": "pubkey"
+          },
+          {
+            "name": "device_type",
+            "type": {
+              "defined": {
+                "name": "DeviceType"
+              }
+            }
+          },
+          {
+            "name": "manufacturer",
+            "type": "string"
+          },
+          {
+            "name": "model",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeviceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Router"
+          },
+          {
+            "name": "WirelessRadio"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DomainAuthority",
+      "docs": [
+        "Tier-2 role grant on a domain (AccessDomain or DistributionDomain).",
+        "",
+        "The domain pubkey identifies the parent; the program reads the typed",
+        "domain account at use time to verify kind. The `role` enum encodes",
+        "what the granted key is authorized to do.",
+        "",
+        "PDA seeds: [\"domain_authority\", domain, role_byte, authority]",
+        "",
+        "Auth model:",
+        "- `grant_domain_authority` is signed by `domain.owner`.",
+        "- `revoke_domain_authority` is signed by `domain.owner` (closes PDA).",
+        "- The \"use\" instruction (e.g. register_credential_for) verifies the",
+        "PDA exists, has the expected role, references the same domain,",
+        "and is not expired."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "When the grant was created."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "domain",
+            "docs": [
+              "The parent domain (AccessDomain or DistributionDomain PDA)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "The delegated key."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "role",
+            "docs": [
+              "What this grant authorizes."
+            ],
+            "type": {
+              "defined": {
+                "name": "DomainAuthorityRole"
+              }
+            }
+          },
+          {
+            "name": "created_by",
+            "docs": [
+              "= domain.owner at the time of grant. Recorded for audit; the",
+              "active owner check happens against the live domain account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "label",
+            "docs": [
+              "Optional human label (max 32 chars). Useful for ops:",
+              "\"operator-api-prod\", \"msp-aaa-eu-west-1\", etc."
+            ],
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "Optional expiry (Unix seconds). None = no expiry. Use sites must",
+              "reject the grant when `expires_at.is_some() && expires_at < now`."
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DomainAuthorityGranted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "domain_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "role",
+            "type": "u8"
+          },
+          {
+            "name": "label",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "created_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DomainAuthorityRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "domain_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "role",
+            "type": "u8"
+          },
+          {
+            "name": "revoked_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DomainAuthorityRole",
+      "docs": [
+        "Roles delegable on a domain. The byte mapping (used in PDA seeds) is",
+        "stable across schema versions: adding a variant only consumes the",
+        "next free byte; existing PDAs keep their seeds."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Registrar"
+          },
+          {
+            "name": "ConfigPlaneManager"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LocalDomain",
+      "docs": [
+        "The local domain account.",
+        "",
+        "Acts as the BSS↔OSS bridge: every Plan (BSS) and every Device (OSS)",
+        "references a LocalDomain. Mutations to LocalDomain state are the",
+        "canonical \"domain change\" trigger that off-chain BSS and OSS systems",
+        "subscribe to."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "The creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "owner",
+            "docs": [
+              "The owner of the local domain"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "coverage_status",
+            "docs": [
+              "Operational status of the domain's coverage. Encoded as u8 to keep",
+              "the layout simple and Borsh-friendly:",
+              "0 = Active        — normal operation",
+              "1 = Degraded      — partial outage",
+              "2 = Maintenance   — planned maintenance window",
+              "3 = Offline       — not serving"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "last_status_change_at",
+            "docs": [
+              "Unix timestamp of the last `coverage_status` change. On creation",
+              "this matches `created_at`."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LocalDomainAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "local_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}
