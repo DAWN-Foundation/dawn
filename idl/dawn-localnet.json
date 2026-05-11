@@ -3930,6 +3930,111 @@
       ]
     },
     {
+      "name": "register_authenticator",
+      "discriminator": [
+        230,
+        171,
+        40,
+        229,
+        96,
+        143,
+        186,
+        78
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "infrastructure_registrar",
+          "docs": [
+            "Optional InfrastructureRegistrar grant. When provided, caller",
+            "must equal `grant.authority`. When omitted, caller must equal",
+            "`access_domain.owner`. Mirrors the `register_credential_for`",
+            "Anchor Optional<Account> convention — pass the program id as",
+            "the placeholder pubkey for None."
+          ],
+          "optional": true
+        },
+        {
+          "name": "authenticator",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  101,
+                  110,
+                  116,
+                  105,
+                  99,
+                  97,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "access_domain"
+              },
+              {
+                "kind": "arg",
+                "path": "mac_address"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "mac_address",
+          "type": {
+            "array": [
+              "u8",
+              6
+            ]
+          }
+        },
+        {
+          "name": "initial_pubkey",
+          "type": "pubkey"
+        },
+        {
+          "name": "device",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "label",
+          "type": {
+            "option": "string"
+          }
+        },
+        {
+          "name": "expires_at",
+          "type": {
+            "option": "i64"
+          }
+        }
+      ]
+    },
+    {
       "name": "register_connection",
       "discriminator": [
         41,
@@ -4337,6 +4442,38 @@
           }
         }
       ]
+    },
+    {
+      "name": "revoke_authenticator",
+      "discriminator": [
+        160,
+        188,
+        112,
+        177,
+        74,
+        27,
+        228,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "infrastructure_registrar",
+          "optional": true
+        },
+        {
+          "name": "authenticator",
+          "writable": true
+        }
+      ],
+      "args": []
     },
     {
       "name": "revoke_connection",
@@ -4774,6 +4911,43 @@
         {
           "name": "tier",
           "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "rotate_authenticator_pubkey",
+      "discriminator": [
+        125,
+        102,
+        246,
+        177,
+        53,
+        226,
+        151,
+        19
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "access_domain"
+        },
+        {
+          "name": "infrastructure_registrar",
+          "optional": true
+        },
+        {
+          "name": "authenticator",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_pubkey",
+          "type": "pubkey"
         }
       ]
     },
@@ -6434,6 +6608,19 @@
       ]
     },
     {
+      "name": "AccessDomainAuthenticator",
+      "discriminator": [
+        173,
+        66,
+        103,
+        166,
+        142,
+        88,
+        207,
+        81
+      ]
+    },
+    {
       "name": "AuthMethod",
       "discriminator": [
         202,
@@ -6745,6 +6932,45 @@
         75,
         14,
         79
+      ]
+    },
+    {
+      "name": "AuthenticatorRegistered",
+      "discriminator": [
+        192,
+        18,
+        91,
+        200,
+        146,
+        3,
+        129,
+        23
+      ]
+    },
+    {
+      "name": "AuthenticatorRevoked",
+      "discriminator": [
+        160,
+        107,
+        139,
+        235,
+        120,
+        248,
+        193,
+        58
+      ]
+    },
+    {
+      "name": "AuthenticatorRotated",
+      "discriminator": [
+        103,
+        245,
+        122,
+        158,
+        66,
+        241,
+        56,
+        223
       ]
     },
     {
@@ -7694,6 +7920,36 @@
       "code": 6118,
       "name": "InvalidSsidUtf8",
       "msg": "PSKMethodParams: SSID label is not valid utf-8 in its declared prefix"
+    },
+    {
+      "code": 6119,
+      "name": "InvalidAuthenticatorPubkey",
+      "msg": "Invalid authenticator pubkey (cannot be default Pubkey)"
+    },
+    {
+      "code": 6120,
+      "name": "InvalidAuthenticatorMac",
+      "msg": "Invalid authenticator MAC address (cannot be all zeros)"
+    },
+    {
+      "code": 6121,
+      "name": "AuthenticatorLabelTooLong",
+      "msg": "Authenticator label too long (max 32 chars)"
+    },
+    {
+      "code": 6122,
+      "name": "AuthenticatorAlreadyExpired",
+      "msg": "Authenticator expires_at is already in the past"
+    },
+    {
+      "code": 6123,
+      "name": "AuthenticatorAccessDomainMismatch",
+      "msg": "Authenticator does not belong to the provided AccessDomain"
+    },
+    {
+      "code": 6124,
+      "name": "AuthenticatorRotationNoOp",
+      "msg": "Authenticator rotation must change the pubkey"
     }
   ],
   "types": [
@@ -7851,6 +8107,131 @@
           {
             "name": "created_at",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccessDomainAuthenticator",
+      "docs": [
+        "An AP (Access Point) authorized to act as a RADIUS authenticator on",
+        "an AccessDomain.",
+        "",
+        "Identity is split between two values:",
+        "- `mac_address`: stable hardware identifier. Immutable; part of",
+        "the PDA seeds. Replacing the physical box (new MAC) creates a",
+        "new authenticator account.",
+        "- `current_pubkey`: Ed25519 TLS / Solana identity. Mutable via",
+        "`rotate_authenticator_pubkey`. In RadSec mode this is the key",
+        "wrapped in the AP's self-signed X.509 cert",
+        "(`SubjectPublicKeyInfo`); in plain-RADIUS mode it's recorded for",
+        "audit and forward-compatibility, while the actual RADIUS",
+        "shared secret lives off chain (Nautobot-pushed config).",
+        "",
+        "PDA seeds: [\"authenticator\", access_domain, mac_address]",
+        "",
+        "Field-offset layout (relevant for memcmp-filtered",
+        "`getProgramAccounts` scans from the SoT-bridge):",
+        "0..8    Anchor account discriminator",
+        "8..16   created_at (i64 LE)",
+        "16..48  access_domain (Pubkey)        ← scan filter for \"my AD\"",
+        "48..54  mac_address ([u8;6])          ← plain-RADIUS lookup",
+        "54..86  current_pubkey (Pubkey)       ← RadSec lookup",
+        "86..94  key_rotated_at (i64 LE)",
+        "94..127 device (Option<Pubkey>) — 1-byte tag + 32-byte pubkey",
+        "127..   label, expires_at, bump — variable offset; full-account",
+        "parse only."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "created_at",
+            "docs": [
+              "When the authenticator was first registered."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "access_domain",
+            "docs": [
+              "The AccessDomain this authenticator serves. Pinned at offset 16",
+              "(8 byte disc + 8 byte created_at) so the bridge can do a single",
+              "memcmp filter to enumerate all APs for a given AccessDomain."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mac_address",
+            "docs": [
+              "AP hardware MAC address (EUI-48). Immutable — part of the PDA",
+              "seeds. New MAC = new authenticator account."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "current_pubkey",
+            "docs": [
+              "Current AP identity pubkey (Ed25519). Mutable via",
+              "`rotate_authenticator_pubkey`. For RadSec: wrapped in the AP's",
+              "self-signed X.509 cert SubjectPublicKeyInfo. For plain-RADIUS:",
+              "recorded for audit only."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "key_rotated_at",
+            "docs": [
+              "When `current_pubkey` was last set. Equals `created_at`",
+              "initially; updated on each rotate."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "device",
+            "docs": [
+              "Optional pointer to the Device CMDB record (when the operator",
+              "tracks the hardware separately in the Device / LocalDomain",
+              "inventory). None when the AP is registered as an authenticator",
+              "only."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "label",
+            "docs": [
+              "Optional ops-friendly label. Mirrors the DomainAuthority",
+              "convention. Examples: \"lobby-ap-3\", \"rooftop-mesh-1\"."
+            ],
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "Optional expiry (Unix seconds). None = no expiry. Use sites",
+              "must reject the authenticator when",
+              "`expires_at.is_some() && expires_at <= now`. Useful for",
+              "time-boxed contractors / loaner hardware."
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump."
+            ],
+            "type": "u8"
           }
         ]
       }
@@ -8081,6 +8462,152 @@
           },
           {
             "name": "Wpa3Enterprise"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthenticatorRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authenticator",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "mac_address",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "initial_pubkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "device",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "label",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "registered_by",
+            "docs": [
+              "The signer who registered the authenticator. Either",
+              "`access_domain.owner` (cold-admin direct) or the live",
+              "`DomainAuthority{InfrastructureRegistrar}.authority`."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthenticatorRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authenticator",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "mac_address",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "last_pubkey",
+            "docs": [
+              "The pubkey that was active immediately before revocation.",
+              "Useful for the SoT-bridge to drop the right cache entry without",
+              "re-reading the account (which is now closed)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "revoked_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "revoked_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthenticatorRotated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authenticator",
+            "type": "pubkey"
+          },
+          {
+            "name": "access_domain",
+            "type": "pubkey"
+          },
+          {
+            "name": "mac_address",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "old_pubkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_pubkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "rotated_by",
+            "docs": [
+              "Same authorization regime as the register event."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "rotated_at",
+            "type": "i64"
           }
         ]
       }
@@ -9164,6 +9691,9 @@
           },
           {
             "name": "ConfigPlaneManager"
+          },
+          {
+            "name": "InfrastructureRegistrar"
           }
         ]
       }
