@@ -340,151 +340,157 @@ export const configTests = () =>
       }
     })
 
-    test('initializes loopback root IP block', async () => {
-      // small wait to ensure previous tx is processed
-      await new Promise((resolve) => setTimeout(resolve, 100))
+    // DISABLED with the instructions they exercise — see DAWN-minimal-deploy-squads
+    // (ipam::initialize_root_ip_block is commented out in lib.rs)
+    // test('initializes loopback root IP block', async () => {
+    //   // small wait to ensure previous tx is processed
+    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    //
+    //   // Get root IP block PDAs for all tiers
+    //   const loopbackRootPda = getRootIpBlockPda(1, 0) // Loopback tier
+    //
+    //   const tx = await program.methods
+    //     .initializeRootIpBlock(1, 0x64400000, 11)
+    //     .accountsPartial({
+    //       caller: wallet.payer.publicKey,
+    //       authority: wallet.payer.publicKey,
+    //       config: configPda,
+    //       rootIpBlock: loopbackRootPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .transaction()
+    //
+    //   const txDetails = await confirmTx(provider, tx)
+    //
+    //   // Verify at least one event was emitted (there should be 3, one for each tier)
+    //   const event = await getEvent<RootIpBlockInitialized>(
+    //     program,
+    //     txDetails,
+    //     'rootIpBlockInitialized',
+    //   )
+    //   assert.ok(event.rootIpBlock)
+    //   assert.ok(event.createdAt > 0)
+    //
+    //   // Verify accounts were created
+    //   const loopbackRoot = await program.account.rootIpBlock.fetch(
+    //     loopbackRootPda,
+    //   )
+    //
+    //   // Verify Loopback tier (Tier 1)
+    //   assert.equal(loopbackRoot.tier.loopback !== undefined, true)
+    //   assert.equal(loopbackRoot.baseIpv4, 0x64400000) // 100.64.0.0
+    //   assert.equal(loopbackRoot.baseCidr, 11)
+    //   assert.equal(loopbackRoot.blockCidr, 22)
+    //   assert.ok(loopbackRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
+    //
+    //   // Verify all have empty bitmaps initially (all zeros)
+    //   assert.equal(loopbackRoot.rootSummary64.toString(), CHUNKS_32_U64)
+    //
+    //   // Verify all chunks are initially empty
+    //   loopbackRoot.rootChunks.forEach((chunk) =>
+    //     assert.equal(chunk.toString(), '0'),
+    //   )
+    // })
 
-      // Get root IP block PDAs for all tiers
-      const loopbackRootPda = getRootIpBlockPda(1, 0) // Loopback tier
+    // DISABLED with the instructions they exercise — see DAWN-minimal-deploy-squads
+    // (ipam::initialize_root_ip_block is commented out in lib.rs)
+    // test('initializes subscriber root IP block', async () => {
+    //   // small wait to ensure previous tx is processed
+    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    //
+    //   // Get root IP block PDAs for all tiers
+    //   const subscriberRootPda = getRootIpBlockPda(0, 0) // Subscriber tier
+    //   const subscriberIpRegistryPda = getIpRegistryPda(0)
+    //
+    //   const tx = await program.methods
+    //     .initializeRootIpBlock(0, 0x0a400000, 10)
+    //     .accountsPartial({
+    //       caller: wallet.payer.publicKey,
+    //       config: configPda,
+    //       authority: wallet.payer.publicKey,
+    //       rootIpBlock: subscriberRootPda,
+    //       ipRegistry: subscriberIpRegistryPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .transaction()
+    //
+    //   const txDetails = await confirmTx(provider, tx)
+    //
+    //   // Verify at least one event was emitted (there should be 3, one for each tier)
+    //   const event = await getEvent<RootIpBlockInitialized>(
+    //     program,
+    //     txDetails,
+    //     'rootIpBlockInitialized',
+    //   )
+    //   assert.ok(event.rootIpBlock)
+    //   assert.ok(event.createdAt > 0)
+    //
+    //   // Verify accounts were created
+    //   const subscriberRoot = await program.account.rootIpBlock.fetch(
+    //     subscriberRootPda,
+    //   )
+    //
+    //   // Verify Subscriber tier (Tier 0)
+    //   assert.equal(subscriberRoot.tier.subscriber !== undefined, true)
+    //   assert.equal(subscriberRoot.baseIpv4, 0x0a400000) // 10.64.0.0
+    //   assert.equal(subscriberRoot.baseCidr, 10)
+    //   assert.equal(subscriberRoot.blockCidr, 22)
+    //   assert.ok(subscriberRoot.rootChunks.length === 64) // 4096 blocks / 64 = 64 chunks
+    //
+    //   // Verify all have empty bitmaps initially (all zeros)
+    //   assert.equal(subscriberRoot.rootSummary64.toString(), '0')
+    //
+    //   // Verify all chunks are initially empty
+    //   subscriberRoot.rootChunks.forEach((chunk) =>
+    //     assert.equal(chunk.toString(), '0'),
+    //   )
+    // })
 
-      const tx = await program.methods
-        .initializeRootIpBlock(1, 0x64400000, 11)
-        .accountsPartial({
-          caller: wallet.payer.publicKey,
-          authority: wallet.payer.publicKey,
-          config: configPda,
-          rootIpBlock: loopbackRootPda,
-        })
-        .signers([wallet.payer])
-        .transaction()
-
-      const txDetails = await confirmTx(provider, tx)
-
-      // Verify at least one event was emitted (there should be 3, one for each tier)
-      const event = await getEvent<RootIpBlockInitialized>(
-        program,
-        txDetails,
-        'rootIpBlockInitialized',
-      )
-      assert.ok(event.rootIpBlock)
-      assert.ok(event.createdAt > 0)
-
-      // Verify accounts were created
-      const loopbackRoot = await program.account.rootIpBlock.fetch(
-        loopbackRootPda,
-      )
-
-      // Verify Loopback tier (Tier 1)
-      assert.equal(loopbackRoot.tier.loopback !== undefined, true)
-      assert.equal(loopbackRoot.baseIpv4, 0x64400000) // 100.64.0.0
-      assert.equal(loopbackRoot.baseCidr, 11)
-      assert.equal(loopbackRoot.blockCidr, 22)
-      assert.ok(loopbackRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
-
-      // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(loopbackRoot.rootSummary64.toString(), CHUNKS_32_U64)
-
-      // Verify all chunks are initially empty
-      loopbackRoot.rootChunks.forEach((chunk) =>
-        assert.equal(chunk.toString(), '0'),
-      )
-    })
-
-    test('initializes subscriber root IP block', async () => {
-      // small wait to ensure previous tx is processed
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Get root IP block PDAs for all tiers
-      const subscriberRootPda = getRootIpBlockPda(0, 0) // Subscriber tier
-      const subscriberIpRegistryPda = getIpRegistryPda(0)
-
-      const tx = await program.methods
-        .initializeRootIpBlock(0, 0x0a400000, 10)
-        .accountsPartial({
-          caller: wallet.payer.publicKey,
-          config: configPda,
-          authority: wallet.payer.publicKey,
-          rootIpBlock: subscriberRootPda,
-          ipRegistry: subscriberIpRegistryPda,
-        })
-        .signers([wallet.payer])
-        .transaction()
-
-      const txDetails = await confirmTx(provider, tx)
-
-      // Verify at least one event was emitted (there should be 3, one for each tier)
-      const event = await getEvent<RootIpBlockInitialized>(
-        program,
-        txDetails,
-        'rootIpBlockInitialized',
-      )
-      assert.ok(event.rootIpBlock)
-      assert.ok(event.createdAt > 0)
-
-      // Verify accounts were created
-      const subscriberRoot = await program.account.rootIpBlock.fetch(
-        subscriberRootPda,
-      )
-
-      // Verify Subscriber tier (Tier 0)
-      assert.equal(subscriberRoot.tier.subscriber !== undefined, true)
-      assert.equal(subscriberRoot.baseIpv4, 0x0a400000) // 10.64.0.0
-      assert.equal(subscriberRoot.baseCidr, 10)
-      assert.equal(subscriberRoot.blockCidr, 22)
-      assert.ok(subscriberRoot.rootChunks.length === 64) // 4096 blocks / 64 = 64 chunks
-
-      // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(subscriberRoot.rootSummary64.toString(), '0')
-
-      // Verify all chunks are initially empty
-      subscriberRoot.rootChunks.forEach((chunk) =>
-        assert.equal(chunk.toString(), '0'),
-      )
-    })
-
-    test('initializes ptp root IP block', async () => {
-      // small wait to ensure previous tx is processed
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Get root IP block PDAs for all tiers
-      const ptpRootPda = getRootIpBlockPda(2, 0) // PtP tier
-
-      const tx = await program.methods
-        .initializeRootIpBlock(2, 0x64600000, 11)
-        .accountsPartial({
-          caller: wallet.payer.publicKey,
-          config: configPda,
-          authority: wallet.payer.publicKey,
-          rootIpBlock: ptpRootPda,
-        })
-        .signers([wallet.payer])
-        .transaction()
-
-      const txDetails = await confirmTx(provider, tx)
-
-      // Verify at least one event was emitted (there should be 3, one for each tier)
-      const event = await getEvent<RootIpBlockInitialized>(
-        program,
-        txDetails,
-        'rootIpBlockInitialized',
-      )
-      assert.ok(event.rootIpBlock)
-      assert.ok(event.createdAt > 0)
-
-      // Verify accounts were created
-      const ptpRoot = await program.account.rootIpBlock.fetch(ptpRootPda)
-
-      // Verify PtP tier (Tier 2)
-      assert.equal(ptpRoot.tier.ptP !== undefined, true)
-      assert.equal(ptpRoot.baseIpv4, 0x64600000) // 100.96.0.0
-      assert.equal(ptpRoot.baseCidr, 11)
-      assert.equal(ptpRoot.blockCidr, 22)
-      assert.ok(ptpRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
-
-      // Verify all have empty bitmaps initially (all zeros)
-      assert.equal(ptpRoot.rootSummary64.toString(), CHUNKS_32_U64)
-
-      // Verify all chunks are initially empty
-      ptpRoot.rootChunks.forEach((chunk) => assert.equal(chunk.toString(), '0'))
-    })
+    // DISABLED with the instructions they exercise — see DAWN-minimal-deploy-squads
+    // (ipam::initialize_root_ip_block is commented out in lib.rs)
+    // test('initializes ptp root IP block', async () => {
+    //   // small wait to ensure previous tx is processed
+    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    //
+    //   // Get root IP block PDAs for all tiers
+    //   const ptpRootPda = getRootIpBlockPda(2, 0) // PtP tier
+    //
+    //   const tx = await program.methods
+    //     .initializeRootIpBlock(2, 0x64600000, 11)
+    //     .accountsPartial({
+    //       caller: wallet.payer.publicKey,
+    //       config: configPda,
+    //       authority: wallet.payer.publicKey,
+    //       rootIpBlock: ptpRootPda,
+    //     })
+    //     .signers([wallet.payer])
+    //     .transaction()
+    //
+    //   const txDetails = await confirmTx(provider, tx)
+    //
+    //   // Verify at least one event was emitted (there should be 3, one for each tier)
+    //   const event = await getEvent<RootIpBlockInitialized>(
+    //     program,
+    //     txDetails,
+    //     'rootIpBlockInitialized',
+    //   )
+    //   assert.ok(event.rootIpBlock)
+    //   assert.ok(event.createdAt > 0)
+    //
+    //   // Verify accounts were created
+    //   const ptpRoot = await program.account.rootIpBlock.fetch(ptpRootPda)
+    //
+    //   // Verify PtP tier (Tier 2)
+    //   assert.equal(ptpRoot.tier.ptP !== undefined, true)
+    //   assert.equal(ptpRoot.baseIpv4, 0x64600000) // 100.96.0.0
+    //   assert.equal(ptpRoot.baseCidr, 11)
+    //   assert.equal(ptpRoot.blockCidr, 22)
+    //   assert.ok(ptpRoot.rootChunks.length === 32) // 2048 blocks / 64 = 32 chunks
+    //
+    //   // Verify all have empty bitmaps initially (all zeros)
+    //   assert.equal(ptpRoot.rootSummary64.toString(), CHUNKS_32_U64)
+    //
+    //   // Verify all chunks are initially empty
+    //   ptpRoot.rootChunks.forEach((chunk) => assert.equal(chunk.toString(), '0'))
+    // })
   })
