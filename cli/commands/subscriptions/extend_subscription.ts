@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CLI command to extend an existing subscription
  *

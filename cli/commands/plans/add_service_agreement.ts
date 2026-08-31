@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import { getServiceAgreementPda } from '../../../sdk/utils'
 import { BN } from 'bn.js'

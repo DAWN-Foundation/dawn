@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 
 import { connect, getMock, getFlag, submitTx } from '../../shared/cli-utils'

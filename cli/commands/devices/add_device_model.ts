@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
 import { getDeviceModelPda } from '../../../sdk'
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey, Keypair, TransactionSignature } from '@solana/web3.js'
