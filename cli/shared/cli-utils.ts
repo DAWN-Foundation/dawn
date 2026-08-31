@@ -34,6 +34,7 @@ import { BankrunProvider } from 'anchor-bankrun'
 import { getAccount } from '@solana/spl-token'
 
 const DEVNET_RPC_URL = process.env.DEVNET_RPC_URL
+const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL
 
 // parse command line arguments
 // find value of the --flag
@@ -180,9 +181,12 @@ export async function connect(): Promise<{
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
 
-  const rpcUrl = isDevnet
-    ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
-    : 'http://127.0.0.1:8899'
+  const isMainnet = hasFlag('--mainnet')
+  const rpcUrl = isMainnet
+    ? MAINNET_RPC_URL ?? 'https://api.mainnet-beta.solana.com'
+    : isDevnet
+      ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
+      : 'http://127.0.0.1:8899'
   console.log({ rpcUrl })
   const connection = new Connection(rpcUrl)
   const provider = new AnchorProvider(connection, wallet, {})

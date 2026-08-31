@@ -11,13 +11,10 @@ import { hasFlag } from '../../cli/shared/cli-utils'
 
 function getProgramId(): PublicKey {
   const anchorToml = toml.parse(readFileSync('./Anchor.toml', 'utf-8'))
-
+  if (hasFlag('--mainnet')) return new PublicKey(anchorToml.programs.mainnet.dawn)
   const isDevnet = hasFlag('--devnet')
-
   return new PublicKey(
-    isDevnet
-      ? anchorToml.programs.devnet.dawn
-      : anchorToml.programs.localnet.dawn,
+    isDevnet ? anchorToml.programs.devnet.dawn : anchorToml.programs.localnet.dawn,
   )
 }
 
