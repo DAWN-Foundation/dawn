@@ -19,7 +19,7 @@ export async function nextTransactionIndex(
   multisigPda: PublicKey,
 ): Promise<bigint> {
   const ms = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda)
-  return BigInt(Number(ms.transactionIndex)) + 1n
+  return BigInt(ms.transactionIndex.toString()) + 1n
 }
 
 export async function createProposal(params: {
