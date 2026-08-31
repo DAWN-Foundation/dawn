@@ -104,7 +104,7 @@ pub fn swap_amounts<'info>(
 
     // Get current vault amounts and calculate price using pool state's method
     let (token_0_price_x32, token_1_price_x32) =
-        pool.token_price_x32(vault_0_amount, vault_1_amount);
+        pool.token_price_x32(vault_0_amount, vault_1_amount)?;
 
     if is_stable_base {
         // USD.tel is the base token (token_0 or token_1 depending on pool ordering)

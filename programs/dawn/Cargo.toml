@@ -21,10 +21,11 @@ custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = "0.31.1"
-anchor-spl = "0.31.1"
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"
 mpl-token-metadata = "5.1.1"
-raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", rev = "91a035ae0396412a91db6e7d121293156db7cbae", default-features = false, features = [
+solana-program = "2"
+raydium-cp-swap = { git = "https://github.com/raydium-io/raydium-cp-swap", rev = "609780f165d234a0aa9699cac90178a3fa36fd43", default-features = false, features = [
     "no-entrypoint",
     "cpi",
 ] }
