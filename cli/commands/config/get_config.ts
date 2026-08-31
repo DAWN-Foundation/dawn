@@ -1,13 +1,14 @@
-import { getMock, connect } from '../../shared/cli-utils'
+import { connect } from '../../shared/cli-utils'
+import { getConfigPdaWithProgramId } from '../../../sdk/pda/config'
 
 async function main() {
   const { program } = await connect()
   console.log({ PROGRAM_ID: program.programId.toBase58() })
 
-  const mock = getMock()
-  console.log({ CONFIG_PDA: mock.configPda.toBase58() })
+  const [configPda] = getConfigPdaWithProgramId(program.programId)
+  console.log({ CONFIG_PDA: configPda.toBase58() })
 
-  const configAccount = await program.account.config.fetch(mock.configPda)
+  const configAccount = await program.account.config.fetch(configPda)
 
   console.log({
     authority: configAccount.authority.toString(),

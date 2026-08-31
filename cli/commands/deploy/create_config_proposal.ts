@@ -3,15 +3,17 @@ import { PublicKey } from '@solana/web3.js'
 import { connect, getWallet, getFlag, hasFlag } from '../../shared/cli-utils'
 import { createProposal, getSquadsVaultPda } from './squads'
 import { buildConfigInstructions, MAINNET_USDC } from './build_ixs'
+import { assertProgramMatchesNetwork, requireMultisigFlag } from './guards'
 
 function feeFlag(name: string, dflt: number): BN {
   return new BN(hasFlag(name) ? Number(getFlag(name)) : dflt)
 }
 
 async function main() {
-  const multisigPda = new PublicKey(getFlag('--multisig'))
+  const multisigPda = new PublicKey(requireMultisigFlag())
   const stableMint = hasFlag('--stable-mint') ? new PublicKey(getFlag('--stable-mint')) : MAINNET_USDC
   const { program, connection } = await connect()
+  assertProgramMatchesNetwork(program)
   const proposer = getWallet().payer
   const vaultPda = getSquadsVaultPda(multisigPda)
   console.log({ multisig: multisigPda.toBase58(), vault: vaultPda.toBase58(), stableMint: stableMint.toBase58() })

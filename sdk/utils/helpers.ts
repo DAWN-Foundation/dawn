@@ -2,23 +2,12 @@
 import * as anchor from '@coral-xyz/anchor'
 import { BN, Program } from '@coral-xyz/anchor'
 import { PublicKey, Keypair, TransactionSignature } from '@solana/web3.js'
-import { readFileSync } from 'fs'
-import * as toml from 'toml'
 import { Dawn } from '../../target/types/dawn'
 
 import { BanksTransactionMeta } from 'solana-bankrun'
-import { hasFlag } from '../../cli/shared/cli-utils'
+import { PROGRAM_ID } from './program-id'
 
-function getProgramId(): PublicKey {
-  const anchorToml = toml.parse(readFileSync('./Anchor.toml', 'utf-8'))
-  if (hasFlag('--mainnet')) return new PublicKey(anchorToml.programs.mainnet.dawn)
-  const isDevnet = hasFlag('--devnet')
-  return new PublicKey(
-    isDevnet ? anchorToml.programs.devnet.dawn : anchorToml.programs.localnet.dawn,
-  )
-}
-
-export const PROGRAM_ID = getProgramId()
+export { PROGRAM_ID }
 export const COORD_DENOMINATOR = 1e6
 
 export type DeviceType = anchor.IdlTypes<Dawn>['deviceType']

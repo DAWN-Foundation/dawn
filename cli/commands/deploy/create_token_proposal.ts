@@ -1,11 +1,13 @@
 import { PublicKey } from '@solana/web3.js'
-import { connect, getWallet, getFlag } from '../../shared/cli-utils'
+import { connect, getWallet } from '../../shared/cli-utils'
 import { createProposal, getSquadsVaultPda } from './squads'
 import { buildTokenInstructions } from './build_ixs'
+import { assertProgramMatchesNetwork, requireMultisigFlag } from './guards'
 
 async function main() {
-  const multisigPda = new PublicKey(getFlag('--multisig'))
+  const multisigPda = new PublicKey(requireMultisigFlag())
   const { program, connection } = await connect()
+  assertProgramMatchesNetwork(program)
   const proposer = getWallet().payer
   const vaultPda = getSquadsVaultPda(multisigPda)
   console.log({ multisig: multisigPda.toBase58(), vault: vaultPda.toBase58(), proposer: proposer.publicKey.toBase58() })
