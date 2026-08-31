@@ -3,11 +3,14 @@
 
 use anchor_lang::prelude::*;
 
-#[cfg(not(feature = "devnet"))]
-declare_id!("4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC");
+#[cfg(feature = "mainnet")]
+declare_id!("dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP");
 
-#[cfg(feature = "devnet")]
+#[cfg(all(feature = "devnet", not(feature = "mainnet")))]
 declare_id!("dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu");
+
+#[cfg(all(not(feature = "devnet"), not(feature = "mainnet")))]
+declare_id!("4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC");
 
 mod app;
 mod constants;

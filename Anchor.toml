@@ -12,6 +12,9 @@ dawn = "4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC"
 [programs.devnet]
 dawn = "dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu"
 
+[programs.mainnet]
+dawn = "dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP"
+
 [registry]
 url = "https://api.apr.dev"
 
