@@ -98,13 +98,13 @@ jobs:
             ~/.cargo/bin
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-anchor-0.31.1
+          key: ${{ runner.os }}-anchor-0.32.1
 
       # ANCHOR
       - name: Check if Anchor is installed
         id: anchor-check
         run: |
-          if command -v anchor &> /dev/null && anchor --version | grep -q "0.31.1"; then
+          if command -v anchor &> /dev/null && anchor --version | grep -q "0.32.1"; then
             echo "installed=true" >> $GITHUB_OUTPUT
           else
             echo "installed=false" >> $GITHUB_OUTPUT
@@ -112,7 +112,7 @@ jobs:
 
       - name: Install Anchor CLI
         if: steps.anchor-check.outputs.installed != 'true'
-        run: RUSTFLAGS="-A deprecated" cargo install --git https://github.com/coral-xyz/anchor --tag v0.31.1 anchor-cli
+        run: RUSTFLAGS="-A deprecated" cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 --locked anchor-cli
 
       # GENERATE KEY
       - name: Generate new keygen
