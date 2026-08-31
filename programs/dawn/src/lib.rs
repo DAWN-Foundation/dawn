@@ -1,13 +1,5 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(deprecated)]
-// The domain modules below stay compiled (unused) while their #[program]
-// entry points are disabled for the minimal deploy (see Step 1 in this
-// crate's `dawn` mod). Since those modules are private (`mod`, not
-// `pub mod`), their now-unreferenced pub items trip dead_code /
-// unused_imports; silence both crate-wide rather than editing module
-// visibility or the app/ tree.
-#![allow(dead_code)]
-#![allow(unused_imports)]
 
 use anchor_lang::prelude::*;
 
@@ -20,11 +12,20 @@ declare_id!("dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu");
 #[cfg(all(not(feature = "devnet"), not(feature = "mainnet")))]
 declare_id!("4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC");
 
+// The modules below carry domain code that stays compiled (intentionally
+// unused) while most of their #[program] entry points are disabled for the
+// minimal deploy (see the DISABLED block in `mod dawn` further down). Each
+// is private (`mod`, not `pub mod`), so their now-unreferenced pub items
+// would otherwise trip dead_code / unused_imports; allow both per-module so
+// the live instructions and `pub mod state` still get normal lint coverage.
+#[allow(dead_code, unused_imports)]
 mod app;
 mod constants;
 mod error;
+#[allow(dead_code, unused_imports)]
 mod events;
 pub mod state; // Make state module public so API can import types
+#[allow(dead_code, unused_imports)]
 mod utils;
 
 use app::*;
@@ -260,7 +261,7 @@ pub mod dawn {
     // DawnApp::claim(ctx, min_dawn_out, deadline)
     // }
     //
-    // // IPAM Instructions
+    // IPAM Instructions
     // pub fn initialize_root_ip_block(
     // ctx: Context<InitializeRootIpBlock>,
     // tier: u8, // Tier enum serialized as u8
