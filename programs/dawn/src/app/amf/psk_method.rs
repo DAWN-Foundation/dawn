@@ -1,7 +1,6 @@
 #![allow(non_camel_case_types, dead_code)]
 
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::hash;
 
 use crate::error::DawnError;
 

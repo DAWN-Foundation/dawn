@@ -1,4 +1,5 @@
-use anchor_lang::solana_program::{hash::hash, pubkey::MAX_SEED_LEN};
+use anchor_lang::solana_program::pubkey::MAX_SEED_LEN;
+use solana_program::hash::hash;
 use std::cmp::min;
 
 /// Hash a String for use in PDA seeds
