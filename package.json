@@ -17,6 +17,7 @@
     "dawn:config": "yarn build && node dist/cli/commands/config/config.js",
     "dawn:init_metadata": "yarn build && node dist/cli/commands/config/init_metadata.js",
     "dawn:get_config": "yarn build && node dist/cli/commands/config/get_config.js",
+    "dawn:deploy:create-multisig": "yarn build && node dist/cli/commands/deploy/create_multisig.js",
     "dawn:deploy:token-proposal": "yarn build && node dist/cli/commands/deploy/create_token_proposal.js",
     "dawn:deploy:config-proposal": "yarn build && node dist/cli/commands/deploy/create_config_proposal.js"
   },

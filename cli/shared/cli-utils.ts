@@ -170,6 +170,23 @@ export function getDawnProgram(
   return new Program(idl, provider)
 }
 
+// Resolve the RPC URL from the network flags (--mainnet / --devnet / localnet).
+export function getRpcUrl(): string {
+  const isMainnet = hasFlag('--mainnet')
+  const isDevnet = hasFlag('--devnet')
+  return isMainnet
+    ? MAINNET_RPC_URL ?? 'https://api.mainnet-beta.solana.com'
+    : isDevnet
+      ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
+      : 'http://127.0.0.1:8899'
+}
+
+// A bare RPC connection for tooling that does not need the Anchor program/IDL
+// (e.g. creating a Squads multisig before the program is built).
+export function getConnection(): Connection {
+  return new Connection(getRpcUrl())
+}
+
 export async function connect(): Promise<{
   wallet: Wallet
   program: Program<Dawn>
@@ -181,12 +198,7 @@ export async function connect(): Promise<{
   const wallet = getWallet()
   console.log({ signer: wallet.payer.publicKey.toBase58() })
 
-  const isMainnet = hasFlag('--mainnet')
-  const rpcUrl = isMainnet
-    ? MAINNET_RPC_URL ?? 'https://api.mainnet-beta.solana.com'
-    : isDevnet
-      ? DEVNET_RPC_URL ?? 'https://api.devnet.solana.com'
-      : 'http://127.0.0.1:8899'
+  const rpcUrl = getRpcUrl()
   console.log({ rpcUrl })
   const connection = new Connection(rpcUrl)
   const provider = new AnchorProvider(connection, wallet, {})
