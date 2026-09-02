@@ -119,16 +119,14 @@ either.
    macOS/Linux:
 
    ```bash
-   # DEVNET: replace the devnet placeholder.
-   # (For MAINNET, set OLD_ID to dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP instead.)
-   export OLD_ID=dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu
-   export NEW_ID=<your ground pubkey, e.g. the basename of the .json without extension>
-
-   perl -pi -e "s/\Q$OLD_ID\E/$NEW_ID/g" programs/dawn/src/lib.rs Anchor.toml
-
-   # verify it landed in both files:
-   grep -n "$NEW_ID" programs/dawn/src/lib.rs Anchor.toml
+   # DEVNET (use --mainnet <NEW_ID> for the mainnet deploy):
+   yarn dawn:deploy:set-program-id --devnet <NEW_ID>
    ```
+
+   This reads the current placeholder id for that network out of `Anchor.toml` and
+   replaces it in **both** `programs/dawn/src/lib.rs` (the `declare_id!`) and
+   `Anchor.toml`, then prints a `grep` you can run to verify. `<NEW_ID>` is your ground
+   pubkey — the basename of the `.json` keypair file without the extension.
 
    `<NEW_ID>` must exactly match the pubkey encoded in your `.json` keypair filename —
    `solana program deploy` (§3) will reject a `--program-id` keypair file whose
@@ -464,13 +462,11 @@ only this doc and the repo.
    ```
 
    Back the resulting `<PUBKEY>.json` up to 1Password immediately (same rationale as
-   mainnet — see §9). Then replace the devnet placeholder in both source files:
+   mainnet — see §9). Then replace the devnet placeholder id in both source files with
+   the ground pubkey (basename of the `.json` without the extension):
 
    ```bash
-   export OLD_ID=dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu
-   export NEW_ID=<your ground pubkey>
-   perl -pi -e "s/\Q$OLD_ID\E/$NEW_ID/g" programs/dawn/src/lib.rs Anchor.toml
-   grep -n "$NEW_ID" programs/dawn/src/lib.rs Anchor.toml
+   yarn dawn:deploy:set-program-id --devnet <NEW_ID>
    ```
 
 3. **Fund the deployer wallet** with devnet SOL. This is `~/.config/solana/id.json` by
