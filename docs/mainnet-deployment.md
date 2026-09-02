@@ -185,6 +185,20 @@ multisig-creation flow, so use this repo's script instead:
 3. Copy the printed `MULTISIG ADDRESS` — this is `<multisig>` for every devnet command
    below. The script also prints a `VAULT PDA (idx 0)` (see §2.3) and next-step hints.
 
+**Adding a co-signer to a devnet multisig (optional, devnet only).** If you want a
+second wallet (e.g. a Phantom wallet) to vote and execute from the Squads UI, add it as a
+member. Because the script-created multisig is autonomous (member-controlled), this goes
+through a config transaction that the deployer wallet creates, approves, and executes in
+one shot — which works while the multisig is 1-of-1:
+
+```bash
+yarn dawn:deploy:add-member --devnet --multisig <multisig> --member <new-member-pubkey>
+```
+
+The new member receives full permissions (initiate + vote + execute). Adding a member
+does **not** change the threshold, so a 1-of-1 becomes **1-of-2** (either member alone can
+approve and execute). On mainnet, add/remove members from the Squads web UI instead.
+
 ### 2.3 Derive the vault PDA
 
 The Squads vault (index 0) is the account that will hold upgrade authority over the
