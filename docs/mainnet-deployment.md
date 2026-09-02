@@ -286,9 +286,15 @@ Hand off upgrade authority from the hot wallet to the Squads vault PDA:
 ```bash
 solana program set-upgrade-authority <NEW_ID> \
   --new-upgrade-authority <vault_pda> \
+  --skip-new-upgrade-authority-signer-check \
   --keypair <hot-wallet> \
   --url mainnet-beta
 ```
+
+`--skip-new-upgrade-authority-signer-check` is **required** here: by default the CLI makes
+the new authority co-sign (a guard against typos), but the vault PDA is a program-derived
+address with no private key, so it cannot sign. The current authority — your
+`--keypair <hot-wallet>` — still signs the change.
 
 After this, the hot wallet can no longer upgrade the program — only a Squads proposal
 executed through `<multisig>` can. Verify:
@@ -522,8 +528,13 @@ only this doc and the repo.
    ```bash
    solana program set-upgrade-authority <NEW_ID> \
      --new-upgrade-authority <vault_pda> \
+     --skip-new-upgrade-authority-signer-check \
      --url devnet
    ```
+
+   `--skip-new-upgrade-authority-signer-check` is required because the new authority is
+   the vault PDA (no private key, can't co-sign); the current authority (your default
+   `~/.config/solana/id.json`) still signs.
 
 8. **Create the proposals** (§5, devnet variant):
 
