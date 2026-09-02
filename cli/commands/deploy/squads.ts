@@ -1,11 +1,11 @@
 import * as multisig from '@sqds/multisig'
 import {
   Connection,
-  Keypair,
   PublicKey,
   TransactionInstruction,
   TransactionMessage,
 } from '@solana/web3.js'
+import { TxSigner, signSendConfirm } from './signer'
 
 export const SQUADS_VAULT_INDEX = 0
 
@@ -24,12 +24,12 @@ export async function nextTransactionIndex(
 
 export async function createProposal(params: {
   connection: Connection
-  proposer: Keypair
+  signer: TxSigner
   multisigPda: PublicKey
   innerInstructions: TransactionInstruction[]
   memo: string
 }): Promise<{ transactionIndex: bigint; createSig: string; proposalSig: string }> {
-  const { connection, proposer, multisigPda, innerInstructions, memo } = params
+  const { connection, signer, multisigPda, innerInstructions, memo } = params
   const vaultPda = getSquadsVaultPda(multisigPda)
   const transactionIndex = await nextTransactionIndex(connection, multisigPda)
 
@@ -40,12 +40,10 @@ export async function createProposal(params: {
     instructions: innerInstructions,
   })
 
-  const createSig = await multisig.rpc.vaultTransactionCreate({
-    connection,
-    feePayer: proposer,
+  const createIx = multisig.instructions.vaultTransactionCreate({
     multisigPda,
     transactionIndex,
-    creator: proposer.publicKey,
+    creator: signer.publicKey,
     vaultIndex: SQUADS_VAULT_INDEX,
     ephemeralSigners: 0,
     transactionMessage,
@@ -55,16 +53,18 @@ export async function createProposal(params: {
   // incremented) on-chain multisig.transaction_index, and a load-balanced RPC
   // (e.g. api.devnet.solana.com) may otherwise route proposalCreate to a node
   // that hasn't yet applied the create, causing InvalidTransactionIndex.
-  await connection.confirmTransaction(createSig, 'finalized')
+  const createSig = await signSendConfirm(connection, [createIx], signer, {
+    commitment: 'finalized',
+  })
 
-  const proposalSig = await multisig.rpc.proposalCreate({
-    connection,
-    feePayer: proposer,
+  const proposalIx = multisig.instructions.proposalCreate({
     multisigPda,
     transactionIndex,
-    creator: proposer,
+    creator: signer.publicKey,
   })
-  await connection.confirmTransaction(proposalSig, 'confirmed')
+  const proposalSig = await signSendConfirm(connection, [proposalIx], signer, {
+    commitment: 'confirmed',
+  })
 
   return { transactionIndex, createSig, proposalSig }
 }

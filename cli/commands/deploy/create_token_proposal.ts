@@ -1,20 +1,21 @@
 import { PublicKey } from '@solana/web3.js'
-import { connect, getWallet } from '../../shared/cli-utils'
+import { connect } from '../../shared/cli-utils'
 import { createProposal, getSquadsVaultPda } from './squads'
 import { buildTokenInstructions } from './build_ixs'
 import { assertProgramMatchesNetwork, requireMultisigFlag } from './guards'
+import { getTxSigner } from './signer'
 
 async function main() {
   const multisigPda = new PublicKey(requireMultisigFlag())
   const { program, connection } = await connect()
   assertProgramMatchesNetwork(program)
-  const proposer = getWallet().payer
+  const signer = await getTxSigner()
   const vaultPda = getSquadsVaultPda(multisigPda)
-  console.log({ multisig: multisigPda.toBase58(), vault: vaultPda.toBase58(), proposer: proposer.publicKey.toBase58() })
+  console.log({ multisig: multisigPda.toBase58(), vault: vaultPda.toBase58(), proposer: signer.publicKey.toBase58() })
 
   const innerInstructions = await buildTokenInstructions(program, vaultPda)
   const res = await createProposal({
-    connection, proposer, multisigPda, innerInstructions,
+    connection, signer, multisigPda, innerInstructions,
     memo: 'DAWN token init (init_token + init_fee_accounts)',
   })
   console.log('Proposal A created', { transactionIndex: res.transactionIndex.toString(), ...res })

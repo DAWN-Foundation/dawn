@@ -1,7 +1,8 @@
 import * as multisig from '@sqds/multisig'
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { getConnection, getWallet, getFlag, hasFlag } from '../../shared/cli-utils'
+import { getConnection, getFlag, hasFlag } from '../../shared/cli-utils'
 import { getSquadsVaultPda } from './squads'
+import { getTxSigner, signSendConfirm } from './signer'
 
 const { Permissions } = multisig.types
 
@@ -20,7 +21,7 @@ const { Permissions } = multisig.types
  */
 async function main() {
   const connection = getConnection()
-  const creator = getWallet().payer
+  const signer = await getTxSigner()
 
   // members = the creator, plus any extra pubkeys passed via --members
   const extraMembers = hasFlag('--members')
@@ -28,7 +29,7 @@ async function main() {
         .split(',')
         .map((s) => new PublicKey(s.trim()))
     : []
-  const memberKeys = [creator.publicKey, ...extraMembers]
+  const memberKeys = [signer.publicKey, ...extraMembers]
   const members = memberKeys.map((key) => ({
     key,
     permissions: Permissions.all(),
@@ -54,17 +55,17 @@ async function main() {
 
   console.log('Creating Squads v4 multisig...', {
     rpc: connection.rpcEndpoint,
-    creator: creator.publicKey.toBase58(),
+    signer: signer.label,
+    creator: signer.publicKey.toBase58(),
     members: memberKeys.map((k) => k.toBase58()),
     threshold,
     multisig: multisigPda.toBase58(),
   })
 
-  const signature = await multisig.rpc.multisigCreateV2({
-    connection,
+  const createIx = multisig.instructions.multisigCreateV2({
     treasury: programConfig.treasury,
-    createKey,
-    creator,
+    createKey: createKey.publicKey,
+    creator: signer.publicKey,
     multisigPda,
     configAuthority: null, // member-controlled (config changes go through proposals)
     threshold,
@@ -72,7 +73,11 @@ async function main() {
     timeLock: 0,
     rentCollector: null,
   })
-  await connection.confirmTransaction(signature, 'confirmed')
+  // createKey (ephemeral) co-signs alongside the creator (local keypair or Ledger).
+  const signature = await signSendConfirm(connection, [createIx], signer, {
+    extraSigners: [createKey],
+    commitment: 'confirmed',
+  })
 
   const vaultPda = getSquadsVaultPda(multisigPda)
 

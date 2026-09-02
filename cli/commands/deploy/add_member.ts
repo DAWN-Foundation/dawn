@@ -1,6 +1,7 @@
 import * as multisig from '@sqds/multisig'
 import { PublicKey } from '@solana/web3.js'
-import { getConnection, getWallet, getFlag } from '../../shared/cli-utils'
+import { getConnection, getFlag } from '../../shared/cli-utils'
+import { getTxSigner, signSendConfirm } from './signer'
 
 const { Permissions } = multisig.types
 
@@ -34,7 +35,7 @@ async function main() {
   const newMember = new PublicKey(memberStr)
 
   const connection = getConnection()
-  const signer = getWallet().payer // an existing member whose approval meets the threshold
+  const signer = await getTxSigner() // an existing member whose approval meets the threshold
 
   const ms = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda)
   if (ms.members.some((m) => m.key.equals(newMember))) {
@@ -52,9 +53,7 @@ async function main() {
   })
 
   // 1. Config transaction: AddMember with full permissions (vote + execute + initiate).
-  const createSig = await multisig.rpc.configTransactionCreate({
-    connection,
-    feePayer: signer,
+  const createIx = multisig.instructions.configTransactionCreate({
     multisigPda,
     transactionIndex,
     creator: signer.publicKey,
@@ -72,41 +71,36 @@ async function main() {
   // hasn't applied the prior tx yet, causing InvalidTransactionIndex / missing
   // account errors. Finality is fork-proof, so every node sees it (slower —
   // roughly 10-15s per step on devnet).
-  console.log('  waiting for finality (create)...')
-  await connection.confirmTransaction(createSig, 'finalized')
+  console.log('  create + waiting for finality...')
+  await signSendConfirm(connection, [createIx], signer, { commitment: 'finalized' })
 
   // 2. Proposal for that config transaction.
-  const proposalSig = await multisig.rpc.proposalCreate({
-    connection,
-    feePayer: signer,
+  const proposalIx = multisig.instructions.proposalCreate({
     multisigPda,
     transactionIndex,
-    creator: signer,
+    creator: signer.publicKey,
   })
-  console.log('  waiting for finality (proposal)...')
-  await connection.confirmTransaction(proposalSig, 'finalized')
+  console.log('  proposal + waiting for finality...')
+  await signSendConfirm(connection, [proposalIx], signer, { commitment: 'finalized' })
 
   // 3. Approve (this signer). With a 1-of-1 this single approval meets the threshold.
-  const approveSig = await multisig.rpc.proposalApprove({
-    connection,
-    feePayer: signer,
-    member: signer,
+  const approveIx = multisig.instructions.proposalApprove({
     multisigPda,
     transactionIndex,
+    member: signer.publicKey,
   })
-  console.log('  waiting for finality (approve)...')
-  await connection.confirmTransaction(approveSig, 'finalized')
+  console.log('  approve + waiting for finality...')
+  await signSendConfirm(connection, [approveIx], signer, { commitment: 'finalized' })
 
   // 4. Execute the config change (requires approvals >= threshold).
-  const executeSig = await multisig.rpc.configTransactionExecute({
-    connection,
-    feePayer: signer,
+  const executeIx = multisig.instructions.configTransactionExecute({
     multisigPda,
     transactionIndex,
-    member: signer,
-    rentPayer: signer,
+    member: signer.publicKey,
+    rentPayer: signer.publicKey,
   })
-  await connection.confirmTransaction(executeSig, 'confirmed')
+  console.log('  execute...')
+  await signSendConfirm(connection, [executeIx], signer, { commitment: 'confirmed' })
 
   const updated = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda)
   console.log('\n✅ Member added')

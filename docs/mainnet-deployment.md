@@ -319,6 +319,23 @@ fee-payer for the Squads transaction and must be a member of `<multisig>` with
 "initiate" permission** — it is not the vault and does not become any on-chain
 authority.
 
+**Signing with a Ledger.** Any of the deploy scripts (`token-proposal`,
+`config-proposal`, and also `create-multisig` / `add-member`) can sign with a Ledger
+hardware wallet instead of a local keypair — pass `--ledger` (and optionally
+`--ledger-path "44'/501'/0'"`; Phantom's account _N_ is `44'/501'/N'/0'`):
+
+```bash
+yarn dawn:deploy:token-proposal --mainnet --multisig <multisig> --ledger
+```
+
+Connect and unlock the device and open the **Solana** app first; you'll approve each
+transaction on-device (proposal creation is two transactions). Two caveats: (1) the
+vault-transaction-create step embeds the wrapped instructions, so it's a large, opaque
+transaction — you must enable **blind signing** in the Ledger Solana app settings, or the
+device will refuse it; (2) the Ledger's address (shown when the script connects) must be
+the multisig member with "initiate" permission. The security-critical steps — approving
+and executing — happen in the Squads UI, which also supports Ledger.
+
 ### 5.1 Proposal A — token init
 
 Creates the `token_config` PDA, the DAWN mint (6 decimals), mints the fixed
