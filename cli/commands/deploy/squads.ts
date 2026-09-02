@@ -51,7 +51,11 @@ export async function createProposal(params: {
     transactionMessage,
     memo,
   })
-  await connection.confirmTransaction(createSig, 'confirmed')
+  // Wait for finality before proposalCreate: it validates the (now
+  // incremented) on-chain multisig.transaction_index, and a load-balanced RPC
+  // (e.g. api.devnet.solana.com) may otherwise route proposalCreate to a node
+  // that hasn't yet applied the create, causing InvalidTransactionIndex.
+  await connection.confirmTransaction(createSig, 'finalized')
 
   const proposalSig = await multisig.rpc.proposalCreate({
     connection,

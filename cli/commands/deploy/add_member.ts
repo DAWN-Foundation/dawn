@@ -65,7 +65,15 @@ async function main() {
       },
     ],
   })
-  await connection.confirmTransaction(createSig, 'confirmed')
+  // Each following step validates on-chain state written by the previous one
+  // (the multisig's transaction_index, then the proposal, then its approval).
+  // Wait for FINALITY between them: a load-balanced RPC (e.g.
+  // api.devnet.solana.com) may otherwise route the next call to a node that
+  // hasn't applied the prior tx yet, causing InvalidTransactionIndex / missing
+  // account errors. Finality is fork-proof, so every node sees it (slower —
+  // roughly 10-15s per step on devnet).
+  console.log('  waiting for finality (create)...')
+  await connection.confirmTransaction(createSig, 'finalized')
 
   // 2. Proposal for that config transaction.
   const proposalSig = await multisig.rpc.proposalCreate({
@@ -75,7 +83,8 @@ async function main() {
     transactionIndex,
     creator: signer,
   })
-  await connection.confirmTransaction(proposalSig, 'confirmed')
+  console.log('  waiting for finality (proposal)...')
+  await connection.confirmTransaction(proposalSig, 'finalized')
 
   // 3. Approve (this signer). With a 1-of-1 this single approval meets the threshold.
   const approveSig = await multisig.rpc.proposalApprove({
@@ -85,7 +94,8 @@ async function main() {
     multisigPda,
     transactionIndex,
   })
-  await connection.confirmTransaction(approveSig, 'confirmed')
+  console.log('  waiting for finality (approve)...')
+  await connection.confirmTransaction(approveSig, 'finalized')
 
   // 4. Execute the config change (requires approvals >= threshold).
   const executeSig = await multisig.rpc.configTransactionExecute({
