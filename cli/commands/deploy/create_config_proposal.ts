@@ -11,7 +11,7 @@ function feeFlag(name: string, dflt: number): BN {
 }
 
 async function main() {
-  const multisigPda = new PublicKey(requireMultisigFlag())
+  const multisigPda = requireMultisigFlag()
   const stableMint = hasFlag('--stable-mint') ? new PublicKey(getFlag('--stable-mint')) : MAINNET_USDC
   const { program, connection } = await connect()
   assertProgramMatchesNetwork(program)

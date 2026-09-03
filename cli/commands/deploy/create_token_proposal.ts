@@ -1,4 +1,3 @@
-import { PublicKey } from '@solana/web3.js'
 import { connect } from '../../shared/cli-utils'
 import { createProposal, getSquadsVaultPda } from './squads'
 import { buildTokenInstructions } from './build_ixs'
@@ -6,7 +5,7 @@ import { assertProgramMatchesNetwork, requireMultisigFlag } from './guards'
 import { getTxSigner } from './signer'
 
 async function main() {
-  const multisigPda = new PublicKey(requireMultisigFlag())
+  const multisigPda = requireMultisigFlag()
   const { program, connection } = await connect()
   assertProgramMatchesNetwork(program)
   const signer = await getTxSigner()

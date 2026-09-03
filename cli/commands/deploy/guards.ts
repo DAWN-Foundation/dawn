@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import * as toml from 'toml'
 import { Program } from '@coral-xyz/anchor'
+import { PublicKey } from '@solana/web3.js'
 import { Dawn } from '../../../target/types/dawn'
 import { hasFlag, getFlag } from '../../shared/cli-utils'
 
@@ -33,14 +34,21 @@ export function assertProgramMatchesNetwork(program: Program<Dawn>): void {
 }
 
 /**
- * Guard against missing --multisig on the proposal entrypoints. Exits before
- * any PublicKey is constructed from a possibly-null flag value.
+ * Read and validate the required --multisig flag, returning it as a PublicKey.
+ * Exits with a clear message if it's missing or not a valid base58 pubkey
+ * (e.g. a mistyped/truncated address), instead of throwing a raw
+ * "Invalid public key input" with a stack trace.
  */
-export function requireMultisigFlag(): string {
+export function requireMultisigFlag(): PublicKey {
   const multisig = getFlag('--multisig')
   if (!multisig) {
     console.error('--multisig <pubkey> is required')
     process.exit(1)
   }
-  return multisig
+  try {
+    return new PublicKey(multisig)
+  } catch {
+    console.error(`--multisig is not a valid base58 public key: "${multisig}"`)
+    process.exit(1)
+  }
 }
