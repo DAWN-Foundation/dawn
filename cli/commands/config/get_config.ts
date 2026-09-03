@@ -11,13 +11,12 @@ async function main() {
   const configAccount = await program.account.config.fetch(configPda)
 
   console.log({
-    authority: configAccount.authority.toString(),
-    bump: configAccount.bump.toString(),
-    daoFee: configAccount.daoFee.toString(),
-    validatorFee: configAccount.validatorFee.toString(),
-    medallionFee: configAccount.medallionFee.toString(),
+    authority: configAccount.authority.toBase58(),
+    apiAuthority: configAccount.apiAuthority.toBase58(),
+    tokenConfig: configAccount.tokenConfig.toBase58(),
     stableMint: configAccount.stableMint.toBase58(),
     dawnMint: configAccount.dawnMint.toBase58(),
+    feePoolDawnAccount: configAccount.feePoolDawnAccount.toBase58(),
     daoDawnAccount: configAccount.daoDawnAccount.toBase58(),
     validatorDawnAccount: configAccount.validatorDawnAccount.toBase58(),
     medallionDawnAccount: configAccount.medallionDawnAccount.toBase58(),
@@ -26,6 +25,11 @@ async function main() {
     raydiumConfig: configAccount.raydiumConfig.toBase58(),
     raydiumPool: configAccount.raydiumPool.toBase58(),
     raydiumObservation: configAccount.raydiumObservation.toBase58(),
+    daoFee: configAccount.daoFee.toString(),
+    validatorFee: configAccount.validatorFee.toString(),
+    medallionFee: configAccount.medallionFee.toString(),
+    createdAt: configAccount.createdAt.toString(),
+    bump: configAccount.bump.toString(),
   })
 }
 

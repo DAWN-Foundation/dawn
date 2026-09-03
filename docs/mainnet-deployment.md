@@ -407,41 +407,16 @@ Proposal A creates.
 yarn dawn:get_config --mainnet
 ```
 
-Confirm the printed `authority` equals `<vault_pda>`, and that `stableMint`, `daoFee`,
-`validatorFee`, `medallionFee` match what was submitted in §5.2. (`config.api_authority`
-is also set to `<vault_pda>` on-chain by Proposal B, though this script does not print
-it — see §7.1's independent check below if you need to confirm it directly.)
+This derives the `config` PDA directly from the program id and fetches the account
+on-chain — no fixture file is involved, so it works on any network. Confirm:
 
-> Note: `dawn:get_config` resolves the `config` account address from a fixture file
-> (`testnet.json` unless `--devnet` is passed) rather than deriving it fresh for the
-> network in play. `testnet.json` is NOT committed (it's gitignored), so on a fresh
-> clone `yarn dawn:get_config --mainnet` errors because the fixture file is absent —
-> and even when present, it holds testnet/devnet PDAs, not mainnet ones. `devnet.json`
-> IS committed, so `yarn dawn:get_config --devnet` works in the dry-run (§8). If this
-> command errors or prints stale PDAs, don't treat that as a failed deployment by
-> itself — cross-check with the independent PDA derivation and on-chain account checks
-> below, which are authoritative.
+- `authority` == `<vault_pda>` — the multisig vault now governs the contract.
+- `apiAuthority` == `<vault_pda>`.
+- `stableMint`, `daoFee`, `validatorFee`, `medallionFee` match what you submitted in §5.2
+  (`stableMint` defaults to mainnet USDC; fees default to 300 / 300 / 900).
 
-As an independent check, derive the `config` PDA directly from the program ID and fetch
-it via `solana account`:
-
-```bash
-node -e "
-const { PublicKey } = require('@solana/web3.js');
-const programId = new PublicKey('<NEW_ID>');
-const [configPda] = PublicKey.findProgramAddressSync([Buffer.from('config')], programId);
-const [dawnMintPda] = PublicKey.findProgramAddressSync([Buffer.from('dawn')], programId);
-console.log({ configPda: configPda.toBase58(), dawnMintPda: dawnMintPda.toBase58() });
-"
-
-solana account <configPda-from-above> --url mainnet-beta
-```
-
-Note this only confirms the `config` account *exists* at the derived address (i.e. that
-Proposal B was executed) — `solana account` dumps raw undecoded bytes, so it will not
-show `authority` or `api_authority` as readable pubkeys without manually decoding the
-account layout at the right byte offsets. In practice, the Squads UI showing the
-proposal as "Executed" is the more useful independent success signal.
+It also prints the DAWN mint, the fee-pool / DAO / validator / medallion token accounts,
+and the (placeholder) Raydium accounts, for reference.
 
 ### 7.2 Token supply and metadata
 
