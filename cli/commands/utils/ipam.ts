@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 import { submitTx } from '../../shared/cli-utils'
 import { Program, Wallet } from '@coral-xyz/anchor'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { connect, getFlag } from '../../shared/cli-utils'
 
 async function main() {

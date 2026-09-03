@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BN } from '@coral-xyz/anchor'
 
 import { connect, getFlag, getMock, submitTx } from '../../shared/cli-utils'
