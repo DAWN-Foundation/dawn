@@ -32,8 +32,8 @@ rustc --version
 ### Solana CLI
 
 ```bash
-# Install the Solana CLI (version 2.1.0)
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+# Install the Agave (Solana) CLI 3.1.14
+sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.14/install)"
 
 # Output might ask to:
 # Close and reopen your terminal to apply the PATH changes
