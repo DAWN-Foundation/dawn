@@ -1,6 +1,6 @@
 [toolchain]
 anchor_version = "0.32.1"
-solana_version = "2.1.0"
+solana_version = "2.1.0"   # Anchor build/test platform-tools; pinned to match CI. The client CLI is Agave 3.1.14 (see README / deployment runbook §1.2).
 
 [features]
 seeds = false

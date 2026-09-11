@@ -32,8 +32,11 @@ rustc --version
 ### Solana CLI
 
 ```bash
-# Install the Solana CLI (version 2.1.0)
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+# Install the Agave (Solana) CLI 3.1.14 — the client CLI for `solana ...` commands.
+# (`anchor build`/`anchor test` compile & run the program with the Solana platform-tools
+#  pinned by `solana_version` in Anchor.toml — currently 2.1.0 — which Anchor fetches
+#  automatically. That build toolchain is separate from this client CLI.)
+sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.14/install)"
 
 # Output might ask to:
 # Close and reopen your terminal to apply the PATH changes
