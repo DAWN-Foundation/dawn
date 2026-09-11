@@ -48,6 +48,13 @@ sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.14/install)"
 solana --version
 ```
 
+> **Note — two Solana versions, on purpose.** The `3.1.14` you install here is the
+> Agave **client CLI** used to run the deploy commands in this guide (`solana program
+> deploy`, `set-upgrade-authority`, airdrops). Separately, `Anchor.toml` pins
+> `solana_version = "2.1.0"` — the Solana **platform-tools** Anchor uses to *build and
+> test* the on-chain program, matching CI. `anchor build` (§3) fetches 2.1.0
+> automatically; you never install it by hand, and neither pin should be changed.
+
 ### 1.3 Anchor 0.32.1 via avm
 
 ```bash
