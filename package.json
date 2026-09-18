@@ -1,5 +1,5 @@
 {
-  "license": "ISC",
+  "license": "MIT",
   "scripts": {
     "test": "cp target/deploy/dawn.so tests/fixtures && RUST_LOG= jest --runInBand --verbose",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
