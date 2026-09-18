@@ -18,7 +18,7 @@ deployment. Follow the phases in order — do not skip ahead.
 | `<vault_pda>` | The Squads vault PDA derived from `<multisig>` at vault index 0 (derived in Prerequisites). This becomes the program's upgrade authority and the DAWN protocol's `config.authority`. |
 | `<NEW_ID>` | The real program ID you grind yourself in Prerequisites (§2.1) — the base58 pubkey of your freshly generated `dawn…` vanity keypair. Substitute your actual value everywhere this appears in a command. |
 | `dawnC74…` | Shorthand in prose for "your mainnet `<NEW_ID>`". The repo ships with the literal placeholder `dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP` baked in for local/CI builds — it is **not** a real program identity anyone controls. You replace it with your own ground id in Prerequisites (§2.1) before building. |
-| `dawnt36…` | Shorthand in prose for "your devnet `<NEW_ID>`". Same deal: the repo placeholder is `dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu`, replaced the same way for the devnet dry-run (§8). |
+| `dawnt36…` | Shorthand in prose for "your devnet `<NEW_ID>`". Same deal: the repo placeholder is `dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu`, replaced the same way for the devnet dry-run (§9). |
 
 ---
 
@@ -86,7 +86,7 @@ The `dawnC74…` / `dawnt36…` ids committed in `programs/dawn/src/lib.rs` and
 `Anchor.toml` are **placeholder** values for local/CI builds — they are not a real
 program identity anyone controls. Every deployer generates their **own** fresh keypair
 before building, and that keypair's pubkey becomes the real, permanent program ID for
-their deployment. This applies to devnet too (§8) — don't reuse the placeholder there
+their deployment. This applies to devnet too (§9) — don't reuse the placeholder there
 either.
 
 1. Grind a vanity keypair whose pubkey starts with `dawn`:
@@ -139,7 +139,7 @@ either.
    in §3.
 
 Treat this file with the same care as any private key that can overwrite a mainnet
-program's code — see the Custody Note (§9) at the end of this document.
+program's code — see the Custody Note (§10) at the end of this document.
 
 ### 2.2 Create the Squads v4 multisig
 
@@ -436,7 +436,144 @@ network = mainnet-beta) and confirm:
 
 ---
 
-## 8. Devnet dry-run
+## 8. Phase 6 — Verified build (Solscan)
+
+A *verified build* lets anyone rebuild `<NEW_ID>` from this repository and get exactly the
+bytes that are deployed on-chain. Solscan, Solana Explorer and SolanaFM all read that
+status from the OtterSec verification API, which needs two things:
+
+1. the deployed binary must be the one produced by the pinned Docker image — a plain
+   `anchor build` (§3) does not reproduce byte-for-byte, and
+2. a **verification PDA**, written by the program's upgrade authority, recording the repo
+   URL, commit hash and build arguments.
+
+After Phase 2 (§4) the upgrade authority is `<vault_pda>`, so both the upgrade (§8.3) and
+the PDA write (§8.4) go through Squads: you build the transaction locally and import it
+into the Squads UI for the members to approve and execute.
+
+### 8.1 Prerequisites
+
+- **The repository must be public.** Verification is trustless only if anyone can clone
+  the source that produced the binary; the OtterSec builder clones it anonymously.
+- **The deployed source must be committed and pushed** — including the `declare_id!`
+  substitution and the `[programs.mainnet]` entry from §2.1. Note that commit as
+  `<commit>`: the PDA records it, and every rebuild checks out exactly that commit.
+- **Docker**, installed and running.
+- **solana-verify:**
+
+  ```bash
+  cargo +stable install solana-verify --locked
+  ```
+
+  Install it from a directory *outside* this repo, or with `+stable` as shown:
+  `rust-toolchain.toml` pins 1.87.0 here, and solana-verify needs rustc 1.89 or newer.
+
+### 8.2 Build in Docker and compare hashes
+
+From the repository root, with `<commit>` checked out:
+
+```bash
+solana-verify build --library-name dawn -- --features mainnet
+
+solana-verify get-executable-hash target/deploy/dawn.so
+solana-verify get-program-hash <NEW_ID> -u mainnet-beta
+```
+
+`--features mainnet` is not optional — it selects the mainnet `declare_id!` (§3), so
+without it you build a different program. Note that this overwrites
+`target/deploy/dawn.so` with the Docker-built artifact.
+
+- **Hashes match** → the deployed binary is already reproducible; go to §8.4.
+- **Hashes differ** → the on-chain binary came from a local `anchor build` and has to be
+  replaced with the Docker-built one first (§8.3).
+
+### 8.3 Upgrade to the verifiable binary (hot wallet + Squads)
+
+Only needed when §8.2 reported a mismatch. Upload the Docker-built binary as a buffer
+from the hot wallet — this costs roughly 3.2 SOL in rent, which is refunded to the
+buffer authority when the upgrade executes:
+
+```bash
+solana program write-buffer target/deploy/dawn.so \
+  --url mainnet-beta \
+  --keypair <hot-wallet>          # prints <buffer>
+
+# confirm the buffer holds the bytes you just built
+solana-verify get-buffer-hash <buffer> -u mainnet-beta
+
+# hand the buffer to the vault so the multisig can consume it
+solana program set-buffer-authority <buffer> \
+  --new-buffer-authority <vault_pda> \
+  --url mainnet-beta \
+  --keypair <hot-wallet>
+```
+
+Then, in [app.squads.so](https://app.squads.so) with `<multisig>` open, use the Squads
+program-upgrade flow (**Developers → Programs**): add or select `<NEW_ID>`, create an
+upgrade proposal pointing at `<buffer>`, approve to threshold, and execute. Re-run the
+two hash commands from §8.2 afterwards — they must now match.
+
+### 8.4 Write the verification PDA (Squads import)
+
+The PDA must be written by the upgrade authority, so build the transaction with
+`<vault_pda>` as the uploader and import the result into Squads:
+
+```bash
+solana-verify export-pda-tx https://github.com/DAWN-Foundation/dawn \
+  --program-id <NEW_ID> \
+  --uploader <vault_pda> \
+  --commit-hash <commit> \
+  --library-name dawn \
+  --encoding base58 \
+  --compute-unit-price 0 \
+  -u mainnet-beta \
+  -- --features mainnet
+```
+
+The command clones the repo at `<commit>` into a temporary directory, derives the PDA,
+and prints a single base58 string. It prints `PDA does not exist, creating initialize
+transaction` the first time and switches to an update transaction on later runs — both
+are imported the same way.
+
+The build arguments after `--` are recorded in the PDA and replayed by the remote
+builder, so they must be identical to §8.2 (`--features mainnet`), and `<commit>` must be
+the commit that produced the deployed binary. Get either wrong and verification fails
+with a hash mismatch.
+
+In the Squads UI, open `<multisig>` → **Transaction builder** → import the base58
+transaction, then check the simulation before approving: it must contain **only** a call
+to the otter-verify program and the compute budget program. Approve to threshold and
+execute.
+
+### 8.5 Submit the verification job
+
+Once the PDA transaction has executed, ask the OtterSec API to rebuild and compare:
+
+```bash
+solana-verify remote submit-job --program-id <NEW_ID> --uploader <vault_pda> -u mainnet-beta
+
+# the job id is printed above; poll it, or check the program's status directly
+solana-verify remote get-job --job-id <job-id>
+solana-verify remote get-status --program-id <NEW_ID>
+```
+
+The remote build takes a while (it rebuilds the program from scratch in the same Docker
+image). When it succeeds, Solscan shows the program as verified with a link to
+`<commit>`; the explorers pick it up within minutes of the job finishing.
+
+### 8.6 After every future upgrade
+
+Any upgrade replaces the binary and un-verifies the program. Each time `<NEW_ID>` is
+upgraded through Squads:
+
+1. deploy a buffer built with `solana-verify build` (§8.2–8.3) — never one from a plain
+   `anchor build`, or the program can no longer be verified at all;
+2. re-run §8.4 with the new `<commit>` and execute the resulting Squads proposal;
+3. re-run §8.5.
+
+---
+
+## 9. Devnet dry-run
 
 **Run this entire flow on devnet first** before attempting it on mainnet. It reuses the
 same phases as §§1–7, but the devnet flow differs enough in tooling (multisig created by
@@ -460,7 +597,7 @@ only this doc and the repo.
    ```
 
    Back the resulting `<PUBKEY>.json` up to 1Password immediately (same rationale as
-   mainnet — see §9). Then replace the devnet placeholder id in both source files with
+   mainnet — see §10). Then replace the devnet placeholder id in both source files with
    the ground pubkey (basename of the `.json` without the extension):
 
    ```bash
@@ -571,7 +708,7 @@ passes cleanly.
 
 ---
 
-## 9. Custody note
+## 10. Custody note
 
 The `<NEW_ID>.json` **program keypair is a deploy secret** — and, unlike a hot wallet,
 it is irreplaceable: it's not just an authority you can rotate, it *is* the program's
