@@ -451,6 +451,10 @@ After Phase 2 (§4) the upgrade authority is `<vault_pda>`, so both the upgrade 
 the PDA write (§8.4) go through Squads: you build the transaction locally and import it
 into the Squads UI for the members to approve and execute.
 
+`docs/verified-build-upgrade.md` is this phase written out for the current mainnet
+deployment, with the real program id, commit and hashes filled in — hand that to whoever
+runs the upgrade.
+
 ### 8.1 Prerequisites
 
 - **The repository must be public.** Verification is trustless only if anyone can clone
