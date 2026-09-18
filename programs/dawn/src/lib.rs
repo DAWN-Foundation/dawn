@@ -4,10 +4,10 @@
 use anchor_lang::prelude::*;
 
 #[cfg(feature = "mainnet")]
-declare_id!("dawnC74ugJiaQsLgRUfaTiWDmJpNq9cXo3E1NgdqwjP");
+declare_id!("DawnxS4Adzh591GmqiDNfrSZBS4ENdQ9VDRStRJJ8qt7");
 
 #[cfg(all(feature = "devnet", not(feature = "mainnet")))]
-declare_id!("dawnt36j2ej84PXrEjrxDjmQb5nAAqCVwTP8f1Y1aYu");
+declare_id!("dawnaJKndMPeDW457nQmjkqD2jL9ugk6RqCqei3FbVs");
 
 #[cfg(all(not(feature = "devnet"), not(feature = "mainnet")))]
 declare_id!("4yBWXvJ2otyMvkBewgKhnkJ7WP1c7HHDSicdQwH4dXqC");
