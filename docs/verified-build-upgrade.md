@@ -28,18 +28,17 @@ which anyone can rebuild the exact on-chain bytes from the commit above.
 
 ## What it costs
 
-Fund the wallet with **~2.6 SOL** before you start:
+Fund the wallet with **~2.4 SOL** before you start:
 
 | | |
 |---|---|
 | Buffer rent (465,421 bytes) | 2.365 SOL |
-| Extending the program account (+20,000 bytes) | 0.101 SOL |
 | Transaction fees | negligible |
 
-The buffer rent is refunded when the upgrade executes — but it goes to the *spill
-account* chosen by whoever creates the upgrade in Squads, which is normally the vault,
-not you. **Agree reimbursement with the DAWN team before you start.** The 0.101 SOL for
-the account extension is spent permanently either way.
+The buffer rent comes back to you when the upgrade executes: the multisig sets the spill
+account to the wallet that paid for the buffer, so tell the DAWN team which address that
+is. Extending the program account (0.101 SOL, not refundable) is paid by the vault, not
+by you.
 
 ---
 
@@ -101,19 +100,22 @@ If it prints anything else, stop and report it — do not continue. A different 
 your build environment differs from the one the DAWN team used, and uploading it would
 put unverifiable bytes on-chain.
 
-## 4. Extend the program account
+## 4. Extend the program account — *nothing to do, skip to step 5*
 
-The new binary is 465,384 bytes; the deployed program account only has room for 445,592.
-Without this step the upgrade fails when the multisig executes it.
+The new binary is 465,384 bytes and the deployed program account only has room for
+445,592, so it has to be extended before the upgrade — but **not by you.**
 
-```bash
-solana program extend DawnxS4Adzh591GmqiDNfrSZBS4ENdQ9VDRStRJJ8qt7 20000 \
-  --url mainnet-beta \
-  --keypair <your-wallet.json>
+An earlier version of this document had you run `solana program extend` here. That does
+not work: since Agave 3.x the CLI builds the `ExtendProgramChecked` instruction, whose
+authority is a required signer, and this program's authority is the Squads multisig. Run
+from your wallet it fails with:
+
+```
+Error: Upgrade authority HYk9vvf2T1pYExtcxGTp6xt5B116vAFevX4VECWrx45U does not match <your wallet>
 ```
 
-This is permissionless — it needs no authority, only a payer. Cost: 0.101 SOL,
-not refundable.
+The extension is now bundled into the same multisig transaction as the upgrade (step 7),
+paid for by the vault. Nothing is needed from you — continue at step 5.
 
 ## 5. Upload the buffer
 
@@ -173,9 +175,10 @@ solana program show --buffers --buffer-authority HYk9vvf2T1pYExtcxGTp6xt5B116vAF
 
 ## 7. ⏸ Multisig — the upgrade
 
-A multisig member creates the program upgrade in the Squads UI against your buffer, the
-members approve to threshold, and one of them executes it. Nothing for you to do but
-wait. When they confirm it executed:
+The DAWN team builds one transaction that extends the program account and then upgrades
+it from your buffer, imports it into the Squads transaction builder, and the members
+approve and execute it. Both instructions are in the same transaction, so the extension
+can't be left half-done. Nothing for you to do but wait. When they confirm it executed:
 
 ```bash
 solana-verify get-program-hash DawnxS4Adzh591GmqiDNfrSZBS4ENdQ9VDRStRJJ8qt7 -u mainnet-beta
@@ -250,5 +253,5 @@ report it and you're done.**
 | 429 / rate-limit errors during `write-buffer` | The public RPC is throttling a 465 KB upload. Use a private RPC endpoint (Helius, Triton, QuickNode) for `--url`. |
 | `rustc 1.87.0 is not supported` when installing solana-verify | You ran `cargo install` inside the clone. Run it elsewhere, or with `cargo +stable`. |
 | Build hash ≠ `00a10a10…` | Wrong commit, missing `--features mainnet`, or `--base-image` was passed. Stop and report. |
-| Upgrade fails on execution with an account-size error | Step 4 was skipped or the extension was too small. |
+| `Upgrade authority HYk9… does not match <your wallet>` | Expected on `solana program extend` — it needs the multisig's signature. Skip step 4; the DAWN team handles it. |
 | `solana-verify` commands fail on a missing keypair | Some subcommands read the default keypair from the Solana CLI config even when they don't sign. Point `solana config set --keypair` at any valid keypair file. |
